@@ -6,9 +6,6 @@ Scratchpad for working out some data access / data catalog ideas
 ``` yaml
 sales_data:
   description: Individual product sales training
-  driver: postgres
-  driver_args:
-    uri: postgresql://username:passw0rd@dbserver1:5432/sales
   parameters:
     start:
       description: Earliest transaction timestamp
@@ -20,13 +17,26 @@ sales_data:
       type: datetime
       default: "2017-02-01 00:00:00"
       min: "2015-01-01 00:00:00"
+  driver: postgres
+  driver_args:
+    uri: postgresql://username:passw0rd@dbserver1:5432/sales
   load_args:
     query: "SELECT * FROM sales WHERE timestamp > :start AND timestamp < :end"
-    
-daily_stock_2017:
+    start: !template_str "{{ start }}"
+    end: !template_str "{{ end }}"
+
+daily_stock:
+  description: Daily stock prices
+  parameters:
+    year:
+      description: Year
+      type: int
+      default: 2017
+      min: 2011
+      max: 2017
   driver: hdf5
   driver_args:
-    file: /mnt/prices/2017.hdf5
+    file: !template_str "/mnt/stock_prices/{{ year }}.hdf5"
   load_args:
-    dataset: 'daily_stock'  
+    dataset: 'daily'  
 ```
