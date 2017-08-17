@@ -1,0 +1,27 @@
+taxi_data:
+  description: NYC Taxi Data
+  driver: csv
+  driver_args:
+    file_pattern: data/trip_data_*.csv
+
+card_images:
+  description: Card images
+  parameters:
+    setname:
+      description: Name of MTG card set
+      type: str
+      default: AER
+      allowed: ["AER"]
+  driver: hdf5
+  driver_args:
+    filename: data/images.hdf5
+  getref_args:
+    dataset: !template_str "{{ setname }}"
+
+#download_info:
+#  description: Package download records
+#  driver: postgres
+#  driver_args:
+#    connection_info: "host=localhost dbname=db_name user=user table=table_name"
+#  getref_args:
+#    query: "SELECT * FROM downloads"
