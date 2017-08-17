@@ -1,3 +1,5 @@
+from ..plugins.base import DataSource
+
 import zmq
 
 class RemoteCatalog:
@@ -18,29 +20,29 @@ class RemoteCatalog:
 
         return response 
 
-    def getref(self, entry_name, **user_parameters):
-        return RemoteDataRef(self._socket, entry_name, user_parameters)
+    def get(self, entry_name, **user_parameters):
+        return RemoteDataSource(self._socket, entry_name, user_parameters)
 
-class RemoteDataRef:
+class RemoteDataSource(DataSource):
     def __init__(self, socket, entry_name, user_parameters):
         self._socket = socket
         self._entry_name = entry_name
         self._user_parameters = user_parameters
 
-        self._socket.send_pyobj(dict(action='open_ref', name=entry_name, parameters=user_parameters))
+        self._socket.send_pyobj(dict(action='open_source', name=entry_name, parameters=user_parameters))
         response = self._socket.recv_pyobj()
 
         if 'error' in response:
             raise Exception(response['error'])
 
-        self._ref_id = response['ref_id']
+        self._source_id = response['source_id']
         self.datashape = response['datashape']
         self.dtype = response['dtype']
         self.shape = response['shape']
         self.container = response['container']
 
     def read(self):
-        self._socket.send_pyobj(dict(action='read', ref_id=self._ref_id))
+        self._socket.send_pyobj(dict(action='read', source_id=self._source_id))
         response = self._socket.recv_pyobj()
 
         if 'error' in response:
@@ -49,7 +51,7 @@ class RemoteDataRef:
         return response['data']
 
     def read_chunks(self, chunksize):
-        self._socket.send_pyobj(dict(action='read_chunks', chunksize=chunksize, ref_id=self._ref_id))
+        self._socket.send_pyobj(dict(action='read_chunks', chunksize=chunksize, source_id=self._source_id))
 
         while True:
             response = self._socket.recv_pyobj()
@@ -59,6 +61,9 @@ class RemoteDataRef:
             if not response.get('stop', False):
                 yield response['data']
 
-                self._socket.send_pyobj(dict(action='next_chunk', ref_id=self._ref_id))
+                self._socket.send_pyobj(dict(action='next_chunk', source_id=self._source_id))
             else:
                 break
+
+    def close(self):
+        pass # FIXME: What cleanup needs to happen here?

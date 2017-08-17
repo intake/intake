@@ -4,26 +4,16 @@ import pandas as pd
 
 from . import base
 
+
 class Plugin(base.Plugin):
     def __init__(self):
         pass
 
     def open(self, file_pattern, **kwargs):
-        return CSVSource(file_pattern=file_pattern, **kwargs)
+        return CSVSource(file_pattern=file_pattern, pandas_kwargs=kwargs)
 
 
 class CSVSource(base.DataSource):
-    def __init__(self, file_pattern, **kwargs):
-        self._file_pattern = file_pattern
-        self._pandas_kwargs = kwargs
-
-    def getref(self):
-        return CSVDataRef(self._file_pattern, self._pandas_kwargs)
-
-    def close(self):
-        pass
-
-class CSVDataRef(base.DataRef):
     def __init__(self, file_pattern, pandas_kwargs):
         self._filenames = sorted(glob.glob(file_pattern))
         self._pandas_kwargs = pandas_kwargs
@@ -51,4 +41,5 @@ class CSVDataRef(base.DataRef):
             for chunk in reader:
                 yield chunk
 
-        
+    def close(self):
+        pass # nothing to close

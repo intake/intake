@@ -6,21 +6,6 @@ class Plugin:
 
 
 class DataSource:
-	def getref(self, *args, **kwargs):
-		raise Exception('Implement getref')
-
-	def close(self):
-		raise Exception('Implement close')
-
-	# Boilerplate to make this object also act like a context manager
-	def __enter__(self):
-		return self # Nothing to do here
-
-	def __exit__(self, exc_type, exc_value, traceback):
-		self.close()
-
-
-class DataRef:
 	def __init__(self, datashape, dtype, shape, container):
 		self.datashape = datashape
 		self.dtype = dtype
@@ -32,3 +17,13 @@ class DataRef:
 
 	def read_chunks(self, chunksize):
 		pass
+
+	def close(self):
+		raise Exception('Implement close')
+
+	# Boilerplate to make this object also act like a context manager
+	def __enter__(self):
+		return self # Nothing to do here
+
+	def __exit__(self, exc_type, exc_value, traceback):
+		self.close()

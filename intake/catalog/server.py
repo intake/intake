@@ -7,16 +7,16 @@ import uuid
 from .local import load_catalog
 
 class ClientState:
-    def __init__(self, ref_id, dataref):
-        self.ref_id = ref_id
-        self.dataref = dataref
+    def __init__(self, source_id, source):
+        self.source_id = source_id
+        self.source = source
         self.last_chunk_iter = None
 
     def read(self):
-        return self.dataref.read()
+        return self.source.read()
 
     def read_chunks(self, chunksize):
-        self.last_chunk_iter = self.dataref.read_chunks(chunksize)
+        self.last_chunk_iter = self.source.read_chunks(chunksize)
         return next(self.last_chunk_iter)
 
     def next_chunk(self):
@@ -30,7 +30,7 @@ class Server:
         self._context = zmq.Context.instance()
         self._socket = self._context.socket(zmq.REP)
         self._socket.bind(bind_uri)
-        self._open_datarefs = {}
+        self._open_sources = {}
 
     def run(self):
         try:
@@ -46,25 +46,25 @@ class Server:
                 elif action == 'describe':
                     entry_name = message['name']
                     resp = self._local_catalog.describe(entry_name)
-                elif action == 'open_ref':
+                elif action == 'open_source':
                     entry_name = message['name']
                     user_parameters = message['parameters']
-                    ref = self._local_catalog.getref(entry_name, **user_parameters)
-                    ref_id = str(uuid.uuid4())
-                    self._open_datarefs[ref_id] = ClientState(ref_id, ref)
-                    resp = dict(datashape=ref.datashape, dtype=ref.dtype, shape=ref.shape, container=ref.container, ref_id=ref_id)
+                    source = self._local_catalog.get(entry_name, **user_parameters)
+                    source_id = str(uuid.uuid4())
+                    self._open_sources[source_id] = ClientState(source_id, source)
+                    resp = dict(datashape=source.datashape, dtype=source.dtype, shape=source.shape, container=source.container, source_id=source_id)
                 elif action == 'read':
-                    state = self._open_datarefs[message['ref_id']]
+                    state = self._open_sources[message['source_id']]
                     resp = dict(data=state.read())
                 elif action == 'read_chunks':
-                    state = self._open_datarefs[message['ref_id']]
+                    state = self._open_sources[message['source_id']]
                     chunksize = message['chunksize']
                     try:
                         resp = dict(data=state.read_chunks(chunksize))
                     except StopIteration:
                         resp = dict(stop=True)
                 elif action == 'next_chunk':
-                    state = self._open_datarefs[message['ref_id']]
+                    state = self._open_sources[message['source_id']]
                     try:
                         resp = dict(data=state.next_chunk())
                     except StopIteration:

@@ -1,7 +1,7 @@
 taxi_data:
   description: NYC Taxi Data
   driver: csv
-  driver_args:
+  args:
     file_pattern: data/trip_data_*.csv
 
 card_images:
@@ -13,9 +13,8 @@ card_images:
       default: AER
       allowed: ["AER"]
   driver: hdf5
-  driver_args:
+  args:
     filename: data/images.hdf5
-  getref_args:
     dataset: !template_str "{{ setname }}"
 
 #download_info:

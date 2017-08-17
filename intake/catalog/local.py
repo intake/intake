@@ -56,16 +56,15 @@ class LocalCatalog:
     def describe(self, entry_name):
         return self._entries[entry_name].describe() 
 
-    def getref(self, entry_name, **user_parameters):
-        return self._entries[entry_name].getref(**user_parameters)
+    def get(self, entry_name, **user_parameters):
+        return self._entries[entry_name].get(**user_parameters)
 
 
 class LocalCatalogEntry:
-    def __init__(self, description, plugin, open_args, getref_args, user_parameters):
+    def __init__(self, description, plugin, open_args, user_parameters):
         self._description = description
         self._plugin = plugin
         self._open_args = open_args
-        self._getref_args = getref_args
         self._user_parameters = user_parameters
 
     def describe(self):
@@ -74,7 +73,7 @@ class LocalCatalogEntry:
           'user_parameters': [u.describe() for u in self._user_parameters]
         }
 
-    def getref(self, **user_parameters):
+    def get(self, **user_parameters):
         params = {}
         for par_name, parameter in self._user_parameters.items():
             if par_name in user_parameters:
@@ -85,13 +84,11 @@ class LocalCatalogEntry:
         # FIXME: Check for unused user_parameters!
 
         open_args = expand_templates(self._open_args, template_context=params)
-        getref_args = expand_templates(self._getref_args, template_context=params)
 
         # FIXME: Who cleans this up??
         data_source = self._plugin.open(**open_args)
-        data_ref = data_source.getref(**getref_args)
 
-        return data_ref
+        return data_source
 
 
 class UserParameter:
@@ -143,8 +140,7 @@ def expand_templates(args, template_context):
 def parse_catalog_entry(entry):
     description = entry.get('description', '')
     plugin = registry[entry['driver']]
-    open_args = entry['driver_args']
-    getref_args = entry.get('getref_args', {})
+    open_args = entry['args']
     parameters = {}
 
     if 'parameters' in entry:
@@ -158,4 +154,4 @@ def parse_catalog_entry(entry):
             parameters[param_name] = UserParameter(name=param_name, description=param_desc, type=param_type, default=param_default,
                 min=param_min, max=param_max, allowed=param_allowed)
 
-    return LocalCatalogEntry(description=description, plugin=plugin, open_args=open_args, getref_args=getref_args, user_parameters=parameters)
+    return LocalCatalogEntry(description=description, plugin=plugin, open_args=open_args, user_parameters=parameters)
