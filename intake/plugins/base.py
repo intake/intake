@@ -6,17 +6,21 @@ class Plugin:
 
 
 class DataSource:
-	def __init__(self, datashape, dtype, shape, container):
+	def __init__(self, datashape, dtype, shape, container, get_chunks_supported=False):
 		self.datashape = datashape
 		self.dtype = dtype
 		self.shape = shape
 		self.container = container
+		self.get_chunks_supported = get_chunks_supported
 
 	def read(self):
-		pass
+		raise Exception('Implement read')
 
 	def read_chunks(self, chunksize):
-		pass
+		raise Exception('Implement read_chunks')
+
+	def get_chunks(self, chunksize):
+		raise Exception('Implement get_chunks')
 
 	def close(self):
 		raise Exception('Implement close')

@@ -15,6 +15,8 @@ class Plugin(base.Plugin):
 
 class CSVSource(base.DataSource):
     def __init__(self, file_pattern, pandas_kwargs):
+        self._init_args = dict(file_pattern=file_pattern, pandas_kwargs=pandas_kwargs)
+
         self._filenames = sorted(glob.glob(file_pattern))
         self._pandas_kwargs = pandas_kwargs
 
@@ -43,3 +45,9 @@ class CSVSource(base.DataSource):
 
     def close(self):
         pass # nothing to close
+
+    def __getstate__(self):
+        return self._init_args
+
+    def __setstate__(self, state):
+        self.__init__(**state)

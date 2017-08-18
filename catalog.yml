@@ -1,12 +1,12 @@
 taxi_data:
   description: NYC Taxi Data
   driver: csv
-  args:
+  args: # passed to the open() method
     file_pattern: data/trip_data_*.csv
 
 card_images:
   description: Card images
-  parameters:
+  parameters: # User defined parameters
     setname:
       description: Name of MTG card set
       type: str
@@ -15,12 +15,4 @@ card_images:
   driver: hdf5
   args:
     filename: data/images.hdf5
-    dataset: !template_str "{{ setname }}"
-
-#download_info:
-#  description: Package download records
-#  driver: postgres
-#  driver_args:
-#    connection_info: "host=localhost dbname=db_name user=user table=table_name"
-#  getref_args:
-#    query: "SELECT * FROM downloads"
+    dataset: !template_str "{{ setname }}"  # Mark this string as a Jinja2 template

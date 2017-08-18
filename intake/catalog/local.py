@@ -70,7 +70,7 @@ class LocalCatalogEntry:
     def describe(self):
         return {
           'description': self._description,
-          'user_parameters': [u.describe() for u in self._user_parameters]
+          'user_parameters': [u.describe() for u in self._user_parameters.values()]
         }
 
     def get(self, **user_parameters):
