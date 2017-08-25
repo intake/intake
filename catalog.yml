@@ -15,4 +15,4 @@ card_images:
   driver: hdf5
   args:
     filename: data/images.hdf5
-    dataset: !template_str "{{ setname }}"  # Mark this string as a Jinja2 template
+    dataset: !template "{{ setname }}"  # Mark this string as a Jinja2 template

@@ -12,7 +12,7 @@ def load_catalog(filename):
 
 class TemplateStr(yaml.YAMLObject):
     '''A string-a-like that tags this string as being a Jinja template'''
-    yaml_tag = '!template_str'
+    yaml_tag = '!template'
 
     def __init__(self, s):
         self._str = s
@@ -36,7 +36,7 @@ class TemplateStr(yaml.YAMLObject):
         return dumper.represent_scalar(cls.yaml_tag, data._str)
 
 
-yaml.SafeLoader.add_constructor('!template_str', TemplateStr.from_yaml)
+yaml.SafeLoader.add_constructor('!template', TemplateStr.from_yaml)
 yaml.SafeLoader.add_constructor(TemplateStr, TemplateStr.to_yaml)
 
 
