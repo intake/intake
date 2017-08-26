@@ -1,6 +1,6 @@
 import glob
 
-import pandas as pd
+import dask.dataframe as dd
 
 from . import base
 
@@ -9,42 +9,48 @@ class Plugin(base.Plugin):
     def __init__(self):
         pass
 
-    def open(self, file_pattern, **kwargs):
-        return CSVSource(file_pattern=file_pattern, pandas_kwargs=kwargs)
+    def open(self, urlpath, **kwargs):
+        return CSVSource(urlpath=urlpath, csv_kwargs=kwargs)
 
 
 class CSVSource(base.DataSource):
-    def __init__(self, file_pattern, pandas_kwargs):
-        self._init_args = dict(file_pattern=file_pattern, pandas_kwargs=pandas_kwargs)
+    def __init__(self, urlpath, csv_kwargs):
+        self._init_args = dict(urlpath=urlpath, csv_kwargs=csv_kwargs)
 
-        self._filenames = sorted(glob.glob(file_pattern))
-        self._pandas_kwargs = pandas_kwargs
+        self._urlpath = urlpath
+        self._csv_kwargs = csv_kwargs
+        self._dataframe = None
 
-        # Detect shape
-        datashape=None
-        dtype=None
-        shape=None
-        super().__init__(datashape=datashape, 
-                         dtype=dtype,
-                         shape=shape,
-                         container='dataframe')
+        super().__init__(container='dataframe')
+
+    def _get_dataframe(self):
+        if self._dataframe is None:
+            self._dataframe = dd.read_csv(self._urlpath, **self._csv_kwargs)
+
+            dtypes = self._dataframe.dtypes
+            self.datashape = None
+            self.dtype = list(zip(dtypes.index, dtypes))
+            self.shape = (len(self._dataframe),)
+
+        return self._dataframe
+
+    def discover(self):
+        self._get_dataframe()
 
     def read(self):
-        parts = []
+        return self._get_dataframe().compute()
 
-        for filename in self._filenames:
-            parts.append(pd.read_csv(filename, **self._pandas_kwargs))
-        
-        return pd.concat(parts)
+    def read_chunks(self):
+        df = self._get_dataframe()
 
-    def read_chunks(self, chunksize):
-        for filename in self._filenames:
-            reader = pd.read_csv(filename, chunksize=chunksize, **self._pandas_kwargs)
-            for chunk in reader:
-                yield chunk
+        for i in range(df.npartitions):
+            yield df.get_partition.compute()
+
+    def to_dask(self):
+        return self._get_dataframe()
 
     def close(self):
-        pass # nothing to close
+        self._dataframe = None
 
     def __getstate__(self):
         return self._init_args

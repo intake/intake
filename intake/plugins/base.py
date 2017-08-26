@@ -1,33 +1,36 @@
 # Base classes for Data Loader interface
 
 class Plugin:
-	def open(self, *args, **kwargs):
-		raise Exception('Implement open')
+    def open(self, *args, **kwargs):
+        raise Exception('Implement open')
 
 
 class DataSource:
-	def __init__(self, datashape, dtype, shape, container, get_chunks_supported=False):
-		self.datashape = datashape
-		self.dtype = dtype
-		self.shape = shape
-		self.container = container
-		self.get_chunks_supported = get_chunks_supported
+    def __init__(self, datashape=None, dtype=None, shape=None, container=None, description=None):
+        self.datashape = datashape
+        self.dtype = dtype
+        self.shape = shape
+        self.container = container
+        self.description = description
 
-	def read(self):
-		raise Exception('Implement read')
+    def discover(self):
+        raise Exception('Implement discover')
 
-	def read_chunks(self, chunksize):
-		raise Exception('Implement read_chunks')
+    def read(self):
+        raise Exception('Implement read')
 
-	def get_chunks(self, chunksize):
-		raise Exception('Implement get_chunks')
+    def read_chunks(self):
+        raise Exception('Implement read_chunks')
 
-	def close(self):
-		raise Exception('Implement close')
+    def to_dask(self):
+        raise Exception('Implement to_dask')
 
-	# Boilerplate to make this object also act like a context manager
-	def __enter__(self):
-		return self # Nothing to do here
+    def close(self):
+        raise Exception('Implement close')
 
-	def __exit__(self, exc_type, exc_value, traceback):
-		self.close()
+    # Boilerplate to make this object also act like a context manager
+    def __enter__(self):
+        return self # Nothing to do here
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
