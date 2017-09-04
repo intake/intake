@@ -31,20 +31,26 @@ class CSVSource(base.DataSource):
             self.datashape = None
             self.dtype = list(zip(dtypes.index, dtypes))
             self.shape = (len(self._dataframe),)
+            self.npartitions = self._dataframe.npartitions
 
         return self._dataframe
 
     def discover(self):
         self._get_dataframe()
+        return dict(datashape=self.datashape, dtype=self.dtype, shape=self.shape, npartitions=self.npartitions)
 
     def read(self):
         return self._get_dataframe().compute()
 
-    def read_chunks(self):
+    def read_chunked(self):
         df = self._get_dataframe()
 
         for i in range(df.npartitions):
             yield df.get_partition(i).compute()
+
+    def read_partition(self, i):
+        df = self._get_dataframe()
+        return df.get_partition(i).compute()
 
     def to_dask(self):
         return self._get_dataframe()

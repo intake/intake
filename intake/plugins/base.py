@@ -10,26 +10,40 @@ class Plugin:
 
 
 class DataSource:
-    def __init__(self, datashape=None, dtype=None, shape=None, container=None, description=None):
-        self.datashape = datashape
-        self.dtype = dtype
-        self.shape = shape
+    def __init__(self, container, description=None):
         self.container = container
         self.description = description
 
+        self.datashape = None
+        self.dtype = None
+        self.shape = None
+        self.npartitions = 0
+
     def discover(self):
+        '''Open resource and populate the datashape, dtype, shape, npartitions attributes.'''
         raise Exception('Implement discover')
 
     def read(self):
+        '''Load entire dataset into a container and return it'''
         raise Exception('Implement read')
 
-    def read_chunks(self):
-        raise Exception('Implement read_chunks')
+    def read_chunked(self):
+        '''Return iterator over container fragments of data source'''
+        raise Exception('Implement read_chunked')
+
+    def read_partition(self, i):
+        '''Return a (offset_tuple, container) corresponding to i-th partition.
+
+        Offset tuple is of same length as shape.
+        '''
+        raise Exception('Implement read_partition')
 
     def to_dask(self):
+        '''Return a dask container for this data source'''
         raise Exception('Implement to_dask')
 
     def close(self):
+        '''Close open resources corresponding to this data source.'''
         raise Exception('Implement close')
 
     # Boilerplate to make this object also act like a context manager
