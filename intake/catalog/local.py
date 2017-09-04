@@ -4,16 +4,10 @@ import jinja2
 from ..plugins import registry
 
 
-def load_catalog(filename):
-    '''Returns a Catalog object read from filename'''
-
-    return LocalCatalog(filename)
-
-
 class TemplateStr(yaml.YAMLObject):
     '''A string-a-like that tags this string as being a Jinja template'''
     yaml_tag = '!template'
-
+    
     def __init__(self, s):
         self._str = s
         self._template = jinja2.Template(s)
@@ -22,7 +16,7 @@ class TemplateStr(yaml.YAMLObject):
         return self._template.render(context)
 
     def __repr__(self):
-        return self._str
+        return 'TemplateStr(%s)' % repr(self._str)
 
     def __str__(self):
         return self._str
@@ -148,7 +142,10 @@ def parse_catalog_entry(entry):
         for param_name, param_attrs in entry['parameters'].items():
             param_desc = param_attrs['description']
             param_type = param_attrs['type']
+            # FIXME: Check for valid types
             param_default = param_attrs['default']
+
+            # FIXME: Should coerce these values to parameter type
             param_min = param_attrs.get('min', None)
             param_max = param_attrs.get('max', None)
             param_allowed = param_attrs.get('allowed', None)

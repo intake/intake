@@ -1,0 +1,17 @@
+entry1:
+  description: entry1
+  driver: csv
+  args: # passed to the open() method
+    urlpath: entry1_*.csv
+
+entry1_part:
+  description: entry1 part
+  parameters: # User defined parameters
+    part:
+      description: part of filename
+      type: str
+      default: "1"
+      allowed: ["1", "2"]
+  driver: csv
+  args: # passed to the open() method
+    urlpath: !template 'entry1_{{ part }}.csv'
