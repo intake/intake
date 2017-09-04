@@ -1,5 +1,5 @@
 entry1:
-  description: entry1
+  description: entry1 full
   driver: csv
   args: # passed to the open() method
     urlpath: entry1_*.csv

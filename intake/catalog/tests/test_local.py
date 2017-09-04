@@ -47,7 +47,7 @@ def test_local_catalog(catalog1):
     assert catalog1.describe('entry1') == {
         'container': 'dataframe',
         'user_parameters': [],
-        'description': 'entry1'
+        'description': 'entry1 full'
     }
     assert catalog1.describe('entry1_part') == {
         'container': 'dataframe',
