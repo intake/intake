@@ -1,89 +1,93 @@
 import traceback
 import sys
-
-import zmq
 import uuid
 
-from .local import load_catalog
+import tornado.web
+import tornado.ioloop
+import numpy
+import msgpack
+
+from . import serializer
+
+
+def get_server_handlers(local_catalog):
+    return [
+        (r"/v1/info", ServerInfoHandler, dict(local_catalog=local_catalog)),
+        (r"/v1/source", ServerSourceHandler, dict(local_catalog=local_catalog)),
+    ]
+
+
+class ServerInfoHandler(tornado.web.RequestHandler):
+    def initialize(self, local_catalog):
+        self.local_catalog = local_catalog
+
+    def get(self):
+        sources = []
+        for source in self.local_catalog.list():
+            info = self.local_catalog.describe(source)
+            info['name'] = source
+            sources.append(info)
+
+        server_info = dict(version='0.0.1', sources=sources)
+        self.write(msgpack.packb(server_info, use_bin_type=True))
+
+OPEN_SOURCES = {}
+
+
+class ServerSourceHandler(tornado.web.RequestHandler):
+    def initialize(self, local_catalog):
+        self._local_catalog = local_catalog
+
+    @tornado.web.asynchronous
+    def post(self):
+        request = msgpack.unpackb(self.request.body, encoding='utf-8')
+        action = request['action']
+
+        if action == 'open':
+            entry_name = request['name']
+            user_parameters = request['parameters']
+            source = self._local_catalog.get(entry_name, **user_parameters)
+            source.discover()
+            source_id = str(uuid.uuid4())
+            OPEN_SOURCES[source_id] = ClientState(source_id, source)
+
+            response = dict(datashape=source.datashape, dtype=numpy.dtype(source.dtype).descr, shape=source.shape, container=source.container, source_id=source_id)
+            self.write(msgpack.packb(response))
+            self.finish()
+        elif action == 'read':
+            source_id = request['source_id']
+            state = OPEN_SOURCES[source_id]
+            accepted_formats = request['accepted_formats']
+
+            self._chunk_encoder = self._pick_encoder(accepted_formats, state.source.container)
+            self._iterator = state.source.read_chunks()
+            self._container = state.source.container
+
+            ioloop = tornado.ioloop.IOLoop.instance()
+            ioloop.add_callback(self._write_callback)
+        else:
+            raise ArgumentException('%s not a valid source action' % action)
+
+    def _pick_encoder(self, accepted_formats, container):
+        for f in accepted_formats:
+            if f in serializer.registry:
+                encoder = serializer.registry[f]
+                return encoder
+
+        raise Exception('Unable to find compatible format')
+
+    def _write_callback(self):
+        try:
+            chunk = next(self._iterator)
+            data = self._chunk_encoder.encode(chunk, self._container)
+            msg = dict(format=self._chunk_encoder.name, container=self._container, data=data)
+            self.write(msgpack.packb(msg, use_bin_type=True))
+            self.flush(callback=self._write_callback)
+        except StopIteration:
+            self.finish()
+
 
 class ClientState:
     def __init__(self, source_id, source):
         self.source_id = source_id
         self.source = source
-        self.last_chunk_iter = None
-
-    def read(self):
-        return self.source.read()
-
-    def read_chunks(self, chunksize):
-        self.last_chunk_iter = self.source.read_chunks(chunksize)
-        return next(self.last_chunk_iter)
-
-    def next_chunk(self):
-        return next(self.last_chunk_iter)
-
-
-class Server:
-    def __init__(self, bind_uri, local_catalog):
-        self._local_catalog = local_catalog
-
-        self._context = zmq.Context.instance()
-        self._socket = self._context.socket(zmq.REP)
-        self._socket.bind(bind_uri)
-        self._open_sources = {}
-
-    def run(self):
-        try:
-
-            while True:
-                message = self._socket.recv_pyobj()
-                action = message['action']
-                print('action:', action)
-                sys.stdout.flush()
-
-                if action == 'list':
-                    resp = dict(entries=self._local_catalog.list())
-                elif action == 'describe':
-                    entry_name = message['name']
-                    resp = self._local_catalog.describe(entry_name)
-                elif action == 'open_source':
-                    entry_name = message['name']
-                    user_parameters = message['parameters']
-                    source = self._local_catalog.get(entry_name, **user_parameters)
-                    source_id = str(uuid.uuid4())
-                    self._open_sources[source_id] = ClientState(source_id, source)
-                    resp = dict(datashape=source.datashape, dtype=source.dtype, shape=source.shape, container=source.container, source_id=source_id)
-                elif action == 'read':
-                    state = self._open_sources[message['source_id']]
-                    resp = dict(data=state.read())
-                elif action == 'read_chunks':
-                    state = self._open_sources[message['source_id']]
-                    chunksize = message['chunksize']
-                    try:
-                        resp = dict(data=state.read_chunks(chunksize))
-                    except StopIteration:
-                        resp = dict(stop=True)
-                elif action == 'next_chunk':
-                    state = self._open_sources[message['source_id']]
-                    try:
-                        resp = dict(data=state.next_chunk())
-                    except StopIteration:
-                        resp = dict(stop=True)
-                else:
-                    resp = dict(error='Unknown action %s' % action)
-
-                self._socket.send_pyobj(resp)
-        except Exception as e:
-            traceback.print_exc()
-
-
-if __name__ == '__main__':
-    catalog_yaml = sys.argv[1]
-    print('Loading %s' % catalog_yaml)
-
-    catalog = load_catalog(catalog_yaml)
-
-    print('Entries:', ','.join(catalog.list()))
-
-    server = Server('tcp://*:5555', catalog)
-    server.run()

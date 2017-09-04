@@ -1,80 +1,117 @@
-from ..plugins.base import DataSource
+import operator
 
-import zmq
+from ..plugins.base import DataSource
+from . import serializer
+
+import requests
+from requests.compat import urljoin
+import msgpack
+import pandas
+import numpy
 
 
 class RemoteCatalog:
-    def __init__(self, uri):
-        self._context = zmq.Context.instance()
-        self._socket = self._context.socket(zmq.REQ)
-        self._uri = uri
-        self._socket.connect(uri)
+    def __init__(self, url):
+        self._base_url = url
+        self._info_url = urljoin(url, 'v1/info')
+        self._source_url = urljoin(url, 'v1/source')
+
+    def _get_info(self):
+        response = requests.get(self._info_url)
+        if response.status_code == 200:
+            return msgpack.unpackb(response.content, encoding='utf-8')
+        else:
+            raise Exception('%s: status code %d' % (response.url, response.status_code))
 
     def list(self):
-        self._socket.send_pyobj(dict(action='list'))
-        response = self._socket.recv_pyobj()
-
-        return response['entries']
+        info = self._get_info()
+        return [s['name'] for s in info['sources']]
 
     def describe(self, entry_name):
-        self._socket.send_pyobj(dict(action='describe', name=entry_name))
-        response = self._socket.recv_pyobj()
+        info = self._get_info()
 
-        return response 
+        for source in info['sources']:
+            if source['name'] == entry_name:
+                return source
+        else:
+            raise Exception('unknown source %s' % entry_name)
 
     def get(self, entry_name, **user_parameters):
-        return RemoteDataSource(self._uri, entry_name, user_parameters)
+        entry = self.describe(entry_name)
+
+        return RemoteDataSource(self._source_url, entry_name, container=entry['container'], user_parameters=user_parameters)
 
 
 class RemoteDataSource(DataSource):
-    def __init__(self, uri, entry_name, user_parameters):
-        self._init_args = dict(uri=uri, entry_name=entry_name, user_parameters=user_parameters)
+    def __init__(self, url, entry_name, container, user_parameters):
+        self._init_args = dict(url=url, entry_name=entry_name, container=container, user_parameters=user_parameters)
 
-        self._context = zmq.Context.instance()
-        self._socket = self._context.socket(zmq.REQ)
-        self._socket.connect(uri)
-
+        self._url = url
         self._entry_name = entry_name
         self._user_parameters = user_parameters
 
-        self._socket.send_pyobj(dict(action='open_source', name=entry_name, parameters=user_parameters))
-        response = self._socket.recv_pyobj()
+        self._source_id = None
 
-        if 'error' in response:
-            raise Exception(response['error'])
+        super().__init__(self, container=container)
 
-        self._source_id = response['source_id']
-        self.datashape = response['datashape']
-        self.dtype = response['dtype']
-        self.shape = response['shape']
-        self.container = response['container']
+    def _open_source(self):
+        if self._source_id is None:
+            payload = dict(action='open', name=self._entry_name, parameters=self._user_parameters)
+            req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
+            if req.status_code == 200:
+                response = msgpack.unpackb(req.content, encoding='utf-8')
+
+                self.datashape = response['datashape']
+                dtype_descr = response['dtype']
+                if isinstance(dtype_descr, list):
+                    # Reformat because NumPy needs list of tuples
+                    dtype_descr = [tuple(x) for x in response['dtype']]
+                self.dtype = numpy.dtype(dtype_descr)
+                self.shape = tuple(response['shape'])
+                self._source_id = response['source_id']
+
+        return self._source_id
+
+    def _get_chunks(self):
+        source_id = self._open_source()
+
+        accepted_formats = list(serializer.registry.keys())
+        payload = dict(action='read', source_id=source_id, accepted_formats=accepted_formats)
+
+        resp = None
+        try:
+            resp = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True), stream=True)
+            if resp.status_code != 200:
+                raise Exception('Error reading data')
+
+            for msg in msgpack.Unpacker(resp.raw, encoding='utf-8'):
+                format = msg['format']
+                container = msg['container']
+                chunk = serializer.registry[format].decode(msg['data'], container=container)
+                yield chunk
+        finally:
+            if resp is not None:
+                resp.close()
+            
+    def discover(self):
+        self._open_source()
 
     def read(self):
-        self._socket.send_pyobj(dict(action='read', source_id=self._source_id))
-        response = self._socket.recv_pyobj()
-
-        if 'error' in response:
-            raise Exception(response['error'])
-
-        return response['data']
+        chunks = list(self._get_chunks())
+        if self.container == 'dataframe':
+            return pandas.concat(chunks)
+        elif self.container == 'ndarray':
+            return numpy.concatenate(chunks, axis=0)
+        elif self.container == 'python':
+            return reduce(operator.add, chunks)
 
     def read_chunks(self, chunksize):
-        self._socket.send_pyobj(dict(action='read_chunks', chunksize=chunksize, source_id=self._source_id))
-
-        while True:
-            response = self._socket.recv_pyobj()
-
-            if 'error' in response:
-                raise Exception(response['error'])
-            if not response.get('stop', False):
-                yield response['data']
-
-                self._socket.send_pyobj(dict(action='next_chunk', source_id=self._source_id))
-            else:
-                break
+        for chunk in self._get_chunks():
+            yield chunk
 
     def close(self):
-        pass # FIXME: What cleanup needs to happen here?
+        # FIXME: Need to tell server to delete source_id?
+        self._source_id = None
 
     def __getstate__(self):
         return self._init_args

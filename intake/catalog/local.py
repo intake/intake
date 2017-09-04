@@ -69,6 +69,7 @@ class LocalCatalogEntry:
 
     def describe(self):
         return {
+          'container': self._plugin.container,
           'description': self._description,
           'user_parameters': [u.describe() for u in self._user_parameters.values()]
         }

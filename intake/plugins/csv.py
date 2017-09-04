@@ -7,7 +7,7 @@ from . import base
 
 class Plugin(base.Plugin):
     def __init__(self):
-        pass
+        super().__init__(version='0.1', container='dataframe')
 
     def open(self, urlpath, **kwargs):
         return CSVSource(urlpath=urlpath, csv_kwargs=kwargs)
@@ -44,7 +44,7 @@ class CSVSource(base.DataSource):
         df = self._get_dataframe()
 
         for i in range(df.npartitions):
-            yield df.get_partition.compute()
+            yield df.get_partition(i).compute()
 
     def to_dask(self):
         return self._get_dataframe()
