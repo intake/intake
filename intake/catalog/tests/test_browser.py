@@ -7,7 +7,7 @@ from ..browser import get_browser_handlers
 from ..local import LocalCatalog
 
 
-class TestBrowserApp(AsyncHTTPTestCase):
+class TestBrowser(AsyncHTTPTestCase):
     def get_app(self):
         catalog_file = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
         local_catalog = LocalCatalog(catalog_file)

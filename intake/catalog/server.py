@@ -4,6 +4,7 @@ import uuid
 
 import tornado.web
 import tornado.ioloop
+import tornado.gen
 import numpy
 import msgpack
 
@@ -38,7 +39,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
     def initialize(self, local_catalog):
         self._local_catalog = local_catalog
 
-    @tornado.web.asynchronous
+    @tornado.gen.coroutine
     def post(self):
         request = msgpack.unpackb(self.request.body, encoding='utf-8')
         action = request['action']
@@ -60,13 +61,22 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             accepted_formats = request['accepted_formats']
 
             self._chunk_encoder = self._pick_encoder(accepted_formats, state.source.container)
-            self._iterator = state.source.read_chunks()
+            self._iterator = state.source.read_chunked()
             self._container = state.source.container
 
-            ioloop = tornado.ioloop.IOLoop.instance()
-            ioloop.add_callback(self._write_callback)
+            for chunk in self._iterator:
+                data = self._chunk_encoder.encode(chunk, self._container)
+                msg = dict(format=self._chunk_encoder.name, container=self._container, data=data)
+                self.write(msgpack.packb(msg, use_bin_type=True))
+                yield self.flush()
+
+            self.finish()
+
         else:
-            raise ArgumentException('%s not a valid source action' % action)
+            msg = '"%s" not a valid source action' % action
+            raise tornado.web.HTTPError(status_code=400,
+                log_message=msg,
+                reason=msg)
 
     def _pick_encoder(self, accepted_formats, container):
         for f in accepted_formats:
@@ -74,17 +84,18 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 encoder = serializer.registry[f]
                 return encoder
 
-        raise Exception('Unable to find compatible format')
+        msg = 'Unable to find compatible format'
+        raise tornado.web.HTTPError(status_code=400,
+                log_message=msg, reason=msg)
 
-    def _write_callback(self):
-        try:
-            chunk = next(self._iterator)
-            data = self._chunk_encoder.encode(chunk, self._container)
-            msg = dict(format=self._chunk_encoder.name, container=self._container, data=data)
-            self.write(msgpack.packb(msg, use_bin_type=True))
-            self.flush(callback=self._write_callback)
-        except StopIteration:
-            self.finish()
+    def write_error(self, status_code, **kwargs):
+        error_exception = kwargs.get('exc_info', None)
+        if error_exception is not None:
+            print(error_exception)
+            msg = dict(error=error_exception[1].reason)
+        else:
+            msg = dict(error='unknown error')
+        self.write(msgpack.packb(msg, use_bin_type=True))
 
 
 class ClientState:

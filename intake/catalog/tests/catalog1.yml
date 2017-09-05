@@ -2,7 +2,7 @@ entry1:
   description: entry1 full
   driver: csv
   args: # passed to the open() method
-    urlpath: entry1_*.csv
+    urlpath: !template '{{ CATALOG_DIR }}/entry1_*.csv'
 
 entry1_part:
   description: entry1 part
@@ -14,4 +14,4 @@ entry1_part:
       allowed: ["1", "2"]
   driver: csv
   args: # passed to the open() method
-    urlpath: !template 'entry1_{{ part }}.csv'
+    urlpath: !template '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'
