@@ -1,3 +1,4 @@
+import os
 import yaml
 import jinja2
 
@@ -36,11 +37,12 @@ yaml.SafeLoader.add_constructor(TemplateStr, TemplateStr.to_yaml)
 
 class LocalCatalog:
     def __init__(self, filename):
+        self._catalog_dir = os.path.dirname(os.path.abspath(filename))
         with open(filename, 'r') as f:
             catalog_yaml = yaml.safe_load(f.read())
 
         self._entries = {
-            key: parse_catalog_entry(value)
+            key: parse_catalog_entry(value, catalog_dir=self._catalog_dir)
             for key, value in catalog_yaml.items()
         }
 
@@ -55,11 +57,12 @@ class LocalCatalog:
 
 
 class LocalCatalogEntry:
-    def __init__(self, description, plugin, open_args, user_parameters):
+    def __init__(self, description, plugin, open_args, user_parameters, catalog_dir):
         self._description = description
         self._plugin = plugin
         self._open_args = open_args
         self._user_parameters = user_parameters
+        self._catalog_dir = catalog_dir
 
     def describe(self):
         return {
@@ -69,7 +72,7 @@ class LocalCatalogEntry:
         }
 
     def get(self, **user_parameters):
-        params = {}
+        params = { 'CATALOG_DIR': self._catalog_dir }
         for par_name, parameter in self._user_parameters.items():
             if par_name in user_parameters:
                 params[par_name] = parameter.validate(user_parameters[par_name])
@@ -132,7 +135,7 @@ def expand_templates(args, template_context):
     return expanded_args
 
 
-def parse_catalog_entry(entry):
+def parse_catalog_entry(entry, catalog_dir):
     description = entry.get('description', '')
     plugin = registry[entry['driver']]
     open_args = entry['args']
@@ -152,4 +155,6 @@ def parse_catalog_entry(entry):
             parameters[param_name] = UserParameter(name=param_name, description=param_desc, type=param_type, default=param_default,
                 min=param_min, max=param_max, allowed=param_allowed)
 
-    return LocalCatalogEntry(description=description, plugin=plugin, open_args=open_args, user_parameters=parameters)
+    return LocalCatalogEntry(description=description, plugin=plugin,
+        open_args=open_args, user_parameters=parameters,
+        catalog_dir=catalog_dir)
