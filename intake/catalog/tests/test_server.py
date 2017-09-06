@@ -77,6 +77,7 @@ class TestServerV1Source(TestServerV1Base):
         expected_dtype = np.dtype([('name', 'O'), ('score', 'f8'), ('rank', 'i8')])
         actual_dtype = np.dtype([tuple(x) for x in resp_msg['dtype']])
         self.assertEqual(expected_dtype, actual_dtype)
+        self.assertEqual(resp_msg['npartitions'], 2)
 
         self.assert_(isinstance(resp_msg['source_id'], str))
 
@@ -97,6 +98,24 @@ class TestServerV1Source(TestServerV1Base):
 
            data = ser.decode(chunk['data'], container='dataframe')
            self.assertEqual(len(data), 4)
+
+    def test_read_partition(self):
+        msg = dict(action='open', name='entry1', parameters={})
+        resp_msg,  = self.make_post_request(msg)
+        source_id = resp_msg['source_id']
+
+        msg2 = dict(action='read', partition=1, source_id=source_id, accepted_formats=['msgpack'])
+        resp_msgs = self.make_post_request(msg2)
+
+        self.assertEqual(len(resp_msgs), 1)
+        ser = MsgPackSerializer()
+ 
+        part = resp_msgs[0]
+        self.assertEqual(part['format'], 'msgpack')
+        self.assertEqual(part['container'], 'dataframe')
+
+        data = ser.decode(part['data'], container='dataframe')
+        self.assertEqual(len(data), 4)
 
     def test_bad_action(self):
         msg = dict(action='bad', name='entry1')

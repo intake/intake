@@ -4,10 +4,11 @@ from intake.plugins import base
 
 
 def test_plugin_base():
-    p = base.Plugin(version='0.1.0', container='dataframe')
+    p = base.Plugin(version='0.1.0', container='dataframe', partition_access=False)
 
     assert p.version == '0.1.0'
     assert p.container == 'dataframe'
+    assert p.partition_access == False
     with pytest.raises(Exception) as except_info:
         p.open()
 

@@ -52,16 +52,21 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             source_id = str(uuid.uuid4())
             OPEN_SOURCES[source_id] = ClientState(source_id, source)
 
-            response = dict(datashape=source.datashape, dtype=numpy.dtype(source.dtype).descr, shape=source.shape, container=source.container, source_id=source_id)
+            response = dict(datashape=source.datashape, dtype=numpy.dtype(source.dtype).descr, shape=source.shape, container=source.container, npartitions=source.npartitions, source_id=source_id)
             self.write(msgpack.packb(response))
             self.finish()
         elif action == 'read':
             source_id = request['source_id']
             state = OPEN_SOURCES[source_id]
             accepted_formats = request['accepted_formats']
+            partition = request.get('partition', None)
 
             self._chunk_encoder = self._pick_encoder(accepted_formats, state.source.container)
-            self._iterator = state.source.read_chunked()
+
+            if partition is not None:
+                self._iterator = iter([state.source.read_partition(partition)])
+            else:
+                self._iterator = state.source.read_chunked()
             self._container = state.source.container
 
             for chunk in self._iterator:

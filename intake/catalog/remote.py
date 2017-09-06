@@ -68,15 +68,18 @@ class RemoteDataSource(DataSource):
                     dtype_descr = [tuple(x) for x in response['dtype']]
                 self.dtype = numpy.dtype(dtype_descr)
                 self.shape = tuple(response['shape'])
+                self.npartitions = response['npartitions']
                 self._source_id = response['source_id']
 
         return self._source_id
 
-    def _get_chunks(self):
+    def _get_chunks(self, partition=None):
         source_id = self._open_source()
 
         accepted_formats = list(serializer.registry.keys())
         payload = dict(action='read', source_id=source_id, accepted_formats=accepted_formats)
+        if partition is not None:
+            payload['partition'] = partition
 
         resp = None
         try:
@@ -93,12 +96,8 @@ class RemoteDataSource(DataSource):
             if resp is not None:
                 resp.close()
             
-    def discover(self):
-        self._open_source()
-        return dict(datashape=self.datashape, dtype=self.dtype, shape=self.shape, npartitions=self.npartitions)
-
-    def read(self):
-        chunks = list(self._get_chunks())
+    def _read(self, partition=None):
+        chunks = list(self._get_chunks(partition=partition))
         if self.container == 'dataframe':
             return pandas.concat(chunks)
         elif self.container == 'ndarray':
@@ -106,9 +105,24 @@ class RemoteDataSource(DataSource):
         elif self.container == 'python':
             return reduce(operator.add, chunks)
 
+    def discover(self):
+        self._open_source()
+        return dict(datashape=self.datashape, dtype=self.dtype, shape=self.shape, npartitions=self.npartitions)
+
+
+    def read(self):
+        return self._read()
+
     def read_chunked(self):
         for chunk in self._get_chunks():
             yield chunk
+
+    def read_partition(self, i):
+        return self._read(partition=i)
+
+    def to_dask(self):
+        '''Return a dask container for this data source'''
+        raise Exception('Implement to_dask')
 
     def close(self):
         # FIXME: Need to tell server to delete source_id?

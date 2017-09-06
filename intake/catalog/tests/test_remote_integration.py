@@ -7,6 +7,7 @@ import pandas as pd
 
 from .util import intake_server
 from ..remote import RemoteCatalog
+from ...plugins.tests.util import verify_datasource_interface
 
 TEST_CATALOG_YAML = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
@@ -41,6 +42,15 @@ def test_unknown_source(intake_server):
     with pytest.raises(Exception) as exc_info:
         entries = catalog.describe('does_not_exist')
 
+
+def test_remote_datasource_interface(intake_server):
+    catalog = RemoteCatalog(intake_server)
+
+    d = catalog.get('entry1')
+
+    verify_datasource_interface(d)
+
+
 def test_read(intake_server):
     catalog = RemoteCatalog(intake_server)
 
@@ -51,7 +61,7 @@ def test_read(intake_server):
     assert info == {
         'datashape': None,
         'dtype': np.dtype([('name', 'O'), ('score', '<f8'), ('rank', '<i8')]),
-        'npartitions': 0,
+        'npartitions': 2,
         'shape': (8,)
     }
 
@@ -79,6 +89,21 @@ def test_read_chunks(intake_server):
     
     assert expected_df.equals(pd.concat(chunks))
 
+
+def test_read_partition(intake_server):
+    catalog = RemoteCatalog(intake_server)
+
+    d = catalog.get('entry1')
+
+    p2 = d.read_partition(1)
+    p1 = d.read_partition(0)
+
+    test_dir = os.path.dirname(__file__)
+    file1 = os.path.join(test_dir, 'entry1_1.csv')
+    file2 = os.path.join(test_dir, 'entry1_2.csv')
+    assert pd.read_csv(file1).equals(p1)
+    assert pd.read_csv(file2).equals(p2)
+    
 
 def test_close(intake_server):
     catalog = RemoteCatalog(intake_server)

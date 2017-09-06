@@ -7,7 +7,7 @@ from . import base
 
 class Plugin(base.Plugin):
     def __init__(self):
-        super().__init__(version='0.1', container='dataframe')
+        super().__init__(version='0.1', container='dataframe', partition_access=True)
 
     def open(self, urlpath, **kwargs):
         return CSVSource(urlpath=urlpath, csv_kwargs=kwargs)
