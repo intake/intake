@@ -14,7 +14,10 @@ def make_app(local_catalog):
     return tornado.web.Application(handlers)
 
 
-def main(argv):
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
+
     parser = argparse.ArgumentParser(description='Intake Catalog Server')
     parser.add_argument('-p', '--port', type=int, default=5000,
                     help='port number for server to listen on')

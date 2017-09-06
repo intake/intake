@@ -1,2 +1,6 @@
+recursive-include intake *.html
+recursive-include intake *.csv
+recursive-include intake *.yml
+
 include versioneer.py
 include intake/_version.py

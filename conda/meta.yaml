@@ -1,0 +1,43 @@
+package:
+   name: intake
+   version: {{ GIT_DESCRIBE_TAG }}
+
+source:
+   path: ..
+
+build:
+  number: {{ GIT_DESCRIBE_NUMBER|int }}
+  entry_points:
+    - intake = intake.catalog.__main__:main
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - python
+    - jinja2
+  run:
+    - python
+    - numpy
+    - pandas
+    - msgpack-python
+    - msgpack-numpy
+    - requests
+    - tornado
+    - jinja2
+    - pyyaml
+    - dask
+
+test:
+  requires:
+    - pytest
+    - pytest-cov
+    - coverage
+  commands:
+    - intake -h
+    - py.test --cov=intake --pyargs intake
+
+about:
+  home: https://github.com/ContinuumIO/intake
+  license: BSD
+  license_file: LICENSE
+  summary: Data ingest catalog system

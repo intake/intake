@@ -1,4 +1,8 @@
-tornado >= 4.5.1
-msgpack-python
-pandas
 numpy
+pandas
+msgpack-python
+msgpack-numpy
+requests
+tornado >= 4.5.1
+jinja2
+pyyaml

@@ -7,7 +7,6 @@ import versioneer
 
 
 requires = open('requirements.txt').read().strip().split('\n')
-install_requires = []
 
 setup(name='intake',
       version=versioneer.get_version(),
@@ -17,9 +16,15 @@ setup(name='intake',
       maintainer='Stan Seibert',
       maintainer_email='sseibert@anaconda.com',
       license='BSD',
-      package_data={ '': ['*.csv', '*.yml'], },
+      package_data={ '': ['*.csv', '*.yml', '*.html'], },
       include_package_data=True,
-      install_requires=install_requires,
+      install_requires=requires,
       packages=find_packages(),
+      entry_points={
+          'console_scripts': [
+              'intake = intake.catalog.__main__:main'
+          ]
+      },
       long_description=open('README.rst').read(),
+      zip_safe=False,
 )
