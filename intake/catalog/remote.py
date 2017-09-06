@@ -12,9 +12,9 @@ import numpy
 
 class RemoteCatalog:
     def __init__(self, url):
-        self._base_url = url
-        self._info_url = urljoin(url, 'v1/info')
-        self._source_url = urljoin(url, 'v1/source')
+        self._base_url = url + '/'
+        self._info_url = urljoin(self._base_url, 'v1/info')
+        self._source_url = urljoin(self._base_url, 'v1/source')
 
     def _get_info(self):
         response = requests.get(self._info_url)
@@ -39,12 +39,12 @@ class RemoteCatalog:
     def get(self, entry_name, **user_parameters):
         entry = self.describe(entry_name)
 
-        return RemoteDataSource(self._source_url, entry_name, container=entry['container'], user_parameters=user_parameters)
+        return RemoteDataSource(self._source_url, entry_name, container=entry['container'], user_parameters=user_parameters, description=entry['description'])
 
 
 class RemoteDataSource(DataSource):
-    def __init__(self, url, entry_name, container, user_parameters):
-        self._init_args = dict(url=url, entry_name=entry_name, container=container, user_parameters=user_parameters)
+    def __init__(self, url, entry_name, container, user_parameters, description):
+        self._init_args = dict(url=url, entry_name=entry_name, container=container, user_parameters=user_parameters, description=description)
 
         self._url = url
         self._entry_name = entry_name
@@ -52,7 +52,7 @@ class RemoteDataSource(DataSource):
 
         self._source_id = None
 
-        super().__init__(self, container=container)
+        super().__init__(container=container, description=description)
 
     def _open_source(self):
         if self._source_id is None:
@@ -95,6 +95,7 @@ class RemoteDataSource(DataSource):
             
     def discover(self):
         self._open_source()
+        return dict(datashape=self.datashape, dtype=self.dtype, shape=self.shape, npartitions=self.npartitions)
 
     def read(self):
         chunks = list(self._get_chunks())
@@ -105,7 +106,7 @@ class RemoteDataSource(DataSource):
         elif self.container == 'python':
             return reduce(operator.add, chunks)
 
-    def read_chunks(self, chunksize):
+    def read_chunked(self):
         for chunk in self._get_chunks():
             yield chunk
 
