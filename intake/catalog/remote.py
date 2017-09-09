@@ -1,6 +1,6 @@
 import operator
 
-from ..plugins.base import DataSource
+from ..source.base import DataSource
 from . import serializer
 
 import requests

@@ -1,6 +1,6 @@
 import pytest
 
-from intake.plugins import base
+from .. import base
 
 
 def test_plugin_base():

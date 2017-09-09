@@ -1,9 +1,9 @@
 # Plugin registry
 
-from . import plugins
+from . import source
 from .catalog import load_catalog
 
-registry = plugins.registry
+registry = source.registry
 
 # Automatically create shortcut open methods
 for key, value in registry.items():

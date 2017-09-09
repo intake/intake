@@ -5,7 +5,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from intake.plugins import csv
+from .. import csv
 from .util import verify_plugin_interface, verify_datasource_interface
 
 

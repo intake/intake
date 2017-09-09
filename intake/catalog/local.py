@@ -2,7 +2,7 @@ import os
 import yaml
 import jinja2
 
-from ..plugins import registry
+from ..source import registry
 
 
 class TemplateStr(yaml.YAMLObject):

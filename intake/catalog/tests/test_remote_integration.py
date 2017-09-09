@@ -7,7 +7,7 @@ import pandas as pd
 
 from .util import intake_server
 from ..remote import RemoteCatalog
-from ...plugins.tests.util import verify_datasource_interface
+from ...source.tests.util import verify_datasource_interface
 
 TEST_CATALOG_YAML = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
