@@ -43,7 +43,7 @@ class LocalCatalog:
 
         self._entries = {
             key: parse_catalog_entry(value, catalog_dir=self._catalog_dir)
-            for key, value in catalog_yaml.items()
+            for key, value in catalog_yaml['data'].items()
         }
 
     def list(self):
