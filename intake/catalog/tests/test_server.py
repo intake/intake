@@ -35,6 +35,10 @@ class TestServerV1Info(TestServerV1Base):
         self.assert_('version' in info)
         self.assertEqual(info['sources'], [
             {'container': 'dataframe',
+             'description': 'example1 source plugin',
+             'name': 'use_example1',
+             'user_parameters': []},
+            {'container': 'dataframe',
              'description': 'entry1 full',
              'name': 'entry1',
              'user_parameters': []},

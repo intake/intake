@@ -1,7 +1,8 @@
 # Base classes for Data Loader interface
 
 class Plugin:
-    def __init__(self, version, container, partition_access):
+    def __init__(self, name, version, container, partition_access):
+        self.name = name
         self.version = version
         self.container = container
         self.partition_access = partition_access

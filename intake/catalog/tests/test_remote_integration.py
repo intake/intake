@@ -16,7 +16,7 @@ def test_info_describe(intake_server):
     catalog = RemoteCatalog(intake_server)
 
     entries = catalog.list()
-    assert entries == ['entry1', 'entry1_part']
+    assert entries == ['use_example1', 'entry1', 'entry1_part']
 
     info = catalog.describe('entry1')
 

@@ -1,4 +1,13 @@
-data:
+plugins:
+  source:
+    - module: intake.catalog.tests.example1_source
+    - dir: !template '{{ CATALOG_DIR }}/example_plugin_dir'
+sources:
+  use_example1:
+    description: example1 source plugin
+    driver: example1
+    args: {}
+
   entry1:
     description: entry1 full
     driver: csv

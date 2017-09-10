@@ -1,8 +1,14 @@
 import os
+import importlib
+import inspect
+import glob
+import runpy
+
 import yaml
 import jinja2
 
-from ..source import registry
+from ..source.base import Plugin
+from ..source import registry as global_registry
 
 
 class TemplateStr(yaml.YAMLObject):
@@ -41,9 +47,18 @@ class LocalCatalog:
         with open(filename, 'r') as f:
             catalog_yaml = yaml.safe_load(f.read())
 
+        self.source_plugins = {}
+
+        if 'plugins' in catalog_yaml:
+            plugins_yaml = catalog_yaml['plugins']
+            if 'source' in plugins_yaml:
+                self.source_plugins = parse_source_plugins(plugins_yaml['source'], self._catalog_dir)
+
         self._entries = {
-            key: parse_catalog_entry(value, catalog_dir=self._catalog_dir)
-            for key, value in catalog_yaml['data'].items()
+            key: parse_catalog_entry(value,
+                                     catalog_plugin_registry=self.source_plugins, 
+                                     catalog_dir=self._catalog_dir)
+            for key, value in catalog_yaml['sources'].items()
         }
 
     def list(self):
@@ -135,9 +150,13 @@ def expand_templates(args, template_context):
     return expanded_args
 
 
-def parse_catalog_entry(entry, catalog_dir):
+def parse_catalog_entry(entry, catalog_plugin_registry, catalog_dir):
     description = entry.get('description', '')
-    plugin = registry[entry['driver']]
+    plugin_name = entry['driver']
+    if plugin_name in catalog_plugin_registry:
+        plugin = catalog_plugin_registry[plugin_name]
+    else:
+        plugin = global_registry[plugin_name]
     open_args = entry['args']
     parameters = {}
 
@@ -158,3 +177,49 @@ def parse_catalog_entry(entry, catalog_dir):
     return LocalCatalogEntry(description=description, plugin=plugin,
         open_args=open_args, user_parameters=parameters,
         catalog_dir=catalog_dir)
+
+
+def parse_source_plugins(entry, catalog_dir):
+    plugins = {}
+
+    for item in entry:
+        # Do jinja2 rendering of any template strings in this item
+        item = expand_templates(item, dict(CATALOG_DIR=catalog_dir))
+
+        if 'module' in item:
+            plugins.update(load_from_module(item['module']))
+        elif 'dir' in item:
+            plugins.update(load_from_dir(item['dir']))
+        else:
+            raise ValueError('Incorrect plugin source syntax: %s' % (item,))
+
+    return plugins
+
+
+def load_from_module(module_str):
+    plugins = {}
+
+    mod = importlib.import_module(module_str)
+    for _, cls in inspect.getmembers(mod, inspect.isclass):
+        # Don't try to registry plugins imported into this module from somewhere else
+        if issubclass(cls, Plugin) and cls.__module__ == module_str:
+            p = cls()
+            plugins[p.name] = p
+
+    return plugins
+
+
+def load_from_dir(dirname):
+    plugins = {}
+    pyfiles = glob.glob(os.path.join(dirname, '*.py'))
+
+    for filename in pyfiles:
+        globals = runpy.run_path(filename)
+
+        for name, o in globals.items():
+            # Don't try to registry plugins imported into this module from somewhere else
+            if inspect.isclass(o) and issubclass(o, Plugin) and o.__module__ == '<run_path>':
+                p = o()
+                plugins[p.name] = p
+
+    return plugins

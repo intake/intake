@@ -4,8 +4,9 @@ from .. import base
 
 
 def test_plugin_base():
-    p = base.Plugin(version='0.1.0', container='dataframe', partition_access=False)
+    p = base.Plugin(name='test', version='0.1.0', container='dataframe', partition_access=False)
 
+    assert p.name == 'test'
     assert p.version == '0.1.0'
     assert p.container == 'dataframe'
     assert p.partition_access == False

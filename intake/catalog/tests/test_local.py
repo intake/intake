@@ -43,7 +43,7 @@ def catalog1():
 
 
 def test_local_catalog(catalog1):
-    assert catalog1.list() == ['entry1', 'entry1_part']
+    assert catalog1.list() == ['use_example1', 'entry1', 'entry1_part']
     assert catalog1.describe('entry1') == {
         'container': 'dataframe',
         'user_parameters': [],
@@ -67,6 +67,14 @@ def test_local_catalog(catalog1):
     assert catalog1.get('entry1_part').container == 'dataframe'
     # Specify parameters
     assert catalog1.get('entry1_part', part='2').container == 'dataframe'
+
+
+def test_source_plugin_config(catalog1):
+    assert set(catalog1.source_plugins.keys()) == set(['example1', 'example2'])
+
+
+def test_use_source_plugin_from_config(catalog1):
+    d = catalog1.get('use_example1')
 
 
 def test_user_parameter_validation_range():
