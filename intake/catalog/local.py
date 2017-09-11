@@ -71,6 +71,33 @@ class LocalCatalog:
         return self._entries[entry_name].get(**user_parameters)
 
 
+class LocalCatalogHandle:
+    '''A wrapper around local catalog that makes it easier to trigger a "reload" of it from disk'''
+    def __init__(self, filename):
+        self._filename = filename
+
+        self._catalog = LocalCatalog(self._filename)
+
+    def reload(self):
+        # If this raises an exception, the current catalog will remain intact
+        new_catalog = LocalCatalog(self._filename)
+
+        self._catalog = new_catalog
+
+    @property
+    def source_plugins(self):
+        return self._catalog.source_plugins
+
+    def list(self):
+        return self._catalog.list()
+
+    def describe(self, entry_name):
+        return self._catalog.describe(entry_name)
+
+    def get(self, entry_name, **user_parameters):
+        return self._catalog.get(entry_name, **user_parameters)
+
+
 class LocalCatalogEntry:
     def __init__(self, description, plugin, open_args, user_parameters, catalog_dir):
         self._description = description
