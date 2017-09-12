@@ -2,12 +2,14 @@ import operator
 
 from ..source.base import DataSource
 from . import serializer
+from . import dask_util
 
 import requests
 from requests.compat import urljoin
 import msgpack
 import pandas
 import numpy
+
 
 
 class RemoteCatalog:
@@ -121,8 +123,8 @@ class RemoteDataSource(DataSource):
         return self._read(partition=i)
 
     def to_dask(self):
-        '''Return a dask container for this data source'''
-        raise Exception('Implement to_dask')
+        self._open_source()
+        return dask_util.to_dask(self)
 
     def close(self):
         # FIXME: Need to tell server to delete source_id?

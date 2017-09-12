@@ -4,6 +4,7 @@ import pickle
 import pytest
 import numpy as np
 import pandas as pd
+from dask import distributed
 
 from .util import intake_server
 from ..remote import RemoteCatalog
@@ -127,3 +128,13 @@ def test_pickle(intake_server):
     expected_df = pd.concat((pd.read_csv(file1), pd.read_csv(file2)))
 
     assert expected_df.equals(df)
+
+
+def test_to_dask(intake_server):
+    client = distributed.Client()
+
+    catalog = RemoteCatalog(intake_server)
+    d = catalog.get('entry1')
+    df = d.to_dask()
+
+    assert df.npartitions == 2
