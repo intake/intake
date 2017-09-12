@@ -52,7 +52,10 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             source_id = str(uuid.uuid4())
             OPEN_SOURCES[source_id] = ClientState(source_id, source)
 
-            response = dict(datashape=source.datashape, dtype=numpy.dtype(source.dtype).descr, shape=source.shape, container=source.container, npartitions=source.npartitions, source_id=source_id)
+            response = dict(datashape=source.datashape, dtype=numpy.dtype(source.dtype).descr, 
+                shape=source.shape, container=source.container, 
+                metadata=source.metadata, npartitions=source.npartitions,
+                source_id=source_id)
             self.write(msgpack.packb(response))
             self.finish()
         elif action == 'read':

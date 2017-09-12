@@ -66,6 +66,8 @@ def test_read(intake_server):
         'shape': (8,)
     }
 
+    assert d.metadata == dict(foo='bar', bar=[1, 2, 3])
+
     df = d.read()
     test_dir = os.path.dirname(__file__)
     file1 = os.path.join(test_dir, 'entry1_1.csv')

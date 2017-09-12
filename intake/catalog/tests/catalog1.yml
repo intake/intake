@@ -10,6 +10,9 @@ sources:
 
   entry1:
     description: entry1 full
+    metadata:
+      foo: 'bar'
+      bar: [1, 2, 3]
     driver: csv
     args: # passed to the open() method
       urlpath: !template '{{ CATALOG_DIR }}/entry1_*.csv'

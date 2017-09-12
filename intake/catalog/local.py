@@ -99,11 +99,12 @@ class LocalCatalogHandle:
 
 
 class LocalCatalogEntry:
-    def __init__(self, description, plugin, open_args, user_parameters, catalog_dir):
+    def __init__(self, description, plugin, open_args, user_parameters, metadata, catalog_dir):
         self._description = description
         self._plugin = plugin
         self._open_args = open_args
         self._user_parameters = user_parameters
+        self._metadata = metadata
         self._catalog_dir = catalog_dir
 
     def describe(self):
@@ -124,8 +125,8 @@ class LocalCatalogEntry:
         # FIXME: Check for unused user_parameters!
 
         open_args = expand_templates(self._open_args, template_context=params)
+        open_args['metadata'] = self._metadata
 
-        # FIXME: Who cleans this up??
         data_source = self._plugin.open(**open_args)
 
         return data_source
@@ -185,6 +186,7 @@ def parse_catalog_entry(entry, catalog_plugin_registry, catalog_dir):
     else:
         plugin = global_registry[plugin_name]
     open_args = entry['args']
+    metadata = entry.get('metadata', None)
     parameters = {}
 
     if 'parameters' in entry:
@@ -203,7 +205,7 @@ def parse_catalog_entry(entry, catalog_plugin_registry, catalog_dir):
 
     return LocalCatalogEntry(description=description, plugin=plugin,
         open_args=open_args, user_parameters=parameters,
-        catalog_dir=catalog_dir)
+        catalog_dir=catalog_dir, metadata=metadata)
 
 
 def parse_source_plugins(entry, catalog_dir):

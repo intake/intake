@@ -82,6 +82,7 @@ class TestServerV1Source(TestServerV1Base):
         actual_dtype = np.dtype([tuple(x) for x in resp_msg['dtype']])
         self.assertEqual(expected_dtype, actual_dtype)
         self.assertEqual(resp_msg['npartitions'], 2)
+        self.assertEqual(resp_msg['metadata'], dict(foo='bar', bar=[1, 2, 3]))
 
         self.assert_(isinstance(resp_msg['source_id'], str))
 

@@ -63,6 +63,8 @@ def test_local_catalog(catalog1):
         'description': 'entry1 part'
     }
     assert catalog1.get('entry1').container == 'dataframe'
+    assert catalog1.get('entry1').metadata == dict(foo='bar', bar=[1, 2, 3])
+
     # Use default parameters
     assert catalog1.get('entry1_part').container == 'dataframe'
     # Specify parameters

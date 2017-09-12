@@ -71,6 +71,7 @@ class RemoteDataSource(DataSource):
                 self.dtype = numpy.dtype(dtype_descr)
                 self.shape = tuple(response['shape'])
                 self.npartitions = response['npartitions']
+                self.metadata = response['metadata']
                 self._source_id = response['source_id']
 
         return self._source_id

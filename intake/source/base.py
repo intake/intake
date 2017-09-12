@@ -10,11 +10,26 @@ class Plugin:
     def open(self, *args, **kwargs):
         raise Exception('Implement open')
 
+    def separate_base_kwargs(self, kwargs):
+        base_kwargs = { 'metadata': None }
+        other_kwargs = dict(kwargs)  # copy before we mutate
+
+        for base_kwarg_name in ['metadata']:
+            if base_kwarg_name in other_kwargs:
+                base_kwargs[base_kwarg_name] = other_kwargs[base_kwarg_name]
+                del other_kwargs[base_kwarg_name]
+
+        return base_kwargs, other_kwargs
+
 
 class DataSource:
-    def __init__(self, container, description=None):
+    def __init__(self, container, description=None, metadata=None):
         self.container = container
         self.description = description
+        if metadata is None:
+            self.metadata = {}
+        else:
+            self.metadata = metadata
 
         self.datashape = None
         self.dtype = None
