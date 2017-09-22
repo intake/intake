@@ -1,15 +1,17 @@
 import operator
 
-from ..source.base import DataSource
-from . import serializer
-from . import dask_util
-
+import yaml
 import requests
 from requests.compat import urljoin
 import msgpack
 import pandas
 import numpy
 
+from ..source.base import DataSource
+from ..source import registry as plugin_registry
+from . import serializer
+from . import dask_util
+from .local import LocalCatalogEntry
 
 
 class RemoteCatalog:
@@ -52,6 +54,90 @@ class RemoteDataSource(DataSource):
         self._entry_name = entry_name
         self._user_parameters = user_parameters
 
+        self._real_source = None
+        self.direct = None
+
+        super().__init__(container=container, description=description)
+
+    def _open_source(self):
+        if self._real_source is None:
+            payload = dict(action='open', name=self._entry_name, parameters=self._user_parameters,
+                available_plugins=list(plugin_registry.keys()))
+            req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
+            if req.status_code == 200:
+                response = msgpack.unpackb(req.content, encoding='utf-8')
+
+                if 'plugin' in response:
+                    # Direct access
+                    self._open_direct(response)
+                    self.direct = True
+                else:
+                    # Proxied access
+                    self._real_source = RemoteDataSourceProxied(**self._init_args)
+                    self._real_source._parse_open_response(response)
+                    self.direct = False
+
+            else:
+                raise Exception('Server error: %d' % req.status_code)
+
+    def _open_direct(self, response):
+        plugin = plugin_registry[response['plugin']]
+        source = plugin.open(**response['args'])
+        source.description = response['description']
+        self._real_source = source
+
+    def _copy_attributes(self):
+        for attr in ['datashape', 'dtype', 'shape', 'npartitions', 'metadata']:
+            setattr(self, attr, getattr(self._real_source, attr))
+
+    def discover(self):
+        self._open_source()
+        ret = self._real_source.discover()
+        self._copy_attributes()
+        return ret
+
+    def read(self):
+        self._open_source()
+        return self._real_source.read()
+
+    def read_chunked(self):
+        self._open_source()
+        for chunk in self._real_source.read_chunked():
+            yield chunk
+
+    def read_partition(self, i):
+        self._open_source()
+        return self._real_source.read_partition(i)
+
+    def to_dask(self):
+        self._open_source()
+        return self._real_source.to_dask()
+
+    def close(self):
+        if self._real_source is not None:
+            self._real_source.close()
+            self._real_source = None
+
+    def __getstate__(self):
+        return self._init_args, self._real_source
+
+    def __setstate__(self, state):
+        init_args, real_source = state
+        self.__init__(**init_args)
+        self._real_source = real_source
+        self.direct = not isinstance(self._real_source, RemoteDataSourceProxied)
+        if self._real_source is not None:
+            self._copy_attributes()
+
+
+class RemoteDataSourceProxied(DataSource):
+    def __init__(self, url, entry_name, container, user_parameters, description):
+        self._init_args = dict(url=url, entry_name=entry_name, container=container, user_parameters=user_parameters, description=description)
+
+        self._url = url
+        self._entry_name = entry_name
+        self._user_parameters = user_parameters
+
         self._source_id = None
 
         super().__init__(container=container, description=description)
@@ -62,19 +148,21 @@ class RemoteDataSource(DataSource):
             req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
             if req.status_code == 200:
                 response = msgpack.unpackb(req.content, encoding='utf-8')
-
-                self.datashape = response['datashape']
-                dtype_descr = response['dtype']
-                if isinstance(dtype_descr, list):
-                    # Reformat because NumPy needs list of tuples
-                    dtype_descr = [tuple(x) for x in response['dtype']]
-                self.dtype = numpy.dtype(dtype_descr)
-                self.shape = tuple(response['shape'])
-                self.npartitions = response['npartitions']
-                self.metadata = response['metadata']
-                self._source_id = response['source_id']
+                self._parse_open_response(response)
 
         return self._source_id
+
+    def _parse_open_response(self, response):
+        self.datashape = response['datashape']
+        dtype_descr = response['dtype']
+        if isinstance(dtype_descr, list):
+            # Reformat because NumPy needs list of tuples
+            dtype_descr = [tuple(x) for x in response['dtype']]
+        self.dtype = numpy.dtype(dtype_descr)
+        self.shape = tuple(response['shape'])
+        self.npartitions = response['npartitions']
+        self.metadata = response['metadata']
+        self._source_id = response['source_id']
 
     def _get_chunks(self, partition=None):
         source_id = self._open_source()

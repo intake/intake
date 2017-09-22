@@ -2,6 +2,7 @@ import traceback
 import sys
 import uuid
 
+import yaml
 import tornado.web
 import tornado.ioloop
 import tornado.gen
@@ -47,17 +48,38 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         if action == 'open':
             entry_name = request['name']
             user_parameters = request['parameters']
-            source = self._local_catalog.get(entry_name, **user_parameters)
-            source.discover()
-            source_id = str(uuid.uuid4())
-            OPEN_SOURCES[source_id] = ClientState(source_id, source)
+            client_plugins = request.get('available_plugins', [])
 
-            response = dict(datashape=source.datashape, dtype=numpy.dtype(source.dtype).descr, 
-                shape=source.shape, container=source.container, 
-                metadata=source.metadata, npartitions=source.npartitions,
-                source_id=source_id)
-            self.write(msgpack.packb(response))
-            self.finish()
+            # Can the client directly access the data themselves?
+            open_desc = self._local_catalog.describe_open(entry_name, **user_parameters)
+            direct_access = open_desc['direct_access']
+            plugin_name = open_desc['plugin']
+            client_has_plugin = plugin_name in client_plugins
+
+            if direct_access == 'forbid' or \
+                    (direct_access == 'allow' and not client_has_plugin):
+                source = self._local_catalog.get(entry_name, **user_parameters)
+                source.discover()
+                source_id = str(uuid.uuid4())
+                OPEN_SOURCES[source_id] = ClientState(source_id, source)
+
+                response = dict(datashape=source.datashape, dtype=numpy.dtype(source.dtype).descr, 
+                    shape=source.shape, container=source.container, 
+                    metadata=source.metadata, npartitions=source.npartitions,
+                    source_id=source_id)
+                self.write(msgpack.packb(response))
+                self.finish()
+            elif direct_access == 'force' and not client_has_plugin:
+                msg = 'client must have plugin "%s" to access source "%s"' % (plugin_name, entry_name)
+                raise tornado.web.HTTPError(status_code=400,
+                    log_message=msg,
+                    reason=msg)
+            else:
+                # If we get here, the client can access the source directly
+                response = dict(plugin=plugin_name, args=open_desc['args'], description=open_desc['description'])
+                self.write(msgpack.packb(response))
+                self.finish()
+
         elif action == 'read':
             source_id = request['source_id']
             state = OPEN_SOURCES[source_id]

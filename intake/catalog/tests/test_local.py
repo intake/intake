@@ -17,6 +17,9 @@ def test_template_str():
     assert repr(ts) == 'TemplateStr(\'foo {{ x }} baz\')'
     assert str(ts) == template
     assert ts.expand(dict(x='bar')) == 'foo bar baz'
+    assert ts == local.TemplateStr(template)
+    assert ts != template
+    assert ts != local.TemplateStr('other')
 
 
 EXAMPLE_YAML = '''
@@ -46,6 +49,7 @@ def test_local_catalog(catalog1):
     assert catalog1.list() == ['use_example1', 'entry1', 'entry1_part']
     assert catalog1.describe('entry1') == {
         'container': 'dataframe',
+        'direct_access': 'forbid',
         'user_parameters': [],
         'description': 'entry1 full'
     }
@@ -60,7 +64,8 @@ def test_local_catalog(catalog1):
                 'allowed': ['1', '2'],
             }
         ],
-        'description': 'entry1 part'
+        'description': 'entry1 part',
+        'direct_access': 'allow'
     }
     assert catalog1.get('entry1').container == 'dataframe'
     assert catalog1.get('entry1').metadata == dict(foo='bar', bar=[1, 2, 3])

@@ -14,6 +14,7 @@ sources:
       foo: 'bar'
       bar: [1, 2, 3]
     driver: csv
+    # Default direct_access is "forbid" by default
     args: # passed to the open() method
       urlpath: !template '{{ CATALOG_DIR }}/entry1_*.csv'
 
@@ -25,6 +26,10 @@ sources:
         type: str
         default: "1"
         allowed: ["1", "2"]
+    metadata:
+      foo: 'baz'
+      bar: [2, 4, 6]
     driver: csv
+    direct_access: "allow"
     args: # passed to the open() method
       urlpath: !template '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'

@@ -1,13 +1,14 @@
 import os.path
 import os
 
+import yaml
 import tornado.web
 from tornado.testing import AsyncHTTPTestCase
 import msgpack
 import numpy as np
 
 from ..server import get_server_handlers
-from ..local import LocalCatalog
+from ..local import LocalCatalog, TemplateStr
 from ..serializer import MsgPackSerializer
 
 
@@ -35,14 +36,17 @@ class TestServerV1Info(TestServerV1Base):
         self.assert_('version' in info)
         self.assertEqual(info['sources'], [
             {'container': 'dataframe',
+             'direct_access': 'forbid',
              'description': 'example1 source plugin',
              'name': 'use_example1',
              'user_parameters': []},
             {'container': 'dataframe',
+             'direct_access': 'forbid',
              'description': 'entry1 full',
              'name': 'entry1',
              'user_parameters': []},
             {'container': 'dataframe',
+             'direct_access': 'allow',
              'description': 'entry1 part',
              'name': 'entry1_part',
              'user_parameters': [{'allowed': ['1', '2'],
@@ -85,6 +89,17 @@ class TestServerV1Source(TestServerV1Base):
         self.assertEqual(resp_msg['metadata'], dict(foo='bar', bar=[1, 2, 3]))
 
         self.assert_(isinstance(resp_msg['source_id'], str))
+
+    def test_open_direct(self):
+        msg = dict(action='open', name='entry1_part', parameters=dict(part='2'), available_plugins=['csv'])
+        resp_msg,  = self.make_post_request(msg)
+
+        self.assertEqual(resp_msg['plugin'], 'csv')
+        args = resp_msg['args']
+        self.assertEquals(set(args.keys()), set(['urlpath', 'metadata']))
+        self.assert_(args['urlpath'].endswith('/entry1_2.csv'))
+        self.assertEquals(args['metadata'], dict(foo='baz', bar=[2, 4, 6]))
+        self.assertEqual(resp_msg['description'], 'entry1 part')
 
     def test_read(self):
         msg = dict(action='open', name='entry1', parameters={})

@@ -25,8 +25,14 @@ def test_info_describe(intake_server):
         'container': 'dataframe',
         'description': 'entry1 full',
         'name': 'entry1',
+        'direct_access': 'forbid',
         'user_parameters': []
     }
+
+    info = catalog.describe('entry1_part')
+
+    assert info['direct_access'] == 'allow'
+
 
 def test_bad_url(intake_server):
     bad_url = intake_server + '/nonsense_prefix'
@@ -73,6 +79,34 @@ def test_read(intake_server):
     file1 = os.path.join(test_dir, 'entry1_1.csv')
     file2 = os.path.join(test_dir, 'entry1_2.csv')
     expected_df = pd.concat((pd.read_csv(file1), pd.read_csv(file2)))
+    
+    assert not d.direct  # this should be proxied
+
+    assert expected_df.equals(df)
+
+
+def test_read_direct(intake_server):
+    catalog = RemoteCatalog(intake_server)
+
+    d = catalog.get('entry1_part', part='2')
+
+    info = d.discover()
+
+    assert info == {
+        'datashape': None,
+        'dtype': np.dtype([('name', 'O'), ('score', '<f8'), ('rank', '<i8')]),
+        'npartitions': 1,
+        'shape': (4,)
+    }
+
+    assert d.metadata == dict(foo='baz', bar=[2, 4, 6])
+    assert d.description == 'entry1 part'
+    df = d.read()
+    test_dir = os.path.dirname(__file__)
+    file2 = os.path.join(test_dir, 'entry1_2.csv')
+    expected_df = pd.read_csv(file2)
+
+    assert d.direct # this should be direct
     
     assert expected_df.equals(df)
 

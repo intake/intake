@@ -28,6 +28,12 @@ class TemplateStr(yaml.YAMLObject):
     def __str__(self):
         return self._str
 
+    def __eq__(self, other):
+        if isinstance(other, TemplateStr):
+            return self._str == other._str
+        else:
+            return False
+
     @classmethod
     def from_yaml(cls, loader, node):
         return TemplateStr(node.value)
@@ -65,7 +71,10 @@ class LocalCatalog:
         return list(self._entries.keys())
 
     def describe(self, entry_name):
-        return self._entries[entry_name].describe() 
+        return self._entries[entry_name].describe()
+
+    def describe_open(self, entry_name, **user_parameters):
+        return self._entries[entry_name].describe_open(**user_parameters)
 
     def get(self, entry_name, **user_parameters):
         return self._entries[entry_name].get(**user_parameters)
@@ -94,27 +103,32 @@ class LocalCatalogHandle:
     def describe(self, entry_name):
         return self._catalog.describe(entry_name)
 
+    def describe_open(self, entry_name, **user_parameters):
+        return self._catalog.describe_open(entry_name, **user_parameters)
+
     def get(self, entry_name, **user_parameters):
         return self._catalog.get(entry_name, **user_parameters)
 
 
 class LocalCatalogEntry:
-    def __init__(self, description, plugin, open_args, user_parameters, metadata, catalog_dir):
+    def __init__(self, description, plugin, open_args, user_parameters, metadata, direct_access, catalog_dir):
         self._description = description
         self._plugin = plugin
         self._open_args = open_args
         self._user_parameters = user_parameters
         self._metadata = metadata
+        self._direct_access = direct_access
         self._catalog_dir = catalog_dir
 
     def describe(self):
         return {
           'container': self._plugin.container,
           'description': self._description,
+          'direct_access': self._direct_access,
           'user_parameters': [u.describe() for u in self._user_parameters.values()]
         }
 
-    def get(self, **user_parameters):
+    def _create_open_args(self, user_parameters):
         params = { 'CATALOG_DIR': self._catalog_dir }
         for par_name, parameter in self._user_parameters.items():
             if par_name in user_parameters:
@@ -127,6 +141,19 @@ class LocalCatalogEntry:
         open_args = expand_templates(self._open_args, template_context=params)
         open_args['metadata'] = self._metadata
 
+        return open_args
+
+    def describe_open(self, **user_parameters):
+        return {
+          'plugin': self._plugin.name,
+          'description': self._description,
+          'direct_access': self._direct_access,
+          'metadata': self._metadata,
+          'args': self._create_open_args(user_parameters)
+        }
+
+    def get(self, **user_parameters):
+        open_args = self._create_open_args(user_parameters)
         data_source = self._plugin.open(**open_args)
 
         return data_source
@@ -187,6 +214,11 @@ def parse_catalog_entry(entry, catalog_plugin_registry, catalog_dir):
         plugin = global_registry[plugin_name]
     open_args = entry['args']
     metadata = entry.get('metadata', None)
+    # This only matters when this entry is used by the catalog server
+    direct_access = entry.get('direct_access', 'forbid')
+    if direct_access not in ['forbid', 'allow', 'force']:
+        raise ValueError('%s is not a valid value for direct_access')
+
     parameters = {}
 
     if 'parameters' in entry:
@@ -204,7 +236,7 @@ def parse_catalog_entry(entry, catalog_plugin_registry, catalog_dir):
                 min=param_min, max=param_max, allowed=param_allowed)
 
     return LocalCatalogEntry(description=description, plugin=plugin,
-        open_args=open_args, user_parameters=parameters,
+        open_args=open_args, user_parameters=parameters, direct_access=direct_access,
         catalog_dir=catalog_dir, metadata=metadata)
 
 
