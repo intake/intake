@@ -3,6 +3,7 @@ import argparse
 import time
 import traceback
 import os.path
+import signal
 
 import tornado.ioloop
 import tornado.web
@@ -11,6 +12,10 @@ from .local import LocalCatalogHandle
 from .remote import RemoteCatalog
 from .browser import get_browser_handlers
 from .server import get_server_handlers
+
+
+def call_exit_on_sigterm(signal, frame):
+    sys.exit(0)
 
 
 def load_catalog(uri):
@@ -53,9 +58,14 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Intake Catalog Server')
     parser.add_argument('-p', '--port', type=int, default=5000,
                     help='port number for server to listen on')
+    parser.add_argument('--sys-exit-on-sigterm', action='store_true',
+                    help='internal flag used during unit testsing to ensure .coverage file is written')
     parser.add_argument('catalog_file', metavar='FILE', type=str,
                     help='Name of catalog YAML file')
     args = parser.parse_args(argv[1:])
+
+    if args.sys_exit_on_sigterm:
+        signal.signal(signal.SIGTERM, call_exit_on_sigterm)
 
     catalog_yaml = args.catalog_file
     print('Loading %s' % catalog_yaml)
