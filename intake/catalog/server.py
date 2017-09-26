@@ -84,9 +84,11 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             source_id = request['source_id']
             state = OPEN_SOURCES[source_id]
             accepted_formats = request['accepted_formats']
+            accepted_compression = request.get('accepted_compression', ['none'])
             partition = request.get('partition', None)
 
-            self._chunk_encoder = self._pick_encoder(accepted_formats, state.source.container)
+            self._chunk_encoder = self._pick_encoder(accepted_formats,
+                    accepted_compression, state.source.container)
 
             if partition is not None:
                 self._iterator = iter([state.source.read_partition(partition)])
@@ -96,7 +98,9 @@ class ServerSourceHandler(tornado.web.RequestHandler):
 
             for chunk in self._iterator:
                 data = self._chunk_encoder.encode(chunk, self._container)
-                msg = dict(format=self._chunk_encoder.name, container=self._container, data=data)
+                msg = dict(format=self._chunk_encoder.format_name,
+                           compression=self._chunk_encoder.compressor_name,
+                           container=self._container, data=data)
                 self.write(msgpack.packb(msg, use_bin_type=True))
                 yield self.flush()
 
@@ -108,15 +112,24 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 log_message=msg,
                 reason=msg)
 
-    def _pick_encoder(self, accepted_formats, container):
-        for f in accepted_formats:
-            if f in serializer.registry:
-                encoder = serializer.registry[f]
-                return encoder
+    def _pick_encoder(self, accepted_formats, accepted_compression, container):
+        format_encoder = None
 
-        msg = 'Unable to find compatible format'
-        raise tornado.web.HTTPError(status_code=400,
-                log_message=msg, reason=msg)
+        for f in accepted_formats:
+            if f in serializer.format_registry:
+                format_encoder = serializer.format_registry[f]
+
+        if format_encoder is None:
+            msg = 'Unable to find compatible format'
+            raise tornado.web.HTTPError(status_code=400,
+                    log_message=msg, reason=msg)
+
+        compressor = serializer.NoneCompressor() # Default
+        for f in accepted_compression:
+            if f in serializer.compression_registry:
+                compressor = serializer.compression_registry[f]
+
+        return serializer.ComboSerializer(format_encoder, compressor)
 
     def write_error(self, status_code, **kwargs):
         error_exception = kwargs.get('exc_info', None)

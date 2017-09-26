@@ -1,11 +1,29 @@
 from collections import OrderedDict
-
+import pickle
+import gzip
 
 import msgpack
 import msgpack_numpy
 import pandas
 import numpy
-import pickle
+
+
+class NoneCompressor:
+    name = 'none'
+    def compress(self, data):
+        return data
+
+    def decompress(self, data):
+        return data
+
+
+class GzipCompressor:
+    name = 'gzip'
+    def compress(self, data):
+        return gzip.compress(data, compresslevel=1)
+
+    def decompress(self, data):
+        return gzip.decompress(data)
 
 
 class MsgPackSerializer:
@@ -43,8 +61,25 @@ class PickleSerializer:
         return pickle.loads(bytestr)
 
 
+class ComboSerializer:
+    def __init__(self, format_encoder, compressor):
+        self._format_encoder = format_encoder
+        self._compressor = compressor
+        self.format_name = format_encoder.name
+        self.compressor_name = compressor.name
+
+    def encode(self, obj, container):
+        return self._compressor.compress(self._format_encoder.encode(obj, container))
+    
+    def decode(self, bytestr, container):
+        return self._format_encoder.decode(self._compressor.decompress(bytestr), container)
+
+
 # Insert in preference order
-registry = OrderedDict([(e.name, e) for e in 
+format_registry = OrderedDict([(e.name, e) for e in 
                         [MsgPackSerializer(), PickleSerializer(4), PickleSerializer(2)]
                        ])
 
+compression_registry = OrderedDict([(e.name, e) for e in 
+                        [GzipCompressor(), NoneCompressor()]
+                       ])

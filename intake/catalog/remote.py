@@ -167,8 +167,11 @@ class RemoteDataSourceProxied(DataSource):
     def _get_chunks(self, partition=None):
         source_id = self._open_source()
 
-        accepted_formats = list(serializer.registry.keys())
-        payload = dict(action='read', source_id=source_id, accepted_formats=accepted_formats)
+        accepted_formats = list(serializer.format_registry.keys())
+        accepted_compression = list(serializer.compression_registry.keys())
+        payload = dict(action='read', source_id=source_id, accepted_formats=accepted_formats,
+            accepted_compression=accepted_compression)
+
         if partition is not None:
             payload['partition'] = partition
 
@@ -180,8 +183,12 @@ class RemoteDataSourceProxied(DataSource):
 
             for msg in msgpack.Unpacker(resp.raw, encoding='utf-8'):
                 format = msg['format']
+                compression = msg['compression']
                 container = msg['container']
-                chunk = serializer.registry[format].decode(msg['data'], container=container)
+
+                compressor = serializer.compression_registry[compression]
+                encoder = serializer.format_registry[format]
+                chunk = encoder.decode(compressor.decompress(msg['data']), container=container)
                 yield chunk
         finally:
             if resp is not None:

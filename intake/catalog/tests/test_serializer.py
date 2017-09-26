@@ -9,7 +9,9 @@ import pandas as pd
 from .. import serializer
 
 
-all_serializers = pytest.mark.parametrize('ser', serializer.registry.values())
+all_serializers = pytest.mark.parametrize('ser', serializer.format_registry.values())
+all_compressors = pytest.mark.parametrize('comp', serializer.compression_registry.values())
+
 
 @all_serializers
 def test_dataframe(ser):
@@ -47,3 +49,17 @@ def test_msgpack_unknown_container():
     with pytest.raises(ValueError) as except_info:
         ser.decode(b'1234', 'mystery')
 
+@all_compressors
+def test_compression_roundtrip(comp):
+    data = b'1234\x01\x02'
+
+    assert data == comp.decompress(comp.compress(data))
+
+
+def test_none_compress():
+    data = b'1234\x01\x02'
+    comp = serializer.NoneCompressor()
+
+    # None should be no-op
+    assert data == comp.decompress(data)
+    assert data == comp.compress(data)

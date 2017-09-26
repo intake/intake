@@ -9,7 +9,7 @@ import numpy as np
 
 from ..server import get_server_handlers
 from ..local import LocalCatalog, TemplateStr
-from ..serializer import MsgPackSerializer
+from ..serializer import MsgPackSerializer, GzipCompressor
 
 
 class TestServerV1Base(AsyncHTTPTestCase):
@@ -114,9 +114,30 @@ class TestServerV1Source(TestServerV1Base):
  
         for chunk in resp_msgs:
            self.assertEqual(chunk['format'], 'msgpack')
+           self.assertEqual(chunk['compression'], 'none')
            self.assertEqual(chunk['container'], 'dataframe')
 
            data = ser.decode(chunk['data'], container='dataframe')
+           self.assertEqual(len(data), 4)
+
+    def test_read_compressed(self):
+        msg = dict(action='open', name='entry1', parameters={})
+        resp_msg,  = self.make_post_request(msg)
+        source_id = resp_msg['source_id']
+
+        msg2 = dict(action='read', source_id=source_id, accepted_formats=['msgpack'], accepted_compression=['gzip'])
+        resp_msgs = self.make_post_request(msg2)
+
+        self.assertEqual(len(resp_msgs), 2)
+        ser = MsgPackSerializer()
+        comp = GzipCompressor()
+ 
+        for chunk in resp_msgs:
+           self.assertEqual(chunk['format'], 'msgpack')
+           self.assertEqual(chunk['compression'], 'gzip')
+           self.assertEqual(chunk['container'], 'dataframe')
+
+           data = ser.decode(comp.decompress(chunk['data']), container='dataframe')
            self.assertEqual(len(data), 4)
 
     def test_read_partition(self):
@@ -132,6 +153,7 @@ class TestServerV1Source(TestServerV1Base):
  
         part = resp_msgs[0]
         self.assertEqual(part['format'], 'msgpack')
+        self.assertEqual(part['compression'], 'none')
         self.assertEqual(part['container'], 'dataframe')
 
         data = ser.decode(part['data'], container='dataframe')
