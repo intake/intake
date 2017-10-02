@@ -6,6 +6,7 @@ import msgpack
 import msgpack_numpy
 import pandas
 import numpy
+import snappy
 
 
 class NoneCompressor:
@@ -24,6 +25,15 @@ class GzipCompressor:
 
     def decompress(self, data):
         return gzip.decompress(data)
+
+
+class SnappyCompressor:
+    name = 'snappy'
+    def compress(self, data):
+        return snappy.compress(data)
+
+    def decompress(self, data):
+        return snappy.decompress(data)
 
 
 class MsgPackSerializer:
@@ -81,5 +91,5 @@ format_registry = OrderedDict([(e.name, e) for e in
                        ])
 
 compression_registry = OrderedDict([(e.name, e) for e in 
-                        [GzipCompressor(), NoneCompressor()]
+                        [SnappyCompressor(), GzipCompressor(), NoneCompressor()]
                        ])

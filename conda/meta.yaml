@@ -26,6 +26,7 @@ requirements:
     - jinja2
     - pyyaml
     - dask
+    - python-snappy
 
 test:
   requires:
