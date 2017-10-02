@@ -11,11 +11,12 @@ def intake_server(request):
 
     # Start a catalog server on nonstandard port
     port = 7483
-    cmd = 'python -m intake.catalog --sys-exit-on-sigterm --port %d %s' % (port, catalog_yaml)
+    cmd = ['python', '-m', 'intake.catalog', '--sys-exit-on-sigterm', '--port', str(port), catalog_yaml]
     env = dict(os.environ)
 
-    p = subprocess.Popen(cmd, shell=True, env=env)
+    p = subprocess.Popen(cmd, env=env)
     time.sleep(2)  # wait for server to finish initializing
 
     yield 'http://localhost:%d' % (port,)
     p.terminate()
+    p.wait()
