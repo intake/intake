@@ -13,7 +13,6 @@ def to_dask(source):
     chunksize = 100000  # FIXME: Where should this come from?
 
     futures = [read_partition(source, i) for i in range(source.npartitions)]
-    print(futures)
 
     if source.container == 'ndarray':
         #array_parts = [da.from_delayed(f, shape=c.shape, dtype=c.dtype) for f, c in zip(futures, chunks)]
