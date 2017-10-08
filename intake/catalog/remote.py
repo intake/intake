@@ -227,7 +227,8 @@ class RemoteDataSourceProxied(DataSource):
         self._source_id = None
 
     def __getstate__(self):
-        return self._init_args
+        return dict(init_args=self._init_args, source_id=self._source_id)
 
     def __setstate__(self, state):
-        self.__init__(**state)
+        self.__init__(**state['init_args'])
+        self._source_id = state['source_id']
