@@ -39,7 +39,12 @@ def intake_server(request):
 
     # Start a catalog server on nonstandard port
     port = pick_port()
-    cmd = ['python', '-m', 'intake.catalog', '--sys-exit-on-sigterm', '--port', str(port), catalog_yaml]
+    cmd = ['python', '-m', 'intake.catalog', '--sys-exit-on-sigterm', '--port', str(port)]
+    if isinstance(catalog_yaml, list):
+        cmd.extend(catalog_yaml)
+    else:
+        cmd.append(catalog_yaml)
+
     env = dict(os.environ)
 
     p = subprocess.Popen(cmd, env=env)

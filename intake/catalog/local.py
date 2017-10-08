@@ -85,17 +85,15 @@ class LocalCatalog:
         return '<Local Catalog: %s>' % self._catalog_yaml_filename
 
 
-class LocalCatalogHandle:
+class ReloadableCatalog:
     '''A wrapper around local catalog that makes it easier to trigger a "reload" of it from disk'''
-    def __init__(self, filename):
-        self._filename = filename
-
-        self._catalog = LocalCatalog(self._filename)
+    def __init__(self, build_catalog_func):
+        self._build_catalog_func = build_catalog_func
+        self._catalog = self._build_catalog_func()
 
     def reload(self):
         # If this raises an exception, the current catalog will remain intact
-        new_catalog = LocalCatalog(self._filename)
-
+        new_catalog = self._build_catalog_func()
         self._catalog = new_catalog
 
     @property
@@ -113,6 +111,9 @@ class LocalCatalogHandle:
 
     def get(self, entry_name, **user_parameters):
         return self._catalog.get(entry_name, **user_parameters)
+
+    def __str__(self):
+        return self._catalog.__str__()
 
 
 class UnionCatalog:

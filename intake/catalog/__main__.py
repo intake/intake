@@ -8,7 +8,7 @@ import signal
 import tornado.ioloop
 import tornado.web
 
-from .local import LocalCatalogHandle
+from .local import LocalCatalog, UnionCatalog, ReloadableCatalog
 from .remote import RemoteCatalog
 from .browser import get_browser_handlers
 from .server import get_server_handlers
@@ -18,33 +18,65 @@ def call_exit_on_sigterm(signal, frame):
     sys.exit(0)
 
 
-def load_catalog(uri):
-    if uri.startswith('http://') or uri.startswith('https://'):
-        return RemoteCatalog(uri)
-    else:
-        return LocalCatalogHandle(uri) # This can trigger reload
+def catalog_args_func_factory(args):
+    def build_catalog_func():
+        catalogs = []
+        for arg in args:
+            if arg.startswith('http://') or arg.startswith('https://'):
+                return RemoteCatalog(arg)
+            else:
+                if os.path.isdir(arg):
+                    for fname in os.listdir(arg):
+                        fullname = os.path.join(arg, fname)
+                        if fullname.endswith('.yml') or fullname.endswith('.yaml'):
+                            catalogs.append(LocalCatalog(fullname))
+                else:
+                    catalogs.append(LocalCatalog(arg))
+
+        if len(catalogs) > 1:
+            return UnionCatalog(catalogs)
+        else:
+            return catalogs[0]
+
+    def catalog_mtime_func():
+        last_mtime = 0
+        for arg in args:
+            if arg.startswith('http://') or arg.startswith('https://'):
+                continue  # FIXME: How do we get mtime of remote catalog?
+            else:
+                if os.path.isdir(arg):
+                    last_mtime = max(last_mtime, os.path.getmtime(arg))
+                    for fname in os.listdir(arg):
+                        fullname = os.path.join(arg, fname)
+                        if fullname.endswith('.yml') or fullname.endswith('.yaml'):
+                            last_mtime = max(last_mtime, os.path.getmtime(fullname))
+                else:
+                    last_mtime = max(last_mtime, os.path.getmtime(arg))
+
+        return last_mtime
+
+    return build_catalog_func, catalog_mtime_func
 
 
-def make_app(local_catalog):
-    handlers = get_browser_handlers(local_catalog) + get_server_handlers(local_catalog)
+def make_app(catalog):
+    handlers = get_browser_handlers(catalog) + get_server_handlers(catalog)
     return tornado.web.Application(handlers)
 
 
-def make_file_watcher(filename, local_catalog, interval_ms):
-    full_path = os.path.abspath(filename)
-    last_load = os.path.getmtime(full_path)
+def make_file_watcher(catalog_mtime_func, catalog, interval_ms):
+    last_load = catalog_mtime_func()
 
     def callback():
         nonlocal last_load
-        mtime = os.path.getmtime(full_path)
+        mtime = catalog_mtime_func()
         if mtime > last_load:
             try:
-                print('Autodetecting change to %s.  Reloading...' % filename)
-                local_catalog.reload()
-                print('Catalog entries:', ', '.join(local_catalog.list()))
+                print('Autodetecting change to catalog.  Reloading...')
+                catalog.reload()
+                print('Catalog entries:', ', '.join(catalog.list()))
                 last_load = mtime
-            except Exception as e:
-                print('Unable to reload %s' % filename)
+            except Exception:
+                print('Unable to reload.  Catalog left in previous state.')
                 traceback.print_exc()
 
     callback = tornado.ioloop.PeriodicCallback(callback, interval_ms,
@@ -60,23 +92,26 @@ def main(argv=None):
                     help='port number for server to listen on')
     parser.add_argument('--sys-exit-on-sigterm', action='store_true',
                     help='internal flag used during unit testsing to ensure .coverage file is written')
-    parser.add_argument('catalog_file', metavar='FILE', type=str,
+    parser.add_argument('catalog_args', metavar='FILE', type=str, nargs='+',
                     help='Name of catalog YAML file')
     args = parser.parse_args(argv[1:])
 
     if args.sys_exit_on_sigterm:
         signal.signal(signal.SIGTERM, call_exit_on_sigterm)
 
-    catalog_yaml = args.catalog_file
-    print('Loading %s' % catalog_yaml)
+    print('Creating catalog from:')
+    for arg in args.catalog_args:
+        print('  - %s' % arg)
 
-    catalog = load_catalog(catalog_yaml)
+    build_catalog_func, catalog_mtime_func = catalog_args_func_factory(args.catalog_args)
+    catalog = ReloadableCatalog(build_catalog_func)
+
     print('Entries:', ','.join(catalog.list()))
 
     print('Listening on port %d' % args.port)
 
     app = make_app(catalog)
-    watcher = make_file_watcher(catalog_yaml, catalog, 1000) # poll every second
+    watcher = make_file_watcher(catalog_mtime_func, catalog, 1000) # poll every second
     watcher.start()
 
     app.listen(args.port)

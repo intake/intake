@@ -1,15 +1,21 @@
 import os
 import os.path
 import time
+import tempfile
+import shutil
 
 from .util import intake_server
 from ..remote import RemoteCatalog
 
-TEST_CATALOG_YAML = os.path.join('/tmp', 'intake_test_catalog.yml')
+TMP_DIR = tempfile.mkdtemp()
+TEST_CATALOG_YAML = [TMP_DIR]
+
+YAML_FILENAME = 'intake_test_catalog.yml'
 
 
 def setup_module(module):
-    with open(TEST_CATALOG_YAML, 'w') as f:
+    fullname = os.path.join(TMP_DIR, YAML_FILENAME)
+    with open(fullname, 'w') as f:
         f.write('''
 plugins:
   source:
@@ -24,7 +30,7 @@ sources:
     
 
 def teardown_module(module):
-    os.remove(TEST_CATALOG_YAML)
+    shutil.rmtree(TMP_DIR)
 
 
 def test_reload(intake_server):
@@ -33,7 +39,7 @@ def test_reload(intake_server):
     entries = catalog.list()
     assert entries == ['use_example1']
 
-    with open(TEST_CATALOG_YAML, 'w') as f:
+    with open(os.path.join(TMP_DIR, YAML_FILENAME), 'w') as f:
             f.write('''
 plugins:
   source:
@@ -55,3 +61,25 @@ sources:
 
     entries = catalog.list()
     assert entries == ['use_example1', 'use_example1_1']
+
+
+def test_reload_newfile(intake_server):
+    catalog = RemoteCatalog(intake_server)
+
+    orig_entries = catalog.list()
+    assert 'example2' not in orig_entries
+
+    filename = os.path.join(TMP_DIR, 'intake_test_catalog2.yml')
+    with open(filename, 'w') as f:
+        f.write('''
+sources:
+  example2:
+    description: source 2
+    driver: csv
+    args: {}
+        ''')
+
+    time.sleep(2)
+
+    entries = catalog.list()
+    assert set(entries) == set(['example2'] + orig_entries)
