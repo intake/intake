@@ -1,5 +1,6 @@
 import uuid
 import time
+import traceback
 
 import tornado.web
 import tornado.ioloop
@@ -8,18 +9,84 @@ import numpy
 import msgpack
 
 from . import serializer
+from .browser import get_browser_handlers
 
 
 class IntakeServer:
-    def __init__(self, catalog):
+    def __init__(self, catalog, catalog_mtime_func=None, catalog_builder_func=None):
         self._catalog = catalog
+        self._catalog_mtime_func = catalog_mtime_func
+        self._catalog_builder_func = catalog_builder_func
         self._cache = SourceCache()
+        self._periodic_callbacks = []
 
     def get_handlers(self):
         return [
             (r"/v1/info", ServerInfoHandler, dict(catalog=self._catalog)),
             (r"/v1/source", ServerSourceHandler, dict(catalog=self._catalog, cache=self._cache)),
         ]
+
+    def make_app(self):
+        handlers = get_browser_handlers(self._catalog) + self.get_handlers()
+        return tornado.web.Application(handlers)
+
+    def start_periodic_functions(self, reload_interval=None, close_idle_after=None, remove_idle_after=None):
+        if len(self._periodic_callbacks) > 0:
+            raise Exception('Periodic functions already started for this server')
+
+        # Disabling periodic timers with None makes testing easier
+        if reload_interval is not None:
+            catalog_watcher = self._make_catalog_watcher(interval_ms=reload_interval*1000)
+            self._periodic_callbacks.append(catalog_watcher)
+
+        if close_idle_after is not None:
+            cache_closer = self._make_cache_closer(close_idle_after)
+            self._periodic_callbacks.append(cache_closer)
+
+        if remove_idle_after is not None:
+            cache_remover = self._make_cache_remover(remove_idle_after)
+            self._periodic_callbacks.append(cache_remover)
+
+        for callback in self._periodic_callbacks:
+            callback.start()
+
+    def _make_catalog_watcher(self, interval_ms):
+        last_load = self._catalog_mtime_func()
+
+        def catalog_watcher_callback():
+            nonlocal last_load
+            mtime = self._catalog_mtime_func()
+            if mtime > last_load:
+                try:
+                    print('Autodetecting change to catalog.  Reloading...')
+                    self._catalog.reload()
+                    print('Catalog entries:', ', '.join(self._catalog.list()))
+                    last_load = mtime
+                except Exception:
+                    print('Unable to reload.  Catalog left in previous state.')
+                    traceback.print_exc()
+
+        callback = tornado.ioloop.PeriodicCallback(catalog_watcher_callback, interval_ms,
+                                                io_loop=tornado.ioloop.IOLoop.current())
+        return callback
+
+    def _make_cache_closer(self, idle_time):
+        def cache_closer_callback():
+            self._cache.close_idle(idle_time)
+        return self._make_cache_callback(cache_closer_callback, idle_time)
+
+    def _make_cache_remover(self, idle_time):
+        def cache_remover_callback():
+            self._cache.remove_idle(idle_time)
+        return self._make_cache_callback(cache_remover_callback, idle_time)
+
+    def _make_cache_callback(self, callback, idle_time):
+        # Check ever 1/10 of the idle_time
+        interval_ms = (idle_time/10.0)*1000
+        callback = tornado.ioloop.PeriodicCallback(callback, interval_ms,
+                                                io_loop=tornado.ioloop.IOLoop.current())
+        return callback
+
 
 
 class ServerInfoHandler(tornado.web.RequestHandler):
@@ -51,6 +118,10 @@ class SourceCache:
         record = self._sources[uuid]
         record['last_time'] = time.time()
         return record['source']
+
+    def peek(self, uuid):
+        '''Get the source but do not change the last access time'''
+        return self._sources[uuid]['source']
 
     def touch(self, uuid):
         record = self._sources[uuid]

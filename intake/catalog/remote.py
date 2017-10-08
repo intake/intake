@@ -223,7 +223,7 @@ class RemoteDataSourceProxied(DataSource):
         return dask_util.to_dask(self)
 
     def close(self):
-        # FIXME: Need to tell server to delete source_id?
+        # Server removes source after timeout
         self._source_id = None
 
     def __getstate__(self):

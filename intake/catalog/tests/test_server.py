@@ -1,8 +1,10 @@
 import os.path
 import os
+import time
 
 import yaml
 import tornado.web
+from tornado.ioloop import IOLoop
 from tornado.testing import AsyncHTTPTestCase
 import msgpack
 import numpy as np
@@ -16,9 +18,8 @@ class TestServerV1Base(AsyncHTTPTestCase):
     def get_app(self):
         catalog_file = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
         local_catalog = LocalCatalog(catalog_file)
-        server = IntakeServer(local_catalog)
-        handlers = server.get_handlers()
-        return tornado.web.Application(handlers)
+        self.server = IntakeServer(local_catalog)
+        return self.server.make_app()
 
     def encode(self, msg):
         return msgpack.packb(msg, use_bin_type=True)
@@ -75,7 +76,6 @@ class TestServerV1Source(TestServerV1Base):
             responses.append(msg)
 
         return responses
-
 
     def test_open(self):
         msg = dict(action='open', name='entry1', parameters={})
@@ -174,3 +174,33 @@ class TestServerV1Source(TestServerV1Base):
         response, = self.make_post_request(msg2, expected_status=400)
         self.assertIn('compatible', response['error'])
 
+    def test_idle_timer(self):
+        self.server.start_periodic_functions(close_idle_after=0.1, remove_idle_after=0.2)
+
+        msg = dict(action='open', name='entry1', parameters={})
+        resp_msg,  = self.make_post_request(msg)
+        source_id = resp_msg['source_id']
+
+        # Let ioloop run once with do-nothing function to make sure source isn't closed
+        time.sleep(0.05)
+        IOLoop.current().run_sync(lambda: None)
+
+        # Cheat and look into internal state now
+        source = self.server._cache.peek(source_id)
+        assert source._dataframe is not None
+
+        # now wait slightly over idle time, run periodic functions, and check again
+        time.sleep(0.06)
+        IOLoop.current().run_sync(lambda: None)
+
+        # should be closed
+        source = self.server._cache.peek(source_id)
+        assert source._dataframe is None
+
+        # wait a little longer
+        time.sleep(0.1)
+        IOLoop.current().run_sync(lambda: None)
+
+        # source should be gone
+        with self.assertRaises(KeyError):
+            self.server._cache.peek(source_id)

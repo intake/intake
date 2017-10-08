@@ -1,7 +1,5 @@
 import sys
 import argparse
-import time
-import traceback
 import os.path
 import signal
 
@@ -10,7 +8,6 @@ import tornado.web
 
 from .local import LocalCatalog, UnionCatalog, ReloadableCatalog
 from .remote import RemoteCatalog
-from .browser import get_browser_handlers
 from .server import IntakeServer
 
 
@@ -58,31 +55,6 @@ def catalog_args_func_factory(args):
     return build_catalog_func, catalog_mtime_func
 
 
-def make_app(catalog, server):
-    handlers = get_browser_handlers(catalog) + server.get_handlers()
-    return tornado.web.Application(handlers)
-
-
-def make_file_watcher(catalog_mtime_func, catalog, interval_ms):
-    last_load = catalog_mtime_func()
-
-    def callback():
-        nonlocal last_load
-        mtime = catalog_mtime_func()
-        if mtime > last_load:
-            try:
-                print('Autodetecting change to catalog.  Reloading...')
-                catalog.reload()
-                print('Catalog entries:', ', '.join(catalog.list()))
-                last_load = mtime
-            except Exception:
-                print('Unable to reload.  Catalog left in previous state.')
-                traceback.print_exc()
-
-    callback = tornado.ioloop.PeriodicCallback(callback, interval_ms,
-                                               io_loop=tornado.ioloop.IOLoop.current())
-    return callback
-
 def main(argv=None):
     if argv is None:
         argv = sys.argv
@@ -110,10 +82,9 @@ def main(argv=None):
 
     print('Listening on port %d' % args.port)
 
-    server = IntakeServer(catalog)
-    app = make_app(catalog, server)
-    watcher = make_file_watcher(catalog_mtime_func, catalog, 1000) # poll every second
-    watcher.start()
+    server = IntakeServer(catalog, catalog_builder_func=build_catalog_func, catalog_mtime_func=catalog_mtime_func)
+    app = server.make_app()
+    server.start_periodic_functions(reload_interval=1.0, close_idle_after=3600.0)
 
     app.listen(args.port)
     tornado.ioloop.IOLoop.current().start()
