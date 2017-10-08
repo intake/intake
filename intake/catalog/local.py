@@ -3,6 +3,7 @@ import importlib
 import inspect
 import glob
 import runpy
+from collections import abc
 
 import yaml
 import jinja2
@@ -49,7 +50,8 @@ yaml.SafeLoader.add_constructor(TemplateStr, TemplateStr.to_yaml)
 
 class LocalCatalog:
     def __init__(self, filename):
-        self._catalog_dir = os.path.dirname(os.path.abspath(filename))
+        self._catalog_yaml_filename = os.path.abspath(filename)
+        self._catalog_dir = os.path.dirname(self._catalog_yaml_filename)
         with open(filename, 'r') as f:
             catalog_yaml = yaml.safe_load(f.read())
 
@@ -78,6 +80,9 @@ class LocalCatalog:
 
     def get(self, entry_name, **user_parameters):
         return self._entries[entry_name].get(**user_parameters)
+
+    def __str__(self):
+        return '<Local Catalog: %s>' % self._catalog_yaml_filename
 
 
 class LocalCatalogHandle:
@@ -108,6 +113,46 @@ class LocalCatalogHandle:
 
     def get(self, entry_name, **user_parameters):
         return self._catalog.get(entry_name, **user_parameters)
+
+
+class UnionCatalog:
+    def __init__(self, catalogs):
+        prefixed_catalogs = []
+        for item in catalogs:
+            if isinstance(item, abc.Sequence):
+                prefixed_catalogs.append(item)
+            else:
+                # implied empty prefix for catalog entries
+                prefixed_catalogs.append(('', item))
+                    
+        mappings = {}
+        for prefix, catalog in prefixed_catalogs:
+            for name in catalog.list():
+                full_name = prefix + name
+                if full_name in mappings:
+                    # Collsion detected
+                    other = mappings[full_name][0]
+                    raise Exception('%s from %s duplicates name from %s' % (full_name, str(catalog), str(other)))
+                mappings[full_name] = (catalog, name)
+
+        # No plugins intrinsic to this catalog
+        self.source_plugins = {}
+        self._mappings = mappings
+
+    def list(self):
+        return list(self._mappings.keys())
+
+    def describe(self, entry_name):
+        cat, name = self._mappings[entry_name]
+        return cat.describe(name)
+
+    def describe_open(self, entry_name, **user_parameters):
+        cat, name = self._mappings[entry_name]
+        return cat.describe_open(name, **user_parameters)
+
+    def get(self, entry_name, **user_parameters):
+        cat, name = self._mappings[entry_name]
+        return cat.get(name, **user_parameters)
 
 
 class LocalCatalogEntry:

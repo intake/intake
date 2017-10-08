@@ -115,3 +115,49 @@ def test_user_parameter_validation_allowed():
         p.validate(3)
     assert 'allowed' in str(except_info.value)
 
+
+def test_union_catalog():
+    path = os.path.dirname(__file__)
+    cat1 = local.LocalCatalog(os.path.join(path, 'catalog_union_1.yml'))
+    cat2 = local.LocalCatalog(os.path.join(path, 'catalog_union_2.yml'))
+
+    with pytest.raises(Exception) as except_info:
+        union_cat = local.UnionCatalog([cat1, cat2])
+    assert 'duplicate' in str(except_info.value)
+
+    union_cat = local.UnionCatalog([('cat1.', cat1), ('cat2.', cat2)])
+
+    assert set(union_cat.list()) == \
+        set(['cat1.use_example1', 'cat1.entry1_part', 'cat2.entry1', 'cat2.entry1_part'])
+
+    assert union_cat.describe('cat1.entry1_part') == {
+        'container': 'dataframe',
+        'user_parameters': [
+            {
+                'name': 'part',
+                'description': 'part of filename',
+                'default': '1',
+                'type': 'str',
+                'allowed': ['1', '2'],
+            }
+        ],
+        'description': 'entry1 part',
+        'direct_access': 'allow'
+    }
+    assert union_cat.describe_open('cat1.entry1_part') == {
+        'args': {'metadata': {'bar': [2, 4, 6], 'foo': 'baz'},
+        'urlpath': '/Users/sseibert/continuum/intake/intake/catalog/tests/entry1_1.csv'},
+        'description': 'entry1 part',
+        'direct_access': 'allow',
+        'metadata': {'bar': [2, 4, 6], 'foo': 'baz'},
+        'plugin': 'csv'
+    }
+
+    assert union_cat.get('cat2.entry1').container == 'dataframe'
+    assert union_cat.get('cat2.entry1').metadata == dict(foo='bar', bar=[1, 2, 3])
+
+    # Use default parameters
+    assert union_cat.get('cat1.entry1_part').container == 'dataframe'
+    # Specify parameters
+    assert union_cat.get('cat2.entry1_part', part='2').container == 'dataframe'
+
