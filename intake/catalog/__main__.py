@@ -11,7 +11,7 @@ import tornado.web
 from .local import LocalCatalog, UnionCatalog, ReloadableCatalog
 from .remote import RemoteCatalog
 from .browser import get_browser_handlers
-from .server import get_server_handlers
+from .server import IntakeServer
 
 
 def call_exit_on_sigterm(signal, frame):
@@ -58,8 +58,8 @@ def catalog_args_func_factory(args):
     return build_catalog_func, catalog_mtime_func
 
 
-def make_app(catalog):
-    handlers = get_browser_handlers(catalog) + get_server_handlers(catalog)
+def make_app(catalog, server):
+    handlers = get_browser_handlers(catalog) + server.get_handlers()
     return tornado.web.Application(handlers)
 
 
@@ -110,7 +110,8 @@ def main(argv=None):
 
     print('Listening on port %d' % args.port)
 
-    app = make_app(catalog)
+    server = IntakeServer(catalog)
+    app = make_app(catalog, server)
     watcher = make_file_watcher(catalog_mtime_func, catalog, 1000) # poll every second
     watcher.start()
 
