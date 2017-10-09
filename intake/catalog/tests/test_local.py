@@ -144,9 +144,12 @@ def test_union_catalog():
         'description': 'entry1 part',
         'direct_access': 'allow'
     }
-    assert union_cat.describe_open('cat1.entry1_part') == {
-        'args': {'metadata': {'bar': [2, 4, 6], 'foo': 'baz'},
-        'urlpath': '/Users/sseibert/continuum/intake/intake/catalog/tests/entry1_1.csv'},
+
+    desc_open = union_cat.describe_open('cat1.entry1_part')
+    assert desc_open['args']['urlpath'].endswith('entry1_1.csv')
+    del desc_open['args']['urlpath']  # Full path will be system dependent
+    assert desc_open == {
+        'args': {'metadata': {'bar': [2, 4, 6], 'foo': 'baz'}},
         'description': 'entry1 part',
         'direct_access': 'allow',
         'metadata': {'bar': [2, 4, 6], 'foo': 'baz'},
