@@ -11,15 +11,12 @@ class Plugin:
         raise Exception('Implement open')
 
     def separate_base_kwargs(self, kwargs):
-        base_kwargs = { 'metadata': None }
-        other_kwargs = dict(kwargs)  # copy before we mutate
+        kwargs = kwargs.copy()
 
-        for base_kwarg_name in ['metadata']:
-            if base_kwarg_name in other_kwargs:
-                base_kwargs[base_kwarg_name] = other_kwargs[base_kwarg_name]
-                del other_kwargs[base_kwarg_name]
+        base_keys = ['metadata']
+        base_kwargs = {k: kwargs.pop(k, None) for k in base_keys}
 
-        return base_kwargs, other_kwargs
+        return base_kwargs, kwargs
 
 
 class DataSource:
