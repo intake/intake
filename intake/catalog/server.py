@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import uuid
 import time
 import traceback
@@ -51,17 +53,16 @@ class IntakeServer(object):
             callback.start()
 
     def _make_catalog_watcher(self, interval_ms):
-        last_load = self._catalog_mtime_func()
+        load = dict(last=self._catalog_mtime_func())
 
         def catalog_watcher_callback():
-            nonlocal last_load
             mtime = self._catalog_mtime_func()
-            if mtime > last_load:
+            if mtime > load['last']:
                 try:
                     print('Autodetecting change to catalog.  Reloading...')
                     self._catalog.reload()
                     print('Catalog entries:', ', '.join(self._catalog.list()))
-                    last_load = mtime
+                    load['last'] = mtime
                 except Exception:
                     print('Unable to reload.  Catalog left in previous state.')
                     traceback.print_exc()
