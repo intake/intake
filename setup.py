@@ -22,7 +22,8 @@ setup(name='intake',
       packages=find_packages(),
       entry_points={
           'console_scripts': [
-              'intake-server = intake.cli.server.__main__:main'
+              'intake-server = intake.cli.server.__main__:main',
+              'intake = intake.cli.client.__main__:main'
           ]
       },
       long_description=open('README.rst').read(),
