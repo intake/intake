@@ -1,5 +1,6 @@
-import os.path
 import os
+import os.path
+import sys
 import time
 
 from tornado.ioloop import IOLoop
@@ -23,7 +24,7 @@ class TestServerV1Base(AsyncHTTPTestCase):
         return msgpack.packb(msg, use_bin_type=True)
 
     def decode(self, bytestr):
-        return msgpack.unpackb(bytestr, encoding='utf-8')
+        return msgpack.unpackb(bytestr, encoding=sys.getdefaultencoding())
 
 
 class TestServerV1Info(TestServerV1Base):
@@ -71,7 +72,7 @@ class TestServerV1Source(TestServerV1Base):
         self.assertEqual(response.code, expected_status)
 
         responses = []
-        unpacker = msgpack.Unpacker(encoding='utf-8')
+        unpacker = msgpack.Unpacker(encoding=sys.getdefaultencoding())
         unpacker.feed(response.body)
 
         for msg in unpacker:

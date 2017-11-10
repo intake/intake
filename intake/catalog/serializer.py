@@ -1,6 +1,7 @@
 from collections import OrderedDict
-import pickle
 import gzip
+import pickle
+import sys
 
 import msgpack
 import msgpack_numpy
@@ -57,7 +58,7 @@ class MsgPackSerializer(object):
         elif container == 'ndarray':
             return msgpack.unpackb(bytestr, object_hook=msgpack_numpy.decode)
         elif container == 'python':
-            return msgpack.unpackb(bytestr, encoding='utf-8')
+            return msgpack.unpackb(bytestr, encoding=sys.getdefaultencoding())
         else:
             raise ValueError('unknown container: %s' % container)
 

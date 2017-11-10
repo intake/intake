@@ -1,4 +1,5 @@
 import operator
+import sys
 
 import requests
 from requests.compat import urljoin
@@ -21,7 +22,7 @@ class RemoteCatalog(object):
     def _get_info(self):
         response = requests.get(self._info_url)
         if response.status_code == 200:
-            return msgpack.unpackb(response.content, encoding='utf-8')
+            return msgpack.unpackb(response.content, encoding=sys.getdefaultencoding())
         else:
             raise Exception('%s: status code %d' % (response.url, response.status_code))
 
@@ -65,7 +66,7 @@ class RemoteDataSource(DataSource):
                            available_plugins=list(plugin_registry.keys()))
             req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
             if req.status_code == 200:
-                response = msgpack.unpackb(req.content, encoding='utf-8')
+                response = msgpack.unpackb(req.content, encoding=sys.getdefaultencoding())
 
                 if 'plugin' in response:
                     # Direct access
@@ -147,7 +148,7 @@ class RemoteDataSourceProxied(DataSource):
             payload = dict(action='open', name=self._entry_name, parameters=self._user_parameters)
             req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
             if req.status_code == 200:
-                response = msgpack.unpackb(req.content, encoding='utf-8')
+                response = msgpack.unpackb(req.content, encoding=sys.getdefaultencoding())
                 self._parse_open_response(response)
 
         return self._source_id
@@ -183,7 +184,7 @@ class RemoteDataSourceProxied(DataSource):
             if resp.status_code != 200:
                 raise Exception('Error reading data')
 
-            for msg in msgpack.Unpacker(resp.raw, encoding='utf-8'):
+            for msg in msgpack.Unpacker(resp.raw, encoding=sys.getdefaultencoding()):
                 format = msg['format']
                 compression = msg['compression']
                 container = msg['container']

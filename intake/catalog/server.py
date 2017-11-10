@@ -1,8 +1,9 @@
 from __future__ import print_function
 
-import uuid
+import sys
 import time
 import traceback
+import uuid
 
 import tornado.web
 import tornado.ioloop
@@ -149,7 +150,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
 
     @tornado.gen.coroutine
     def post(self):
-        request = msgpack.unpackb(self.request.body, encoding='utf-8')
+        request = msgpack.unpackb(self.request.body, encoding=sys.getdefaultencoding())
         action = request['action']
 
         if action == 'open':
@@ -174,7 +175,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                     shape=source.shape, container=source.container,
                     metadata=source.metadata, npartitions=source.npartitions,
                     source_id=source_id)
-                self.write(msgpack.packb(response))
+                self.write(msgpack.packb(response, use_bin_type=True))
                 self.finish()
             elif direct_access == 'force' and not client_has_plugin:
                 msg = 'client must have plugin "%s" to access source "%s"' % (plugin_name, entry_name)
@@ -184,7 +185,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 response = dict(
                     plugin=plugin_name, args=open_desc['args'],
                     description=open_desc['description'])
-                self.write(msgpack.packb(response))
+                self.write(msgpack.packb(response, use_bin_type=True))
                 self.finish()
 
         elif action == 'read':
