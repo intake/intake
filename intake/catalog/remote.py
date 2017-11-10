@@ -1,11 +1,11 @@
 import operator
 import sys
 
-import requests
 from requests.compat import urljoin
 import msgpack
-import pandas
 import numpy
+import pandas
+import requests
 
 from ..source.base import DataSource
 from ..source import registry as plugin_registry

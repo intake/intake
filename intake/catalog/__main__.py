@@ -1,9 +1,9 @@
 from __future__ import print_function
 
-import sys
 import argparse
 import os.path
 import signal
+import sys
 
 import tornado.ioloop
 import tornado.web

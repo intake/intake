@@ -1,5 +1,5 @@
-import tornado.web
 import jinja2
+import tornado.web
 
 
 env = jinja2.Environment(loader=jinja2.PackageLoader('intake.catalog'),

@@ -1,7 +1,7 @@
-import os
+import glob
 import importlib
 import inspect
-import glob
+import os
 import runpy
 
 try:
@@ -9,8 +9,8 @@ try:
 except:
     from collections import Sequence
 
-import yaml
 import jinja2
+import yaml
 
 from ..source.base import Plugin
 from ..source import registry as global_registry

@@ -3,13 +3,13 @@ from __future__ import print_function
 import sys
 import time
 import traceback
-import uuid
+from uuid import uuid4
 
-import tornado.web
-import tornado.ioloop
-import tornado.gen
-import numpy
 import msgpack
+import numpy
+import tornado.gen
+import tornado.ioloop
+import tornado.web
 
 from . import serializer
 from .browser import get_browser_handlers
@@ -110,7 +110,7 @@ class SourceCache(object):
         self._sources = {}
 
     def add(self, source):
-        source_id = str(uuid.uuid4())
+        source_id = str(uuid4())
         now = time.time()
         self._sources[source_id] = dict(source=source, open_time=now, last_time=now)
         return source_id
