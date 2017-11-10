@@ -6,9 +6,9 @@ import signal
 import tornado.ioloop
 import tornado.web
 
-from .local import LocalCatalog, UnionCatalog, ReloadableCatalog
-from .remote import RemoteCatalog
-from .server import IntakeServer
+from intake.catalog.local import LocalCatalog, UnionCatalog, ReloadableCatalog
+from intake.catalog.remote import RemoteCatalog
+from intake.catalog.server import IntakeServer
 
 
 def call_exit_on_sigterm(signal, frame):
