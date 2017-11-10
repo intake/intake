@@ -1,7 +1,7 @@
 # Base classes for Data Loader interface
 
 
-class Plugin:
+class Plugin(object):
     def __init__(self, name, version, container, partition_access):
         self.name = name
         self.version = version
@@ -23,7 +23,7 @@ class Plugin:
         return base_kwargs, other_kwargs
 
 
-class DataSource:
+class DataSource(object):
     def __init__(self, container, description=None, metadata=None):
         self.container = container
         self.description = description

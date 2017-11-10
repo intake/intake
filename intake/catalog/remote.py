@@ -12,7 +12,7 @@ from . import serializer
 from . import dask_util
 
 
-class RemoteCatalog:
+class RemoteCatalog(object):
     def __init__(self, url):
         self._base_url = url + '/'
         self._info_url = urljoin(self._base_url, 'v1/info')
@@ -55,7 +55,7 @@ class RemoteDataSource(DataSource):
         self._real_source = None
         self.direct = None
 
-        super().__init__(container=container, description=description)
+        super(RemoteDataSource, self).__init__(container=container, description=description)
 
     def _open_source(self):
         if self._real_source is None:
@@ -140,7 +140,7 @@ class RemoteDataSourceProxied(DataSource):
 
         self._source_id = None
 
-        super().__init__(container=container, description=description)
+        super(RemoteDataSourceProxied, self).__init__(container=container, description=description)
 
     def _open_source(self):
         if self._source_id is None:

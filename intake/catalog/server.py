@@ -12,7 +12,7 @@ from . import serializer
 from .browser import get_browser_handlers
 
 
-class IntakeServer:
+class IntakeServer(object):
     def __init__(self, catalog, catalog_mtime_func=None, catalog_builder_func=None):
         self._catalog = catalog
         self._catalog_mtime_func = catalog_mtime_func
@@ -103,7 +103,7 @@ class ServerInfoHandler(tornado.web.RequestHandler):
         self.write(msgpack.packb(server_info, use_bin_type=True))
 
 
-class SourceCache:
+class SourceCache(object):
     def __init__(self):
         self._sources = {}
 

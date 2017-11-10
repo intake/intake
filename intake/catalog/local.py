@@ -3,7 +3,11 @@ import importlib
 import inspect
 import glob
 import runpy
-from collections import abc
+
+try:
+    from collections.abc import Sequence
+except:
+    from collections import Sequence
 
 import yaml
 import jinja2
@@ -48,7 +52,7 @@ yaml.SafeLoader.add_constructor('!template', TemplateStr.from_yaml)
 yaml.SafeLoader.add_constructor(TemplateStr, TemplateStr.to_yaml)
 
 
-class LocalCatalog:
+class LocalCatalog(object):
     def __init__(self, filename):
         self._catalog_yaml_filename = os.path.abspath(filename)
         self._catalog_dir = os.path.dirname(self._catalog_yaml_filename)
@@ -85,7 +89,7 @@ class LocalCatalog:
         return '<Local Catalog: %s>' % self._catalog_yaml_filename
 
 
-class ReloadableCatalog:
+class ReloadableCatalog(object):
     '''A wrapper around local catalog that makes it easier to trigger a "reload" of it from disk'''
     def __init__(self, build_catalog_func):
         self._build_catalog_func = build_catalog_func
@@ -116,11 +120,11 @@ class ReloadableCatalog:
         return self._catalog.__str__()
 
 
-class UnionCatalog:
+class UnionCatalog(object):
     def __init__(self, catalogs):
         prefixed_catalogs = []
         for item in catalogs:
-            if isinstance(item, abc.Sequence):
+            if isinstance(item, Sequence):
                 prefixed_catalogs.append(item)
             else:
                 # implied empty prefix for catalog entries
@@ -156,7 +160,7 @@ class UnionCatalog:
         return cat.get(name, **user_parameters)
 
 
-class LocalCatalogEntry:
+class LocalCatalogEntry(object):
     def __init__(self, description, plugin, open_args, user_parameters, metadata, direct_access, catalog_dir):
         self._description = description
         self._plugin = plugin
@@ -205,7 +209,7 @@ class LocalCatalogEntry:
         return data_source
 
 
-class UserParameter:
+class UserParameter(object):
     def __init__(self, name, description, type, default, min=None, max=None, allowed=None):
         self.name = name
         self.description = description

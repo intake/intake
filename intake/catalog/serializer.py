@@ -8,7 +8,7 @@ import pandas
 import snappy
 
 
-class NoneCompressor:
+class NoneCompressor(object):
     name = 'none'
 
     def compress(self, data):
@@ -18,7 +18,7 @@ class NoneCompressor:
         return data
 
 
-class GzipCompressor:
+class GzipCompressor(object):
     name = 'gzip'
 
     def compress(self, data):
@@ -28,7 +28,7 @@ class GzipCompressor:
         return gzip.decompress(data)
 
 
-class SnappyCompressor:
+class SnappyCompressor(object):
     name = 'snappy'
 
     def compress(self, data):
@@ -38,7 +38,7 @@ class SnappyCompressor:
         return snappy.decompress(data)
 
 
-class MsgPackSerializer:
+class MsgPackSerializer(object):
     name = 'msgpack'
 
     def encode(self, obj, container):
@@ -62,7 +62,7 @@ class MsgPackSerializer:
             raise ValueError('unknown container: %s' % container)
 
 
-class PickleSerializer:
+class PickleSerializer(object):
     def __init__(self, protocol_level):
         self._protocol_level = protocol_level
         self.name = 'pickle%d' % protocol_level
@@ -74,7 +74,7 @@ class PickleSerializer:
         return pickle.loads(bytestr)
 
 
-class ComboSerializer:
+class ComboSerializer(object):
     def __init__(self, format_encoder, compressor):
         self._format_encoder = format_encoder
         self._compressor = compressor
