@@ -48,7 +48,7 @@ def test_open(data_filenames):
 def test_discover(sample1_datasource):
     info = sample1_datasource.discover()
 
-    assert info['dtype'] == np.dtype([('name', 'O'), 
+    assert info['dtype'] == np.dtype([('name', 'O'),
                                       ('score', 'f8'),
                                       ('rank', 'i8')])
     assert info['shape'] == (4,)
@@ -112,4 +112,3 @@ def test_pickle(sample1_datasource):
     df = sample1_clone.read()
 
     assert expected_df.equals(df)
-

@@ -2,15 +2,13 @@ import os.path
 import os
 import time
 
-import yaml
-import tornado.web
 from tornado.ioloop import IOLoop
 from tornado.testing import AsyncHTTPTestCase
 import msgpack
 import numpy as np
 
 from ..server import IntakeServer
-from ..local import LocalCatalog, TemplateStr
+from ..local import LocalCatalog
 from ..serializer import MsgPackSerializer, GzipCompressor
 
 
@@ -37,27 +35,31 @@ class TestServerV1Info(TestServerV1Base):
 
         self.assert_('version' in info)
         self.assertEqual(info['sources'], [
-            {'container': 'dataframe',
-             'direct_access': 'forbid',
-             'description': 'example1 source plugin',
-             'name': 'use_example1',
-             'user_parameters': []},
-            {'container': 'dataframe',
-             'direct_access': 'forbid',
-             'description': 'entry1 full',
-             'name': 'entry1',
-             'user_parameters': []},
-            {'container': 'dataframe',
-             'direct_access': 'allow',
-             'description': 'entry1 part',
-             'name': 'entry1_part',
-             'user_parameters': [{'allowed': ['1', '2'],
-                                  'default': '1',
-                                  'description': 'part of filename',
-                                  'name': 'part',
-                                  'type': 'str'},
-                                ]
-            },
+            {
+                'container': 'dataframe',
+                'direct_access': 'forbid',
+                'description': 'example1 source plugin',
+                'name': 'use_example1',
+                'user_parameters': []},
+            {
+                'container': 'dataframe',
+                'direct_access': 'forbid',
+                'description': 'entry1 full',
+                'name': 'entry1',
+                'user_parameters': []},
+            {
+                'container': 'dataframe',
+                'direct_access': 'allow',
+                'description': 'entry1 part',
+                'name': 'entry1_part',
+                'user_parameters': [{
+                    'allowed': ['1', '2'],
+                    'default': '1',
+                    'description': 'part of filename',
+                    'name': 'part',
+                    'type': 'str'
+                }]
+            }
         ])
 
 
@@ -65,7 +67,7 @@ class TestServerV1Source(TestServerV1Base):
     def make_post_request(self, msg, expected_status=200):
         request = self.encode(msg)
         response = self.fetch('/v1/source', method='POST', body=request,
-            headers={'Content-type': 'application/vnd.msgpack'})
+                              headers={'Content-type': 'application/vnd.msgpack'})
         self.assertEqual(response.code, expected_status)
 
         responses = []
@@ -79,7 +81,7 @@ class TestServerV1Source(TestServerV1Base):
 
     def test_open(self):
         msg = dict(action='open', name='entry1', parameters={})
-        resp_msg,  = self.make_post_request(msg)
+        resp_msg, _ = self.make_post_request(msg)
 
         self.assertEqual(resp_msg['container'], 'dataframe')
         self.assertEqual(resp_msg['shape'], [8])
@@ -93,7 +95,7 @@ class TestServerV1Source(TestServerV1Base):
 
     def test_open_direct(self):
         msg = dict(action='open', name='entry1_part', parameters=dict(part='2'), available_plugins=['csv'])
-        resp_msg,  = self.make_post_request(msg)
+        resp_msg, _ = self.make_post_request(msg)
 
         self.assertEqual(resp_msg['plugin'], 'csv')
         args = resp_msg['args']
@@ -104,7 +106,7 @@ class TestServerV1Source(TestServerV1Base):
 
     def test_read(self):
         msg = dict(action='open', name='entry1', parameters={})
-        resp_msg,  = self.make_post_request(msg)
+        resp_msg, _ = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
         msg2 = dict(action='read', source_id=source_id, accepted_formats=['msgpack'])
@@ -112,18 +114,18 @@ class TestServerV1Source(TestServerV1Base):
 
         self.assertEqual(len(resp_msgs), 2)
         ser = MsgPackSerializer()
- 
-        for chunk in resp_msgs:
-           self.assertEqual(chunk['format'], 'msgpack')
-           self.assertEqual(chunk['compression'], 'none')
-           self.assertEqual(chunk['container'], 'dataframe')
 
-           data = ser.decode(chunk['data'], container='dataframe')
-           self.assertEqual(len(data), 4)
+        for chunk in resp_msgs:
+            self.assertEqual(chunk['format'], 'msgpack')
+            self.assertEqual(chunk['compression'], 'none')
+            self.assertEqual(chunk['container'], 'dataframe')
+
+            data = ser.decode(chunk['data'], container='dataframe')
+            self.assertEqual(len(data), 4)
 
     def test_read_compressed(self):
         msg = dict(action='open', name='entry1', parameters={})
-        resp_msg,  = self.make_post_request(msg)
+        resp_msg, _ = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
         msg2 = dict(action='read', source_id=source_id, accepted_formats=['msgpack'], accepted_compression=['gzip'])
@@ -132,18 +134,18 @@ class TestServerV1Source(TestServerV1Base):
         self.assertEqual(len(resp_msgs), 2)
         ser = MsgPackSerializer()
         comp = GzipCompressor()
- 
-        for chunk in resp_msgs:
-           self.assertEqual(chunk['format'], 'msgpack')
-           self.assertEqual(chunk['compression'], 'gzip')
-           self.assertEqual(chunk['container'], 'dataframe')
 
-           data = ser.decode(comp.decompress(chunk['data']), container='dataframe')
-           self.assertEqual(len(data), 4)
+        for chunk in resp_msgs:
+            self.assertEqual(chunk['format'], 'msgpack')
+            self.assertEqual(chunk['compression'], 'gzip')
+            self.assertEqual(chunk['container'], 'dataframe')
+
+            data = ser.decode(comp.decompress(chunk['data']), container='dataframe')
+            self.assertEqual(len(data), 4)
 
     def test_read_partition(self):
         msg = dict(action='open', name='entry1', parameters={})
-        resp_msg,  = self.make_post_request(msg)
+        resp_msg, _ = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
         msg2 = dict(action='read', partition=1, source_id=source_id, accepted_formats=['msgpack'])
@@ -151,7 +153,7 @@ class TestServerV1Source(TestServerV1Base):
 
         self.assertEqual(len(resp_msgs), 1)
         ser = MsgPackSerializer()
- 
+
         part = resp_msgs[0]
         self.assertEqual(part['format'], 'msgpack')
         self.assertEqual(part['compression'], 'none')
@@ -167,7 +169,7 @@ class TestServerV1Source(TestServerV1Base):
 
     def test_no_format(self):
         msg = dict(action='open', name='entry1', parameters={})
-        resp_msg,  = self.make_post_request(msg)
+        resp_msg, _ = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
         msg2 = dict(action='read', source_id=source_id, accepted_formats=['unknown_format'])
@@ -178,7 +180,7 @@ class TestServerV1Source(TestServerV1Base):
         self.server.start_periodic_functions(close_idle_after=0.1, remove_idle_after=0.2)
 
         msg = dict(action='open', name='entry1', parameters={})
-        resp_msg,  = self.make_post_request(msg)
+        resp_msg, _ = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
         # Let ioloop run once with do-nothing function to make sure source isn't closed

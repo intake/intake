@@ -1,6 +1,5 @@
 import operator
 
-import yaml
 import requests
 from requests.compat import urljoin
 import msgpack
@@ -11,7 +10,6 @@ from ..source.base import DataSource
 from ..source import registry as plugin_registry
 from . import serializer
 from . import dask_util
-from .local import LocalCatalogEntry
 
 
 class RemoteCatalog:
@@ -61,8 +59,10 @@ class RemoteDataSource(DataSource):
 
     def _open_source(self):
         if self._real_source is None:
-            payload = dict(action='open', name=self._entry_name, parameters=self._user_parameters,
-                available_plugins=list(plugin_registry.keys()))
+            payload = dict(action='open',
+                           name=self._entry_name,
+                           parameters=self._user_parameters,
+                           available_plugins=list(plugin_registry.keys()))
             req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
             if req.status_code == 200:
                 response = msgpack.unpackb(req.content, encoding='utf-8')
@@ -169,8 +169,10 @@ class RemoteDataSourceProxied(DataSource):
 
         accepted_formats = list(serializer.format_registry.keys())
         accepted_compression = list(serializer.compression_registry.keys())
-        payload = dict(action='read', source_id=source_id, accepted_formats=accepted_formats,
-            accepted_compression=accepted_compression)
+        payload = dict(action='read',
+                       source_id=source_id,
+                       accepted_formats=accepted_formats,
+                       accepted_compression=accepted_compression)
 
         if partition is not None:
             payload['partition'] = partition
@@ -193,7 +195,7 @@ class RemoteDataSourceProxied(DataSource):
         finally:
             if resp is not None:
                 resp.close()
-            
+
     def _read(self, partition=None):
         chunks = list(self._get_chunks(partition=partition))
         if self.container == 'dataframe':
@@ -206,7 +208,6 @@ class RemoteDataSourceProxied(DataSource):
     def discover(self):
         self._open_source()
         return dict(datashape=self.datashape, dtype=self.dtype, shape=self.shape, npartitions=self.npartitions)
-
 
     def read(self):
         return self._read()

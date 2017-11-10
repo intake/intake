@@ -4,7 +4,6 @@ import time
 import tempfile
 import shutil
 
-from .util import intake_server
 from ..remote import RemoteCatalog
 
 TMP_DIR = tempfile.mkdtemp()
@@ -27,7 +26,7 @@ sources:
     driver: example1
     args: {}
         ''')
-    
+
 
 def teardown_module(module):
     shutil.rmtree(TMP_DIR)

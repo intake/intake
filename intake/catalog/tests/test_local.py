@@ -1,10 +1,7 @@
 import os.path
-import pickle
 
 import pytest
 import yaml
-import numpy as np
-import pandas as pd
 
 
 from .. import local
@@ -30,6 +27,7 @@ taxi_data:
     urlpath: !template entry1_{{ x }}.csv
     other: !template "entry2_{{ x }}.csv"
 '''
+
 
 def test_yaml_with_templates():
     # Exercise round-trip
@@ -81,7 +79,7 @@ def test_source_plugin_config(catalog1):
 
 
 def test_use_source_plugin_from_config(catalog1):
-    d = catalog1.get('use_example1')
+    catalog1.get('use_example1')
 
 
 def test_user_parameter_validation_range():
@@ -102,7 +100,7 @@ def test_user_parameter_validation_range():
 
 
 def test_user_parameter_validation_allowed():
-    p = local.UserParameter('a', 'a desc', 'int', 1, allowed=[1,2])
+    p = local.UserParameter('a', 'a desc', 'int', 1, allowed=[1, 2])
 
     with pytest.raises(ValueError) as except_info:
         p.validate(0)
@@ -163,4 +161,3 @@ def test_union_catalog():
     assert union_cat.get('cat1.entry1_part').container == 'dataframe'
     # Specify parameters
     assert union_cat.get('cat2.entry1_part', part='2').container == 'dataframe'
-

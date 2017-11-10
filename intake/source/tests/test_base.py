@@ -9,7 +9,7 @@ def test_plugin_base():
     assert p.name == 'test'
     assert p.version == '0.1.0'
     assert p.container == 'dataframe'
-    assert p.partition_access == False
+    assert not p.partition_access
     with pytest.raises(Exception) as except_info:
         p.open()
 
@@ -32,6 +32,6 @@ def test_datasource_base_context_manager():
     # leaves the context manager
 
     with pytest.raises(Exception) as except_info:
-        with base.DataSource(container='dataframe') as d:
+        with base.DataSource(container='dataframe'):
             pass
     assert 'close' in str(except_info.value)

@@ -5,12 +5,12 @@ import gzip
 import msgpack
 import msgpack_numpy
 import pandas
-import numpy
 import snappy
 
 
 class NoneCompressor:
     name = 'none'
+
     def compress(self, data):
         return data
 
@@ -20,6 +20,7 @@ class NoneCompressor:
 
 class GzipCompressor:
     name = 'gzip'
+
     def compress(self, data):
         return gzip.compress(data, compresslevel=1)
 
@@ -29,6 +30,7 @@ class GzipCompressor:
 
 class SnappyCompressor:
     name = 'snappy'
+
     def compress(self, data):
         return snappy.compress(data)
 
@@ -59,6 +61,7 @@ class MsgPackSerializer:
         else:
             raise ValueError('unknown container: %s' % container)
 
+
 class PickleSerializer:
     def __init__(self, protocol_level):
         self._protocol_level = protocol_level
@@ -80,16 +83,14 @@ class ComboSerializer:
 
     def encode(self, obj, container):
         return self._compressor.compress(self._format_encoder.encode(obj, container))
-    
+
     def decode(self, bytestr, container):
         return self._format_encoder.decode(self._compressor.decompress(bytestr), container)
 
 
 # Insert in preference order
-format_registry = OrderedDict([(e.name, e) for e in 
-                        [MsgPackSerializer(), PickleSerializer(4), PickleSerializer(2)]
-                       ])
+serializers = [MsgPackSerializer(), PickleSerializer(4), PickleSerializer(2)]
+format_registry = OrderedDict([(e.name, e) for e in serializers])
 
-compression_registry = OrderedDict([(e.name, e) for e in 
-                        [SnappyCompressor(), GzipCompressor(), NoneCompressor()]
-                       ])
+compressors = [SnappyCompressor(), GzipCompressor(), NoneCompressor()]
+compression_registry = OrderedDict([(e.name, e) for e in compressors])

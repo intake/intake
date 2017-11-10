@@ -1,5 +1,3 @@
-import glob
-
 import dask.dataframe as dd
 
 from . import base
