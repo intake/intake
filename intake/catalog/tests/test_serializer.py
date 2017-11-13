@@ -1,8 +1,6 @@
 import os.path
-import pickle
 
 import pytest
-import yaml
 import numpy as np
 import pandas as pd
 
@@ -26,7 +24,7 @@ def test_dataframe(ser):
 
 @all_serializers
 def test_ndarray(ser):
-    expected_array = np.arange(35).reshape((5,7))
+    expected_array = np.arange(35).reshape((5, 7))
 
     # Check roundtrip
     array = ser.decode(ser.encode(expected_array, 'ndarray'), 'ndarray')
@@ -35,19 +33,20 @@ def test_ndarray(ser):
 
 @all_serializers
 def test_python(ser):
-    expected = [dict(a=1, b=[1,2], c='str'), dict(a=[1,2], b='str', d=None)]
+    expected = [dict(a=1, b=[1, 2], c='str'), dict(a=[1, 2], b='str', d=None)]
     actual = ser.decode(ser.encode(expected, 'python'), 'python')
-    
+
     assert expected == actual
 
 
 def test_msgpack_unknown_container():
     ser = serializer.MsgPackSerializer()
 
-    with pytest.raises(ValueError) as except_info:
-        ser.encode([1,2,3], 'mystery')
-    with pytest.raises(ValueError) as except_info:
+    with pytest.raises(ValueError):
+        ser.encode([1, 2, 3], 'mystery')
+    with pytest.raises(ValueError):
         ser.decode(b'1234', 'mystery')
+
 
 @all_compressors
 def test_compression_roundtrip(comp):

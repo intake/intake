@@ -1,20 +1,19 @@
 import operator
+import sys
 
-import yaml
-import requests
 from requests.compat import urljoin
 import msgpack
-import pandas
 import numpy
+import pandas
+import requests
 
 from ..source.base import DataSource
 from ..source import registry as plugin_registry
 from . import serializer
 from . import dask_util
-from .local import LocalCatalogEntry
 
 
-class RemoteCatalog:
+class RemoteCatalog(object):
     def __init__(self, url):
         self._base_url = url + '/'
         self._info_url = urljoin(self._base_url, 'v1/info')
@@ -23,7 +22,7 @@ class RemoteCatalog:
     def _get_info(self):
         response = requests.get(self._info_url)
         if response.status_code == 200:
-            return msgpack.unpackb(response.content, encoding='utf-8')
+            return msgpack.unpackb(response.content, encoding=sys.getdefaultencoding())
         else:
             raise Exception('%s: status code %d' % (response.url, response.status_code))
 
@@ -57,15 +56,17 @@ class RemoteDataSource(DataSource):
         self._real_source = None
         self.direct = None
 
-        super().__init__(container=container, description=description)
+        super(RemoteDataSource, self).__init__(container=container, description=description)
 
     def _open_source(self):
         if self._real_source is None:
-            payload = dict(action='open', name=self._entry_name, parameters=self._user_parameters,
-                available_plugins=list(plugin_registry.keys()))
+            payload = dict(action='open',
+                           name=self._entry_name,
+                           parameters=self._user_parameters,
+                           available_plugins=list(plugin_registry.keys()))
             req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
             if req.status_code == 200:
-                response = msgpack.unpackb(req.content, encoding='utf-8')
+                response = msgpack.unpackb(req.content, encoding=sys.getdefaultencoding())
 
                 if 'plugin' in response:
                     # Direct access
@@ -140,14 +141,14 @@ class RemoteDataSourceProxied(DataSource):
 
         self._source_id = None
 
-        super().__init__(container=container, description=description)
+        super(RemoteDataSourceProxied, self).__init__(container=container, description=description)
 
     def _open_source(self):
         if self._source_id is None:
             payload = dict(action='open', name=self._entry_name, parameters=self._user_parameters)
             req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
             if req.status_code == 200:
-                response = msgpack.unpackb(req.content, encoding='utf-8')
+                response = msgpack.unpackb(req.content, encoding=sys.getdefaultencoding())
                 self._parse_open_response(response)
 
         return self._source_id
@@ -169,8 +170,10 @@ class RemoteDataSourceProxied(DataSource):
 
         accepted_formats = list(serializer.format_registry.keys())
         accepted_compression = list(serializer.compression_registry.keys())
-        payload = dict(action='read', source_id=source_id, accepted_formats=accepted_formats,
-            accepted_compression=accepted_compression)
+        payload = dict(action='read',
+                       source_id=source_id,
+                       accepted_formats=accepted_formats,
+                       accepted_compression=accepted_compression)
 
         if partition is not None:
             payload['partition'] = partition
@@ -181,7 +184,7 @@ class RemoteDataSourceProxied(DataSource):
             if resp.status_code != 200:
                 raise Exception('Error reading data')
 
-            for msg in msgpack.Unpacker(resp.raw, encoding='utf-8'):
+            for msg in msgpack.Unpacker(resp.raw, encoding=sys.getdefaultencoding()):
                 format = msg['format']
                 compression = msg['compression']
                 container = msg['container']
@@ -193,7 +196,7 @@ class RemoteDataSourceProxied(DataSource):
         finally:
             if resp is not None:
                 resp.close()
-            
+
     def _read(self, partition=None):
         chunks = list(self._get_chunks(partition=partition))
         if self.container == 'dataframe':
@@ -206,7 +209,6 @@ class RemoteDataSourceProxied(DataSource):
     def discover(self):
         self._open_source()
         return dict(datashape=self.datashape, dtype=self.dtype, shape=self.shape, npartitions=self.npartitions)
-
 
     def read(self):
         return self._read()

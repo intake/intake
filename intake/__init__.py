@@ -1,7 +1,8 @@
 # Plugin registry
 
 from . import source
-from .catalog import load_catalog
+from ._version import get_versions
+
 
 registry = source.registry
 
@@ -9,6 +10,5 @@ registry = source.registry
 for key, value in registry.items():
     globals()['open_' + key] = value.open
 
-from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions

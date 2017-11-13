@@ -10,6 +10,7 @@ MIN_PORT = 7480
 MAX_PORT = 7489
 PORT = MIN_PORT
 
+
 def ping_server(url, swallow_exception):
     try:
         r = requests.get(url)
@@ -32,6 +33,7 @@ def pick_port():
 
     return port
 
+
 @pytest.fixture(scope="module")
 def intake_server(request):
     # Catalog URL comes from the test module
@@ -53,8 +55,8 @@ def intake_server(request):
     # wait for server to finish initalizing, but let the exception through on last retry
     retries = 100
     while not ping_server(url, swallow_exception=(retries > 1)):
-        time.sleep(0.1) 
-        retries -= 1    
+        time.sleep(0.1)
+        retries -= 1
 
     yield url
     p.terminate()

@@ -1,7 +1,9 @@
-import sys
+from __future__ import print_function
+
 import argparse
 import os.path
 import signal
+import sys
 
 import tornado.ioloop
 import tornado.web
@@ -61,11 +63,11 @@ def main(argv=None):
 
     parser = argparse.ArgumentParser(description='Intake Catalog Server')
     parser.add_argument('-p', '--port', type=int, default=5000,
-                    help='port number for server to listen on')
+                        help='port number for server to listen on')
     parser.add_argument('--sys-exit-on-sigterm', action='store_true',
-                    help='internal flag used during unit testsing to ensure .coverage file is written')
+                        help='internal flag used during unit testsing to ensure .coverage file is written')
     parser.add_argument('catalog_args', metavar='FILE', type=str, nargs='+',
-                    help='Name of catalog YAML file')
+                        help='Name of catalog YAML file')
     args = parser.parse_args(argv[1:])
 
     if args.sys_exit_on_sigterm:
