@@ -353,7 +353,7 @@ def load_from_dir(dirname):
         for name in mod.__dict__:
             obj = getattr(mod, name)
             # Don't try to registry plugins imported into this module from somewhere else
-            if inspect.isclass(obj) and issubclass(obj, object) and obj.__module__ == base:
+            if inspect.isclass(obj) and issubclass(obj, Plugin) and obj.__module__ == base:
                 p = obj()
                 plugins[p.name] = p
 
