@@ -1,12 +1,16 @@
-import os
+import glob
 import importlib
 import inspect
-import glob
+import os
 import runpy
-from collections import abc
 
-import yaml
+try:
+    from collections.abc import Sequence
+except:
+    from collections import Sequence
+
 import jinja2
+import yaml
 
 from ..source.base import Plugin
 from ..source import registry as global_registry
@@ -15,7 +19,7 @@ from ..source import registry as global_registry
 class TemplateStr(yaml.YAMLObject):
     '''A string-a-like that tags this string as being a Jinja template'''
     yaml_tag = '!template'
-    
+
     def __init__(self, s):
         self._str = s
         self._template = jinja2.Template(s)
@@ -48,7 +52,7 @@ yaml.SafeLoader.add_constructor('!template', TemplateStr.from_yaml)
 yaml.SafeLoader.add_constructor(TemplateStr, TemplateStr.to_yaml)
 
 
-class LocalCatalog:
+class LocalCatalog(object):
     def __init__(self, filename):
         self._catalog_yaml_filename = os.path.abspath(filename)
         self._catalog_dir = os.path.dirname(self._catalog_yaml_filename)
@@ -64,7 +68,7 @@ class LocalCatalog:
 
         self._entries = {
             key: parse_catalog_entry(value,
-                                     catalog_plugin_registry=self.source_plugins, 
+                                     catalog_plugin_registry=self.source_plugins,
                                      catalog_dir=self._catalog_dir)
             for key, value in catalog_yaml['sources'].items()
         }
@@ -85,7 +89,7 @@ class LocalCatalog:
         return '<Local Catalog: %s>' % self._catalog_yaml_filename
 
 
-class ReloadableCatalog:
+class ReloadableCatalog(object):
     '''A wrapper around local catalog that makes it easier to trigger a "reload" of it from disk'''
     def __init__(self, build_catalog_func):
         self._build_catalog_func = build_catalog_func
@@ -116,16 +120,16 @@ class ReloadableCatalog:
         return self._catalog.__str__()
 
 
-class UnionCatalog:
+class UnionCatalog(object):
     def __init__(self, catalogs):
         prefixed_catalogs = []
         for item in catalogs:
-            if isinstance(item, abc.Sequence):
+            if isinstance(item, Sequence):
                 prefixed_catalogs.append(item)
             else:
                 # implied empty prefix for catalog entries
                 prefixed_catalogs.append(('', item))
-                    
+
         mappings = {}
         for prefix, catalog in prefixed_catalogs:
             for name in catalog.list():
@@ -156,7 +160,7 @@ class UnionCatalog:
         return cat.get(name, **user_parameters)
 
 
-class LocalCatalogEntry:
+class LocalCatalogEntry(object):
     def __init__(self, description, plugin, open_args, user_parameters, metadata, direct_access, catalog_dir):
         self._description = description
         self._plugin = plugin
@@ -168,14 +172,14 @@ class LocalCatalogEntry:
 
     def describe(self):
         return {
-          'container': self._plugin.container,
-          'description': self._description,
-          'direct_access': self._direct_access,
-          'user_parameters': [u.describe() for u in self._user_parameters.values()]
+            'container': self._plugin.container,
+            'description': self._description,
+            'direct_access': self._direct_access,
+            'user_parameters': [u.describe() for u in self._user_parameters.values()]
         }
 
     def _create_open_args(self, user_parameters):
-        params = { 'CATALOG_DIR': self._catalog_dir }
+        params = {'CATALOG_DIR': self._catalog_dir}
         for par_name, parameter in self._user_parameters.items():
             if par_name in user_parameters:
                 params[par_name] = parameter.validate(user_parameters[par_name])
@@ -191,11 +195,11 @@ class LocalCatalogEntry:
 
     def describe_open(self, **user_parameters):
         return {
-          'plugin': self._plugin.name,
-          'description': self._description,
-          'direct_access': self._direct_access,
-          'metadata': self._metadata,
-          'args': self._create_open_args(user_parameters)
+            'plugin': self._plugin.name,
+            'description': self._description,
+            'direct_access': self._direct_access,
+            'metadata': self._metadata,
+            'args': self._create_open_args(user_parameters)
         }
 
     def get(self, **user_parameters):
@@ -205,7 +209,7 @@ class LocalCatalogEntry:
         return data_source
 
 
-class UserParameter:
+class UserParameter(object):
     def __init__(self, name, description, type, default, min=None, max=None, allowed=None):
         self.name = name
         self.description = description
@@ -278,12 +282,21 @@ def parse_catalog_entry(entry, catalog_plugin_registry, catalog_dir):
             param_min = param_attrs.get('min', None)
             param_max = param_attrs.get('max', None)
             param_allowed = param_attrs.get('allowed', None)
-            parameters[param_name] = UserParameter(name=param_name, description=param_desc, type=param_type, default=param_default,
-                min=param_min, max=param_max, allowed=param_allowed)
+            parameters[param_name] = UserParameter(name=param_name,
+                                                   description=param_desc,
+                                                   type=param_type,
+                                                   default=param_default,
+                                                   min=param_min,
+                                                   max=param_max,
+                                                   allowed=param_allowed)
 
-    return LocalCatalogEntry(description=description, plugin=plugin,
-        open_args=open_args, user_parameters=parameters, direct_access=direct_access,
-        catalog_dir=catalog_dir, metadata=metadata)
+    return LocalCatalogEntry(description=description,
+                             plugin=plugin,
+                             open_args=open_args,
+                             user_parameters=parameters,
+                             direct_access=direct_access,
+                             catalog_dir=catalog_dir,
+                             metadata=metadata)
 
 
 def parse_source_plugins(entry, catalog_dir):

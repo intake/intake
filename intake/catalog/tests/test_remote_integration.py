@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 from dask import distributed
 
-from .util import intake_server
 from ..remote import RemoteCatalog
 from ...source.tests.util import verify_datasource_interface
 
@@ -39,15 +38,15 @@ def test_bad_url(intake_server):
 
     catalog = RemoteCatalog(bad_url)
 
-    with pytest.raises(Exception) as exc_info:
-        entries = catalog.list()
+    with pytest.raises(Exception):
+        catalog.list()
 
 
 def test_unknown_source(intake_server):
     catalog = RemoteCatalog(intake_server)
 
-    with pytest.raises(Exception) as exc_info:
-        entries = catalog.describe('does_not_exist')
+    with pytest.raises(Exception):
+        catalog.describe('does_not_exist')
 
 
 def test_remote_datasource_interface(intake_server):
@@ -79,7 +78,7 @@ def test_read(intake_server):
     file1 = os.path.join(test_dir, 'entry1_1.csv')
     file2 = os.path.join(test_dir, 'entry1_2.csv')
     expected_df = pd.concat((pd.read_csv(file1), pd.read_csv(file2)))
-    
+
     assert not d.direct  # this should be proxied
 
     assert expected_df.equals(df)
@@ -106,8 +105,8 @@ def test_read_direct(intake_server):
     file2 = os.path.join(test_dir, 'entry1_2.csv')
     expected_df = pd.read_csv(file2)
 
-    assert d.direct # this should be direct
-    
+    assert d.direct  # this should be direct
+
     assert expected_df.equals(df)
 
 
@@ -123,7 +122,7 @@ def test_read_chunks(intake_server):
     file1 = os.path.join(test_dir, 'entry1_1.csv')
     file2 = os.path.join(test_dir, 'entry1_2.csv')
     expected_df = pd.concat((pd.read_csv(file1), pd.read_csv(file2)))
-    
+
     assert expected_df.equals(pd.concat(chunks))
 
 
@@ -140,7 +139,7 @@ def test_read_partition(intake_server):
     file2 = os.path.join(test_dir, 'entry1_2.csv')
     assert pd.read_csv(file1).equals(p1)
     assert pd.read_csv(file2).equals(p2)
-    
+
 
 def test_close(intake_server):
     catalog = RemoteCatalog(intake_server)
@@ -167,7 +166,7 @@ def test_pickle(intake_server):
 
 
 def test_to_dask(intake_server):
-    client = distributed.Client()
+    distributed.Client()
 
     catalog = RemoteCatalog(intake_server)
     d = catalog.get('entry1')

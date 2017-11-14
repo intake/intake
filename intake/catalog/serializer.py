@@ -1,16 +1,17 @@
 from collections import OrderedDict
-import pickle
 import gzip
+import pickle
+import sys
 
 import msgpack
 import msgpack_numpy
 import pandas
-import numpy
 import snappy
 
 
-class NoneCompressor:
+class NoneCompressor(object):
     name = 'none'
+
     def compress(self, data):
         return data
 
@@ -18,8 +19,9 @@ class NoneCompressor:
         return data
 
 
-class GzipCompressor:
+class GzipCompressor(object):
     name = 'gzip'
+
     def compress(self, data):
         return gzip.compress(data, compresslevel=1)
 
@@ -27,8 +29,9 @@ class GzipCompressor:
         return gzip.decompress(data)
 
 
-class SnappyCompressor:
+class SnappyCompressor(object):
     name = 'snappy'
+
     def compress(self, data):
         return snappy.compress(data)
 
@@ -36,7 +39,7 @@ class SnappyCompressor:
         return snappy.decompress(data)
 
 
-class MsgPackSerializer:
+class MsgPackSerializer(object):
     name = 'msgpack'
 
     def encode(self, obj, container):
@@ -55,11 +58,12 @@ class MsgPackSerializer:
         elif container == 'ndarray':
             return msgpack.unpackb(bytestr, object_hook=msgpack_numpy.decode)
         elif container == 'python':
-            return msgpack.unpackb(bytestr, encoding='utf-8')
+            return msgpack.unpackb(bytestr, encoding=sys.getdefaultencoding())
         else:
             raise ValueError('unknown container: %s' % container)
 
-class PickleSerializer:
+
+class PickleSerializer(object):
     def __init__(self, protocol_level):
         self._protocol_level = protocol_level
         self.name = 'pickle%d' % protocol_level
@@ -71,7 +75,7 @@ class PickleSerializer:
         return pickle.loads(bytestr)
 
 
-class ComboSerializer:
+class ComboSerializer(object):
     def __init__(self, format_encoder, compressor):
         self._format_encoder = format_encoder
         self._compressor = compressor
@@ -80,16 +84,14 @@ class ComboSerializer:
 
     def encode(self, obj, container):
         return self._compressor.compress(self._format_encoder.encode(obj, container))
-    
+
     def decode(self, bytestr, container):
         return self._format_encoder.decode(self._compressor.decompress(bytestr), container)
 
 
 # Insert in preference order
-format_registry = OrderedDict([(e.name, e) for e in 
-                        [MsgPackSerializer(), PickleSerializer(4), PickleSerializer(2)]
-                       ])
+serializers = [MsgPackSerializer(), PickleSerializer(4), PickleSerializer(2)]
+format_registry = OrderedDict([(e.name, e) for e in serializers])
 
-compression_registry = OrderedDict([(e.name, e) for e in 
-                        [SnappyCompressor(), GzipCompressor(), NoneCompressor()]
-                       ])
+compressors = [SnappyCompressor(), GzipCompressor(), NoneCompressor()]
+compression_registry = OrderedDict([(e.name, e) for e in compressors])

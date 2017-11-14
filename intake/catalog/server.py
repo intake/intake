@@ -1,18 +1,21 @@
-import uuid
+from __future__ import print_function
+
+import sys
 import time
 import traceback
+from uuid import uuid4
 
-import tornado.web
-import tornado.ioloop
-import tornado.gen
-import numpy
 import msgpack
+import numpy
+import tornado.gen
+import tornado.ioloop
+import tornado.web
 
 from . import serializer
 from .browser import get_browser_handlers
 
 
-class IntakeServer:
+class IntakeServer(object):
     def __init__(self, catalog, catalog_mtime_func=None, catalog_builder_func=None):
         self._catalog = catalog
         self._catalog_mtime_func = catalog_mtime_func
@@ -36,7 +39,7 @@ class IntakeServer:
 
         # Disabling periodic timers with None makes testing easier
         if reload_interval is not None:
-            catalog_watcher = self._make_catalog_watcher(interval_ms=reload_interval*1000)
+            catalog_watcher = self._make_catalog_watcher(interval_ms=reload_interval * 1000)
             self._periodic_callbacks.append(catalog_watcher)
 
         if close_idle_after is not None:
@@ -51,23 +54,22 @@ class IntakeServer:
             callback.start()
 
     def _make_catalog_watcher(self, interval_ms):
-        last_load = self._catalog_mtime_func()
+        load = dict(last=self._catalog_mtime_func())
 
         def catalog_watcher_callback():
-            nonlocal last_load
             mtime = self._catalog_mtime_func()
-            if mtime > last_load:
+            if mtime > load['last']:
                 try:
                     print('Autodetecting change to catalog.  Reloading...')
                     self._catalog.reload()
                     print('Catalog entries:', ', '.join(self._catalog.list()))
-                    last_load = mtime
+                    load['last'] = mtime
                 except Exception:
                     print('Unable to reload.  Catalog left in previous state.')
                     traceback.print_exc()
 
         callback = tornado.ioloop.PeriodicCallback(catalog_watcher_callback, interval_ms,
-                                                io_loop=tornado.ioloop.IOLoop.current())
+                                                   io_loop=tornado.ioloop.IOLoop.current())
         return callback
 
     def _make_cache_closer(self, idle_time):
@@ -82,11 +84,10 @@ class IntakeServer:
 
     def _make_cache_callback(self, callback, idle_time):
         # Check ever 1/10 of the idle_time
-        interval_ms = (idle_time/10.0)*1000
+        interval_ms = (idle_time / 10.0) * 1000
         callback = tornado.ioloop.PeriodicCallback(callback, interval_ms,
-                                                io_loop=tornado.ioloop.IOLoop.current())
+                                                   io_loop=tornado.ioloop.IOLoop.current())
         return callback
-
 
 
 class ServerInfoHandler(tornado.web.RequestHandler):
@@ -104,12 +105,12 @@ class ServerInfoHandler(tornado.web.RequestHandler):
         self.write(msgpack.packb(server_info, use_bin_type=True))
 
 
-class SourceCache:
+class SourceCache(object):
     def __init__(self):
         self._sources = {}
 
     def add(self, source):
-        source_id = str(uuid.uuid4())
+        source_id = str(uuid4())
         now = time.time()
         self._sources[source_id] = dict(source=source, open_time=now, last_time=now)
         return source_id
@@ -133,7 +134,7 @@ class SourceCache:
         for record in self._sources.values():
             if record['last_time'] < threshold:
                 record['source'].close()
-    
+
     def remove_idle(self, idle_secs):
         threshold = time.time() - idle_secs
 
@@ -149,7 +150,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
 
     @tornado.gen.coroutine
     def post(self):
-        request = msgpack.unpackb(self.request.body, encoding='utf-8')
+        request = msgpack.unpackb(self.request.body, encoding=sys.getdefaultencoding())
         action = request['action']
 
         if action == 'open':
@@ -169,21 +170,22 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 source.discover()
                 source_id = self._cache.add(source)
 
-                response = dict(datashape=source.datashape, dtype=numpy.dtype(source.dtype).descr, 
-                    shape=source.shape, container=source.container, 
+                response = dict(
+                    datashape=source.datashape, dtype=numpy.dtype(source.dtype).descr,
+                    shape=source.shape, container=source.container,
                     metadata=source.metadata, npartitions=source.npartitions,
                     source_id=source_id)
-                self.write(msgpack.packb(response))
+                self.write(msgpack.packb(response, use_bin_type=True))
                 self.finish()
             elif direct_access == 'force' and not client_has_plugin:
                 msg = 'client must have plugin "%s" to access source "%s"' % (plugin_name, entry_name)
-                raise tornado.web.HTTPError(status_code=400,
-                    log_message=msg,
-                    reason=msg)
+                raise tornado.web.HTTPError(status_code=400, log_message=msg, reason=msg)
             else:
                 # If we get here, the client can access the source directly
-                response = dict(plugin=plugin_name, args=open_desc['args'], description=open_desc['description'])
-                self.write(msgpack.packb(response))
+                response = dict(
+                    plugin=plugin_name, args=open_desc['args'],
+                    description=open_desc['description'])
+                self.write(msgpack.packb(response, use_bin_type=True))
                 self.finish()
 
         elif action == 'read':
@@ -194,7 +196,8 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             partition = request.get('partition', None)
 
             self._chunk_encoder = self._pick_encoder(accepted_formats,
-                    accepted_compression, source.container)
+                                                     accepted_compression,
+                                                     source.container)
 
             if partition is not None:
                 self._iterator = iter([source.read_partition(partition)])
@@ -209,15 +212,13 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                            container=self._container, data=data)
                 self.write(msgpack.packb(msg, use_bin_type=True))
                 yield self.flush()
-                self._cache.touch(source_id) # keep source alive
+                self._cache.touch(source_id)  # keep source alive
 
             self.finish()
 
         else:
             msg = '"%s" not a valid source action' % action
-            raise tornado.web.HTTPError(status_code=400,
-                log_message=msg,
-                reason=msg)
+            raise tornado.web.HTTPError(status_code=400, log_message=msg, reason=msg)
 
     def _pick_encoder(self, accepted_formats, accepted_compression, container):
         format_encoder = None
@@ -228,10 +229,9 @@ class ServerSourceHandler(tornado.web.RequestHandler):
 
         if format_encoder is None:
             msg = 'Unable to find compatible format'
-            raise tornado.web.HTTPError(status_code=400,
-                    log_message=msg, reason=msg)
+            raise tornado.web.HTTPError(status_code=400, log_message=msg, reason=msg)
 
-        compressor = serializer.NoneCompressor() # Default
+        compressor = serializer.NoneCompressor()  # Default
         for f in accepted_compression:
             if f in serializer.compression_registry:
                 compressor = serializer.compression_registry[f]

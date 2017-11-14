@@ -1,9 +1,9 @@
-import tornado.web
 import jinja2
+import tornado.web
 
 
 env = jinja2.Environment(loader=jinja2.PackageLoader('intake.catalog'),
-    autoescape=jinja2.select_autoescape(['html', 'xml']))
+                         autoescape=jinja2.select_autoescape(['html', 'xml']))
 
 
 def get_browser_handlers(local_catalog):

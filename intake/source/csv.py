@@ -1,5 +1,3 @@
-import glob
-
 import dask.dataframe as dd
 
 from . import base
@@ -7,7 +5,7 @@ from . import base
 
 class Plugin(base.Plugin):
     def __init__(self):
-        super().__init__(name='csv', version='0.1', container='dataframe', partition_access=True)
+        super(Plugin, self).__init__(name='csv', version='0.1', container='dataframe', partition_access=True)
 
     def open(self, urlpath, **kwargs):
         base_kwargs, source_kwargs = self.separate_base_kwargs(kwargs)
@@ -22,7 +20,7 @@ class CSVSource(base.DataSource):
         self._csv_kwargs = csv_kwargs
         self._dataframe = None
 
-        super().__init__(container='dataframe', metadata=metadata)
+        super(CSVSource, self).__init__(container='dataframe', metadata=metadata)
 
     def _get_dataframe(self):
         if self._dataframe is None:

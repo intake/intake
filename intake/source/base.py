@@ -1,6 +1,7 @@
 # Base classes for Data Loader interface
 
-class Plugin:
+
+class Plugin(object):
     def __init__(self, name, version, container, partition_access):
         self.name = name
         self.version = version
@@ -11,7 +12,7 @@ class Plugin:
         raise Exception('Implement open')
 
     def separate_base_kwargs(self, kwargs):
-        base_kwargs = { 'metadata': None }
+        base_kwargs = {'metadata': None}
         other_kwargs = dict(kwargs)  # copy before we mutate
 
         for base_kwarg_name in ['metadata']:
@@ -22,7 +23,7 @@ class Plugin:
         return base_kwargs, other_kwargs
 
 
-class DataSource:
+class DataSource(object):
     def __init__(self, container, description=None, metadata=None):
         self.container = container
         self.description = description
@@ -65,7 +66,7 @@ class DataSource:
 
     # Boilerplate to make this object also act like a context manager
     def __enter__(self):
-        return self # Nothing to do here
+        return self  # Nothing to do here
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()

@@ -1,6 +1,7 @@
 from .local import LocalCatalog
 from .remote import RemoteCatalog
 
+
 def load_catalog(uri):
     '''Returns a Catalog object read from filename'''
 

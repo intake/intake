@@ -1,7 +1,6 @@
 # Populate list of autodetected plugins
-import traceback
+from . import csv
 
 registry = {}
 
-from . import csv
 registry['csv'] = csv.Plugin()

@@ -1,7 +1,6 @@
-import dask.dataframe as dd
-import dask.array as da
-import dask.bag as db
 import dask
+import dask.bag as db
+import dask.dataframe as dd
 
 
 @dask.delayed
@@ -15,8 +14,8 @@ def to_dask(source):
     futures = [read_partition(source, i) for i in range(source.npartitions)]
 
     if source.container == 'ndarray':
-        #array_parts = [da.from_delayed(f, shape=c.shape, dtype=c.dtype) for f, c in zip(futures, chunks)]
-        #return da.concatenate(array_parts, axis=0)
+        # array_parts = [da.from_delayed(f, shape=c.shape, dtype=c.dtype) for f, c in zip(futures, chunks)]
+        # return da.concatenate(array_parts, axis=0)
         raise ValueError('FIXME: Support ndarray concatenation')
     elif source.container == 'dataframe':
         return dd.from_delayed(futures)
