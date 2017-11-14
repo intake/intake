@@ -4,10 +4,10 @@ import pickle
 import pytest
 import numpy as np
 import pandas as pd
-from dask import distributed
 
-from ..remote import RemoteCatalog
 from ...source.tests.util import verify_datasource_interface
+from ..remote import RemoteCatalog
+from .util import assert_items_equal
 
 TEST_CATALOG_YAML = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
@@ -15,8 +15,7 @@ TEST_CATALOG_YAML = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 def test_info_describe(intake_server):
     catalog = RemoteCatalog(intake_server)
 
-    entries = catalog.list()
-    assert entries == ['use_example1', 'entry1', 'entry1_part']
+    assert_items_equal(catalog.list(), ['use_example1', 'entry1', 'entry1_part'])
 
     info = catalog.describe('entry1')
 
@@ -166,8 +165,6 @@ def test_pickle(intake_server):
 
 
 def test_to_dask(intake_server):
-    distributed.Client()
-
     catalog = RemoteCatalog(intake_server)
     d = catalog.get('entry1')
     df = d.to_dask()

@@ -35,7 +35,8 @@ class TestServerV1Info(TestServerV1Base):
         info = self.decode(response.body)
 
         self.assert_('version' in info)
-        self.assertEqual(info['sources'], [
+
+        expected = [
             {
                 'container': 'dataframe',
                 'direct_access': 'forbid',
@@ -61,7 +62,13 @@ class TestServerV1Info(TestServerV1Base):
                     'type': 'str'
                 }]
             }
-        ])
+        ]
+
+        def sort_by_name(seq):
+            return sorted(seq, key=lambda d: d['name'])
+
+        for left, right in zip(sort_by_name(info['sources']), sort_by_name(expected)):
+            self.assertDictEqual(left, right)
 
 
 class TestServerV1Source(TestServerV1Base):
@@ -82,7 +89,7 @@ class TestServerV1Source(TestServerV1Base):
 
     def test_open(self):
         msg = dict(action='open', name='entry1', parameters={})
-        resp_msg, _ = self.make_post_request(msg)
+        resp_msg, = self.make_post_request(msg)
 
         self.assertEqual(resp_msg['container'], 'dataframe')
         self.assertEqual(resp_msg['shape'], [8])
@@ -96,7 +103,7 @@ class TestServerV1Source(TestServerV1Base):
 
     def test_open_direct(self):
         msg = dict(action='open', name='entry1_part', parameters=dict(part='2'), available_plugins=['csv'])
-        resp_msg, _ = self.make_post_request(msg)
+        resp_msg, = self.make_post_request(msg)
 
         self.assertEqual(resp_msg['plugin'], 'csv')
         args = resp_msg['args']
@@ -107,7 +114,7 @@ class TestServerV1Source(TestServerV1Base):
 
     def test_read(self):
         msg = dict(action='open', name='entry1', parameters={})
-        resp_msg, _ = self.make_post_request(msg)
+        resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
         msg2 = dict(action='read', source_id=source_id, accepted_formats=['msgpack'])
@@ -126,7 +133,7 @@ class TestServerV1Source(TestServerV1Base):
 
     def test_read_compressed(self):
         msg = dict(action='open', name='entry1', parameters={})
-        resp_msg, _ = self.make_post_request(msg)
+        resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
         msg2 = dict(action='read', source_id=source_id, accepted_formats=['msgpack'], accepted_compression=['gzip'])
@@ -146,7 +153,7 @@ class TestServerV1Source(TestServerV1Base):
 
     def test_read_partition(self):
         msg = dict(action='open', name='entry1', parameters={})
-        resp_msg, _ = self.make_post_request(msg)
+        resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
         msg2 = dict(action='read', partition=1, source_id=source_id, accepted_formats=['msgpack'])
@@ -170,7 +177,7 @@ class TestServerV1Source(TestServerV1Base):
 
     def test_no_format(self):
         msg = dict(action='open', name='entry1', parameters={})
-        resp_msg, _ = self.make_post_request(msg)
+        resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
         msg2 = dict(action='read', source_id=source_id, accepted_formats=['unknown_format'])
@@ -181,7 +188,7 @@ class TestServerV1Source(TestServerV1Base):
         self.server.start_periodic_functions(close_idle_after=0.1, remove_idle_after=0.2)
 
         msg = dict(action='open', name='entry1', parameters={})
-        resp_msg, _ = self.make_post_request(msg)
+        resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
         # Let ioloop run once with do-nothing function to make sure source isn't closed

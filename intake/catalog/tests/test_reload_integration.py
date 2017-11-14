@@ -1,10 +1,11 @@
 import os
 import os.path
-import time
-import tempfile
 import shutil
+import tempfile
+import time
 
 from ..remote import RemoteCatalog
+from .util import assert_items_equal
 
 TMP_DIR = tempfile.mkdtemp()
 TEST_CATALOG_YAML = [TMP_DIR]
@@ -39,7 +40,7 @@ def test_reload(intake_server):
     assert entries == ['use_example1']
 
     with open(os.path.join(TMP_DIR, YAML_FILENAME), 'w') as f:
-            f.write('''
+        f.write('''
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
@@ -58,8 +59,7 @@ sources:
 
     time.sleep(2)
 
-    entries = catalog.list()
-    assert entries == ['use_example1', 'use_example1_1']
+    assert_items_equal(catalog.list(), ['use_example1', 'use_example1_1'])
 
 
 def test_reload_newfile(intake_server):
@@ -80,5 +80,4 @@ sources:
 
     time.sleep(2)
 
-    entries = catalog.list()
-    assert set(entries) == set(['example2'] + orig_entries)
+    assert_items_equal(catalog.list(), ['example2'] + orig_entries)
