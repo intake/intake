@@ -1,5 +1,6 @@
 from collections import OrderedDict
 import gzip
+import io
 import pickle
 import sys
 
@@ -23,10 +24,14 @@ class GzipCompressor(object):
     name = 'gzip'
 
     def compress(self, data):
-        return gzip.compress(data, compresslevel=1)
+        buf = io.BytesIO()
+        with gzip.GzipFile(fileobj=buf, mode='wb', compresslevel=1) as f:
+            f.write(data)
+        return buf.getvalue()
 
     def decompress(self, data):
-        return gzip.decompress(data)
+        with gzip.GzipFile(fileobj=io.BytesIO(data)) as f:
+            return f.read()
 
 
 class SnappyCompressor(object):
@@ -90,7 +95,8 @@ class ComboSerializer(object):
 
 
 # Insert in preference order
-serializers = [MsgPackSerializer(), PickleSerializer(4), PickleSerializer(2)]
+picklers = [PickleSerializer(protocol) for protocol in range(pickle.HIGHEST_PROTOCOL + 1)]
+serializers = [MsgPackSerializer()] + picklers
 format_registry = OrderedDict([(e.name, e) for e in serializers])
 
 compressors = [SnappyCompressor(), GzipCompressor(), NoneCompressor()]
