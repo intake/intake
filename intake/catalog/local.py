@@ -2,6 +2,7 @@ import glob
 import importlib
 import inspect
 import os
+import os.path
 import runpy
 
 try:
@@ -334,12 +335,26 @@ def load_from_dir(dirname):
     pyfiles = glob.glob(os.path.join(dirname, '*.py'))
 
     for filename in pyfiles:
-        globals = runpy.run_path(filename)
+        try:
+            globals = runpy.run_path(filename)
+            for name, o in globals.items():
+                # Don't try to registry plugins imported into this module from somewhere else
+                if inspect.isclass(o) and issubclass(o, Plugin) and o.__module__ == '<run_path>':
+                    p = o()
+                    plugins[p.name] = p
+            # If no exceptions, continue to next filename
+            continue
+        except:
+            pass
 
-        for name, o in globals.items():
+        import imp
+        base = os.path.splitext(filename)[0]
+        mod = imp.load_source(base, filename)
+        for name in mod.__dict__:
+            obj = getattr(mod, name)
             # Don't try to registry plugins imported into this module from somewhere else
-            if inspect.isclass(o) and issubclass(o, Plugin) and o.__module__ == '<run_path>':
-                p = o()
+            if inspect.isclass(obj) and issubclass(obj, Plugin) and obj.__module__ == base:
+                p = obj()
                 plugins[p.name] = p
 
     return plugins

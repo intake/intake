@@ -5,6 +5,7 @@ import yaml
 
 
 from .. import local
+from .util import assert_items_equal
 
 
 def test_template_str():
@@ -44,7 +45,7 @@ def catalog1():
 
 
 def test_local_catalog(catalog1):
-    assert catalog1.list() == ['use_example1', 'entry1', 'entry1_part']
+    assert_items_equal(catalog1.list(), ['use_example1', 'entry1', 'entry1_part'])
     assert catalog1.describe('entry1') == {
         'container': 'dataframe',
         'direct_access': 'forbid',
@@ -75,7 +76,7 @@ def test_local_catalog(catalog1):
 
 
 def test_source_plugin_config(catalog1):
-    assert set(catalog1.source_plugins.keys()) == set(['example1', 'example2'])
+    assert_items_equal(catalog1.source_plugins.keys(), ['example1', 'example2'])
 
 
 def test_use_source_plugin_from_config(catalog1):
@@ -125,8 +126,9 @@ def test_union_catalog():
 
     union_cat = local.UnionCatalog([('cat1.', cat1), ('cat2.', cat2)])
 
-    assert set(union_cat.list()) == \
-        set(['cat1.use_example1', 'cat1.entry1_part', 'cat2.entry1', 'cat2.entry1_part'])
+    assert_items_equal(union_cat.list(),
+                       ['cat1.use_example1', 'cat1.entry1_part',
+                        'cat2.entry1', 'cat2.entry1_part'])
 
     assert union_cat.describe('cat1.entry1_part') == {
         'container': 'dataframe',
