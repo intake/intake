@@ -62,7 +62,7 @@ class IntakeServer(object):
                 try:
                     print('Autodetecting change to catalog.  Reloading...')
                     self._catalog.reload()
-                    print('Catalog entries:', ', '.join(self._catalog.list()))
+                    print('Catalog entries:', ', '.join(list(self._catalog)))
                     load['last'] = mtime
                 except Exception:
                     print('Unable to reload.  Catalog left in previous state.')
@@ -96,8 +96,8 @@ class ServerInfoHandler(tornado.web.RequestHandler):
 
     def get(self):
         sources = []
-        for source in self.catalog.list():
-            info = self.catalog.describe(source)
+        for source in self.catalog:
+            info = self.catalog[source].describe()
             info['name'] = source
             sources.append(info)
 
@@ -159,14 +159,14 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             client_plugins = request.get('available_plugins', [])
 
             # Can the client directly access the data themselves?
-            open_desc = self._catalog.describe_open(entry_name, **user_parameters)
+            open_desc = self._catalog[entry_name].describe_open(**user_parameters)
             direct_access = open_desc['direct_access']
             plugin_name = open_desc['plugin']
             client_has_plugin = plugin_name in client_plugins
 
             if direct_access == 'forbid' or \
                     (direct_access == 'allow' and not client_has_plugin):
-                source = self._catalog.get(entry_name, **user_parameters)
+                source = self._catalog[entry_name].get(**user_parameters)
                 source.discover()
                 source_id = self._cache.add(source)
 

@@ -20,9 +20,8 @@ class BrowserHandler(tornado.web.RequestHandler):
         template = env.get_template('index.html')
 
         sources = []
-        for source in self.local_catalog.list():
-            description = self.local_catalog.describe(source)
-
+        for source in self.local_catalog:
+            description = self.local_catalog[source].describe()
             sources.append(dict(name=source, description=description))
 
         self.write(template.render(dict(sources=sources)))

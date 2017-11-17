@@ -8,7 +8,7 @@ import sys
 import tornado.ioloop
 import tornado.web
 
-from intake.catalog.local import LocalCatalog, UnionCatalog, ReloadableCatalog
+from intake.catalog.local import LocalCatalog, UnionCatalog
 from intake.catalog.remote import RemoteCatalog
 from intake.catalog.server import IntakeServer
 
@@ -78,9 +78,9 @@ def main(argv=None):
         print('  - %s' % arg)
 
     build_catalog_func, catalog_mtime_func = catalog_args_func_factory(args.catalog_args)
-    catalog = ReloadableCatalog(build_catalog_func)
+    catalog = build_catalog_func()
 
-    print('Entries:', ','.join(catalog.list()))
+    print('Entries:', ','.join(list(catalog)))
 
     print('Listening on port %d' % args.port)
 

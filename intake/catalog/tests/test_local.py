@@ -45,14 +45,14 @@ def catalog1():
 
 
 def test_local_catalog(catalog1):
-    assert_items_equal(catalog1.list(), ['use_example1', 'entry1', 'entry1_part'])
-    assert catalog1.describe('entry1') == {
+    assert_items_equal(list(catalog1), ['use_example1', 'entry1', 'entry1_part'])
+    assert catalog1['entry1'].describe() == {
         'container': 'dataframe',
         'direct_access': 'forbid',
         'user_parameters': [],
         'description': 'entry1 full'
     }
-    assert catalog1.describe('entry1_part') == {
+    assert catalog1['entry1_part'].describe() == {
         'container': 'dataframe',
         'user_parameters': [
             {
@@ -66,13 +66,13 @@ def test_local_catalog(catalog1):
         'description': 'entry1 part',
         'direct_access': 'allow'
     }
-    assert catalog1.get('entry1').container == 'dataframe'
-    assert catalog1.get('entry1').metadata == dict(foo='bar', bar=[1, 2, 3])
+    assert catalog1['entry1'].get().container == 'dataframe'
+    assert catalog1['entry1'].get().metadata == dict(foo='bar', bar=[1, 2, 3])
 
     # Use default parameters
-    assert catalog1.get('entry1_part').container == 'dataframe'
+    assert catalog1['entry1_part'].get().container == 'dataframe'
     # Specify parameters
-    assert catalog1.get('entry1_part', part='2').container == 'dataframe'
+    assert catalog1['entry1_part'].get(part='2').container == 'dataframe'
 
 
 def test_source_plugin_config(catalog1):
@@ -80,7 +80,7 @@ def test_source_plugin_config(catalog1):
 
 
 def test_use_source_plugin_from_config(catalog1):
-    catalog1.get('use_example1')
+    catalog1['use_example1'].get()
 
 
 def test_user_parameter_validation_range():
@@ -117,20 +117,14 @@ def test_user_parameter_validation_allowed():
 
 def test_union_catalog():
     path = os.path.dirname(__file__)
-    cat1 = local.LocalCatalog(os.path.join(path, 'catalog_union_1.yml'))
-    cat2 = local.LocalCatalog(os.path.join(path, 'catalog_union_2.yml'))
+    cat1 = local.LocalCatalog(os.path.join(path, 'catalog_union_1.yml'), name='cat1')
+    cat2 = local.LocalCatalog(os.path.join(path, 'catalog_union_2.yml'), name='cat2')
 
-    with pytest.raises(Exception) as except_info:
-        union_cat = local.UnionCatalog([cat1, cat2])
-    assert 'duplicate' in str(except_info.value)
+    union_cat = local.UnionCatalog([cat1, cat2])
 
-    union_cat = local.UnionCatalog([('cat1.', cat1), ('cat2.', cat2)])
+    assert_items_equal(list(union_cat), ['cat1', 'cat2'])
 
-    assert_items_equal(union_cat.list(),
-                       ['cat1.use_example1', 'cat1.entry1_part',
-                        'cat2.entry1', 'cat2.entry1_part'])
-
-    assert union_cat.describe('cat1.entry1_part') == {
+    assert union_cat.cat1.entry1_part.describe() == {
         'container': 'dataframe',
         'user_parameters': [
             {
@@ -145,7 +139,7 @@ def test_union_catalog():
         'direct_access': 'allow'
     }
 
-    desc_open = union_cat.describe_open('cat1.entry1_part')
+    desc_open = union_cat.cat1.entry1_part.describe_open()
     assert desc_open['args']['urlpath'].endswith('entry1_1.csv')
     del desc_open['args']['urlpath']  # Full path will be system dependent
     assert desc_open == {
@@ -156,10 +150,10 @@ def test_union_catalog():
         'plugin': 'csv'
     }
 
-    assert union_cat.get('cat2.entry1').container == 'dataframe'
-    assert union_cat.get('cat2.entry1').metadata == dict(foo='bar', bar=[1, 2, 3])
+    assert union_cat.cat2.entry1.get().container == 'dataframe'
+    assert union_cat.cat2.entry1.get().metadata == dict(foo='bar', bar=[1, 2, 3])
 
     # Use default parameters
-    assert union_cat.get('cat1.entry1_part').container == 'dataframe'
+    assert union_cat.cat1.entry1_part.get().container == 'dataframe'
     # Specify parameters
-    assert union_cat.get('cat2.entry1_part', part='2').container == 'dataframe'
+    assert union_cat.cat2.entry1_part.get(part='2').container == 'dataframe'

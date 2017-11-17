@@ -61,6 +61,9 @@ class CatalogBase(object):
     def reload(self):
         self.__init__(*self.args, **self.kwargs)
 
+    def __iter__(self):
+        return iter(self._entries)
+
     def __dir__(self):
         return list(self._entries)
 
@@ -104,7 +107,7 @@ class UnionCatalog(CatalogBase):
     collections = 0
 
     def __init__(self, catalogs, name=None):
-        super().__init__(catalogs, ame=name)
+        super(UnionCatalog, self).__init__(catalogs, name=name)
         # No plugins intrinsic to this catalog
         self.source_plugins = {}
         self._entries = {c.name: c for c in catalogs}
