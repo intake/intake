@@ -5,14 +5,10 @@ import os
 import os.path
 import runpy
 
-try:
-    from collections.abc import Sequence
-except:
-    from collections import Sequence
-
 import jinja2
 import yaml
 
+from .base import CatalogBase, CatalogEntry
 from ..source.base import Plugin
 from ..source import registry as global_registry
 
@@ -53,27 +49,6 @@ yaml.SafeLoader.add_constructor('!template', TemplateStr.from_yaml)
 yaml.SafeLoader.add_constructor(TemplateStr, TemplateStr.to_yaml)
 
 
-class CatalogBase(object):
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-    
-    def reload(self):
-        self.__init__(*self.args, **self.kwargs)
-
-    def __iter__(self):
-        return iter(self._entries)
-
-    def __dir__(self):
-        return list(self._entries)
-
-    def __getattr__(self, item):
-        return self._entries[item]
-
-    def __getitem__(self, item):
-        return self._entries[item]
-
-
 class LocalCatalog(CatalogBase):
     def __init__(self, filename, name=None):
         super(LocalCatalog, self).__init__(filename, name=name)
@@ -103,25 +78,7 @@ class LocalCatalog(CatalogBase):
         return '<Local Catalog: %s>' % self._catalog_yaml_filename
 
 
-class UnionCatalog(CatalogBase):
-    collections = 0
-
-    def __init__(self, catalogs, name=None):
-        super(UnionCatalog, self).__init__(catalogs, name=name)
-        # No plugins intrinsic to this catalog
-        self.source_plugins = {}
-        self._entries = {c.name: c for c in catalogs}
-        if name:
-            self.name = name
-        else:
-            self.name = "Union%i" % self.collections
-            self.collections += 1
-
-    def __repr__(self):
-        return "<Set of catalogs: %s>" % set(self._entries)
-
-
-class LocalCatalogEntry(object):
+class LocalCatalogEntry(CatalogEntry):
     def __init__(self, description, plugin, open_args, user_parameters, metadata, direct_access, catalog_dir):
         self._description = description
         self._plugin = plugin

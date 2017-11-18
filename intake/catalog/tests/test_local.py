@@ -4,7 +4,7 @@ import pytest
 import yaml
 
 
-from .. import local
+from .. import local, union
 from .util import assert_items_equal
 
 
@@ -120,7 +120,7 @@ def test_union_catalog():
     cat1 = local.LocalCatalog(os.path.join(path, 'catalog_union_1.yml'), name='cat1')
     cat2 = local.LocalCatalog(os.path.join(path, 'catalog_union_2.yml'), name='cat2')
 
-    union_cat = local.UnionCatalog([cat1, cat2])
+    union_cat = union.UnionCatalog([cat1, cat2])
 
     assert_items_equal(list(union_cat), ['cat1', 'cat2'])
 
