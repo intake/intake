@@ -2,7 +2,7 @@ import jinja2
 import tornado.web
 
 
-env = jinja2.Environment(loader=jinja2.PackageLoader('intake.catalog'),
+env = jinja2.Environment(loader=jinja2.PackageLoader('intake.cli.server'),
                          autoescape=jinja2.select_autoescape(['html', 'xml']))
 
 

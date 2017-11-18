@@ -8,9 +8,9 @@ import sys
 import tornado.ioloop
 import tornado.web
 
+from .server import IntakeServer
 from intake.catalog.local import LocalCatalog
 from intake.catalog.remote import RemoteCatalog
-from intake.catalog.server import IntakeServer
 from intake.catalog.union import UnionCatalog
 
 

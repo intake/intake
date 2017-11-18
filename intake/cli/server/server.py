@@ -11,8 +11,8 @@ import tornado.gen
 import tornado.ioloop
 import tornado.web
 
-from . import serializer
 from .browser import get_browser_handlers
+from intake.catalog import serializer
 
 
 class IntakeServer(object):

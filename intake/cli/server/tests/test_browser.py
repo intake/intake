@@ -3,8 +3,8 @@ import os.path
 import tornado.web
 from tornado.testing import AsyncHTTPTestCase
 
-from ..browser import get_browser_handlers
-from ..local import LocalCatalog
+from intake.cli.server.browser import get_browser_handlers
+from intake.catalog.local import LocalCatalog
 
 
 class TestBrowser(AsyncHTTPTestCase):

@@ -8,9 +8,9 @@ from tornado.testing import AsyncHTTPTestCase
 import msgpack
 import numpy as np
 
-from ..server import IntakeServer
-from ..local import LocalCatalog
-from ..serializer import MsgPackSerializer, GzipCompressor
+from intake.catalog.local import LocalCatalog
+from intake.catalog.serializer import MsgPackSerializer, GzipCompressor
+from intake.cli.server.server import IntakeServer
 
 
 class TestServerV1Base(AsyncHTTPTestCase):
