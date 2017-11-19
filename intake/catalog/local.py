@@ -88,9 +88,6 @@ class LocalCatalogEntry(CatalogEntry):
         self._direct_access = direct_access
         self._catalog_dir = catalog_dir
 
-    def __repr__(self):
-        return repr(self.describe())
-
     def describe(self):
         return {
             'container': self._plugin.container,

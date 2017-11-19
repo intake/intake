@@ -7,17 +7,24 @@ import numpy
 import pandas
 import requests
 
-from ..source.base import DataSource
-from ..source import registry as plugin_registry
-from . import serializer
 from . import dask_util
+from . import serializer
+from ..source import registry as plugin_registry
+from ..source.base import DataSource
+from .base import CatalogBase, CatalogEntry
 
 
-class RemoteCatalog(object):
-    def __init__(self, url):
+class RemoteCatalog(CatalogBase):
+    def __init__(self, url, name=None):
         self._base_url = url + '/'
         self._info_url = urljoin(self._base_url, 'v1/info')
         self._source_url = urljoin(self._base_url, 'v1/source')
+
+        info = self._get_info()
+        self._entries = {s['name']: RemoteCatalogEntry(url=self._source_url, **s) for s in info['sources']}
+
+    def __repr__(self):
+        return '<Remote Catalog: %s>' % self._base_url
 
     def _get_info(self):
         response = requests.get(self._info_url)
@@ -26,23 +33,20 @@ class RemoteCatalog(object):
         else:
             raise Exception('%s: status code %d' % (response.url, response.status_code))
 
-    def list(self):
-        info = self._get_info()
-        return [s['name'] for s in info['sources']]
 
-    def describe(self, entry_name):
-        info = self._get_info()
+class RemoteCatalogEntry(CatalogEntry):
+    def __init__(self, url, *args, **kwargs):
+        self.url = url
+        self.args = args
+        self.kwargs = kwargs
 
-        for source in info['sources']:
-            if source['name'] == entry_name:
-                return source
-        else:
-            raise Exception('unknown source %s' % entry_name)
+    def describe(self):
+        return self.kwargs
 
-    def get(self, entry_name, **user_parameters):
-        entry = self.describe(entry_name)
+    def get(self, **user_parameters):
+        entry = self.kwargs
 
-        return RemoteDataSource(self._source_url, entry_name, container=entry['container'], user_parameters=user_parameters, description=entry['description'])
+        return RemoteDataSource(self.url, entry['name'], container=entry['container'], user_parameters=user_parameters, description=entry['description'])
 
 
 class RemoteDataSource(DataSource):
