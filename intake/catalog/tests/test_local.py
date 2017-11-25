@@ -4,8 +4,8 @@ import pytest
 import yaml
 
 
-from .. import local, union
 from .util import assert_items_equal
+from intake.catalog import Catalog, local
 
 
 def test_template_str():
@@ -41,7 +41,7 @@ def test_yaml_with_templates():
 @pytest.fixture
 def catalog1():
     path = os.path.dirname(__file__)
-    return local.LocalCatalog(os.path.join(path, 'catalog1.yml'))
+    return Catalog(os.path.join(path, 'catalog1.yml'))
 
 
 def test_local_catalog(catalog1):
@@ -76,7 +76,7 @@ def test_local_catalog(catalog1):
 
 
 def test_source_plugin_config(catalog1):
-    assert_items_equal(catalog1.source_plugins.keys(), ['example1', 'example2'])
+    assert_items_equal(list(catalog1.plugins), ['example1', 'example2'])
 
 
 def test_use_source_plugin_from_config(catalog1):
@@ -117,14 +117,14 @@ def test_user_parameter_validation_allowed():
 
 def test_union_catalog():
     path = os.path.dirname(__file__)
-    cat1 = local.LocalCatalog(os.path.join(path, 'catalog_union_1.yml'), name='cat1')
-    cat2 = local.LocalCatalog(os.path.join(path, 'catalog_union_2.yml'), name='cat2')
+    uri1 = os.path.join(path, 'catalog_union_1.yml')
+    uri2 = os.path.join(path, 'catalog_union_2.yml')
 
-    union_cat = union.UnionCatalog([cat1, cat2])
+    union_cat = Catalog([uri1, uri2])
 
-    assert_items_equal(list(union_cat), ['cat1', 'cat2'])
+    assert_items_equal(list(union_cat), ['catalog_union_1', 'catalog_union_2'])
 
-    assert union_cat.cat1.entry1_part.describe() == {
+    assert union_cat.catalog_union_1.entry1_part.describe() == {
         'container': 'dataframe',
         'user_parameters': [
             {
@@ -139,7 +139,7 @@ def test_union_catalog():
         'direct_access': 'allow'
     }
 
-    desc_open = union_cat.cat1.entry1_part.describe_open()
+    desc_open = union_cat.catalog_union_1.entry1_part.describe_open()
     assert desc_open['args']['urlpath'].endswith('entry1_1.csv')
     del desc_open['args']['urlpath']  # Full path will be system dependent
     assert desc_open == {
@@ -150,10 +150,10 @@ def test_union_catalog():
         'plugin': 'csv'
     }
 
-    assert union_cat.cat2.entry1.get().container == 'dataframe'
-    assert union_cat.cat2.entry1.get().metadata == dict(foo='bar', bar=[1, 2, 3])
+    assert union_cat.catalog_union_2.entry1.get().container == 'dataframe'
+    assert union_cat.catalog_union_2.entry1.get().metadata == dict(foo='bar', bar=[1, 2, 3])
 
     # Use default parameters
-    assert union_cat.cat1.entry1_part.get().container == 'dataframe'
+    assert union_cat.catalog_union_1.entry1_part.get().container == 'dataframe'
     # Specify parameters
-    assert union_cat.cat2.entry1_part.get(part='2').container == 'dataframe'
+    assert union_cat.catalog_union_2.entry1_part.get(part='2').container == 'dataframe'

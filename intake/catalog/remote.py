@@ -1,7 +1,7 @@
 import operator
 import sys
+import time
 
-from requests.compat import urljoin
 import msgpack
 import numpy
 import pandas
@@ -11,27 +11,7 @@ from . import dask_util
 from . import serializer
 from ..source import registry as plugin_registry
 from ..source.base import DataSource
-from .base import CatalogBase, CatalogEntry
-
-
-class RemoteCatalog(CatalogBase):
-    def __init__(self, url, name=None):
-        self._base_url = url + '/'
-        self._info_url = urljoin(self._base_url, 'v1/info')
-        self._source_url = urljoin(self._base_url, 'v1/source')
-
-        info = self._get_info()
-        self._entries = {s['name']: RemoteCatalogEntry(url=self._source_url, **s) for s in info['sources']}
-
-    def __repr__(self):
-        return '<Remote Catalog: %s>' % self._base_url
-
-    def _get_info(self):
-        response = requests.get(self._info_url)
-        if response.status_code == 200:
-            return msgpack.unpackb(response.content, encoding=sys.getdefaultencoding())
-        else:
-            raise Exception('%s: status code %d' % (response.url, response.status_code))
+from .entry import CatalogEntry
 
 
 class RemoteCatalogEntry(CatalogEntry):

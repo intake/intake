@@ -8,7 +8,7 @@ from tornado.testing import AsyncHTTPTestCase
 import msgpack
 import numpy as np
 
-from intake.catalog.local import LocalCatalog
+from intake.catalog import Catalog
 from intake.catalog.serializer import MsgPackSerializer, GzipCompressor
 from intake.cli.server.server import IntakeServer
 
@@ -16,7 +16,7 @@ from intake.cli.server.server import IntakeServer
 class TestServerV1Base(AsyncHTTPTestCase):
     def get_app(self):
         catalog_file = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
-        local_catalog = LocalCatalog(catalog_file)
+        local_catalog = Catalog(catalog_file)
         self.server = IntakeServer(local_catalog)
         return self.server.make_app()
 

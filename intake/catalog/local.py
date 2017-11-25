@@ -8,7 +8,7 @@ import runpy
 import jinja2
 import yaml
 
-from .base import CatalogBase, CatalogEntry
+from .entry import CatalogEntry
 from ..source.base import Plugin
 from ..source import registry as global_registry
 
@@ -47,35 +47,6 @@ class TemplateStr(yaml.YAMLObject):
 
 yaml.SafeLoader.add_constructor('!template', TemplateStr.from_yaml)
 yaml.SafeLoader.add_constructor(TemplateStr, TemplateStr.to_yaml)
-
-
-class LocalCatalog(CatalogBase):
-    def __init__(self, filename, name=None):
-        super(LocalCatalog, self).__init__(filename, name=name)
-        self.name = (name or os.path.splitext(
-            os.path.basename(filename))[0]).replace('.', '_')
-        self._catalog_yaml_filename = os.path.abspath(filename)
-        self._catalog_dir = os.path.dirname(self._catalog_yaml_filename)
-        with open(filename, 'r') as f:
-            catalog_yaml = yaml.safe_load(f.read())
-
-        self.source_plugins = {}
-
-        if 'plugins' in catalog_yaml:
-            plugins_yaml = catalog_yaml['plugins']
-            if 'source' in plugins_yaml:
-                self.source_plugins = parse_source_plugins(
-                    plugins_yaml['source'], self._catalog_dir)
-
-        self._entries = {
-            key: parse_catalog_entry(value,
-                                     catalog_plugin_registry=self.source_plugins,
-                                     catalog_dir=self._catalog_dir)
-            for key, value in catalog_yaml['sources'].items()
-        }
-
-    def __repr__(self):
-        return '<Local Catalog: %s>' % self._catalog_yaml_filename
 
 
 class LocalCatalogEntry(CatalogEntry):
