@@ -185,7 +185,7 @@ class Catalog(object):
         return iter(self.get_catalogs()) if self._children else iter(self.get_entries())
 
     def __dir__(self):
-        return self.get_catalogs() or self.get_entries()
+        return self.get_catalogs() if self._children else self.get_entries()
 
     def __getattr__(self, item):
         return self.get_catalog(item) if self._children else self.get_entry(item)
