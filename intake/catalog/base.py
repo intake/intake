@@ -135,7 +135,37 @@ def create_state(name, observable, ttl):
 
 
 class Catalog(object):
-    def __init__(self, *args, name=None, ttl=1):
+    """Manages a hierarchy of data sources and plugins as a collective unit.
+
+    A catalog is a set of available data sources and plugins for an individual
+    observed entity (remote server, local configuration file, or a local
+    directory of configuration files). This can be expanded to include a
+    collection of subcatalogs, which are then managed as a single unit.
+
+    A catalog is created with a single URI or a collection of URIs. A URI can
+    either be a URL or a file path.
+
+    Each catalog in the hierarchy is responsible for caching the most recent
+    modification time of the respective observed entity to prevent overeager
+    queries.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        args : str or list(str)
+            A single URI or list of URIs.
+        name : str, optional
+            Unique identifier for catalog. This is primarily useful when
+            manually constructing a catalog. Defaults to None.
+        ttl : float, optional
+            Lifespan (time to live) of cached modification time. Units are in
+            seconds. Defaults to 1.
+        """
+        name = kwargs.get('name', None)
+        ttl = kwargs.get('ttl', 1)
+
         args = list(flatten(args))
         args = args[0] if len(args) == 1 else args
 
