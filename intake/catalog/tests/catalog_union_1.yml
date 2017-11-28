@@ -2,15 +2,14 @@ plugins:
   source:
     - module: intake.catalog.tests.example1_source
 sources:
-  use_example1:
+  - name: use_example1
     description: example1 source plugin
     driver: example1
     args: {}
-
-  entry1_part:
+  - name: entry1_part
     description: entry1 part
     parameters: # User defined parameters
-      part:
+      - name: part
         description: part of filename
         type: str
         default: "1"
