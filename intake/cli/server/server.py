@@ -1,8 +1,6 @@
 from __future__ import print_function
 
-import sys
 import time
-import traceback
 from uuid import uuid4
 
 import msgpack
@@ -125,7 +123,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
 
     @tornado.gen.coroutine
     def post(self):
-        request = msgpack.unpackb(self.request.body, encoding=sys.getdefaultencoding())
+        request = msgpack.unpackb(self.request.body, encoding='utf-8')
         action = request['action']
 
         if action == 'open':

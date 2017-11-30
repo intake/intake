@@ -1,5 +1,4 @@
 import os.path
-import sys
 import time
 
 from requests.compat import urljoin, urlparse
@@ -70,7 +69,7 @@ class RemoteState(State):
         response = requests.get(self.info_url)
         if response.status_code != 200:
             raise Exception('%s: status code %d' % (response.url, response.status_code))
-        info = msgpack.unpackb(response.content, encoding=sys.getdefaultencoding())
+        info = msgpack.unpackb(response.content, encoding='utf-8')
 
         entries = {s['name']: RemoteCatalogEntry(url=self.source_url, **s) for s in info['sources']}
 

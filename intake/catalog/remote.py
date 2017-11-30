@@ -1,6 +1,4 @@
 import operator
-import sys
-import time
 
 import msgpack
 import numpy
@@ -50,7 +48,7 @@ class RemoteDataSource(DataSource):
                            available_plugins=list(plugin_registry.keys()))
             req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
             if req.status_code == 200:
-                response = msgpack.unpackb(req.content, encoding=sys.getdefaultencoding())
+                response = msgpack.unpackb(req.content, encoding='utf-8')
 
                 if 'plugin' in response:
                     # Direct access
@@ -132,7 +130,7 @@ class RemoteDataSourceProxied(DataSource):
             payload = dict(action='open', name=self._entry_name, parameters=self._user_parameters)
             req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
             if req.status_code == 200:
-                response = msgpack.unpackb(req.content, encoding=sys.getdefaultencoding())
+                response = msgpack.unpackb(req.content, encoding='utf-8')
                 self._parse_open_response(response)
 
         return self._source_id
@@ -168,7 +166,7 @@ class RemoteDataSourceProxied(DataSource):
             if resp.status_code != 200:
                 raise Exception('Error reading data')
 
-            for msg in msgpack.Unpacker(resp.raw, encoding=sys.getdefaultencoding()):
+            for msg in msgpack.Unpacker(resp.raw, encoding='utf-8'):
                 format = msg['format']
                 compression = msg['compression']
                 container = msg['container']
