@@ -8,7 +8,8 @@ source:
 build:
   number: {{ GIT_DESCRIBE_NUMBER|int }}
   entry_points:
-    - intake = intake.catalog.__main__:main
+    - intake-server = intake.cli.server.__main__:main
+    - intake = intake.cli.client.__main__:main
   script: python setup.py install --single-version-externally-managed --record=record.txt
 
 requirements:
@@ -34,7 +35,8 @@ test:
     - pytest-cov
     - coverage
   commands:
-    - intake -h
+    - intake list -h
+    - intake-server -h
     - py.test --cov=intake --pyargs intake
 
 about:
