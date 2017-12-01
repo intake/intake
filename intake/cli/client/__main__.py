@@ -3,7 +3,7 @@ from __future__ import print_function
 import sys
 import argparse
 
-from intake.catalog import load_catalog
+from intake.catalog import Catalog
 
 
 def print_entry_info(catalog, name):
@@ -13,8 +13,8 @@ def print_entry_info(catalog, name):
 
 
 def listing(args):
-    catalog = load_catalog(args.uri)
-    for entry in catalog.list():
+    catalog = Catalog(args.uri)
+    for entry in list(catalog):
         if args.full:
             print_entry_info(catalog, entry)
         else:
@@ -22,12 +22,12 @@ def listing(args):
 
 
 def describe(args):
-    catalog = load_catalog(args.uri)
+    catalog = Catalog(args.uri)
     print_entry_info(catalog, args.name)
 
 
 def exists(args):
-    catalog = load_catalog(args.uri)
+    catalog = Catalog(args.uri)
     try:
         catalog.describe(args.name)
         print(True)
@@ -36,13 +36,13 @@ def exists(args):
 
 
 def get(args):
-    catalog = load_catalog(args.uri)
+    catalog = Catalog(args.uri)
     with catalog.get(args.name) as f:
         print(f.read())
 
 
 def discover(args):
-    catalog = load_catalog(args.uri)
+    catalog = Catalog(args.uri)
     with catalog.get(args.name) as f:
         print(f.discover())
 

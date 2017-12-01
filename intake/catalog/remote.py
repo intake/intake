@@ -1,48 +1,30 @@
 import operator
-import sys
 
-from requests.compat import urljoin
 import msgpack
 import numpy
 import pandas
 import requests
 
-from ..source.base import DataSource
-from ..source import registry as plugin_registry
-from . import serializer
 from . import dask_util
+from . import serializer
+from ..source import registry as plugin_registry
+from ..source.base import DataSource
+from .entry import CatalogEntry
 
 
-class RemoteCatalog(object):
-    def __init__(self, url):
-        self._base_url = url + '/'
-        self._info_url = urljoin(self._base_url, 'v1/info')
-        self._source_url = urljoin(self._base_url, 'v1/source')
+class RemoteCatalogEntry(CatalogEntry):
+    def __init__(self, url, *args, **kwargs):
+        self.url = url
+        self.args = args
+        self.kwargs = kwargs
 
-    def _get_info(self):
-        response = requests.get(self._info_url)
-        if response.status_code == 200:
-            return msgpack.unpackb(response.content, encoding=sys.getdefaultencoding())
-        else:
-            raise Exception('%s: status code %d' % (response.url, response.status_code))
+    def describe(self):
+        return self.kwargs
 
-    def list(self):
-        info = self._get_info()
-        return [s['name'] for s in info['sources']]
+    def get(self, **user_parameters):
+        entry = self.kwargs
 
-    def describe(self, entry_name):
-        info = self._get_info()
-
-        for source in info['sources']:
-            if source['name'] == entry_name:
-                return source
-        else:
-            raise Exception('unknown source %s' % entry_name)
-
-    def get(self, entry_name, **user_parameters):
-        entry = self.describe(entry_name)
-
-        return RemoteDataSource(self._source_url, entry_name, container=entry['container'], user_parameters=user_parameters, description=entry['description'])
+        return RemoteDataSource(self.url, entry['name'], container=entry['container'], user_parameters=user_parameters, description=entry['description'])
 
 
 class RemoteDataSource(DataSource):
@@ -66,7 +48,7 @@ class RemoteDataSource(DataSource):
                            available_plugins=list(plugin_registry.keys()))
             req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
             if req.status_code == 200:
-                response = msgpack.unpackb(req.content, encoding=sys.getdefaultencoding())
+                response = msgpack.unpackb(req.content, encoding='utf-8')
 
                 if 'plugin' in response:
                     # Direct access
@@ -148,7 +130,7 @@ class RemoteDataSourceProxied(DataSource):
             payload = dict(action='open', name=self._entry_name, parameters=self._user_parameters)
             req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
             if req.status_code == 200:
-                response = msgpack.unpackb(req.content, encoding=sys.getdefaultencoding())
+                response = msgpack.unpackb(req.content, encoding='utf-8')
                 self._parse_open_response(response)
 
         return self._source_id
@@ -184,7 +166,7 @@ class RemoteDataSourceProxied(DataSource):
             if resp.status_code != 200:
                 raise Exception('Error reading data')
 
-            for msg in msgpack.Unpacker(resp.raw, encoding=sys.getdefaultencoding()):
+            for msg in msgpack.Unpacker(resp.raw, encoding='utf-8'):
                 format = msg['format']
                 compression = msg['compression']
                 container = msg['container']

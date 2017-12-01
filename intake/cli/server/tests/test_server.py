@@ -1,6 +1,5 @@
 import os
 import os.path
-import sys
 import time
 
 from tornado.ioloop import IOLoop
@@ -8,15 +7,15 @@ from tornado.testing import AsyncHTTPTestCase
 import msgpack
 import numpy as np
 
-from ..server import IntakeServer
-from ..local import LocalCatalog
-from ..serializer import MsgPackSerializer, GzipCompressor
+from intake.catalog import Catalog
+from intake.catalog.serializer import MsgPackSerializer, GzipCompressor
+from intake.cli.server.server import IntakeServer
 
 
 class TestServerV1Base(AsyncHTTPTestCase):
     def get_app(self):
         catalog_file = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
-        local_catalog = LocalCatalog(catalog_file)
+        local_catalog = Catalog(catalog_file)
         self.server = IntakeServer(local_catalog)
         return self.server.make_app()
 
@@ -24,7 +23,7 @@ class TestServerV1Base(AsyncHTTPTestCase):
         return msgpack.packb(msg, use_bin_type=True)
 
     def decode(self, bytestr):
-        return msgpack.unpackb(bytestr, encoding=sys.getdefaultencoding())
+        return msgpack.unpackb(bytestr, encoding='utf-8')
 
 
 class TestServerV1Info(TestServerV1Base):
@@ -79,7 +78,7 @@ class TestServerV1Source(TestServerV1Base):
         self.assertEqual(response.code, expected_status)
 
         responses = []
-        unpacker = msgpack.Unpacker(encoding=sys.getdefaultencoding())
+        unpacker = msgpack.Unpacker(encoding='utf-8')
         unpacker.feed(response.body)
 
         for msg in unpacker:

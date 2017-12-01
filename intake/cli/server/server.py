@@ -1,8 +1,6 @@
 from __future__ import print_function
 
-import sys
 import time
-import traceback
 from uuid import uuid4
 
 import msgpack
@@ -11,15 +9,13 @@ import tornado.gen
 import tornado.ioloop
 import tornado.web
 
-from . import serializer
 from .browser import get_browser_handlers
+from intake.catalog import serializer
 
 
 class IntakeServer(object):
-    def __init__(self, catalog, catalog_mtime_func=None, catalog_builder_func=None):
+    def __init__(self, catalog):
         self._catalog = catalog
-        self._catalog_mtime_func = catalog_mtime_func
-        self._catalog_builder_func = catalog_builder_func
         self._cache = SourceCache()
         self._periodic_callbacks = []
 
@@ -33,15 +29,11 @@ class IntakeServer(object):
         handlers = get_browser_handlers(self._catalog) + self.get_handlers()
         return tornado.web.Application(handlers)
 
-    def start_periodic_functions(self, reload_interval=None, close_idle_after=None, remove_idle_after=None):
+    def start_periodic_functions(self, close_idle_after=None, remove_idle_after=None):
         if len(self._periodic_callbacks) > 0:
             raise Exception('Periodic functions already started for this server')
 
         # Disabling periodic timers with None makes testing easier
-        if reload_interval is not None:
-            catalog_watcher = self._make_catalog_watcher(interval_ms=reload_interval * 1000)
-            self._periodic_callbacks.append(catalog_watcher)
-
         if close_idle_after is not None:
             cache_closer = self._make_cache_closer(close_idle_after)
             self._periodic_callbacks.append(cache_closer)
@@ -52,25 +44,6 @@ class IntakeServer(object):
 
         for callback in self._periodic_callbacks:
             callback.start()
-
-    def _make_catalog_watcher(self, interval_ms):
-        load = dict(last=self._catalog_mtime_func())
-
-        def catalog_watcher_callback():
-            mtime = self._catalog_mtime_func()
-            if mtime > load['last']:
-                try:
-                    print('Autodetecting change to catalog.  Reloading...')
-                    self._catalog.reload()
-                    print('Catalog entries:', ', '.join(self._catalog.list()))
-                    load['last'] = mtime
-                except Exception:
-                    print('Unable to reload.  Catalog left in previous state.')
-                    traceback.print_exc()
-
-        callback = tornado.ioloop.PeriodicCallback(catalog_watcher_callback, interval_ms,
-                                                   io_loop=tornado.ioloop.IOLoop.current())
-        return callback
 
     def _make_cache_closer(self, idle_time):
         def cache_closer_callback():
@@ -96,9 +69,9 @@ class ServerInfoHandler(tornado.web.RequestHandler):
 
     def get(self):
         sources = []
-        for source in self.catalog.list():
-            info = self.catalog.describe(source)
-            info['name'] = source
+        for _, name, source in self.catalog.walk():
+            info = source.describe()
+            info['name'] = name
             sources.append(info)
 
         server_info = dict(version='0.0.1', sources=sources)
@@ -150,7 +123,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
 
     @tornado.gen.coroutine
     def post(self):
-        request = msgpack.unpackb(self.request.body, encoding=sys.getdefaultencoding())
+        request = msgpack.unpackb(self.request.body, encoding='utf-8')
         action = request['action']
 
         if action == 'open':
@@ -159,14 +132,14 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             client_plugins = request.get('available_plugins', [])
 
             # Can the client directly access the data themselves?
-            open_desc = self._catalog.describe_open(entry_name, **user_parameters)
+            open_desc = self._catalog[entry_name].describe_open(**user_parameters)
             direct_access = open_desc['direct_access']
             plugin_name = open_desc['plugin']
             client_has_plugin = plugin_name in client_plugins
 
             if direct_access == 'forbid' or \
                     (direct_access == 'allow' and not client_has_plugin):
-                source = self._catalog.get(entry_name, **user_parameters)
+                source = self._catalog[entry_name].get(**user_parameters)
                 source.discover()
                 source_id = self._cache.add(source)
 

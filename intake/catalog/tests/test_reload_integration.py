@@ -4,8 +4,8 @@ import shutil
 import tempfile
 import time
 
-from ..remote import RemoteCatalog
 from .util import assert_items_equal
+from intake.catalog import Catalog
 
 TMP_DIR = tempfile.mkdtemp()
 TEST_CATALOG_YAML = [TMP_DIR]
@@ -34,9 +34,9 @@ def teardown_module(module):
 
 
 def test_reload(intake_server):
-    catalog = RemoteCatalog(intake_server)
+    catalog = Catalog(intake_server)
 
-    entries = catalog.list()
+    entries = catalog.get_entries()
     assert entries == ['use_example1']
 
     with open(os.path.join(TMP_DIR, YAML_FILENAME), 'w') as f:
@@ -59,13 +59,13 @@ sources:
 
     time.sleep(2)
 
-    assert_items_equal(catalog.list(), ['use_example1', 'use_example1_1'])
+    assert_items_equal(catalog.get_entries(), ['use_example1', 'use_example1_1'])
 
 
 def test_reload_newfile(intake_server):
-    catalog = RemoteCatalog(intake_server)
+    catalog = Catalog(intake_server)
 
-    orig_entries = catalog.list()
+    orig_entries = catalog.get_entries()
     assert 'example2' not in orig_entries
 
     filename = os.path.join(TMP_DIR, 'intake_test_catalog2.yml')
@@ -80,4 +80,4 @@ sources:
 
     time.sleep(2)
 
-    assert_items_equal(catalog.list(), ['example2'] + orig_entries)
+    assert_items_equal(catalog.get_entries(), ['example2'] + orig_entries)

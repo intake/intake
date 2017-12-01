@@ -6,18 +6,18 @@ import numpy as np
 import pandas as pd
 
 from ...source.tests.util import verify_datasource_interface
-from ..remote import RemoteCatalog
 from .util import assert_items_equal
+from intake.catalog import Catalog
 
 TEST_CATALOG_YAML = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
 
 def test_info_describe(intake_server):
-    catalog = RemoteCatalog(intake_server)
+    catalog = Catalog(intake_server)
 
-    assert_items_equal(catalog.list(), ['use_example1', 'entry1', 'entry1_part'])
+    assert_items_equal(catalog.get_entries(), ['use_example1', 'entry1', 'entry1_part'])
 
-    info = catalog.describe('entry1')
+    info = catalog['entry1'].describe()
 
     assert info == {
         'container': 'dataframe',
@@ -27,7 +27,7 @@ def test_info_describe(intake_server):
         'user_parameters': []
     }
 
-    info = catalog.describe('entry1_part')
+    info = catalog['entry1_part'].describe()
 
     assert info['direct_access'] == 'allow'
 
@@ -35,31 +35,29 @@ def test_info_describe(intake_server):
 def test_bad_url(intake_server):
     bad_url = intake_server + '/nonsense_prefix'
 
-    catalog = RemoteCatalog(bad_url)
-
     with pytest.raises(Exception):
-        catalog.list()
+        Catalog(bad_url)
 
 
 def test_unknown_source(intake_server):
-    catalog = RemoteCatalog(intake_server)
+    catalog = Catalog(intake_server)
 
     with pytest.raises(Exception):
-        catalog.describe('does_not_exist')
+        catalog['does_not_exist'].describe()
 
 
 def test_remote_datasource_interface(intake_server):
-    catalog = RemoteCatalog(intake_server)
+    catalog = Catalog(intake_server)
 
-    d = catalog.get('entry1')
+    d = catalog['entry1'].get()
 
     verify_datasource_interface(d)
 
 
 def test_read(intake_server):
-    catalog = RemoteCatalog(intake_server)
+    catalog = Catalog(intake_server)
 
-    d = catalog.get('entry1')
+    d = catalog['entry1'].get()
 
     info = d.discover()
 
@@ -84,9 +82,9 @@ def test_read(intake_server):
 
 
 def test_read_direct(intake_server):
-    catalog = RemoteCatalog(intake_server)
+    catalog = Catalog(intake_server)
 
-    d = catalog.get('entry1_part', part='2')
+    d = catalog['entry1_part'].get(part='2')
 
     info = d.discover()
 
@@ -110,9 +108,9 @@ def test_read_direct(intake_server):
 
 
 def test_read_chunks(intake_server):
-    catalog = RemoteCatalog(intake_server)
+    catalog = Catalog(intake_server)
 
-    d = catalog.get('entry1')
+    d = catalog.entry1.get()
 
     chunks = list(d.read_chunked())
     assert len(chunks) == 2
@@ -126,9 +124,9 @@ def test_read_chunks(intake_server):
 
 
 def test_read_partition(intake_server):
-    catalog = RemoteCatalog(intake_server)
+    catalog = Catalog(intake_server)
 
-    d = catalog.get('entry1')
+    d = catalog.entry1.get()
 
     p2 = d.read_partition(1)
     p1 = d.read_partition(0)
@@ -141,16 +139,16 @@ def test_read_partition(intake_server):
 
 
 def test_close(intake_server):
-    catalog = RemoteCatalog(intake_server)
+    catalog = Catalog(intake_server)
 
-    d = catalog.get('entry1')
+    d = catalog.entry1.get()
     d.close()
 
 
 def test_pickle(intake_server):
-    catalog = RemoteCatalog(intake_server)
+    catalog = Catalog(intake_server)
 
-    d = catalog.get('entry1')
+    d = catalog.entry1.get()
 
     new_d = pickle.loads(pickle.dumps(d, pickle.HIGHEST_PROTOCOL))
 
@@ -165,8 +163,8 @@ def test_pickle(intake_server):
 
 
 def test_to_dask(intake_server):
-    catalog = RemoteCatalog(intake_server)
-    d = catalog.get('entry1')
+    catalog = Catalog(intake_server)
+    d = catalog.entry1.get()
     df = d.to_dask()
 
     assert df.npartitions == 2
