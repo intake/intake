@@ -28,7 +28,7 @@ requirements:
     - pyyaml
     - dask
     - python-snappy
-    - marshmallow
+    - conda-forge::marshmallow
 
 test:
   requires:
