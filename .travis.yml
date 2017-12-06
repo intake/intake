@@ -1,0 +1,30 @@
+# vaguely based on conda-forge, but adapted to run on Linux
+language: generic
+
+env:
+  matrix:
+    
+    - CONDA_PY=27
+    - CONDA_PY=35
+    - CONDA_PY=36
+
+install:
+    # Install Miniconda.
+    - |
+      echo "Installing a fresh version of Miniconda."
+      MINICONDA_URL="https://repo.continuum.io/miniconda"
+      MINICONDA_FILE="Miniconda3-latest-Linux-x86_64.sh"
+      curl -L -O "${MINICONDA_URL}/${MINICONDA_FILE}"
+      bash $MINICONDA_FILE -b
+    # Configure conda.
+    - |
+      echo "Configuring conda."
+      source /home/travis/miniconda3/bin/activate root
+      conda install -y conda-build
+script:
+  - conda build ./conda
+
+notifications:
+    email: false
+    on_success: "change"
+    on_failure: "always"
