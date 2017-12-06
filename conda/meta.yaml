@@ -12,6 +12,10 @@ build:
     - intake = intake.cli.client.__main__:main
   script: python setup.py install --single-version-externally-managed --record=record.txt
 
+extra:
+  channels:
+    - conda-forge
+
 requirements:
   build:
     - python
@@ -28,7 +32,7 @@ requirements:
     - pyyaml
     - dask
     - python-snappy
-    - conda-forge::marshmallow
+    - marshmallow
 
 test:
   requires:
