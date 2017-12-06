@@ -21,7 +21,7 @@ install:
     - |
       echo ""
       echo "Configuring conda."
-      source /Users/travis/miniconda3/bin/activate root
+      source /home/travis/miniconda3/bin/activate root
 script:
   - conda build ./conda
 
