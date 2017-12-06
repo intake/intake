@@ -11,7 +11,6 @@ env:
 install:
     # Install Miniconda.
     - |
-      echo ""
       echo "Installing a fresh version of Miniconda."
       MINICONDA_URL="https://repo.continuum.io/miniconda"
       MINICONDA_FILE="Miniconda3-latest-Linux-x86_64.sh"
@@ -19,9 +18,9 @@ install:
       bash $MINICONDA_FILE -b
     # Configure conda.
     - |
-      echo ""
       echo "Configuring conda."
       source /home/travis/miniconda3/bin/activate root
+      conda install -y conda-build
 script:
   - conda build ./conda
 
