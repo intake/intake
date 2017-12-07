@@ -245,7 +245,7 @@ class LocalCatalogEntrySchema(marshmallow.Schema):
     direct_access = marshmallow.fields.String(missing='forbid')
     args = marshmallow.fields.Dict(missing={})
     metadata = marshmallow.fields.Dict(missing={})
-    parameters = marshmallow.fields.List(marshmallow.fields.Nested(UserParameterSchema), missing=[])
+    parameters = marshmallow.fields.Nested(UserParameterSchema, many=True, missing=[])
 
     @marshmallow.pre_load
     def initialize(self, data):
@@ -285,13 +285,17 @@ class PluginSourceSchema(marshmallow.Schema):
 
 
 class CatalogConfigSchema(marshmallow.Schema):
-    plugin_sources = marshmallow.fields.List(marshmallow.fields.Nested(PluginSourceSchema))
-    data_sources = marshmallow.fields.List(marshmallow.fields.Nested(LocalCatalogEntrySchema),
-                                           load_from='sources',
-                                           dump_to='sources')
+    plugin_sources = marshmallow.fields.Nested(PluginSourceSchema, many=True, missing=[])
+    data_sources = marshmallow.fields.Nested(LocalCatalogEntrySchema,
+                                             many=True,
+                                             missing=[],
+                                             load_from='sources',
+                                             dump_to='sources')
 
     @marshmallow.pre_load(pass_many=True)
     def transform(self, data, many):
+        self.context['entries'] = set()
+
         data['plugin_sources'] = []
         if 'plugins' in data:
             for obj in data['plugins']['source']:
@@ -318,7 +322,7 @@ class CatalogConfig(object):
             data = yaml.safe_load(f.read())
 
         # Second, we validate the schema and semantics
-        context = dict(root=self._dir, entries=set())
+        context = dict(root=self._dir)
         schema = CatalogConfigSchema(context=context)
         result = schema.load(data)
         if result.errors:
