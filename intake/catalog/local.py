@@ -263,7 +263,7 @@ class LocalCatalogEntrySchema(marshmallow.Schema):
 
     @marshmallow.post_load
     def instantiate(self, data):
-        return LocalCatalogEntry(**data, catalog_dir=self.context['root'])
+        return LocalCatalogEntry(catalog_dir=self.context['root'], **data)
 
 
 class PluginSourceSchema(marshmallow.Schema):
