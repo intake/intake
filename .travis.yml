@@ -1,4 +1,7 @@
 language: generic
+os:
+  - linux
+  - osx
 env:
   matrix:
   - CONDA_PY=27
