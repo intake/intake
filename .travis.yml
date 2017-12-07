@@ -22,7 +22,7 @@ install:
       source /home/travis/miniconda3/bin/activate root
       conda install -y conda-build
 script:
-  - conda build -c intake ./conda
+  - conda build -c intake/label/main ./conda
 
 notifications:
     email: false
