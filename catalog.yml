@@ -1,24 +1,25 @@
-taxi_data:
-  description: NYC Taxi Data
-  parameters: # User defined parameters
-    setname:
-      description: Name of MTG card set
-      type: str
-      default: AER
-      allowed: ["AER"]
-  driver: csv
-  args: # passed to the open() method
-    urlpath: data/trip_data_*.csv
+sources:
+  - name: taxi_data
+    description: NYC Taxi Data
+    parameters: # User defined parameters
+      - name: setname
+        description: Name of MTG card set
+        type: str2
+        default: AER
+        allowed: ["AER"]
+    driver: csv
+    args: # passed to the open() method
+      urlpath: data/trip_data_*.csv
 
-#card_images:
-#  description: Card images
-#  parameters: # User defined parameters
-#    setname:
-#      description: Name of MTG card set
-#      type: str
-#      default: AER
-#      allowed: ["AER"]
-#  driver: hdf5
-#  args:
-#    filename: data/images.hdf5
-#    dataset: !template "{{ setname }}"  # Mark this string as a Jinja2 template
+#  - name: card_images
+#    description: Card images
+#    parameters: # User defined parameters
+#      - name: setname
+#        description: Name of MTG card set
+#        type: str
+#        default: AER
+#        allowed: ["AER"]
+#    driver: hdf5
+#    args:
+#      filename: data/images.hdf5
+#      dataset: !template "{{ setname }}"  # Mark this string as a Jinja2 template

@@ -28,6 +28,7 @@ requirements:
     - pyyaml
     - dask
     - python-snappy
+    - marshmallow
 
 test:
   requires:

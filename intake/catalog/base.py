@@ -4,9 +4,8 @@ import time
 from requests.compat import urljoin, urlparse
 import msgpack
 import requests
-import yaml
 
-from .local import parse_catalog_entry, parse_source_plugins
+from .local import CatalogConfig
 from .remote import RemoteCatalogEntry
 from .utils import clamp, flatten, reload_on_change
 
@@ -81,24 +80,8 @@ class LocalState(State):
         super(LocalState, self).__init__(name, observable, ttl)
 
     def refresh(self):
-        name = os.path.splitext(os.path.basename(self.observable))[0].replace('.', '_')
-
-        catalog_dir = os.path.dirname(os.path.abspath(self.observable))
-        with open(self.observable, 'r') as f:
-            cfg = yaml.safe_load(f.read())
-
-        plugins = []
-        if 'plugins' in cfg and 'source' in cfg['plugins']:
-            plugins = parse_source_plugins(cfg['plugins']['source'], catalog_dir)
-
-        entries = {
-            key: parse_catalog_entry(value,
-                                     catalog_plugin_registry=plugins,
-                                     catalog_dir=catalog_dir)
-            for key, value in cfg['sources'].items()
-        }
-
-        return name, {}, entries, plugins
+        cfg = CatalogConfig(self.observable)
+        return cfg.name, {}, cfg.entries, cfg.plugins
 
     def changed(self):
         return self.update_modification_time(os.path.getmtime(self.observable))

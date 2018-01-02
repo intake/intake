@@ -1,8 +1,9 @@
+jinja2
+marshmallow
+msgpack-numpy
+msgpack-python
 numpy
 pandas
-msgpack-python
-msgpack-numpy
+pyyaml
 requests
 tornado >= 4.5.1
-jinja2
-pyyaml
