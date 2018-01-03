@@ -187,3 +187,81 @@ def test_datasource_pickle(source_dataframe):
     new_obj = pickle.loads(pkl)
 
     check_df(new_obj.read())
+
+class MockDataSourcePython(base.DataSource):
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+
+        self.call_count = defaultdict(lambda: 0)
+
+        super(MockDataSourcePython, self).__init__(
+            container='python',
+            metadata=dict(a=1, b=2)
+        )
+
+    def _get_schema(self):
+        self.call_count['_get_schema'] += 1
+
+        return base.Schema(datashape=None,
+            dtype=None,
+            shape=(4,),
+            npartitions=2,
+            extra_metadata=dict(c=3, d=4))
+
+    def _get_partition(self, i):
+        self.call_count['_get_partition'] += 1
+
+        if i == 0:
+            return [{'x': 'foo', 'y': 'bar'}, {'x': 'foo', 'y': 'bar', 'z': 'baz'}]
+        elif i == 1:
+            return [{'x': 1}, {}]
+        else:
+            raise Exception('This should never happen')
+
+    def _close(self):
+        self.call_count['_close'] += 1
+
+
+@pytest.fixture
+def source_python():
+    return MockDataSourcePython(a=1, b=2)
+
+
+def test_datasource_python_discover(source_python):
+    r = source_python.discover()
+
+    assert source_python.container == 'python'
+
+    assert r == {
+        'datashape': None,
+        'dtype': None,
+        'shape': (4,),
+        'npartitions': 2,
+        'metadata': dict(a=1, b=2, c=3, d=4),
+    }
+
+    # check attributes have been set
+    assert source_python.datashape is None
+    assert source_python.dtype is None
+    assert source_python.shape == (4,)
+    assert source_python.npartitions == 2
+    assert source_python.metadata == dict(a=1, b=2, c=3, d=4)
+
+    # check that _get_schema is only called once
+    assert source_python.call_count['_get_schema'] == 1
+    source_python.discover()
+    assert source_python.call_count['_get_schema'] == 1
+
+
+def test_datasource_python_read(source_python):
+    data = source_python.read()
+
+    assert data == [{'x': 'foo', 'y': 'bar'}, {'x': 'foo', 'y': 'bar', 'z': 'baz'},
+        {'x': 1}, {}]
+
+def test_datasource_python_to_dask(source_python):
+    db = list(source_python.to_dask())
+
+    assert db == [{'x': 'foo', 'y': 'bar'}, {'x': 'foo', 'y': 'bar', 'z': 'baz'},
+        {'x': 1}, {}]

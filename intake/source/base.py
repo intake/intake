@@ -4,6 +4,7 @@ from collections import namedtuple
 import pandas as pd
 import numpy as np
 import dask
+import dask.bag
 
 
 class Plugin(object):
@@ -141,6 +142,8 @@ class DataSource(object):
             ddf = dask.dataframe.from_delayed(parts, meta=meta)
 
             return ddf
+        elif self.container == 'python':
+            return dask.bag.from_delayed(parts)
         else:
             raise Exception('Not implemented')
 
