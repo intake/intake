@@ -2,6 +2,7 @@
 from collections import namedtuple
 
 import pandas as pd
+import numpy as np
 import dask
 
 
@@ -136,8 +137,8 @@ class DataSource(object):
         
         if self.container == 'dataframe':
             # Construct metadata
-            meta = dict(self.dtype.fields)
-            ddf = dask.dataframe.from_delayed(parts)#, meta=self.dtype)
+            meta = { name: arg[0] for name, arg in self.dtype.fields.items() }
+            ddf = dask.dataframe.from_delayed(parts, meta=meta)
 
             return ddf
         else:
