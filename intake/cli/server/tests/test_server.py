@@ -91,7 +91,7 @@ class TestServerV1Source(TestServerV1Base):
         resp_msg, = self.make_post_request(msg)
 
         self.assertEqual(resp_msg['container'], 'dataframe')
-        self.assertEqual(resp_msg['shape'], [8])
+        self.assertEqual(resp_msg['shape'], [None])
         expected_dtype = np.dtype([('name', 'O'), ('score', 'f8'), ('rank', 'i8')])
         actual_dtype = np.dtype([tuple(x) for x in resp_msg['dtype']])
         self.assertEqual(expected_dtype, actual_dtype)

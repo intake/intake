@@ -65,7 +65,7 @@ def test_read(intake_server):
         'datashape': None,
         'dtype': np.dtype([('name', 'O'), ('score', '<f8'), ('rank', '<i8')]),
         'npartitions': 2,
-        'shape': (8,)
+        'shape': (None,)  # Do not know CSV size ahead of time
     }
 
     assert d.metadata == dict(foo='bar', bar=[1, 2, 3])
@@ -92,7 +92,8 @@ def test_read_direct(intake_server):
         'datashape': None,
         'dtype': np.dtype([('name', 'O'), ('score', '<f8'), ('rank', '<i8')]),
         'npartitions': 1,
-        'shape': (4,)
+        'shape': (None,), # do not know size of CSV ahead of time
+        'metadata': {'bar': [2, 4, 6], 'foo': 'baz'}
     }
 
     assert d.metadata == dict(foo='baz', bar=[2, 4, 6])
