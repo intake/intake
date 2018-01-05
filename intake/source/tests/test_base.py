@@ -9,7 +9,8 @@ from .. import base
 
 
 def test_plugin_base():
-    p = base.Plugin(name='test', version='0.1.0', container='dataframe', partition_access=False)
+    p = base.Plugin(name='test', version='0.1.0',
+                    container='dataframe', partition_access=False)
 
     assert p.name == 'test'
     assert p.version == '0.1.0'
@@ -22,8 +23,9 @@ def test_plugin_base():
 
 
 def test_plugin_separate_base_kwargs():
-    p = base.Plugin(name='test', version='0.1.0', container='dataframe', partition_access=False)
-    
+    p = base.Plugin(name='test', version='0.1.0',
+                    container='dataframe', partition_access=False)
+
     base_kwargs, kwargs = p.separate_base_kwargs(dict(a=1, metadata=2))
     assert base_kwargs == dict(metadata=2)
     assert kwargs == dict(a=1)
@@ -33,8 +35,9 @@ def test_datasource_base_method_exceptions():
     # Unimplemented methods should raise exceptions
     d = base.DataSource(container='dataframe')
 
-    for (method_name, args) in [('_get_schema', []), 
-            ('_get_partition', [1]), ('_close', [])]:
+    for (method_name, args) in [('_get_schema', []),
+                                ('_get_partition', [1]),
+                                ('_close', [])]:
         method = getattr(d, method_name)
         with pytest.raises(Exception) as except_info:
             method(*args)
@@ -52,6 +55,10 @@ def test_datasource_base_context_manager():
 
 
 class MockDataSourceDataFrame(base.DataSource):
+    '''Mock Data Source subclass that returns dataframe containers
+
+    Used to verify that the base DataSource class logic works for dataframes.
+    '''
     def __init__(self, a, b):
         self.a = a
         self.b = b
@@ -67,18 +74,18 @@ class MockDataSourceDataFrame(base.DataSource):
         self.call_count['_get_schema'] += 1
 
         return base.Schema(datashape='datashape',
-            dtype=np.dtype([('x', np.int64), ('y', np.int64)]),
-            shape=(6,),
-            npartitions=2,
-            extra_metadata=dict(c=3, d=4))
+                           dtype=np.dtype([('x', np.int64), ('y', np.int64)]),
+                           shape=(6,),
+                           npartitions=2,
+                           extra_metadata=dict(c=3, d=4))
 
     def _get_partition(self, i):
         self.call_count['_get_partition'] += 1
 
         if i == 0:
-            return pd.DataFrame({'x': [1,2,3], 'y': [10, 20, 30]})
+            return pd.DataFrame({'x': [1, 2, 3], 'y': [10, 20, 30]})
         elif i == 1:
-            return pd.DataFrame({'x': [4,5,6], 'y': [40, 50, 60]})
+            return pd.DataFrame({'x': [4, 5, 6], 'y': [40, 50, 60]})
         else:
             raise Exception('This should never happen')
 
@@ -89,6 +96,7 @@ class MockDataSourceDataFrame(base.DataSource):
 @pytest.fixture
 def source_dataframe():
     return MockDataSourceDataFrame(a=1, b=2)
+
 
 def test_datasource_discover(source_dataframe):
     r = source_dataframe.discover()
@@ -121,7 +129,7 @@ def check_df(data):
     pd.testing.assert_frame_equal(
         data.reset_index(drop=True),
         pd.DataFrame({
-            'x': [1, 2, 3, 4, 5, 6], 
+            'x': [1, 2, 3, 4, 5, 6],
             'y': [10, 20, 30, 40, 50, 60]}),
         check_index_type=False,
     )
@@ -138,15 +146,16 @@ def check_df_parts(parts):
     pd.testing.assert_frame_equal(
         parts[0],
         pd.DataFrame({
-            'x': [1, 2, 3], 
+            'x': [1, 2, 3],
             'y': [10, 20, 30]})
     )
     pd.testing.assert_frame_equal(
         parts[1],
         pd.DataFrame({
-            'x': [4, 5, 6], 
+            'x': [4, 5, 6],
             'y': [40, 50, 60]})
     )
+
 
 def test_datasource_read_chunked(source_dataframe):
     parts = [p for p in source_dataframe.read_chunked()]
@@ -157,10 +166,18 @@ def test_datasource_read_chunked(source_dataframe):
 def test_datasource_read_partition(source_dataframe):
     source_dataframe.discover()
 
-    parts = [source_dataframe.read_partition(i) 
-        for i in range(source_dataframe.npartitions)]
+    parts = [source_dataframe.read_partition(i)
+             for i in range(source_dataframe.npartitions)]
 
     check_df_parts(parts)
+
+
+def test_datasource_read_partition_out_of_range(source_dataframe):
+    with pytest.raises(IndexError):
+        source_dataframe.read_partition(-1)
+
+    with pytest.raises(IndexError):
+        source_dataframe.read_partition(2)
 
 
 def test_datasource_to_dask(source_dataframe):
@@ -176,7 +193,7 @@ def test_datasource_close(source_dataframe):
 
 
 def test_datasource_context_manager(source_dataframe):
-    with source_dataframe as source:
+    with source_dataframe:
         pass
 
     assert source_dataframe.call_count['_close'] == 1
@@ -188,7 +205,13 @@ def test_datasource_pickle(source_dataframe):
 
     check_df(new_obj.read())
 
+
 class MockDataSourcePython(base.DataSource):
+    '''Mock Data Source subclass that returns Python list containers
+
+    Used to verify that the base DataSource class logic works for Python lists.
+    '''
+
     def __init__(self, a, b):
         self.a = a
         self.b = b
@@ -204,16 +227,17 @@ class MockDataSourcePython(base.DataSource):
         self.call_count['_get_schema'] += 1
 
         return base.Schema(datashape=None,
-            dtype=None,
-            shape=(4,),
-            npartitions=2,
-            extra_metadata=dict(c=3, d=4))
+                           dtype=None,
+                           shape=(4,),
+                           npartitions=2,
+                           extra_metadata=dict(c=3, d=4))
 
     def _get_partition(self, i):
         self.call_count['_get_partition'] += 1
 
         if i == 0:
-            return [{'x': 'foo', 'y': 'bar'}, {'x': 'foo', 'y': 'bar', 'z': 'baz'}]
+            return [{'x': 'foo', 'y': 'bar'},
+                    {'x': 'foo', 'y': 'bar', 'z': 'baz'}]
         elif i == 1:
             return [{'x': 1}, {}]
         else:
@@ -257,11 +281,14 @@ def test_datasource_python_discover(source_python):
 def test_datasource_python_read(source_python):
     data = source_python.read()
 
-    assert data == [{'x': 'foo', 'y': 'bar'}, {'x': 'foo', 'y': 'bar', 'z': 'baz'},
-        {'x': 1}, {}]
+    assert data == [{'x': 'foo', 'y': 'bar'},
+                    {'x': 'foo', 'y': 'bar', 'z': 'baz'},
+                    {'x': 1}, {}]
+
 
 def test_datasource_python_to_dask(source_python):
     db = list(source_python.to_dask())
 
-    assert db == [{'x': 'foo', 'y': 'bar'}, {'x': 'foo', 'y': 'bar', 'z': 'baz'},
-        {'x': 1}, {}]
+    assert db == [{'x': 'foo', 'y': 'bar'},
+                  {'x': 'foo', 'y': 'bar', 'z': 'baz'},
+                  {'x': 1}, {}]

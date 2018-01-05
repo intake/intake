@@ -2,7 +2,6 @@
 from collections import namedtuple
 
 import pandas as pd
-import numpy as np
 import dask
 import dask.bag
 
@@ -26,7 +25,8 @@ class Plugin(object):
         return base_kwargs, kwargs
 
 
-Schema = namedtuple('Schema', ['datashape', 'dtype', 'shape', 'npartitions', 'extra_metadata'])
+Schema = namedtuple('Schema', ['datashape', 'dtype', 'shape',
+                               'npartitions', 'extra_metadata'])
 
 
 class DataSource(object):
@@ -40,7 +40,8 @@ class DataSource(object):
         return o
 
     def __getstate__(self):
-        return dict(args=self._captured_init_args, kwargs=self._captured_init_kwargs)
+        return dict(args=self._captured_init_args,
+                    kwargs=self._captured_init_kwargs)
 
     def __setstate__(self, state):
         self.__init__(*state['args'], **state['kwargs'])
@@ -61,17 +62,20 @@ class DataSource(object):
         self._schema = None
 
     def _get_schema(self):
-        '''Subclasses should extend this method to return an instance of base.Schema'''
+        '''Subclasses should return an instance of base.Schema'''
         raise Exception('Subclass should implement _get_schema()')
 
     def _get_partition(self, i):
-        '''Subclasses should extend this method to return a container object for this partition'''
+        '''Subclasses should return a container object for this partition
+
+        This function will never be called with an out-of-range value for i.
+        '''
         raise Exception('Subclass should implement _get_partition()')
-        
+
     def _close(self):
-        '''Subclasses should extend this method to close all open resources'''
-        raise Exception('Subclass should implement _close()')        
-        
+        '''Subclasses should close all open resources'''
+        raise Exception('Subclass should implement _close()')
+
     # These methods are implemented from the above two methods and do not need
     # to be overridden unless custom behavior is required
 
@@ -86,12 +90,12 @@ class DataSource(object):
             self.metadata.update(self._schema.extra_metadata)
 
     def discover(self):
-        '''Open resource and populate the datashape, dtype, shape, npartitions attributes.'''
+        '''Open resource and populate the source attributes.'''
         self._load_metadata()
 
-        return dict(datashape=self.datashape, 
-                    dtype=self.dtype, 
-                    shape=self.shape, 
+        return dict(datashape=self.datashape,
+                    dtype=self.dtype,
+                    shape=self.shape,
                     npartitions=self.npartitions,
                     metadata=self.metadata)
 
@@ -108,10 +112,10 @@ class DataSource(object):
             return pd.concat(parts, ignore_index=True)
         elif self.container == 'python':
             # This seems to be the fastest way to do this for large lists
-            all = []
+            data = []
             for p in parts:
-                all.extend(p)
-            return all
+                data.extend(p)
+            return data
         elif self.container == 'ndarray':
             raise Exception('Need to implement ndarray case')
 
@@ -119,7 +123,7 @@ class DataSource(object):
         '''Return iterator over container fragments of data source'''
         self._load_metadata()
         for i in range(self.npartitions):
-            yield self._get_partition(i) 
+            yield self._get_partition(i)
 
     def read_partition(self, i):
         '''Return a (offset_tuple, container) corresponding to i-th partition.
@@ -127,6 +131,9 @@ class DataSource(object):
         Offset tuple is of same length as shape.
         '''
         self._load_metadata()
+        if i < 0 or i >= self.npartitions:
+            raise IndexError('%d is out of range' % i)
+
         return self._get_partition(i)
 
     def to_dask(self):
@@ -135,10 +142,10 @@ class DataSource(object):
 
         delayed_get_partition = dask.delayed(self._get_partition)
         parts = [delayed_get_partition(i) for i in range(self.npartitions)]
-        
+
         if self.container == 'dataframe':
             # Construct metadata
-            meta = { name: arg[0] for name, arg in self.dtype.fields.items() }
+            meta = {name: arg[0] for name, arg in self.dtype.fields.items()}
             ddf = dask.dataframe.from_delayed(parts, meta=meta)
 
             return ddf
