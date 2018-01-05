@@ -51,7 +51,8 @@ def test_discover(sample1_datasource):
     assert info['dtype'] == np.dtype([('name', 'O'),
                                       ('score', 'f8'),
                                       ('rank', 'i8')])
-    assert info['shape'] == (4,)
+    # Do not know length without parsing CSV
+    assert info['shape'] == (None,)
     assert info['npartitions'] == 1
 
 

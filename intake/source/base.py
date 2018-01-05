@@ -1,4 +1,9 @@
 # Base classes for Data Loader interface
+from collections import namedtuple
+
+import pandas as pd
+import dask
+import dask.bag
 
 
 class Plugin(object):
@@ -20,7 +25,27 @@ class Plugin(object):
         return base_kwargs, kwargs
 
 
+Schema = namedtuple('Schema', ['datashape', 'dtype', 'shape',
+                               'npartitions', 'extra_metadata'])
+
+
 class DataSource(object):
+
+    def __new__(cls, *args, **kwargs):
+        o = object.__new__(cls)
+        # automatically capture __init__ arguments for pickling
+        o._captured_init_args = args
+        o._captured_init_kwargs = kwargs
+
+        return o
+
+    def __getstate__(self):
+        return dict(args=self._captured_init_args,
+                    kwargs=self._captured_init_kwargs)
+
+    def __setstate__(self, state):
+        self.__init__(*state['args'], **state['kwargs'])
+
     def __init__(self, container, description=None, metadata=None):
         self.container = container
         self.description = description
@@ -34,36 +59,109 @@ class DataSource(object):
         self.shape = None
         self.npartitions = 0
 
+        self._schema = None
+
+    def _get_schema(self):
+        '''Subclasses should return an instance of base.Schema'''
+        raise Exception('Subclass should implement _get_schema()')
+
+    def _get_partition(self, i):
+        '''Subclasses should return a container object for this partition
+
+        This function will never be called with an out-of-range value for i.
+        '''
+        raise Exception('Subclass should implement _get_partition()')
+
+    def _close(self):
+        '''Subclasses should close all open resources'''
+        raise Exception('Subclass should implement _close()')
+
+    # These methods are implemented from the above two methods and do not need
+    # to be overridden unless custom behavior is required
+
+    def _load_metadata(self):
+        # load metadata only if needed
+        if self._schema is None:
+            self._schema = self._get_schema()
+            self.datashape = self._schema.datashape
+            self.dtype = self._schema.dtype
+            self.shape = self._schema.shape
+            self.npartitions = self._schema.npartitions
+            self.metadata.update(self._schema.extra_metadata)
+
     def discover(self):
-        '''Open resource and populate the datashape, dtype, shape, npartitions attributes.'''
-        raise Exception('Implement discover')
+        '''Open resource and populate the source attributes.'''
+        self._load_metadata()
+
+        return dict(datashape=self.datashape,
+                    dtype=self.dtype,
+                    shape=self.shape,
+                    npartitions=self.npartitions,
+                    metadata=self.metadata)
 
     def read(self):
         '''Load entire dataset into a container and return it'''
-        raise Exception('Implement read')
+        self._load_metadata()
+
+        parts = [self._get_partition(i) for i in range(self.npartitions)]
+
+        return self._merge(parts)
+
+    def _merge(self, parts):
+        if self.container == 'dataframe':
+            return pd.concat(parts, ignore_index=True)
+        elif self.container == 'python':
+            # This seems to be the fastest way to do this for large lists
+            data = []
+            for p in parts:
+                data.extend(p)
+            return data
+        elif self.container == 'ndarray':
+            raise Exception('Need to implement ndarray case')
 
     def read_chunked(self):
         '''Return iterator over container fragments of data source'''
-        raise Exception('Implement read_chunked')
+        self._load_metadata()
+        for i in range(self.npartitions):
+            yield self._get_partition(i)
 
     def read_partition(self, i):
         '''Return a (offset_tuple, container) corresponding to i-th partition.
 
         Offset tuple is of same length as shape.
         '''
-        raise Exception('Implement read_partition')
+        self._load_metadata()
+        if i < 0 or i >= self.npartitions:
+            raise IndexError('%d is out of range' % i)
+
+        return self._get_partition(i)
 
     def to_dask(self):
         '''Return a dask container for this data source'''
-        raise Exception('Implement to_dask')
+        self._load_metadata()
+
+        delayed_get_partition = dask.delayed(self._get_partition)
+        parts = [delayed_get_partition(i) for i in range(self.npartitions)]
+
+        if self.container == 'dataframe':
+            # Construct metadata
+            meta = {name: arg[0] for name, arg in self.dtype.fields.items()}
+            ddf = dask.dataframe.from_delayed(parts, meta=meta)
+
+            return ddf
+        elif self.container == 'python':
+            return dask.bag.from_delayed(parts)
+        else:
+            raise Exception('Not implemented')
 
     def close(self):
         '''Close open resources corresponding to this data source.'''
-        raise Exception('Implement close')
+        self._close()
 
     # Boilerplate to make this object also act like a context manager
     def __enter__(self):
-        return self  # Nothing to do here
+        self._load_metadata()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
