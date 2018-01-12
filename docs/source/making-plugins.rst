@@ -55,3 +55,12 @@ How to subclass ``intake.source.base.Plugin``
 
 How to subclass ``intake.source.base.DataSource``
 -------------------------------------------------
+
+.. _plugin-discovery:
+
+Plugin Discovery
+----------------
+
+When Intake is imported, it will search the Python ``site-packages`` for packages starting with ``intake_`` and discover Plugin subclasses inside those packages to register.  These plugins will also be used to automatically create ``open_[plugin_name]`` convenience functions under the intake module.
+
+To take advantage of plugin discovery, give your installed package a name that starts with ``intake_`` and put your plugin class(es) into a module named ``plugin``.
