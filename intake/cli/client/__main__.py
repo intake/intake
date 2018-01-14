@@ -7,7 +7,7 @@ from intake.catalog import Catalog
 
 
 def print_entry_info(catalog, name):
-    info = catalog.describe(name)
+    info = catalog[name].describe()
     for key in sorted(info.keys()):
         print("[{}] {}={}".format(name, key, info[key]))
 
@@ -28,22 +28,18 @@ def describe(args):
 
 def exists(args):
     catalog = Catalog(args.uri)
-    try:
-        catalog.describe(args.name)
-        print(True)
-    except:
-        print(False)
+    print(args.name in catalog)
 
 
 def get(args):
     catalog = Catalog(args.uri)
-    with catalog.get(args.name) as f:
+    with catalog[args.name].get() as f:
         print(f.read())
 
 
 def discover(args):
     catalog = Catalog(args.uri)
-    with catalog.get(args.name) as f:
+    with catalog[args.name].get() as f:
         print(f.discover())
 
 
