@@ -180,8 +180,13 @@ class Catalog(object):
         return list(set([catalog.name for catalog in catalogs if catalog.name]))
 
     def get_entries(self):
-        _, names, _ = zip(*self.walk())
-        return list(set(names))
+        result = list(zip(*self.walk()))
+        if len(result) == 0:
+            # special case when catalog has no sources
+            return []
+        else:
+            _, names, _ = result
+            return list(set(names))
 
     def get_catalog(self, name):
         for catalog in self.walk(leaves=False):
