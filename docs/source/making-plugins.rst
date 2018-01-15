@@ -52,15 +52,92 @@ From the user perspective, all of the metadata should be loaded once the data so
 How to subclass ``intake.source.base.Plugin``
 ---------------------------------------------
 
+Every Intake plugin class should be a subclass of ``intake.source.base.Plugin``.  The plugin subclass only needs to implement the ``__init__()`` and ``open()`` methods, as shown in the example below::
 
-How to subclass ``intake.source.base.DataSource``
--------------------------------------------------
+    class FooPlugin(base.Plugin):
+        def __init__(self):
+            super(Plugin, self).__init__(name='foo', version='0.1',
+                                        container='dataframe',
+                                        partition_access=True)
+
+        def open(self, urlpath, **kwargs):
+            base_kwargs, source_kwargs = self.separate_base_kwargs(kwargs)
+            return FooSource(urlpath=urlpath, my_kwargs=source_kwargs,
+                            metadata=base_kwargs['metadata'])
+
+The ``__init__()`` method should take no arguments but needs to call the base ``__init__()`` to set some key attributes for the plugin:
+
+- ``name``: The short name of the plugin.  This should be a valid python identifier.  You should not include the word ``intake`` in the plugin name.
+- ``version``: A version string for the plugin.  This may be reported to the user by tools based on Intake, but has no semantic importance.
+- ``container``: The container type of data sources created by this object.  Currently this must be one of ``dataframe``, ``ndarray``, or ``python``.  For simplicity, a plugin many only return one typed of container.  If a particular source of data could be used in multiple ways (such as HDF5 files interpreted as dataframes or as ndarrays), two plugins must be created.  These two plugins can be part of the same Python package.
+-  ``partition_access``: Do the data sources returned by this plugin have multiple partitions?  This may help tools in the future make more optimal decisions about how to present data.  If in doubt (or the answer depends on arguments to ``open()``), ``True`` will always result in correct behavior, even if the data source has only one partition.
+
+The ``open()`` method should return an instance of a subclass of ``intake.source.base.DataSource`` (see below).  The arguments of the ``open()`` method are entirely up to the plugin, except some standard optional arguments used by catalogs:
+
+- ``metadata``: a dictionary of metadata from the catalog to associate with the source.
+
+To help with ``open()`` methods that need to use ``**kwargs`` for other reasons, the base class includes a ``separate_base_kwargs`` method which will split out the above arguments from the rest into separate dictionaries.
+
+Note that the plugin class will always be instantiated before use, but is not guaranteed to be a singleton.  It may be instantiated into several different plugin registries.  Use of mutable class attributes is therefore discouraged.
+
+How to subclass ``intake.source.base.DataSource`` (easy way)
+------------------------------------------------------------
+
+We encourage most plugin authors to subclass `DataSource` and implement only a small number of internal methods::
+
+    class FooSource(intake.source.base.DataSource):
+        def __init__(self, a, b, metadata=None):
+            # Do init here with a and b
+            super(FooSource, self).__init__(
+                container='dataframe',
+                metadata=metadata
+            )
+
+        def _get_schema(self):
+            return intake.source.base.Schema(
+                datashape='datashape',
+                dtype=np.dtype([('x', np.int64), ('y', np.int64)]),
+                shape=(6,),
+                npartitions=2,
+                extra_metadata=dict(c=3, d=4)
+            )
+
+        def _get_partition(self, i):
+            # Return the appropriate container of data here
+            return pd.DataFrame({'x': [1, 2, 3], 'y': [10, 20, 30]})
+
+        def _close(self):
+            # close any files, sockets, etc
+            pass
+
+After implementing these 4 methods, the base class will provide the expected behavior for all the public DataSource methods.  The implementations of these internal methods should follow the following rules:
+
+- ``__init__(self)``: Should be very lightweight and fast.  No files or network resources should be opened, and no signifcant memory should be allocated yet.  Data sources are often serialized immediately.  The default implementation of the pickle protocol in the base class will record all the arguments to ``__init__()`` and recreate the object with those arguments when unpickled, assuming the class has no side effects.
+- ``_get_schema(self)``: May open files and network resources and return as much of the schema as possible in small amount of *approximately* constant  time.  The ``npartitions`` and ``extra_metadata`` attributes must be correct when ``_get_schema`` returns.  The ``dtype`` attribute is next most important, but may be ``None`` if unknown.  The ``shape`` tuple can contain ``None`` values if the size of some dimensions is not known before reading.  The ``datashape`` attribute is a placeholder for future integration with Blaze-like systems and optional for now.
+- ``_get_partition(self, i)``: Should return all of the data from a given partition id.  The base class will automatically verify that ``i`` is in the range ``[0, npartitions)``, so no range checking is required.
+- ``_close(self)``: Close any network or file handles and deallocate any significant memory.  Note that these resources may be need to be reopened/reallocated if ``_get_partition()`` is called again later.
+
+
+How to subclass ``intake.source.base.DataSource`` (harder way)
+--------------------------------------------------------------
+
+Some plugins may benefit from taking full control of the DataSource behavior, in which case they will need to override all the public methods, rather than the internal methods described in the previous section.  The implementations should follow these rules:
+
+- ``__init__(self)``: Same as above.  If the default pickle implementation is insufficient, extra information can be saved in this method.  Note that data sources should only pickle the minimum information required to recreate the class, even if that requires reopening files and network connections to do redundant work.  The object attributes should be set to default placeholder values (``None``) if they are not known yet. 
+- ``discover(self)``: Read the source attributes, like ``npartitions``, etc.  As with ``_get_schema()`` above, this method is assumed to be fast, and make a best effort to set attributes.
+- ``read(self)``: Return all the data in memory in one large container.
+- ``read_chunked(self)``: Return an iterator that returns contiguous chunks of the data.  The chunking is generally assumed to be at the partition level, but could be finer grained if desired.
+- ``read_partition(self, i)``: Returns the data for a given partition id.  It is assumed that reading a given partition does not require reading the data that precedes it.  If ``i`` is out of range, an ``IndexError`` should be raised.
+- ``to_dask(self)``: Return a dask data structure corresponding to this data source.  It should be assumed that the data can be read from the Dask workers, so the loads can be done in future tasks.
+- ``close(self)``: Close network or file handles and deallocate memory.  If other methods are called after ``close()``, the source is automatically reopened.
+
+It is also important to note that source attributes should be set after ``read()``, ``read_chunked()``, ``read_partition()`` and ``to_dask()``, even if ``discover()`` was not called by the user.
 
 .. _plugin-discovery:
 
 Plugin Discovery
 ----------------
 
-When Intake is imported, it will search the Python ``site-packages`` for packages starting with ``intake_`` and discover Plugin subclasses inside those packages to register.  These plugins will also be used to automatically create ``open_[plugin_name]`` convenience functions under the intake module.
+When Intake is imported, it will search the Python module path (by default includes ``site-packages`` and other directories in your ``$PYTHONPATH``) for packages starting with ``intake_`` and discover Plugin subclasses inside those packages to register.  These plugins will also be used to automatically create ``open_[plugin_name]`` convenience functions under the intake module.
 
-To take advantage of plugin discovery, give your installed package a name that starts with ``intake_`` and put your plugin class(es) into a module named ``plugin``.
+To take advantage of plugin discovery, give your installed package a name that starts with ``intake_`` and put your plugin class(es) into the ``__init__.py`` of the package.
