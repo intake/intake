@@ -326,7 +326,8 @@ class CatalogConfig(object):
         schema = CatalogConfigSchema(context=context)
         result = schema.load(data)
         if result.errors:
-            raise ValidationError("Catalog '{}' has validation errors".format(path), result.errors)
+            raise ValidationError("Catalog '{}' has validation errors: {}"
+                                  "".format(path, result.errors), result.errors)
 
         cfg = result.data
 
