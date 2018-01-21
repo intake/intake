@@ -1,7 +1,7 @@
 Quickstart
 ==========
 
-This guide will show you how to get started using Intake to read data.  It assumes you are working in either a conda environment or a virtualenv/pip.
+This guide will show you how to get started using Intake to read data.  It assumes you are working in either a conda or a virtualenv/pip environment.
 
 Installation
 ------------

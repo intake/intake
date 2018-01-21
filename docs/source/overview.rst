@@ -12,8 +12,9 @@ Intake supports loading data into standard Python containers, depending on the d
 * Pandas Dataframes - tabular data
 * NumPy Arrays - tensor data
 * Python lists of dictionaries - semi-structured data
+* (possibly more in the future)
 
-Additionally, Intake can load data into Dask distributed data structures (dask.dataframe, dask.array, dask.bag).
+Additionally, Intake can load data into distributed data structures.  Currently it supports Dask, a flexible parallel computing library with distributed containers like `dask.dataframe <https://dask.pydata.org/en/latest/dataframe.html>`_, `dask.array <https://dask.pydata.org/en/latest/array.html>`_, and `dask.bag <https://dask.pydata.org/en/latest/bag.html>`_.  In the future, other distributed computing systems could use Intake to create similar data structures.
 
 Why Intake?
 -----------
