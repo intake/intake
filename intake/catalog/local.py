@@ -1,5 +1,4 @@
 import glob
-import importlib
 import inspect
 import os
 import os.path
@@ -12,6 +11,7 @@ import yaml
 from .entry import CatalogEntry
 from ..source.base import Plugin
 from ..source import registry as global_registry
+from ..source.discovery import load_plugins_from_module
 
 
 class TemplateStr(yaml.YAMLObject):
@@ -164,16 +164,7 @@ class PluginSource(object):
         self.source = source
 
     def _load_from_module(self):
-        plugins = {}
-
-        mod = importlib.import_module(self.source)
-        for _, cls in inspect.getmembers(mod, inspect.isclass):
-            # Don't try to registry plugins imported into this module from somewhere else
-            if issubclass(cls, Plugin) and cls.__module__ == self.source:
-                p = cls()
-                plugins[p.name] = p
-
-        return plugins
+        return load_plugins_from_module(self.source)
 
     def _load_from_dir(self):
         plugins = {}
