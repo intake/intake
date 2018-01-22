@@ -1,0 +1,28 @@
+sources:
+  - name: a.b.c
+    description: abc
+    driver: csv
+    args:
+      urlpath: !template '{{ CATALOG_DIR }}/entry1_*.csv'
+  - name: a.b.d
+    description: abc
+    driver: csv
+    args:
+      urlpath: !template '{{ CATALOG_DIR }}/entry1_*.csv'
+  - name: c
+    description: abc
+    driver: csv
+    args:
+      urlpath: !template '{{ CATALOG_DIR }}/entry1_*.csv'
+  - name: a.c
+    description: abc
+    driver: csv
+    parameters:
+      - name: part
+        description: part of filename
+        type: str
+        default: "1"
+        allowed: ["1", "2"]
+    driver: csv
+    args:
+      urlpath: !template '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'

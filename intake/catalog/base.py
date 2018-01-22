@@ -7,7 +7,7 @@ import requests
 
 from .local import CatalogConfig
 from .remote import RemoteCatalogEntry
-from .utils import clamp, flatten, reload_on_change
+from .utils import clamp, flatten, reload_on_change, make_prefix_tree
 
 
 class State(object):
@@ -156,6 +156,8 @@ class Catalog(object):
 
     def reload(self):
         self.name, self._children, self._entries, self._plugins = self._state.refresh()
+        self._all_entries = { source: cat_entry for _, source, cat_entry in self.walk(leaves=True) }
+        self._entry_tree = make_prefix_tree(self._all_entries)
 
     @property
     def changed(self):
@@ -179,10 +181,6 @@ class Catalog(object):
         catalogs, _, _ = zip(*self.walk())
         return list(set([catalog.name for catalog in catalogs if catalog.name]))
 
-    def get_entries(self):
-        _, names, _ = zip(*self.walk())
-        return list(set(names))
-
     def get_catalog(self, name):
         for catalog in self.walk(leaves=False):
             if catalog.name == name:
@@ -191,21 +189,37 @@ class Catalog(object):
 
     @reload_on_change
     def get_entry(self, name):
-        return self._entries[name]
+        return self._all_entries[name]
 
     def __iter__(self):
-        return iter(self.get_catalogs()) if self._children else iter(self.get_entries())
+        return iter(self._all_entries)
 
     def __dir__(self):
-        return self.get_catalogs() if self._children else self.get_entries()
+        return list(self._entry_tree.keys())
 
     def __getattr__(self, item):
-        return self.get_catalog(item) if self._children else self.get_entry(item)
-
-    def __getitem__(self, item):
-        return self.get_catalog(item) if self._children else self.get_entry(item)
+        subtree = self._entry_tree[item]
+        if isinstance(subtree, dict):
+            return CatalogSubtree(subtree)
+        else:
+            return subtree # is catalog entry
 
     @property
     @reload_on_change
     def plugins(self):
         return self._plugins
+
+
+class CatalogSubtree(object):
+    def __init__(self, subtree):
+        self._subtree = subtree
+
+    def __dir__(self):
+        return list(self._subtree.keys())
+
+    def __getattr__(self, item):
+        subtree = self._subtree[item]
+        if isinstance(subtree, dict):
+            return CatalogSubtree(subtree)
+        else:
+            return subtree # is catalog entry

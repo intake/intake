@@ -108,6 +108,7 @@ class LocalCatalogEntry(CatalogEntry):
         self._metadata = metadata
         self._catalog_dir = catalog_dir
         self._plugin = None
+        super(LocalCatalogEntry, self).__init__()
 
     @property
     def name(self):
