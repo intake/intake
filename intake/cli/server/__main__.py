@@ -23,7 +23,7 @@ def main(argv=None):
     parser.add_argument('-p', '--port', type=int, default=5000,
                         help='port number for server to listen on')
     parser.add_argument('--sys-exit-on-sigterm', action='store_true',
-                        help='internal flag used during unit testsing to ensure .coverage file is written')
+                        help='internal flag used during unit testing to ensure .coverage file is written')
     parser.add_argument('catalog_args', metavar='FILE', type=str, nargs='+',
                         help='Name of catalog YAML file')
     args = parser.parse_args(argv[1:])
