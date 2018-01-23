@@ -1,3 +1,4 @@
+import datetime
 import os.path
 
 import pytest
@@ -81,6 +82,52 @@ def test_source_plugin_config(catalog1):
 
 def test_use_source_plugin_from_config(catalog1):
     catalog1['use_example1'].get()
+
+
+@pytest.mark.parametrize("dtype,given,expected", [
+    ("bool", "true", True),
+    ("bool", 0, False),
+    ("datetime", "2018-01-01 12:34AM", datetime.datetime(2018, 1, 1, 0, 34, 0)),
+    ("datetime", 1234567890000000000, datetime.datetime(2009, 2, 13, 23, 31, 30)),
+    ("dict", dict(foo=1), {"foo": 1}),
+    ("float", "3.14", 3.14),
+    ("int", "1", 1),
+    ("list", (3, 4), [3, 4]),
+    ("str", None, "None"),
+    ("tuple", [1, 2, 3], (1, 2, 3)),
+])
+def test_user_parameter_coerce_value(dtype, given, expected):
+    p = local.UserParameter('a', 'a desc', dtype, given)
+    assert p.validate(given) == expected
+
+
+@pytest.mark.parametrize("dtype,given,expected", [
+    ("float", "100.0", 100.0),
+    ("int", "20", 20),
+    ("int", 20.0, 20),
+])
+def test_user_parameter_coerce_min(dtype, given, expected):
+    p = local.UserParameter('a', 'a desc', dtype, expected, min=given)
+    assert p.min == expected
+
+
+@pytest.mark.parametrize("dtype,given,expected", [
+    ("float", "100.0", 100.0),
+    ("int", "20", 20),
+    ("int", 20.0, 20),
+])
+def test_user_parameter_coerce_max(dtype, given, expected):
+    p = local.UserParameter('a', 'a desc', dtype, expected, max=given)
+    assert p.max == expected
+
+
+@pytest.mark.parametrize("dtype,given,expected", [
+    ("float", [50, "100.0", 150.0], [50.0, 100.0, 150.0]),
+    ("int", [1, "2", 3.0], [1, 2, 3]),
+])
+def test_user_parameter_coerce_allowed(dtype, given, expected):
+    p = local.UserParameter('a', 'a desc', dtype, expected[0], allowed=given)
+    assert p.allowed == expected
 
 
 def test_user_parameter_validation_range():

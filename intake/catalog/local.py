@@ -6,6 +6,7 @@ import runpy
 
 import jinja2
 import marshmallow
+import pandas
 import yaml
 
 from .entry import CatalogEntry
@@ -64,6 +65,17 @@ def expand_templates(args, template_context):
 
 
 class UserParameter(object):
+    COERCION_RULES = {
+        'bool': bool,
+        'datetime': lambda v: pandas.to_datetime(v).to_pydatetime(),
+        'dict': dict,
+        'float': float,
+        'int': int,
+        'list': list,
+        'str': str,
+        'tuple': tuple
+    }
+
     def __init__(self, name, description, type, default, min=None, max=None, allowed=None):
         self.name = name
         self.description = description
@@ -72,6 +84,17 @@ class UserParameter(object):
         self.min = min
         self.max = max
         self.allowed = allowed
+
+        self.default = UserParameter.coerce(self.type, self.default)
+
+        if self.min:
+            self.min = UserParameter.coerce(self.type, self.min)
+
+        if self.max:
+            self.max = UserParameter.coerce(self.type, self.max)
+
+        if self.allowed:
+            self.allowed = [UserParameter.coerce(self.type, item) for item in self.allowed]
 
     def describe(self):
         desc = {
@@ -86,7 +109,14 @@ class UserParameter(object):
                 desc[attr] = v
         return desc
 
+    @staticmethod
+    def coerce(dtype, value):
+        op = UserParameter.COERCION_RULES[dtype]
+        return value if type(value).__name__ == dtype else op(value)
+
     def validate(self, value):
+        value = UserParameter.coerce(self.type, value)
+
         if self.min is not None and value < self.min:
             raise ValueError('%s=%s is less than %s' % (self.name, value, self.min))
         if self.max is not None and value > self.max:
@@ -220,13 +250,11 @@ class UserParameterSchema(marshmallow.Schema):
 
     @marshmallow.validates('type')
     def validate_type(self, data):
-        types = ['bool', 'dict', 'float', 'int', 'list', 'long', 'str', 'tuple', 'unicode']
-        marshmallow.validate.OneOf(types)(data)
+        marshmallow.validate.OneOf(list(UserParameter.COERCION_RULES))(data)
 
     @marshmallow.post_load
-    def instantiate(self, data):
-        # FIXME: Should coerce 'default', 'min', 'max', and 'allowed' to parameter type
-        return UserParameter(**data)
+    def instantiate(self, params):
+        return UserParameter(**params)
 
 
 class LocalCatalogEntrySchema(marshmallow.Schema):
