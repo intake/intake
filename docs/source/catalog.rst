@@ -107,7 +107,7 @@ Parameter Definition
 To enable users to discover parameters on data sources, and to allow UIs to generate interfaces automatically, parameters have the following attributes in the catalog.
 
 - ``description``: Human-readable Markdown description of what the parameter means.
-- ``type``: The type of the parameter.  Currently, this may be ``bool``, ``str``, ``int``, ``float``, ``list[str]``, ``list[int]``, ``list[float]``, ``datetime`` (which accepts either a Python datatime object or an ISO8601 timestamp string).
+- ``type``: The type of the parameter.  Currently, this may be ``bool``, ``str``, ``int``, ``float``, ``list[str]``, ``list[int]``, ``list[float]``, ``datetime``.
 - ``default``: The default value for this parameter.  Every parameter must have a default to ensure a catalog user can quickly see some sample data.
 - ``allowed`` (optional): A list of allowed values for this parameter
 - ``min`` (optional): Minimum value (inclusive) for the parameter
@@ -115,6 +115,13 @@ To enable users to discover parameters on data sources, and to allow UIs to gene
 
 Note both ``allowed`` and ``min``/``max`` should not be set for the same parameter.
 
+Also the ``datetime`` type accepts multiple values:
+
+* a Python datetime object
+* an ISO8601 timestamp string
+* an integer representing a Unix timestamp
+* ``now``, a string representing the current timestamp
+* ``today``, a string representing today at midnight UTC
 
 Local Catalogs
 --------------

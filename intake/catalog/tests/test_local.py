@@ -102,6 +102,12 @@ def test_user_parameter_coerce_value(dtype, given, expected):
     assert p.validate(given) == expected
 
 
+@pytest.mark.parametrize("given", ["now", "today"])
+def test_user_parameter_coerce_special_datetime(given):
+    p = local.UserParameter('a', 'a desc', 'datetime', given)
+    assert type(p.validate(given)) == pandas.Timestamp
+
+
 @pytest.mark.parametrize("dtype,given,expected", [
     ("float", "100.0", 100.0),
     ("int", "20", 20),
