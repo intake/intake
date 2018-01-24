@@ -95,6 +95,7 @@ def test_use_source_plugin_from_config(catalog1):
     ("int", "1", 1),
     ("list", (3, 4), [3, 4]),
     ("str", None, "None"),
+    ("unicode", "foo", u"foo"),
 ])
 def test_user_parameter_coerce_value(dtype, given, expected):
     p = local.UserParameter('a', 'a desc', dtype, given)

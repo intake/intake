@@ -14,6 +14,11 @@ from ..source.base import Plugin
 from ..source import registry as global_registry
 from ..source.discovery import load_plugins_from_module
 
+try:
+    import builtins
+except:
+    import __builtin__ as builtins
+
 
 class TemplateStr(yaml.YAMLObject):
     """A string-a-like that tags this string as being a Jinja template"""
@@ -71,7 +76,8 @@ class UserParameter(object):
         'float': float,
         'int': int,
         'list': list,
-        'str': str
+        'str': str,
+        'unicode': getattr(builtins, 'unicode', str)
     }
 
     def __init__(self, name, description, type, default, min=None, max=None, allowed=None):
