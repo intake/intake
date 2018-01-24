@@ -68,12 +68,10 @@ class UserParameter(object):
     COERCION_RULES = {
         'bool': bool,
         'datetime': pandas.to_datetime,
-        'dict': dict,
         'float': float,
         'int': int,
         'list': list,
-        'str': str,
-        'tuple': tuple
+        'str': str
     }
 
     def __init__(self, name, description, type, default, min=None, max=None, allowed=None):

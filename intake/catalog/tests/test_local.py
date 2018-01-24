@@ -91,12 +91,10 @@ def test_use_source_plugin_from_config(catalog1):
     ("datetime", datetime.datetime(2018, 1, 1, 0, 34, 0), pandas.Timestamp(2018, 1, 1, 0, 34, 0)),
     ("datetime", "2018-01-01 12:34AM", pandas.Timestamp(2018, 1, 1, 0, 34, 0)),
     ("datetime", 1234567890000000000, pandas.Timestamp(2009, 2, 13, 23, 31, 30)),
-    ("dict", dict(foo=1), {"foo": 1}),
     ("float", "3.14", 3.14),
     ("int", "1", 1),
     ("list", (3, 4), [3, 4]),
     ("str", None, "None"),
-    ("tuple", [1, 2, 3], (1, 2, 3)),
 ])
 def test_user_parameter_coerce_value(dtype, given, expected):
     p = local.UserParameter('a', 'a desc', dtype, given)
