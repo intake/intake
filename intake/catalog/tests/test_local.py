@@ -1,9 +1,9 @@
-import datetime
 import os.path
 
 import pytest
 import yaml
 
+import pandas
 
 from .util import assert_items_equal
 from intake.catalog import Catalog, local
@@ -87,8 +87,8 @@ def test_use_source_plugin_from_config(catalog1):
 @pytest.mark.parametrize("dtype,given,expected", [
     ("bool", "true", True),
     ("bool", 0, False),
-    ("datetime", "2018-01-01 12:34AM", datetime.datetime(2018, 1, 1, 0, 34, 0)),
-    ("datetime", 1234567890000000000, datetime.datetime(2009, 2, 13, 23, 31, 30)),
+    ("datetime", "2018-01-01 12:34AM", pandas.Timestamp(2018, 1, 1, 0, 34, 0)),
+    ("datetime", 1234567890000000000, pandas.Timestamp(2009, 2, 13, 23, 31, 30)),
     ("dict", dict(foo=1), {"foo": 1}),
     ("float", "3.14", 3.14),
     ("int", "1", 1),

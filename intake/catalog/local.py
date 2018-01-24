@@ -67,7 +67,7 @@ def expand_templates(args, template_context):
 class UserParameter(object):
     COERCION_RULES = {
         'bool': bool,
-        'datetime': lambda v: pandas.to_datetime(v).to_pydatetime(),
+        'datetime': pandas.to_datetime,
         'dict': dict,
         'float': float,
         'int': int,
