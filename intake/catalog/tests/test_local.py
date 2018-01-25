@@ -124,9 +124,9 @@ def test_union_catalog():
 
     union_cat = Catalog([uri1, uri2])
 
-    assert_items_equal(list(union_cat), ['catalog_union_1', 'catalog_union_2'])
+    assert_items_equal(list(union_cat), ['entry1', 'entry1_part', 'use_example1'])
 
-    assert union_cat.catalog_union_1.entry1_part.describe() == {
+    assert union_cat.entry1_part.describe() == {
         'container': 'dataframe',
         'user_parameters': [
             {
@@ -141,7 +141,7 @@ def test_union_catalog():
         'direct_access': 'allow'
     }
 
-    desc_open = union_cat.catalog_union_1.entry1_part.describe_open()
+    desc_open = union_cat.entry1_part.describe_open()
     assert desc_open['args']['urlpath'].endswith('entry1_1.csv')
     del desc_open['args']['urlpath']  # Full path will be system dependent
     assert desc_open == {
@@ -152,13 +152,14 @@ def test_union_catalog():
         'plugin': 'csv'
     }
 
-    assert union_cat.catalog_union_2.entry1.get().container == 'dataframe'
-    assert union_cat.catalog_union_2.entry1.get().metadata == dict(foo='bar', bar=[1, 2, 3])
+    # Implied creation of data source
+    assert union_cat.entry1.container == 'dataframe'
+    assert union_cat.entry1.metadata == dict(foo='bar', bar=[1, 2, 3])
 
-    # Use default parameters
-    assert union_cat.catalog_union_1.entry1_part.get().container == 'dataframe'
-    # Specify parameters
-    assert union_cat.catalog_union_2.entry1_part.get(part='2').container == 'dataframe'
+    # Use default parameters in explict creation of data source
+    assert union_cat.entry1_part().container == 'dataframe'
+    # Specify parameters in creation of data source
+    assert union_cat.entry1_part(part='2').container == 'dataframe'
 
 
 def test_empty_catalog_file():
@@ -191,8 +192,8 @@ sources:
 def test_catalog_file_removal(temp_catalog_file):
     cat_dir = os.path.dirname(temp_catalog_file)
     cat = Catalog(cat_dir) 
-    assert set(cat) == set(['catalog'])
+    assert set(cat) == set(['a', 'b'])
 
     os.remove(temp_catalog_file)
-    time.sleep(2) # wait for catalog refresh
+    time.sleep(1.5) # wait for catalog refresh
     assert set(cat) == set()

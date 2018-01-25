@@ -15,7 +15,7 @@ TEST_CATALOG_YAML = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 def test_info_describe(intake_server):
     catalog = Catalog(intake_server)
 
-    assert_items_equal(catalog.get_entries(), ['use_example1', 'entry1', 'entry1_part'])
+    assert_items_equal(list(catalog), ['use_example1', 'entry1', 'entry1_part'])
 
     info = catalog['entry1'].describe()
 

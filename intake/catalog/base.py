@@ -186,15 +186,6 @@ class Catalog(object):
                 else:
                     yield catalog
 
-    def get_catalogs(self):
-        result = list(zip(*self.walk()))
-        if len(result) == 0:
-            # special case when catalog has no sources
-            return []
-        else:
-            catalogs, _, _ = result
-            return list(set([catalog.name for catalog in catalogs if catalog.name]))
-
     def get_catalog(self, name):
         for catalog in self.walk(leaves=False):
             if catalog.name == name:
@@ -202,21 +193,32 @@ class Catalog(object):
         raise KeyError(name)
 
     @reload_on_change
-    def get_entry(self, name):
+    def _get_entry(self, name):
         return self._all_entries[name]
 
+    @reload_on_change
+    def _get_entries(self):
+        return self._all_entries
+
+    @reload_on_change
+    def _get_entry_tree(self):
+        return self._entry_tree
+
     def __iter__(self):
-        return iter(self._all_entries)
+        return iter(self._get_entries())
 
     def __dir__(self):
-        return list(self._entry_tree.keys())
+        return list(self._get_entry_tree().keys())
 
     def __getattr__(self, item):
-        subtree = self._entry_tree[item]
+        subtree = self._get_entry_tree()[item]
         if isinstance(subtree, dict):
             return CatalogSubtree(subtree)
         else:
             return subtree # is catalog entry
+
+    def __getitem__(self, key):
+        return self._get_entry(key)
 
     @property
     @reload_on_change
