@@ -23,7 +23,8 @@ def extra_pythonpath():
 def test_discover(extra_pythonpath):
     registry = discovery.autodiscover()
 
-    assert set(registry.keys()) == set(['foo'])
+    # possible other plugins in environment
+    assert set(registry.keys()) >= set(['foo'])
     assert registry['foo'].open() == 'open_worked'
 
 
