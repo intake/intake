@@ -1,8 +1,10 @@
 import os.path
+import tempfile
+import shutil
+import time
 
 import pytest
 import yaml
-
 
 from .util import assert_items_equal
 from intake.catalog import Catalog, local
@@ -163,3 +165,34 @@ def test_empty_catalog_file():
     empty = os.path.join(os.path.dirname(__file__), '..', 'empty.yml')
     cat = Catalog(empty)
     assert list(cat) == []
+
+@pytest.fixture
+def temp_catalog_file():
+    path = tempfile.mkdtemp()
+    catalog_file = os.path.join(path, 'catalog.yaml')
+    with open(catalog_file, 'w') as f:
+        f.write('''
+sources:
+  - name: a
+    driver: csv
+    args:
+      urlpath: /not/a/file
+  - name: b
+    driver: csv
+    args:
+      urlpath: /not/a/file
+        ''')
+
+    yield catalog_file
+
+    shutil.rmtree(path)
+
+
+def test_catalog_file_removal(temp_catalog_file):
+    cat_dir = os.path.dirname(temp_catalog_file)
+    cat = Catalog(cat_dir) 
+    assert set(cat) == set(['catalog'])
+
+    os.remove(temp_catalog_file)
+    time.sleep(2) # wait for catalog refresh
+    assert set(cat) == set()
