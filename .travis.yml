@@ -2,6 +2,9 @@ language: generic
 os:
   - linux
   - osx
+branches:
+  only:
+  - master
 env:
   matrix:
   - CONDA_PY=27

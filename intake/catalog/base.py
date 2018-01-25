@@ -38,12 +38,16 @@ class DirectoryState(State):
     def __init__(self, name, observable, ttl):
         super(DirectoryState, self).__init__(name, observable, ttl)
         self.catalogs = []
+        self._last_files = []
 
     def refresh(self):
         catalogs = []
+        self._last_files = []
         for f in os.listdir(self.observable):
             if f.endswith('.yml') or f.endswith('.yaml'):
-                catalogs.append(Catalog(os.path.join(self.observable, f)))
+                path = os.path.join(self.observable, f)
+                catalogs.append(Catalog(path))
+                self._last_files.append(path)
 
         self.catalogs = catalogs
         children = {catalog.name: catalog for catalog in self.catalogs}
@@ -52,6 +56,10 @@ class DirectoryState(State):
 
     def changed(self):
         modified = self.update_modification_time(os.path.getmtime(self.observable))
+        # Were any files removed?
+        modified = modified or any(not os.path.exists(filename) for filename in self._last_files)
+        if modified:
+            self.refresh()
         return any([modified] + [catalog.changed for catalog in self.catalogs])
 
 
@@ -90,7 +98,8 @@ class LocalState(State):
 class CollectionState(State):
     def __init__(self, name, observable, ttl):
         super(CollectionState, self).__init__(name, observable, ttl)
-        self.catalogs = [Catalog(uri) for uri in self.observable]
+        # This name is a workaround to deal with issue that will be solved in another PR
+        self.catalogs = [Catalog(uri, name='cat%d'%i) for i, uri in enumerate(self.observable)]
 
     def refresh(self):
         for catalog in self.catalogs:
@@ -178,8 +187,13 @@ class Catalog(object):
                     yield catalog
 
     def get_catalogs(self):
-        catalogs, _, _ = zip(*self.walk())
-        return list(set([catalog.name for catalog in catalogs if catalog.name]))
+        result = list(zip(*self.walk()))
+        if len(result) == 0:
+            # special case when catalog has no sources
+            return []
+        else:
+            catalogs, _, _ = result
+            return list(set([catalog.name for catalog in catalogs if catalog.name]))
 
     def get_catalog(self, name):
         for catalog in self.walk(leaves=False):

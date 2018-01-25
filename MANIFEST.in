@@ -1,6 +1,7 @@
 recursive-include intake *.html
 recursive-include intake *.csv
 recursive-include intake *.yml
+recursive-include intake/source/tests/plugin_searchpath *.py
 
 include versioneer.py
 include intake/_version.py

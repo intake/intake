@@ -29,6 +29,7 @@ requirements:
     - dask
     - python-snappy
     - marshmallow
+    - appdirs
 
 test:
   requires:
