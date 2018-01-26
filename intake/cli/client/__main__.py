@@ -47,7 +47,7 @@ def discover(args):
 
 def example(args):
     print('Creating example catalog...')
-    files = ['us_states.yml', 'civilservices/states.csv']
+    files = ['us_states.yml', 'states_1.csv', 'states_2.csv']
     for filename in files:
         if os.path.exists(filename):
             print('Cannot create example catalog in current directory.\n'
