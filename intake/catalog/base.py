@@ -1,9 +1,9 @@
 import os.path
 import time
 
-from requests.compat import urljoin, urlparse
 import msgpack
 import requests
+from requests.compat import urljoin, urlparse
 
 from .local import CatalogConfig
 from .remote import RemoteCatalogEntry
@@ -11,6 +11,8 @@ from .utils import clamp, flatten, reload_on_change, make_prefix_tree
 
 
 class State(object):
+    """Base class representing the state of a catalog source"""
+
     def __init__(self, name, observable, ttl):
         self.name = name
         self.observable = observable
@@ -35,6 +37,8 @@ class State(object):
 
 
 class DirectoryState(State):
+    """The state of a directory of catalog files"""
+
     def __init__(self, name, observable, ttl):
         super(DirectoryState, self).__init__(name, observable, ttl)
         self.catalogs = []
@@ -64,6 +68,8 @@ class DirectoryState(State):
 
 
 class RemoteState(State):
+    """The state of a remote Intake server"""
+
     def __init__(self, name, observable, ttl):
         super(RemoteState, self).__init__(name, observable, ttl)
         self.base_url = observable + '/'
@@ -84,6 +90,8 @@ class RemoteState(State):
 
 
 class LocalState(State):
+    """The state of a catalog file on the local filesystem"""
+
     def __init__(self, name, observable, ttl):
         super(LocalState, self).__init__(name, observable, ttl)
 
@@ -96,6 +104,8 @@ class LocalState(State):
 
 
 class CollectionState(State):
+    """The state of a collection of other states"""
+
     def __init__(self, name, observable, ttl):
         super(CollectionState, self).__init__(name, observable, ttl)
         # This name is a workaround to deal with issue that will be solved in another PR

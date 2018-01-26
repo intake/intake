@@ -71,7 +71,7 @@ To read data from a data source one chunk at a time, the ``read_chunked()`` meth
 Working with Dask
 -----------------
 
-Working with large datasets is much easier with a parallel computing library like Dask.  Intake can create Dask containers (like ``dask.dataframe``) from data sources that will load their data only when required::
+Working with large datasets is much easier with a parallel, out-of-core computing library like `Dask <https://dask.pydata.org/en/latest/>`_.  Intake can create Dask containers (like ``dask.dataframe``) from data sources that will load their data only when required::
 
     >>> ddf = ds.to_dask()
     >>> ddf
@@ -88,7 +88,7 @@ The Dask containers will be partitioned in the same way as the Intake data sourc
 Opening a Catalog
 -----------------
 
-It is often useful to move the descriptions data sources to an external configuration file that can be reused and shared with other projects and people.  Intake calls this a "catalog", which contains a list of named entries describing how to load data sources.  The ``intake example`` created a catalog file with the following contents:
+It is often useful to move the descriptions of data sources out of your code and into a configuration file that can be reused and shared with other projects and people.  Intake calls this a "catalog", which contains a list of named entries describing how to load data sources.  The ``intake example`` created a catalog file with the following contents:
 
 .. code-block:: yaml
 
@@ -125,7 +125,7 @@ Intake makes it possible to create conda packages that install data sources into
 
     conda install -c intake data-us-states
 
-Now, when we import ``intake``, we will see the data from this package appear as part of a global catalog called ``intake.cat``::
+Conda installs the catalog file in this package to ``$CONDA_PREFIX/share/intake/us_states.yml``.  Now, when we import ``intake``, we will see the data from this package appear as part of a global catalog called ``intake.cat``::
 
     >>> import intake
     >>> intake.cat.states.to_dask()[['state','slug']].head()

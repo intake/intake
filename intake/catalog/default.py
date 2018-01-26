@@ -4,6 +4,7 @@ import os
 from .base import Catalog
 
 def make_empty_catalog():
+    # TODO: replace with Catalog() (or None or []) and implement in the constructor
     empty = os.path.join(os.path.dirname(__file__), 'empty.yml')
     return Catalog(empty)
 
@@ -61,6 +62,7 @@ def load_combo_catalog():
     if os.path.isdir(global_dir):
         cat_dirs.append(global_dir)
 
+    # TODO: if we find no dirs or dirs are empty, Catalog should cope and return empty without this branching
     if len(cat_dirs) > 0:
         return Catalog(cat_dirs)
     else:
