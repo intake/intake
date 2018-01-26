@@ -6,4 +6,5 @@ numpy
 pandas
 pyyaml
 requests
+appdirs
 tornado >= 4.5.1
