@@ -49,16 +49,16 @@ def test_default_catalogs():
 def test_user_catalog(user_catalog):
     cat = intake.load_combo_catalog()
     time.sleep(2) # wait 2 seconds for catalog to refresh
-    assert set(cat.get_entries()) >= set(['ex1', 'ex2'])
+    assert set(cat) >= set(['ex1', 'ex2'])
 
 
 def test_env_catalog(env_catalog):
     cat = intake.load_combo_catalog()
     time.sleep(2) # wait 2 seconds for catalog to refresh
-    assert set(cat.get_entries()) >= set(['ex3', 'ex4'])
+    assert set(cat) >= set(['ex3', 'ex4'])
 
 
 def test_user_and_env_catalog(user_catalog, env_catalog):
     cat = intake.load_combo_catalog()
     time.sleep(2) # wait 2 seconds for catalog to refresh
-    assert set(cat.get_entries()) >= set(['ex1', 'ex2', 'ex3', 'ex4'])
+    assert set(cat) >= set(['ex1', 'ex2', 'ex3', 'ex4'])

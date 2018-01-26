@@ -36,7 +36,7 @@ def teardown_module(module):
 def test_reload(intake_server):
     catalog = Catalog(intake_server)
 
-    entries = catalog.get_entries()
+    entries = list(catalog)
     assert entries == ['use_example1']
 
     with open(os.path.join(TMP_DIR, YAML_FILENAME), 'w') as f:
@@ -58,13 +58,13 @@ sources:
 
     time.sleep(2)
 
-    assert_items_equal(catalog.get_entries(), ['use_example1', 'use_example1_1'])
+    assert_items_equal(list(catalog), ['use_example1', 'use_example1_1'])
 
 
 def test_reload_newfile(intake_server):
     catalog = Catalog(intake_server)
 
-    orig_entries = catalog.get_entries()
+    orig_entries = list(catalog)
     assert 'example2' not in orig_entries
 
     filename = os.path.join(TMP_DIR, 'intake_test_catalog2.yml')
@@ -79,4 +79,4 @@ sources:
 
     time.sleep(2)
 
-    assert_items_equal(catalog.get_entries(), ['example2'] + orig_entries)
+    assert_items_equal(list(catalog), ['example2'] + orig_entries)
