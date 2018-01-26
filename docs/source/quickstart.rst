@@ -14,12 +14,15 @@ If you are using virtualenv/pip, run the following commands (**does not work unt
 
     pip install intake
 
-Creating the Example Catalog
-----------------------------
+Creating Sample Data
+--------------------
 
+Let's begin by creating a sample data set and catalog.  At the command line, run the ``intake example`` command.  This will create an example data catalog and CSV data file in the ``civilservices`` subdirectory.  This file contains some basic facts about US states.
 
 Loading a Data Source
 ---------------------
+
+
 
 Reading Data
 ------------

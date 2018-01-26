@@ -3,9 +3,10 @@ import warnings
 from . import source
 from ._version import get_versions
 from .catalog.default import load_combo_catalog
+from .catalog import Catalog
 
 
-__all__ = ['registry']
+__all__ = ['registry', 'Catalog']
 
 registry = source.registry
 
