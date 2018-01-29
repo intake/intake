@@ -11,6 +11,7 @@ Welcome to Intake's documentation!
     catalog.rst
     tools.rst
     making-plugins.rst
+    data-packages.rst
 
 
 Indices and tables
