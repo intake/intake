@@ -6,12 +6,78 @@ import runpy
 
 import jinja2
 import marshmallow
+import six
 import yaml
 
 from .entry import CatalogEntry
+from .utils import PermissionsError
 from ..source.base import Plugin
 from ..source import registry as global_registry
 from ..source.discovery import load_plugins_from_module
+
+
+class TemplateContext(dict):
+    """Collection of attributes and methods which are made available to a
+    catalog's global namespace during template expansion.
+
+    Usage:
+        >> import jinja2
+        >> context = TemplateContext('/some/dir')
+        >> jinja2.Template('The CATALOG_DIR variable is: {{ CATALOG_DIR }}').render()
+        'The CATALOG_DIR variable is: /some/dir'
+        >> jinja2.Template('"ls" command results: {{ shell("ls /some/dir") }}').render(context)
+        '"ls" command results: ["/some/dir/meta.txt", "/some/dir/test.dat"]'
+        >> jinja2.Template('"DBNAME" env var: {{ env("DBNAME") }}').render(context)
+        '"DBNAME" env var: postgres'
+    """
+    def __init__(self, catalog_dir, shell_access=True, env_access=True):
+        """Constructor.
+        
+        Arguments:
+            catalog_dir (str) :
+                Manifests as the self.CATALOG_DIR property (see its docstring
+                for more details). If None, then it is the current working
+                directory from where the catalog administrator invoked Intake.
+            shell_access (bool) :
+                Default: True
+                Whether the user has sufficient permissions to execute shell
+                commands.
+            env_access (bool) :
+                Default: True
+                Whether the user has sufficient permissions to read environment
+                variables.
+        """
+        super(dict, self).__init__()
+        assert isinstance(catalog_dir, six.string_types), (
+            'catalog_dir argument must be a string or None.'
+        )
+        self._shell_access = shell_access
+        self._env_access = env_access
+        self['CATALOG_DIR'] = catalog_dir
+        self['shell'] = self.shell
+        self['env'] = self.env
+
+    def shell(self, cmd):
+        """Return a list of strings, representing the results after executing
+        ``cmd`` on the local machine. If the user does not have permission to
+        execute shell commands, raise a PermissionsError.
+        """
+        if not self._shell_access:
+            raise PermissionsError('Additional permissions needed to execute '
+                                   'shell commands.')
+        import shlex, subprocess
+        return subprocess.check_output(shlex.split(cmd),
+                                       universal_newlines=True).strip().split()
+
+    def env(self, env_var):
+        """Return a string representing the state of an environment variable,
+        ``env_var``, on the local machine. If the user does not have permission
+        to read environment variables, raise a PermissionsError.
+        """
+        if not self._env_access:
+            raise PermissionsError('Additional permissions needed to read '
+                                   'environment variables.')
+        return os.environ.get(env_var, '')
 
 
 class TemplateStr(yaml.YAMLObject):
@@ -129,7 +195,7 @@ class LocalCatalogEntry(CatalogEntry):
         }
 
     def _create_open_args(self, user_parameters):
-        params = {'CATALOG_DIR': self._catalog_dir}
+        params = TemplateContext(self._catalog_dir)
         for parameter in self._user_parameters:
             if parameter.name in user_parameters:
                 params[parameter.name] = parameter.validate(user_parameters[parameter.name])

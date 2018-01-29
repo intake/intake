@@ -3,6 +3,13 @@ import itertools
 import sys
 
 
+class PermissionsError(Exception):
+    """Raised when user requests functionality that they do not have permission
+    to access.
+    """
+    pass
+
+
 def flatten(iterable):
     """Flatten an arbitrarily deep list"""
     iterable = iter(iterable)
