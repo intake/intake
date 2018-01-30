@@ -35,7 +35,7 @@ class TemplateContext(dict):
         
         Arguments:
             catalog_dir (str) :
-                Manifests as the 'CATALOG_DIR' entry in ``self``.
+                Value of the 'CATALOG_DIR' entry in ``self``.
             shell_access (bool) :
                 Default: True
                 Whether the user has sufficient permissions to execute shell

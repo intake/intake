@@ -36,12 +36,8 @@ def test_expand_template_env_str():
     assert ts != local.TemplateStr('other')
 
     context = local.TemplateContext('', env_access=False)
-    try:
+    with pytest.raises(PermissionsError):
         assert ts.expand(context) == 'foo {} baz'.format(os.environ['USER'])
-    except PermissionsError:
-        pass
-    else:
-        assert False, 'Failed to raise PermissionsError'
 
 
 def test_expand_template_shell_str():
@@ -57,12 +53,8 @@ def test_expand_template_shell_str():
     assert ts != local.TemplateStr('other')
 
     context = local.TemplateContext('', shell_access=False)
-    try:
+    with pytest.raises(PermissionsError):
         assert ts.expand(context) == 'foo bar baz'
-    except PermissionsError:
-        pass
-    else:
-        assert False, 'Failed to raise PermissionsError'
 
 
 EXAMPLE_YAML = '''
