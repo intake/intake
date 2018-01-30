@@ -7,6 +7,7 @@ import pytest
 import yaml
 
 from .util import assert_items_equal
+from ..utils import PermissionsError
 from intake.catalog import Catalog, local
 
 
@@ -20,6 +21,40 @@ def test_template_str():
     assert ts == local.TemplateStr(template)
     assert ts != template
     assert ts != local.TemplateStr('other')
+
+
+def test_expand_template_env_str():
+    template = 'foo {{ env("USER") }} baz'
+    ts = local.TemplateStr(template)
+    context = local.TemplateContext('')
+
+    assert repr(ts) == 'TemplateStr(\'foo {{ env("USER") }} baz\')'
+    assert str(ts) == template
+    assert ts.expand(context) == 'foo {} baz'.format(os.environ['USER'])
+    assert ts == local.TemplateStr(template)
+    assert ts != template
+    assert ts != local.TemplateStr('other')
+
+    context = local.TemplateContext('', env_access=False)
+    with pytest.raises(PermissionsError):
+        assert ts.expand(context) == 'foo {} baz'.format(os.environ['USER'])
+
+
+def test_expand_template_shell_str():
+    template = 'foo {{ shell("echo bar")[0] }} baz'
+    ts = local.TemplateStr(template)
+    context = local.TemplateContext('')
+
+    assert repr(ts) == 'TemplateStr(\'foo {{ shell("echo bar")[0] }} baz\')'
+    assert str(ts) == template
+    assert ts.expand(context) == 'foo bar baz'
+    assert ts == local.TemplateStr(template)
+    assert ts != template
+    assert ts != local.TemplateStr('other')
+
+    context = local.TemplateContext('', shell_access=False)
+    with pytest.raises(PermissionsError):
+        assert ts.expand(context) == 'foo bar baz'
 
 
 EXAMPLE_YAML = '''
