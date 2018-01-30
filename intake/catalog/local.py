@@ -23,7 +23,7 @@ class TemplateContext(dict):
     Usage:
         >> import jinja2
         >> context = TemplateContext('/some/dir')
-        >> jinja2.Template('The CATALOG_DIR variable is: {{ CATALOG_DIR }}').render()
+        >> jinja2.Template('The CATALOG_DIR variable is: {{ CATALOG_DIR }}').render(context)
         'The CATALOG_DIR variable is: /some/dir'
         >> jinja2.Template('"ls" command results: {{ shell("ls /some/dir") }}').render(context)
         '"ls" command results: ["/some/dir/meta.txt", "/some/dir/test.dat"]'
