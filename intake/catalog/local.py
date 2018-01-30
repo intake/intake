@@ -47,7 +47,7 @@ class TemplateContext(dict):
         """
         super(dict, self).__init__()
         assert isinstance(catalog_dir, six.string_types), (
-            'catalog_dir argument must be a string or None.'
+            'catalog_dir argument must be a string.'
         )
         self._shell_access = shell_access
         self._env_access = env_access
@@ -56,9 +56,9 @@ class TemplateContext(dict):
         self['env'] = self.env
 
     def shell(self, cmd):
-        """Return a list of strings, representing the results after executing
-        ``cmd`` on the local machine. If the user does not have permission to
-        execute shell commands, raise a PermissionsError.
+        """Return a list of strings, representing each line of stdout after
+        executing ``cmd`` on the local machine. If the user does not have
+        permission to execute shell commands, raise a PermissionsError.
         """
         if not self._shell_access:
             raise PermissionsError('Additional permissions needed to execute '
@@ -68,8 +68,8 @@ class TemplateContext(dict):
                                        universal_newlines=True).strip().split()
 
     def env(self, env_var):
-        """Return a string representing the state of an environment variable,
-        ``env_var``, on the local machine. If the user does not have permission
+        """Return a string representing the state of environment variable
+        ``env_var`` on the local machine. If the user does not have permission
         to read environment variables, raise a PermissionsError.
         """
         if not self._env_access:
