@@ -24,20 +24,20 @@ def test_template_str():
 
 
 def test_expand_template_env_str():
-    template = 'foo {{ env("TERM") }} baz'
+    template = 'foo {{ env("USER") }} baz'
     ts = local.TemplateStr(template)
     context = local.TemplateContext('')
 
-    assert repr(ts) == 'TemplateStr(\'foo {{ env("TERM") }} baz\')'
+    assert repr(ts) == 'TemplateStr(\'foo {{ env("USER") }} baz\')'
     assert str(ts) == template
-    assert ts.expand(context) == 'foo dumb baz'
+    assert ts.expand(context) == 'foo {} baz'.format(os.environ['USER'])
     assert ts == local.TemplateStr(template)
     assert ts != template
     assert ts != local.TemplateStr('other')
 
     context = local.TemplateContext('', env_access=False)
     try:
-        assert ts.expand(context) == 'foo dumb baz'
+        assert ts.expand(context) == 'foo {} baz'.format(os.environ['USER'])
     except PermissionsError:
         pass
     else:
