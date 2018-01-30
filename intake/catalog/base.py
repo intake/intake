@@ -1,16 +1,18 @@
 import os.path
 import time
 
-from requests.compat import urljoin, urlparse
 import msgpack
 import requests
+from requests.compat import urljoin, urlparse
 
 from .local import CatalogConfig
 from .remote import RemoteCatalogEntry
-from .utils import clamp, flatten, reload_on_change
+from .utils import clamp, flatten, reload_on_change, make_prefix_tree
 
 
 class State(object):
+    """Base class representing the state of a catalog source"""
+
     def __init__(self, name, observable, ttl):
         self.name = name
         self.observable = observable
@@ -35,15 +37,21 @@ class State(object):
 
 
 class DirectoryState(State):
+    """The state of a directory of catalog files"""
+
     def __init__(self, name, observable, ttl):
         super(DirectoryState, self).__init__(name, observable, ttl)
         self.catalogs = []
+        self._last_files = []
 
     def refresh(self):
         catalogs = []
+        self._last_files = []
         for f in os.listdir(self.observable):
             if f.endswith('.yml') or f.endswith('.yaml'):
-                catalogs.append(Catalog(os.path.join(self.observable, f)))
+                path = os.path.join(self.observable, f)
+                catalogs.append(Catalog(path))
+                self._last_files.append(path)
 
         self.catalogs = catalogs
         children = {catalog.name: catalog for catalog in self.catalogs}
@@ -52,10 +60,16 @@ class DirectoryState(State):
 
     def changed(self):
         modified = self.update_modification_time(os.path.getmtime(self.observable))
+        # Were any files removed?
+        modified = modified or any(not os.path.exists(filename) for filename in self._last_files)
+        if modified:
+            self.refresh()
         return any([modified] + [catalog.changed for catalog in self.catalogs])
 
 
 class RemoteState(State):
+    """The state of a remote Intake server"""
+
     def __init__(self, name, observable, ttl):
         super(RemoteState, self).__init__(name, observable, ttl)
         self.base_url = observable + '/'
@@ -76,6 +90,8 @@ class RemoteState(State):
 
 
 class LocalState(State):
+    """The state of a catalog file on the local filesystem"""
+
     def __init__(self, name, observable, ttl):
         super(LocalState, self).__init__(name, observable, ttl)
 
@@ -88,9 +104,12 @@ class LocalState(State):
 
 
 class CollectionState(State):
+    """The state of a collection of other states"""
+
     def __init__(self, name, observable, ttl):
         super(CollectionState, self).__init__(name, observable, ttl)
-        self.catalogs = [Catalog(uri) for uri in self.observable]
+        # This name is a workaround to deal with issue that will be solved in another PR
+        self.catalogs = [Catalog(uri, name='cat%d'%i) for i, uri in enumerate(self.observable)]
 
     def refresh(self):
         for catalog in self.catalogs:
@@ -156,6 +175,8 @@ class Catalog(object):
 
     def reload(self):
         self.name, self._children, self._entries, self._plugins = self._state.refresh()
+        self._all_entries = { source: cat_entry for _, source, cat_entry in self.walk(leaves=True) }
+        self._entry_tree = make_prefix_tree(self._all_entries)
 
     @property
     def changed(self):
@@ -175,14 +196,6 @@ class Catalog(object):
                 else:
                     yield catalog
 
-    def get_catalogs(self):
-        catalogs, _, _ = zip(*self.walk())
-        return list(set([catalog.name for catalog in catalogs if catalog.name]))
-
-    def get_entries(self):
-        _, names, _ = zip(*self.walk())
-        return list(set(names))
-
     def get_catalog(self, name):
         for catalog in self.walk(leaves=False):
             if catalog.name == name:
@@ -190,22 +203,49 @@ class Catalog(object):
         raise KeyError(name)
 
     @reload_on_change
-    def get_entry(self, name):
-        return self._entries[name]
+    def _get_entry(self, name):
+        return self._all_entries[name]
+
+    @reload_on_change
+    def _get_entries(self):
+        return self._all_entries
+
+    @reload_on_change
+    def _get_entry_tree(self):
+        return self._entry_tree
 
     def __iter__(self):
-        return iter(self.get_catalogs()) if self._children else iter(self.get_entries())
+        return iter(self._get_entries())
 
     def __dir__(self):
-        return self.get_catalogs() if self._children else self.get_entries()
+        return list(self._get_entry_tree().keys())
 
     def __getattr__(self, item):
-        return self.get_catalog(item) if self._children else self.get_entry(item)
+        subtree = self._get_entry_tree()[item]
+        if isinstance(subtree, dict):
+            return CatalogSubtree(subtree)
+        else:
+            return subtree # is catalog entry
 
-    def __getitem__(self, item):
-        return self.get_catalog(item) if self._children else self.get_entry(item)
+    def __getitem__(self, key):
+        return self._get_entry(key)
 
     @property
     @reload_on_change
     def plugins(self):
         return self._plugins
+
+
+class CatalogSubtree(object):
+    def __init__(self, subtree):
+        self._subtree = subtree
+
+    def __dir__(self):
+        return list(self._subtree.keys())
+
+    def __getattr__(self, item):
+        subtree = self._subtree[item]
+        if isinstance(subtree, dict):
+            return CatalogSubtree(subtree)
+        else:
+            return subtree # is catalog entry

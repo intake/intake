@@ -1,5 +1,8 @@
 import datetime
 import os.path
+import shutil
+import tempfile
+import time
 
 import pytest
 import yaml
@@ -7,6 +10,7 @@ import yaml
 import pandas
 
 from .util import assert_items_equal
+from ..utils import PermissionsError
 from intake.catalog import Catalog, local
 
 
@@ -20,6 +24,40 @@ def test_template_str():
     assert ts == local.TemplateStr(template)
     assert ts != template
     assert ts != local.TemplateStr('other')
+
+
+def test_expand_template_env_str():
+    template = 'foo {{ env("USER") }} baz'
+    ts = local.TemplateStr(template)
+    context = local.TemplateContext('')
+
+    assert repr(ts) == 'TemplateStr(\'foo {{ env("USER") }} baz\')'
+    assert str(ts) == template
+    assert ts.expand(context) == 'foo {} baz'.format(os.environ['USER'])
+    assert ts == local.TemplateStr(template)
+    assert ts != template
+    assert ts != local.TemplateStr('other')
+
+    context = local.TemplateContext('', env_access=False)
+    with pytest.raises(PermissionsError):
+        assert ts.expand(context) == 'foo {} baz'.format(os.environ['USER'])
+
+
+def test_expand_template_shell_str():
+    template = 'foo {{ shell("echo bar")[0] }} baz'
+    ts = local.TemplateStr(template)
+    context = local.TemplateContext('')
+
+    assert repr(ts) == 'TemplateStr(\'foo {{ shell("echo bar")[0] }} baz\')'
+    assert str(ts) == template
+    assert ts.expand(context) == 'foo bar baz'
+    assert ts == local.TemplateStr(template)
+    assert ts != template
+    assert ts != local.TemplateStr('other')
+
+    context = local.TemplateContext('', shell_access=False)
+    with pytest.raises(PermissionsError):
+        assert ts.expand(context) == 'foo bar baz'
 
 
 EXAMPLE_YAML = '''
@@ -176,9 +214,9 @@ def test_union_catalog():
 
     union_cat = Catalog([uri1, uri2])
 
-    assert_items_equal(list(union_cat), ['catalog_union_1', 'catalog_union_2'])
+    assert_items_equal(list(union_cat), ['entry1', 'entry1_part', 'use_example1'])
 
-    assert union_cat.catalog_union_1.entry1_part.describe() == {
+    assert union_cat.entry1_part.describe() == {
         'container': 'dataframe',
         'user_parameters': [
             {
@@ -193,7 +231,7 @@ def test_union_catalog():
         'direct_access': 'allow'
     }
 
-    desc_open = union_cat.catalog_union_1.entry1_part.describe_open()
+    desc_open = union_cat.entry1_part.describe_open()
     assert desc_open['args']['urlpath'].endswith('entry1_1.csv')
     del desc_open['args']['urlpath']  # Full path will be system dependent
     assert desc_open == {
@@ -204,10 +242,48 @@ def test_union_catalog():
         'plugin': 'csv'
     }
 
-    assert union_cat.catalog_union_2.entry1.get().container == 'dataframe'
-    assert union_cat.catalog_union_2.entry1.get().metadata == dict(foo='bar', bar=[1, 2, 3])
+    # Implied creation of data source
+    assert union_cat.entry1.container == 'dataframe'
+    assert union_cat.entry1.metadata == dict(foo='bar', bar=[1, 2, 3])
 
-    # Use default parameters
-    assert union_cat.catalog_union_1.entry1_part.get().container == 'dataframe'
-    # Specify parameters
-    assert union_cat.catalog_union_2.entry1_part.get(part='2').container == 'dataframe'
+    # Use default parameters in explict creation of data source
+    assert union_cat.entry1_part().container == 'dataframe'
+    # Specify parameters in creation of data source
+    assert union_cat.entry1_part(part='2').container == 'dataframe'
+
+
+def test_empty_catalog_file():
+    empty = os.path.join(os.path.dirname(__file__), '..', 'empty.yml')
+    cat = Catalog(empty)
+    assert list(cat) == []
+
+@pytest.fixture
+def temp_catalog_file():
+    path = tempfile.mkdtemp()
+    catalog_file = os.path.join(path, 'catalog.yaml')
+    with open(catalog_file, 'w') as f:
+        f.write('''
+sources:
+  - name: a
+    driver: csv
+    args:
+      urlpath: /not/a/file
+  - name: b
+    driver: csv
+    args:
+      urlpath: /not/a/file
+        ''')
+
+    yield catalog_file
+
+    shutil.rmtree(path)
+
+
+def test_catalog_file_removal(temp_catalog_file):
+    cat_dir = os.path.dirname(temp_catalog_file)
+    cat = Catalog(cat_dir) 
+    assert set(cat) == set(['a', 'b'])
+
+    os.remove(temp_catalog_file)
+    time.sleep(1.5) # wait for catalog refresh
+    assert set(cat) == set()

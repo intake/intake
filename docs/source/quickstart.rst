@@ -14,29 +14,126 @@ If you are using virtualenv/pip, run the following commands (**does not work unt
 
     pip install intake
 
-Creating the Example Catalog
-----------------------------
+Creating Sample Data
+--------------------
 
+Let's begin by creating a sample data set and catalog.  At the command line, run the ``intake example`` command.  This will create an example data catalog and two CSV data files.  These files contains some basic facts about the 50 US states.
 
 Loading a Data Source
 ---------------------
 
+Data sources can be created directly with the ``open_*()`` methods in the ``intake`` module.  To read our example data::
+
+    >>> import intake
+    >>> ds = intake.open_csv('civilservices/states_*.csv')
+    >>> print(ds)
+    <intake.source.csv.CSVSource object at 0x1163882e8>
+
+Each open method has different arguments, specific for the data format or service being used.
+
 Reading Data
 ------------
 
+Intake reads data into memory using containers you are already familiar with:
+
+  * Tables: Pandas DataFrames
+  * Multidimensional arrays: NumPy arrays
+  * Semistructred data: Python lists of objects (usually dictionaries)
+
+To find out what kind of container a data source will produce, inspect the ``container`` attribute::
+
+    >>> ds.container
+    'dataframe'
+
+The result will be ``dataframe``, ``ndarray``, or ``python``.  (New container types may be added in the future.)
+
+For data that fits in memory, you can ask Intake to load it directly::
+
+    >>> df = ds.read()
+    >>> df.head()
+            state        slug code                nickname  \
+    0     Alabama     alabama   AL      Yellowhammer State
+    1      Alaska      alaska   AK       The Last Frontier
+    2     Arizona     arizona   AZ  The Grand Canyon State
+    3    Arkansas    arkansas   AR       The Natural State
+    4  California  california   CA            Golden State
+
+Intake data sources can have *partitions*.  A partition refers to a contiguous chunk of data that can be loaded independent of any other partition.  The partitioning scheme is entirely up to the plugin author.  In the case of the CSV plugin, each ``.csv`` file is a partition.
+
+To read data from a data source one chunk at a time, the ``read_chunked()`` method returns an iterator::
+
+    >>> for chunk in ds.read_chunked(): print('Chunk: %d' % len(chunk))
+    ...
+    Chunk: 24
+    Chunk: 26
 
 
 Working with Dask
 -----------------
 
+Working with large datasets is much easier with a parallel, out-of-core computing library like `Dask <https://dask.pydata.org/en/latest/>`_.  Intake can create Dask containers (like ``dask.dataframe``) from data sources that will load their data only when required::
+
+    >>> ddf = ds.to_dask()
+    >>> ddf
+    Dask DataFrame Structure:
+                admission_date admission_number capital_city capital_url    code constitution_url facebook_url landscape_background_url map_image_url nickname population population_rank skyline_background_url    slug   state state_flag_url state_seal_url twitter_url website
+    npartitions=2
+                        object            int64       object      object  object           object       object                   object        object   object      int64           int64                 object  object  object         object         object      object  object
+                            ...              ...          ...         ...     ...              ...          ...                      ...           ...      ...        ...             ...                    ...     ...     ...            ...            ...         ...     ...
+                            ...              ...          ...         ...     ...              ...          ...                      ...           ...      ...        ...             ...                    ...     ...     ...            ...            ...         ...     ...
+    Dask Name: from-delayed, 4 tasks
+
+The Dask containers will be partitioned in the same way as the Intake data source, allowing different chunks to be processed in parallel.
 
 Opening a Catalog
 -----------------
+
+It is often useful to move the descriptions of data sources out of your code and into a configuration file that can be reused and shared with other projects and people.  Intake calls this a "catalog", which contains a list of named entries describing how to load data sources.  The ``intake example`` created a catalog file with the following contents:
+
+.. code-block:: yaml
+
+    sources:
+    - name: states
+        description: US state information from [CivilServices](https://civil.services/)
+        driver: csv
+        args:
+          urlpath: !template '{{ CATALOG_DIR }}/states_*.csv'
+        metadata:
+          origin_url: 'https://github.com/CivilServiceUSA/us-states/blob/v1.0.0/data/states.csv'
+
+To load a catalog from a catalog file::
+
+    >>> cat = intake.Catalog('us_states.yml')
+    >>> list(cat)
+    ['states']
+
+This catalog contains one data source, called ``states``.  It can be accessed by attribute::
+
+    >>> cat.states.to_dask()[['state','slug']].head()
+            state        slug
+    0     Alabama     alabama
+    1      Alaska      alaska
+    2     Arizona     arizona
+    3    Arkansas    arkansas
+    4  California  california
 
 
 Installing Data Source Packages with Conda
 ------------------------------------------
 
-Intake makes it possible to create conda packages that install data sources into a global (to the conda environment) catalog.  For example:
+Intake makes it possible to create conda packages that install data sources into a global catalog.  For example, we can install a data package containing the same data we have been working with::
 
+    conda install -c intake data-us-states
 
+Conda installs the catalog file in this package to ``$CONDA_PREFIX/share/intake/us_states.yml``.  Now, when we import ``intake``, we will see the data from this package appear as part of a global catalog called ``intake.cat``::
+
+    >>> import intake
+    >>> intake.cat.states.to_dask()[['state','slug']].head()
+            state        slug
+    0     Alabama     alabama
+    1      Alaska      alaska
+    2     Arizona     arizona
+    3    Arkansas    arkansas
+    4  California  california
+
+The global catalog is a union of all catalogs installed in the conda/virtualenv environment and also any catalogs installed in user-specific location.

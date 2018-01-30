@@ -17,6 +17,7 @@ class RemoteCatalogEntry(CatalogEntry):
         self.url = url
         self.args = args
         self.kwargs = kwargs
+        super(RemoteCatalogEntry, self).__init__()
 
     def describe(self):
         return self.kwargs

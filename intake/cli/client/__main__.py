@@ -1,7 +1,9 @@
 from __future__ import print_function
 
 import sys
+import os
 import argparse
+import shutil
 
 from intake.catalog import Catalog
 
@@ -43,6 +45,32 @@ def discover(args):
         print(f.discover())
 
 
+def example(args):
+    print('Creating example catalog...')
+    files = ['us_states.yml', 'states_1.csv', 'states_2.csv']
+    for filename in files:
+        if os.path.exists(filename):
+            print('Cannot create example catalog in current directory.\n'
+                  '%s already exists.' % filename)
+            return 1
+
+    src_dir = os.path.join(os.path.dirname(__file__), '..', 'sample')
+
+    for filename in files:
+        src_name = os.path.join(src_dir, filename)
+        dest_name = filename
+        dest_dir = os.path.dirname(filename)
+        print('  Writing %s' % filename)
+        if dest_dir != '' and not os.path.exists(dest_dir):
+            os.mkdir(dest_dir)
+        shutil.copyfile(src_name, dest_name)
+
+    print('''\nTo load the catalog:
+>>> import intake
+>>> cat = intake.Catalog('%s')
+''' % files[0])
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv
@@ -75,12 +103,18 @@ def main(argv=None):
     discover_parser.add_argument('name', metavar='NAME', type=str, help='Catalog name')
     discover_parser.set_defaults(func=discover)
 
+    example_parser = subparsers.add_parser('example', help='create example catalog')
+    example_parser.set_defaults(func=example)
+
     if not argv[1:]:
         parser.print_usage()
         sys.exit(1)
 
     args = parser.parse_args()
-    args.func(args)
+    retcode = args.func(args)
+    if retcode is None:
+        retcode = 0
+    return retcode
 
 
 if __name__ == "__main__":

@@ -1,4 +1,7 @@
 class CatalogEntry(object):
+    def __init__(self):
+        self._default_source = None
+
     def __repr__(self):
         return repr(self.describe())
 
@@ -10,3 +13,16 @@ class CatalogEntry(object):
 
     def get(self, **user_parameters):
         raise NotImplementedError
+
+    # Convenience methods for configuring source and automatically
+    # creating a default source when needed.
+    def __call__(self, **kwargs):
+        return self.get(**kwargs)
+
+    def _get_default_source(self):
+        if self._default_source is None:
+            self._default_source = self.get()
+        return self._default_source
+
+    def __getattr__(self, attr):
+        return getattr(self._get_default_source(), attr)

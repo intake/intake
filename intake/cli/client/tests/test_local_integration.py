@@ -1,5 +1,9 @@
 import os.path
 import subprocess
+import tempfile
+import shutil
+
+import pytest
 
 TEST_CATALOG_YAML = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
@@ -98,3 +102,32 @@ def test_get_fail():
     _, err = process.communicate()
 
     assert "KeyError: 'entry2'" in err.decode('utf-8')
+
+@pytest.fixture
+def temp_current_working_directory():
+    prev_cwd = os.getcwd()
+    dirname = tempfile.mkdtemp()
+    os.chdir(dirname)
+
+    yield dirname
+
+    os.chdir(prev_cwd)
+    shutil.rmtree(dirname)
+
+
+def test_example(temp_current_working_directory):
+    cmd = ['python', '-m', 'intake.cli.client', 'example']
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+
+    assert process.returncode == 0
+    assert os.path.exists('us_states.yml')
+    assert os.path.exists('states_1.csv')
+    assert os.path.exists('states_2.csv')
+    
+    # should fail second time due to existing files
+    cmd = ['python', '-m', 'intake.cli.client', 'example']
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    _, err = process.communicate()
+
+    assert process.returncode > 0

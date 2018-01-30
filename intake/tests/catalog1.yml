@@ -1,0 +1,12 @@
+sources:
+  - name: ex1
+    description: this source doesn't work
+    driver: csv
+    args: {}
+  - name: ex2
+    description: this source doesn't work
+    metadata:
+      foo: 'bar'
+      bar: [1, 2, 3]
+    driver: csv
+    args: {}

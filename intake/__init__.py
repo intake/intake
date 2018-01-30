@@ -2,9 +2,11 @@ import warnings
 
 from . import source
 from ._version import get_versions
+from .catalog.default import load_combo_catalog
+from .catalog import Catalog
 
 
-__all__ = ['registry']
+__all__ = ['registry', 'Catalog']
 
 registry = source.registry
 
@@ -25,6 +27,10 @@ for plugin_name, plugin in registry.items():
     else:
         warnings.warn('Invalid Intake plugin name "%s" found.' % plugin_name)
 
+
+# Import default catalog
+cat = load_combo_catalog()
+__all__.append(['cat'])
 
 __version__ = get_versions()['version']
 del get_versions
