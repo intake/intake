@@ -35,9 +35,7 @@ class TemplateContext(dict):
         
         Arguments:
             catalog_dir (str) :
-                Manifests as the self.CATALOG_DIR property (see its docstring
-                for more details). If None, then it is the current working
-                directory from where the catalog administrator invoked Intake.
+                Manifests as the 'CATALOG_DIR' entry in ``self``.
             shell_access (bool) :
                 Default: True
                 Whether the user has sufficient permissions to execute shell
