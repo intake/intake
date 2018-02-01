@@ -202,6 +202,25 @@ def test_empty_catalog_file():
     cat = Catalog(empty)
     assert list(cat) == []
 
+
+def test_duplicate_data_sources():
+    path = os.path.dirname(__file__)
+    uri = os.path.join(path, 'catalog_dup_sources.yml')
+
+    with pytest.raises(local.ValidationError) as except_info:
+        c = Catalog(uri)
+    assert 'already exists' in str(except_info.value)
+
+
+def test_duplicate_parameters():
+    path = os.path.dirname(__file__)
+    uri = os.path.join(path, 'catalog_dup_parameters.yml')
+
+    with pytest.raises(local.ValidationError) as except_info:
+        c = Catalog(uri)
+    assert 'already exists' in str(except_info.value)
+
+
 @pytest.fixture
 def temp_catalog_file():
     path = tempfile.mkdtemp()
