@@ -9,17 +9,33 @@ Combined with the `Conda Package Manger <https://conda.io/docs/>`_, Intake makes
   * Data packages can be self-describing using Intake catalog files
   * Applications that need certain datasets can include data packages in their dependency list
 
-A data package does not necessarily imply there are data files inside the package.  A data package could describe remote data sources (such as files in S3) and take up very little space on disk.
+In this tutorial, we give a walkthrough to enable you to distribute any dataset to others, so that they can access the data using Intake without worrying about where it resides or how it should be loaded.
 
 Defining a Package
 ''''''''''''''''''
 
-Data packages are standard conda packages that install an Intake catalog file into the user's conda environment (``$CONDA_PREFIX/share/intake``).  These packages are considered ``noarch`` packages, so that one package can be installed on any platform, with any version of Python.  The easiest way to create such a package is using a `conda build <https://conda.io/docs/commands/build/conda-build.html>`_ receipe.
+The steps involved in creating a data package are:
 
-Conda-build recipes are stored in a file called ``meta.yaml``.  An example that packages up data from a Github repository would look like this:
+1. Identifying a dataset, which can be accessed via a URL or included directly as one or more files in the package.
+2. Creating a package containing an intake catalog file, meta.yaml (description of the data, version, requirements, etc.) and a script to copy the data.
+3. Building the package using the command conda build.
+4. Uploading the package to a package repository such as `Anaconda Cloud <https://anaconda.org>`_ or your own private repository.
+
+Data packages are standard conda packages that install an Intake catalog file into the user's conda environment (``$CONDA_PREFIX/share/intake``).  A data package does not necessarily imply there are data files inside the package.  A data package could describe remote data sources (such as files in S3) and take up very little space on disk.
+
+These packages are considered ``noarch`` packages, so that one package can be installed on any platform, with any version of Python (or no Python at all).  The easiest way to create such a package is using a `conda build <https://conda.io/docs/commands/build/conda-build.html>`_ receipe.
+
+Conda-build recipes are stored in a directory that contains a files like:
+
+  * ``meta.yaml`` - description of package metadata
+  * ``build.sh`` - script for building/installing package contents (on Linux/macOS)
+  * other files needed by the package (catalog files and data files for data packages)
+
+An example that packages up data from a Github repository would look like this:
 
 .. code-block:: yaml
 
+    # meta.yaml
     package:
       version: '1.0.0'
       name: 'data-us-states'
@@ -42,9 +58,6 @@ Conda-build recipes are stored in a file called ``meta.yaml``.  An example that 
       license: MIT
       license_family: MIT
       summary: Data about US states from CivilServices
-    
-    extra:
-      recipe-maintainers: seibert
 
 The key parts of a data package recipe (different from typical conda recipes) is the ``build`` section:
 
@@ -83,6 +96,33 @@ Finishing out this example, the catalog file for this data source looks like thi
 
 The ``{{ CATALOG_DIR }}`` Jinja2 variable is used to construct a path relative to where the catalog file was installed.
 
+To build the package, you must have conda-build installed:
+
+.. code-block:: bash
+
+    conda install conda-build
+
+Building the package requires no special arguments:
+
+.. code-block:: bash
+
+    conda build my_recipe_dir
+
+Conda-build will display the path of the built package, which you will need to upload it.
+
+If you want your data package to be publicly available on `Anaconda Cloud <https://anaconda.org>`_, you can install the anaconda-client utility:
+
+.. code-block:: bash
+
+    conda install anaconda-client
+
+Then you can register your Anaconda Cloud credentials and upload the package:
+
+.. code-block:: bash
+
+    anaconda login
+    anaconda upload /Users/intake_user/anaconda/conda-bld/noarch/data-us-states-1.0.0-0.tar.bz2
+
 Best Practices
 ''''''''''''''
 
@@ -98,5 +138,5 @@ Packaging
 
 * Packages that refer to remote data sources (such as databases and REST APIs) need to think about authentication.  Do not include authentication credentials inside a data package.  They should be obtained from the environment.
 * Data packages should depend on the Intake plugins required to read the data, or Intake itself.
-* Although it is technically possible to embed plugin code into a data package, this is discouraged.  It is better to break that code out into a separate package so that it can be updated independent of the data without bloating disk usage in the package cache.
+* Although it is technically possible to embed plugin code into a data package, this is discouraged.  It is better to break that code out into a separate package so that it can be updated independent of the data.
 * Anaconda Cloud accounts have disk usage limits, so be careful uploading data packages there.  You may want to host them on a separate web server or cloud storage bucket.  `conda index <https://conda.io/docs/commands/build/conda-index.html>`_ will help you construct the required JSON metadata to host conda packages.
