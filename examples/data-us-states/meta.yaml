@@ -1,0 +1,22 @@
+package:
+  name: 'data-us-states'
+  version: '1.0.0'
+
+source:
+  git_rev: v1.0.0
+  git_url: https://github.com/CivilServiceUSA/us-states
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - intake
+  build: []
+
+about:
+  description: Data about US states from CivilServices (https://civil.services/)
+  license: MIT
+  license_family: MIT
+  summary: Data about US states from CivilServices
