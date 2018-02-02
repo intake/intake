@@ -127,6 +127,16 @@ def expand_templates(args, template_context):
     return expanded_args
 
 
+def check_uniqueness(objs, key):
+    values = [getattr(obj, key) for obj in objs]
+    unique_values = set()
+    for value in values:
+        if value in unique_values:
+            raise marshmallow.ValidationError("{} already exists: '{}'".format(key, value), key)
+        else:
+            unique_values.add(value)
+
+
 class UserParameter(object):
     def __init__(self, name, description, type, default, min=None, max=None, allowed=None):
         self.name = name
@@ -277,12 +287,6 @@ class UserParameterSchema(marshmallow.Schema):
     max = marshmallow.fields.Raw(missing=None)
     allowed = marshmallow.fields.Raw(missing=None)
 
-    @marshmallow.validates('name')
-    def validate_name(self, data):
-        if data in self.context['user_parameters']:
-            raise marshmallow.ValidationError("name already exists: '{}'".format(data), 'name')
-        self.context['user_parameters'].add(data)
-
     @marshmallow.validates('type')
     def validate_type(self, data):
         types = ['bool', 'dict', 'float', 'int', 'list', 'long', 'str', 'tuple', 'unicode']
@@ -303,22 +307,13 @@ class LocalCatalogEntrySchema(marshmallow.Schema):
     metadata = marshmallow.fields.Dict(missing={})
     parameters = marshmallow.fields.Nested(UserParameterSchema, many=True, missing=[])
 
-    @marshmallow.pre_load
-    def initialize(self, data):
-        self.context['user_parameters'] = set()
-
-    @marshmallow.validates('name')
-    def validate_name(self, data):
-        if data in self.context['entries']:
-            raise marshmallow.ValidationError("name already exists: '{}'".format(data), 'name')
-        self.context['entries'].add(data)
-
     @marshmallow.validates('direct_access')
     def validate_direct_access(self, data):
         marshmallow.validate.OneOf(['forbid', 'allow', 'force'])(data)
 
     @marshmallow.post_load
     def instantiate(self, data):
+        check_uniqueness(data['parameters'], 'name')
         return LocalCatalogEntry(catalog_dir=self.context['root'], **data)
 
 
@@ -350,8 +345,6 @@ class CatalogConfigSchema(marshmallow.Schema):
 
     @marshmallow.pre_load(pass_many=True)
     def transform(self, data, many):
-        self.context['entries'] = set()
-
         data['plugin_sources'] = []
         if 'plugins' in data:
             for obj in data['plugins']['source']:
@@ -359,6 +352,10 @@ class CatalogConfigSchema(marshmallow.Schema):
                 data['plugin_sources'].append(dict(type=key, source=obj[key]))
             del data['plugins']
         return data
+
+    @marshmallow.post_load
+    def validate(self, data):
+        check_uniqueness(data['data_sources'], 'name')
 
 
 class ValidationError(Exception):

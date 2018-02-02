@@ -1,0 +1,22 @@
+sources:
+  - name: entry1_part
+    description: entry1 part
+    parameters:
+      - name: part
+        description: a
+        type: str
+      - name: part
+        description: b
+        type: int
+    driver: csv
+    args: # passed to the open() method
+      urlpath: !template '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'
+  - name: entry2_part
+    description: entry2 part
+    parameters:
+      - name: part
+        description: a
+        type: str
+    driver: csv
+    args: # passed to the open() method
+      urlpath: !template '{{ CATALOG_DIR }}/entry2_{{ part }}.csv'
