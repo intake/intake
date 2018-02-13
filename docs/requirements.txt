@@ -1,4 +1,6 @@
 sphinx
 sphinx_rtd_theme
 numpydoc
-
+marshmallow
+msgpack_numpy
+python-snappy
