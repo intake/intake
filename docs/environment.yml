@@ -1,0 +1,16 @@
+name: intake
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - appdirs
+  - dask
+  - pandas
+  - python=3.6
+  - python-snappy
+  - pip:
+    - marshmallow
+    - msgpack-numpy
+    - sphinx
+    - sphinx-rtd-theme
+    - numpydoc
