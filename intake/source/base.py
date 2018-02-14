@@ -165,3 +165,8 @@ class DataSource(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
+
+    @property
+    def plot(self):
+        from ..plotting import HoloViewsDataSourcePlot
+        return HoloViewsDataSourcePlot(self)
