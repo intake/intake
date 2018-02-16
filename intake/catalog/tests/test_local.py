@@ -123,6 +123,20 @@ def test_use_source_plugin_from_config(catalog1):
     catalog1['use_example1'].get()
 
 
+@pytest.mark.parametrize("dtype,expected", [
+    ("bool", False),
+    ("datetime", pandas.Timestamp(1970, 1, 1, 0, 0, 0)),
+    ("float", 0.0),
+    ("int", 0),
+    ("list", []),
+    ("str", ""),
+    ("unicode", u""),
+])
+def test_user_parameter_default_value(dtype, expected):
+    p = local.UserParameter('a', 'a desc', dtype)
+    assert p.validate(None) == expected
+
+
 @pytest.mark.parametrize("dtype,given,expected", [
     ("bool", "true", True),
     ("bool", 0, False),
@@ -132,7 +146,7 @@ def test_use_source_plugin_from_config(catalog1):
     ("float", "3.14", 3.14),
     ("int", "1", 1),
     ("list", (3, 4), [3, 4]),
-    ("str", None, "None"),
+    ("str", 1, "1"),
     ("unicode", "foo", u"foo"),
 ])
 def test_user_parameter_coerce_value(dtype, given, expected):
