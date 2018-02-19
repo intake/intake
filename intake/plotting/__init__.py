@@ -23,6 +23,44 @@ except ImportError:
     gen = None
 
 
+class StreamingCallable(Callable):
+    """
+    StreamingCallable is a DynamicMap callback wrapper which keeps
+    a handle to start and stop a dynamic stream.
+    """
+
+    periodic = param.Parameter()
+
+    def clone(self, callable=None, **overrides):
+        """
+        Allows making a copy of the Callable optionally overriding
+        the callable and other parameters.
+        """
+        old = {k: v for k, v in self.get_param_values()
+               if k not in ['callable', 'name']}
+        params = dict(old, **overrides)
+        callable = self.callable if callable is None else callable
+        return self.__class__(callable, **params)
+
+    def start(self):
+        """
+        Start the periodic callback
+        """
+        if not self.periodic._running:
+            self.periodic.start()
+        else:
+            raise Exception('PeriodicCallback already running.')
+
+    def stop(self):
+        """
+        Stop the periodic callback
+        """
+        if self.periodic._running:
+            self.periodic.stop()
+        else:
+            raise Exception('PeriodicCallback not running.')
+
+
 def streaming(method):
     """
     Decorator to add streaming support to plots.
@@ -30,8 +68,9 @@ def streaming(method):
     def streaming_plot(*args, **kwargs):
         self = args[0]
         if self.streaming:
-            return DynamicMap(partial(method, *args, **kwargs),
-                              streams=[self.stream])
+            cbcallable = StreamingCallable(partial(method, *args, **kwargs),
+                                           periodic=self.cb)
+            return DynamicMap(cbcallable, streams=[self.stream])
         return method(*args, **kwargs)
     return streaming_plot
 
