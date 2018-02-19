@@ -200,7 +200,7 @@ class UserParameter(object):
         if type(value).__name__ == dtype:
             return value
         op = UserParameter.COERCION_RULES[dtype]
-        return op(value) if value else op()
+        return op() if value is None else op(value)
 
     def validate(self, value):
         value = UserParameter.coerce(self.type, value)
