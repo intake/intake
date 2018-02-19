@@ -1,10 +1,11 @@
 from __future__ import absolute_import
 from functools import partial
 
+import param
 import holoviews as hv
 import pandas as pd
 
-from holoviews.core.spaces import DynamicMap
+from holoviews.core.spaces import DynamicMap, Callable
 from holoviews.core.overlay import NdOverlay
 from holoviews.element import (
     Curve, Scatter, Area, Bars, BoxWhisker, Dataset, Distribution,
@@ -56,16 +57,17 @@ class HoloViewsConverter(object):
                                       'dataframe container.')
         self.data_source = data
         self.streaming = streaming
-        self.data = data.read()
         if streaming:
+            self.data = data.read()
             self.stream = Buffer(self.data, length=backlog)
             if gen is None:
                 raise ImportError('Streaming support requires tornado.')
             @gen.coroutine
             def f():
                 self.stream.send(data.read())
-            cb = PeriodicCallback(f, timeout)
-            cb.start()
+            self.cb = PeriodicCallback(f, timeout)
+        else:
+            self.data = data.to_dask()
 
         # High-level options
         self.by = by
@@ -115,23 +117,13 @@ class HoloViewsConverter(object):
                             'y': ylim or (None, None)}
         self._norm_opts = {'framewise': True}
 
-    def reset_index(self, data):
-        for c in data.columns:
-            if data[c].dtype.kind == 'O':
-                data[c] = data[c].astype(str)
-        if self.use_index:
-            return data.reset_index()
-        else:
-            return data
-
     @streaming
     def table(self, x=None, y=None, data=None):
         allowed = ['width', 'height']
         opts = {k: v for k, v in self._plot_opts.items() if k in allowed}
 
         data = self.data if data is None else data
-        data = self.reset_index(data)
-        return Table(data).opts(plot=opts)
+        return Table(data, self.kwds.get('columns'), []).opts(plot=opts)
 
 
 class HoloViewsDataSourceConverter(HoloViewsConverter):
@@ -152,7 +144,7 @@ class HoloViewsDataSourceConverter(HoloViewsConverter):
         ys = [y]
         if 'hover' in self._plot_opts.get('tools', []) or 'c' in self.kwds:
             ys += [c for c in data.columns if c not in (x, y)]
-        return (chart(self.reset_index(data), x, ys).redim.range(**ranges)
+        return (chart(data, x, ys).redim.range(**ranges)
                 .relabel(**self._relabel).opts(**opts))
 
     def chart(self, element, x, y, data=None):
@@ -207,7 +199,6 @@ class HoloViewsDataSourceConverter(HoloViewsConverter):
                 'norm': self._norm_opts}
         ranges = {self.value_label: self._dim_ranges['y']}
 
-        data = self.reset_index(data)
         df = pd.melt(data, id_vars=[index], var_name=self.group_label, value_name=self.value_label)
         return (Bars(df, [index, self.group_label], self.value_label).redim.range(**ranges)
                 .relabel(**self._relabel).opts(**opts))
@@ -234,7 +225,6 @@ class HoloViewsDataSourceConverter(HoloViewsConverter):
                 'norm': self._norm_opts}
         ranges = {self.value_label: self._dim_ranges['y']}
 
-        data = self.reset_index(data)
         df = pd.melt(data, id_vars=id_vars, var_name=self.group_label, value_name=self.value_label)
         return (BoxWhisker(df, kdims, self.value_label).redim.range(**ranges)
                 .relabel(**self._relabel).opts(**opts))
@@ -257,7 +247,6 @@ class HoloViewsDataSourceConverter(HoloViewsConverter):
                 'norm': self._norm_opts}
         ranges = {self.value_label: self._dim_ranges['y']}
 
-        data = self.reset_index(data)
         df = pd.melt(data, id_vars=id_vars, var_name=self.group_label, value_name=self.value_label)
         return (Violin(df, kdims, self.value_label).redim.range(**ranges)
                 .relabel(**self._relabel).opts(**opts))
@@ -275,7 +264,7 @@ class HoloViewsDataSourceConverter(HoloViewsConverter):
                      'normed': self.kwds.get('normed', False)}
 
         data = self.data if data is None else data
-        ds = Dataset(self.reset_index(data))
+        ds = Dataset(data)
         if x and y:
             return histogram(ds.to(Dataset, [], y, x), **hist_opts).\
                 overlay().opts({'Histogram': opts})
@@ -300,7 +289,6 @@ class HoloViewsDataSourceConverter(HoloViewsConverter):
         opts = {'Distribution': opts, 'Area': opts,
                 'NdOverlay': {'plot': dict(legend_limit=0)}}
 
-        data = self.reset_index(data)
         if x and y:
             ds = Dataset(data)
             return ds.to(Distribution, y, [], x).overlay().opts(opts)
@@ -487,7 +475,7 @@ class HoloViewsDataSourcePlot(object):
         """
         return self(kind='kde', x=x, y=y, **kwds)
 
-    def table(self, **kwds):
+    def table(self, columns=None, **kwds):
         """
         Table
 
@@ -500,4 +488,4 @@ class HoloViewsDataSourcePlot(object):
         -------
         Element : Element or NdOverlay of Elements
         """
-        return self(kind='table', **kwds)
+        return self(kind='table', **dict(kwds, columns=columns))
