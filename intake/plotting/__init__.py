@@ -365,7 +365,7 @@ class HoloViewsDataSourcePlot(object):
              width=800, height=300, title=None, grid=False,
              legend=True, logx=False, logy=False, loglog=False,
              xticks=None, yticks=None, xlim=None, ylim=None, rot=None,
-             fontsize=None, colormap=None, hover=False, **kwds):
+             fontsize=None, colormap=None, hover=True, **kwds):
         converter = HoloViewsDataSourceConverter(
             self._data, width=width, height=height, backlog=backlog,
             title=title, grid=grid, legend=legend, logx=logx,
