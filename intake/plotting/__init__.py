@@ -9,7 +9,7 @@ from holoviews.core.spaces import DynamicMap, Callable
 from holoviews.core.overlay import NdOverlay
 from holoviews.element import (
     Curve, Scatter, Area, Bars, BoxWhisker, Dataset, Distribution,
-    Table, Violin
+    Table, Violin, HeatMap
 )
 from holoviews.operation import histogram
 from holoviews.streams import Buffer
@@ -208,6 +208,18 @@ class HoloViewsDataSourceConverter(HoloViewsConverter):
     @streaming
     def line(self, x, y, data=None):
         return self.chart(Curve, x, y, data)
+
+
+    @streaming
+    def heatmap(self, x, y, data=None):
+        data = data or self.data
+        if not x: x = data.columns[0]
+        if not y: y = data.columns[1]
+        z = self.kwds.get('z', data.columns[2])
+
+        opts = dict(plot=self._plot_opts, norm=self._norm_opts, style=self._style_opts)
+        return HeatMap(data, [x, y], z).opts(**opts)
+
 
     @streaming
     def scatter(self, x, y, data=None):
@@ -413,6 +425,23 @@ class HoloViewsDataSourcePlot(object):
         Element : Element or NdOverlay of Elements
         """
         return self(x, y, kind='area', **kwds)
+
+    def heatmap(self, x=None, y=None, z=None, **kwds):
+        """
+        HeatMap plot
+
+        Parameters
+        ----------
+        x, y, z : label or position, optional
+            Coordinates for each point.
+        **kwds : optional
+            Keyword arguments to pass on to
+            :py:meth:`intake.source.base.DataSource.plot`.
+        Returns
+        -------
+        Element : Element or NdOverlay of Elements
+        """
+        return self(x, y, kind='heatmap', z=z, **kwds)
 
     def bar(self, x=None, y=None, **kwds):
         """
