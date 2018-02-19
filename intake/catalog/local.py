@@ -38,7 +38,7 @@ class TemplateContext(dict):
     """
     def __init__(self, catalog_dir, shell_access=True, env_access=True):
         """Constructor.
-        
+
         Arguments:
             catalog_dir (str) :
                 Value of the 'CATALOG_DIR' entry in ``self``.
@@ -146,7 +146,7 @@ def check_uniqueness(objs, key):
 class UserParameter(object):
     COERCION_RULES = {
         'bool': bool,
-        'datetime': pandas.to_datetime,
+        'datetime': lambda v=None: pandas.to_datetime(v) if v else pandas.to_datetime(0),
         'float': float,
         'int': int,
         'list': list,
@@ -154,7 +154,7 @@ class UserParameter(object):
         'unicode': getattr(builtins, 'unicode', str)
     }
 
-    def __init__(self, name, description, type, default, min=None, max=None, allowed=None):
+    def __init__(self, name, description, type, default=None, min=None, max=None, allowed=None):
         self.name = name
         self.description = description
         self.type = type
@@ -189,8 +189,18 @@ class UserParameter(object):
 
     @staticmethod
     def coerce(dtype, value):
+        """
+        Convert a value to a specific type.
+
+        If the value is already the given type, then the original value is
+        returned. If the value is None, then the default value given by the
+        type constructor is returned. Otherwise, the type constructor converts
+        and returns the value.
+        """
+        if type(value).__name__ == dtype:
+            return value
         op = UserParameter.COERCION_RULES[dtype]
-        return value if type(value).__name__ == dtype else op(value)
+        return op() if value is None else op(value)
 
     def validate(self, value):
         value = UserParameter.coerce(self.type, value)
