@@ -78,14 +78,15 @@ def streaming(method):
 class HoloViewsConverter(object):
 
     def __init__(self, data, kind=None, by=None, width=800,
-                 height=300, shared_axes=False,
+                 height=300, shared_axes=False, columns=None,
                  grid=False, legend=True, rot=None, title=None,
                  xlim=None, ylim=None, xticks=None, yticks=None,
                  fontsize=None, colormap=None, stacked=False,
                  logx=False, logy=False, loglog=False, hover=True,
-                 style_opts={}, plot_opts={}, use_index=True,
+                 style_opts={}, plot_opts={}, use_index=False,
                  value_label='value', group_label='Group',
-                 streaming=False, backlog=1000, timeout=1000,  **kwds):
+                 colorbar=False, streaming=False, backlog=1000,
+                 timeout=1000, **kwds):
 
         # Validate DataSource
         if not isinstance(data, DataSource):
@@ -110,6 +111,7 @@ class HoloViewsConverter(object):
 
         # High-level options
         self.by = by
+        self.columns = columns
         self.stacked = stacked
         self.use_index = use_index
         self.kwds = kwds
@@ -123,7 +125,12 @@ class HoloViewsConverter(object):
             cmap = kwds.pop('cmap')
         else:
             cmap = colormap
-        self._style_opts = dict(fontsize=fontsize, cmap=cmap, **style_opts)
+
+        self._style_opts = dict(**style_opts)
+        if cmap:
+            self._style_opts['cmap'] = cmap
+        if 'size' in kwds:
+            self._style_opts['size'] = kwds['size']
 
         # Process plot options
         plot_options = dict(plot_opts)
@@ -140,6 +147,10 @@ class HoloViewsConverter(object):
             plot_options['width'] = width
         if height:
             plot_options['height'] = height
+        if fontsize:
+            plot_options['fontsize'] = fontsize
+        if colorbar:
+            plot_options['colorbar'] = colorbar
         if rot:
             if (kind == 'barh' or kwds.get('orientation') == 'horizontal'
                 or kwds.get('vert')):
@@ -149,6 +160,7 @@ class HoloViewsConverter(object):
             plot_options[axis] = rot
         if hover:
             plot_options['tools'] = ['hover']
+        self._hover = hover
         self._plot_opts = plot_options
 
         self._relabel = {'label': title}
@@ -162,64 +174,55 @@ class HoloViewsConverter(object):
         opts = {k: v for k, v in self._plot_opts.items() if k in allowed}
 
         data = self.data if data is None else data
-        return Table(data, self.kwds.get('columns'), []).opts(plot=opts)
-
-
-class HoloViewsDataSourceConverter(HoloViewsConverter):
-    """
-    HoloViewsDataSourceConverter handles the conversion of
-    intake.source.base.DataSource into displayable HoloViews objects.
-    """
+        return Table(data, self.columns or [], []).opts(plot=opts)
 
     def __call__(self, kind, x, y):
         return getattr(self, kind)(x, y)
 
-    def single_chart(self, chart, x, y, data=None):
-        opts = dict(plot=self._plot_opts, norm=self._norm_opts,
-                    style=self._style_opts)
+    def single_chart(self, element, x, y, data=None):
+        opts = {element.__name__: dict(plot=self._plot_opts, norm=self._norm_opts,
+                                       style=self._style_opts)}
         ranges = {x: self._dim_ranges['x'], y: self._dim_ranges['y']}
 
         data = self.data if data is None else data
         ys = [y]
-        if 'hover' in self._plot_opts.get('tools', []) or 'c' in self.kwds:
-            ys += [c for c in data.columns if c not in (x, y)]
-        return (chart(data, x, ys).redim.range(**ranges)
-                .relabel(**self._relabel).opts(**opts))
+        if 'c' in self.kwds and self.kwds['c'] in data.columns:
+            ys += [self.kwds['c']]
+
+        if self.by:
+            chart = Dataset(data, [self.by, x], ys).to(element, x, ys, self.by).overlay()
+        else:
+            chart = element(data, x, ys)
+        return chart.redim.range(**ranges).relabel(**self._relabel).opts(opts)
 
     def chart(self, element, x, y, data=None):
         "Helper method for simple x vs. y charts"
-
         if x and y:
             return self.single_chart(element, x, y, data)
 
-        data = self.data if data is None else data
-        x = data.index.name
+        # Note: Loading dask dataframe into memory due to rename bug
+        data = (self.data if data is None else data).compute()
         opts = dict(plot=dict(self._plot_opts, labelled=['x']),
                     norm=self._norm_opts)
 
-        charts = {}
-        for c in data.columns[1:]:
-            chart = element(data, x, c).redim(**{c: self.value_label})
-            ranges = {x: self._dim_ranges['x'], c: self._dim_ranges['y']}
-            charts[c] = (chart.relabel(**self._relabel)
-                         .redim.range(**ranges).opts(**opts))
-        return NdOverlay(charts)
+        if self.use_index or x:
+            x = x or data.index.name or 'index'
+            columns = self.columns or data.columns
+            charts = {}
+            for c in columns:
+                chart = element(data, x, c).redim(**{c: self.value_label})
+                ranges = {x: self._dim_ranges['x'], c: self._dim_ranges['y']}
+                charts[c] = (chart.relabel(**self._relabel)
+                             .redim.range(**ranges).opts(**opts))
+            return NdOverlay(charts)
+        else:
+            raise ValueError('Could not determine what to plot. Expected '
+                             'either x and y parameters to be declared '
+                             'or use_index to be enabled.')
 
     @streaming
     def line(self, x, y, data=None):
         return self.chart(Curve, x, y, data)
-
-
-    @streaming
-    def heatmap(self, x, y, data=None):
-        data = data or self.data
-        if not x: x = data.columns[0]
-        if not y: y = data.columns[1]
-        z = self.kwds.get('z', data.columns[2])
-
-        opts = dict(plot=self._plot_opts, norm=self._norm_opts, style=self._style_opts)
-        return HeatMap(data, [x, y], z).opts(**opts)
-
 
     @streaming
     def scatter(self, x, y, data=None):
@@ -237,71 +240,66 @@ class HoloViewsDataSourceConverter(HoloViewsConverter):
             areas = areas.map(Area.stack, NdOverlay)
         return areas
 
+    def _category_plot(self, element, data=None):
+        """
+        Helper method to generate element from indexed dataframe.
+        """
+        data = self.data if data is None else data
+        index = data.index.name or 'index'
+        if self.by:
+            id_vars = [index, self.by]
+            kdims = [self.group_label, self.by]
+        else:
+            kdims = [self.group_label]
+            id_vars = [index]
+        invert = not self.kwds.get('vert', True)
+        opts = {'plot': dict(self._plot_opts, labelled=[], invert_axes=invert),
+                'norm': self._norm_opts}
+        ranges = {self.value_label: self._dim_ranges['y']}
+
+        df = pd.melt(data, id_vars=id_vars, var_name=self.group_label, value_name=self.value_label)
+        return (element(df, kdims, self.value_label).redim.range(**ranges)
+                .relabel(**self._relabel).opts(**opts))
+
     @streaming
     def bar(self, x, y, data=None):
         if x and y:
             return self.single_chart(Bars, x, y, data)
-
-        data = self.data if data is None else data
-        index = data.index.name or 'index'
-        stack_index = 1 if self.stacked else None
-        opts = {'plot': dict(self._plot_opts, labelled=['x'],
-                             stack_index=stack_index),
-                'norm': self._norm_opts}
-        ranges = {self.value_label: self._dim_ranges['y']}
-
-        df = pd.melt(data, id_vars=[index], var_name=self.group_label, value_name=self.value_label)
-        return (Bars(df, [index, self.group_label], self.value_label).redim.range(**ranges)
-                .relabel(**self._relabel).opts(**opts))
+        elif self.use_index:
+            stack_index = 1 if self.stacked else None
+            opts = {'Bars': {'stack_index': stack_index}}
+            return self._category_plot(Bars, data).opts(plot=opts)
+        else:
+            raise ValueError('Could not determine what to plot. Expected '
+                             'either x and y parameters to be declared '
+                             'or use_index to be enabled.')
 
     @streaming
     def barh(self, x, y, data=None):
         return self.bar(x, y, data).opts(plot={'Bars': dict(invert_axes=True)})
 
+
     @streaming
     def box(self, x, y, data=None):
         if x and y:
             return self.single_chart(BoxWhisker, x, y, data)
-
-        data = self.data if data is None else data
-        index = data.index.name or 'index'
-        if self.by:
-            id_vars = [index, self.by]
-            kdims = [self.group_label, self.by]
+        elif self.use_index:
+            return self._stats_plot(BoxWhisker, data)
         else:
-            kdims = [self.group_label]
-            id_vars = [index]
-        invert = not self.kwds.get('vert', True)
-        opts = {'plot': dict(self._plot_opts, labelled=[], invert_axes=invert),
-                'norm': self._norm_opts}
-        ranges = {self.value_label: self._dim_ranges['y']}
-
-        df = pd.melt(data, id_vars=id_vars, var_name=self.group_label, value_name=self.value_label)
-        return (BoxWhisker(df, kdims, self.value_label).redim.range(**ranges)
-                .relabel(**self._relabel).opts(**opts))
+            raise ValueError('Could not determine what to plot. Expected '
+                             'either x and y parameters to be declared '
+                             'or use_index to be enabled.')
 
     @streaming
     def violin(self, x, y, data=None):
         if x and y:
             return self.single_chart(Violin, x, y, data)
-
-        data = self.data if data is None else data
-        index = data.index.name or 'index'
-        if self.by:
-            id_vars = [index, self.by]
-            kdims = [self.group_label, self.by]
+        elif self.use_index:
+            return self._stats_plot(Violin, data)
         else:
-            kdims = [self.group_label]
-            id_vars = [index]
-        invert = not self.kwds.get('vert', True)
-        opts = {'plot': dict(self._plot_opts, labelled=[], invert_axes=invert),
-                'norm': self._norm_opts}
-        ranges = {self.value_label: self._dim_ranges['y']}
-
-        df = pd.melt(data, id_vars=id_vars, var_name=self.group_label, value_name=self.value_label)
-        return (Violin(df, kdims, self.value_label).redim.range(**ranges)
-                .relabel(**self._relabel).opts(**opts))
-
+            raise ValueError('Could not determine what to plot. Expected '
+                             'either x and y parameters to be declared '
+                             'or use_index to be enabled.')
 
     @streaming
     def hist(self, x, y, data=None):
@@ -319,7 +317,13 @@ class HoloViewsDataSourceConverter(HoloViewsConverter):
         if x and y:
             return histogram(ds.to(Dataset, [], y, x), **hist_opts).\
                 overlay().opts({'Histogram': opts})
-
+        elif y:
+            return histogram(ds, dimension=y, **hist_opts).\
+                opts({'Histogram': opts})
+        elif not self.use_index:
+            raise ValueError('Could not determine what to plot. Expected '
+                             'either x and y parameters to be declared '
+                             'or use_index to be enabled.')
         hists = {}
         for col in data.columns[1:]:
             hist = histogram(ds, dimension=col, **hist_opts)
@@ -343,6 +347,10 @@ class HoloViewsDataSourceConverter(HoloViewsConverter):
         if x and y:
             ds = Dataset(data)
             return ds.to(Distribution, y, [], x).overlay().opts(opts)
+        elif not self.use_index:
+            raise ValueError('Could not determine what to plot. Expected '
+                             'either x and y parameters to be declared '
+                             'or use_index to be enabled.')
 
         df = pd.melt(data, id_vars=[index], var_name=self.group_label, value_name=self.value_label)
         ds = Dataset(df)
@@ -354,6 +362,15 @@ class HoloViewsDataSourceConverter(HoloViewsConverter):
                                 [self.group_label])
         return overlay.relabel(**self._relabel).opts(**opts)
 
+    @streaming
+    def heatmap(self, x, y, data=None):
+        data = data or self.data
+        if not x: x = data.columns[0]
+        if not y: y = data.columns[1]
+        z = self.kwds.get('z', data.columns[2])
+
+        opts = dict(plot=self._plot_opts, norm=self._norm_opts, style=self._style_opts)
+        return HeatMap(data, [x, y], z).opts(**opts)
 
 
 class HoloViewsDataSourcePlot(object):
@@ -366,7 +383,7 @@ class HoloViewsDataSourcePlot(object):
              legend=True, logx=False, logy=False, loglog=False,
              xticks=None, yticks=None, xlim=None, ylim=None, rot=None,
              fontsize=None, colormap=None, hover=True, **kwds):
-        converter = HoloViewsDataSourceConverter(
+        converter = HoloViewsConverter(
             self._data, width=width, height=height, backlog=backlog,
             title=title, grid=grid, legend=legend, logx=logx,
             logy=logy, loglog=loglog, xticks=xticks, yticks=yticks,
