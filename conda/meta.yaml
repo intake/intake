@@ -11,6 +11,7 @@ build:
     - intake-server = intake.cli.server.__main__:main
     - intake = intake.cli.client.__main__:main
   script: python setup.py install --single-version-externally-managed --record=record.txt
+  noarch: python
 
 requirements:
   build:
