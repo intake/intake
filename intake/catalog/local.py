@@ -4,8 +4,8 @@ import os
 import os.path
 import runpy
 
-from ruamel.yaml import YAML
-from ruamel.yaml.compat import StringIO
+from ruamel_yaml import YAML
+from ruamel_yaml.compat import StringIO
 
 import jinja2
 import marshmallow
