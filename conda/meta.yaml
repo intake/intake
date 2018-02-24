@@ -26,7 +26,7 @@ requirements:
     - requests
     - tornado
     - jinja2
-    - pyyaml
+    - ruamel_yaml >=0.15
     - dask
     - python-snappy
     - marshmallow

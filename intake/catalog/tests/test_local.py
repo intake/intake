@@ -4,8 +4,8 @@ import shutil
 import tempfile
 import time
 
+from ruamel import yaml
 import pytest
-import yaml
 
 import pandas
 

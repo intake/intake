@@ -4,11 +4,11 @@ import os
 import os.path
 import runpy
 
+from ruamel import yaml
 import jinja2
 import marshmallow
 import pandas
 import six
-import yaml
 
 from .entry import CatalogEntry
 from .utils import PermissionsError
