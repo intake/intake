@@ -4,7 +4,9 @@ import os
 import os.path
 import runpy
 
-from ruamel import yaml
+from ruamel.yaml import YAML
+from ruamel.yaml.compat import StringIO
+
 import jinja2
 import marshmallow
 import pandas
@@ -84,7 +86,7 @@ class TemplateContext(dict):
         return os.environ.get(env_var, '')
 
 
-class TemplateStr(yaml.YAMLObject):
+class TemplateStr(object):
     """A string-a-like that tags this string as being a Jinja template"""
     yaml_tag = '!template'
 
@@ -116,10 +118,6 @@ class TemplateStr(yaml.YAMLObject):
         return dumper.represent_scalar(cls.yaml_tag, data._str)
 
 
-yaml.SafeLoader.add_constructor('!template', TemplateStr.from_yaml)
-yaml.SafeLoader.add_constructor(TemplateStr, TemplateStr.to_yaml)
-
-
 def expand_template(data, context):
     return data.expand(context) if isinstance(data, TemplateStr) else data
 
@@ -131,6 +129,29 @@ def expand_templates(args, template_context):
         expanded_args[k] = expand_template(v, template_context)
 
     return expanded_args
+
+
+class CatalogYAML(YAML):
+    def dump(self, data, stream=None, **kwargs):
+        """
+        Output data to a given stream.
+
+        If no stream is given, then the data is returned as a string.
+        """
+        inefficient = False
+        if stream is None:
+            inefficient = True
+            stream = StringIO()
+        YAML.dump(self, data, stream, **kwargs)
+        if inefficient:
+            return stream.getvalue()
+
+
+def yaml_instance():
+    """Get a new YAML instance that supports templates"""
+    yaml = CatalogYAML()
+    yaml.register_class(TemplateStr)
+    return yaml
 
 
 def check_uniqueness(objs, key):
@@ -413,8 +434,9 @@ class CatalogConfig(object):
         self._dir = os.path.dirname(os.path.abspath(self._path))
 
         # First, we load from YAML, failing if syntax errors are found
+        yaml = yaml_instance()
         with open(self._path, 'r') as f:
-            data = yaml.safe_load(f.read())
+            data = yaml.load(f.read())
 
         # Second, we validate the schema and semantics
         context = dict(root=self._dir)

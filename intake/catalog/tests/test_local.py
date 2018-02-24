@@ -4,7 +4,6 @@ import shutil
 import tempfile
 import time
 
-from ruamel import yaml
 import pytest
 
 import pandas
@@ -72,10 +71,11 @@ taxi_data:
 
 def test_yaml_with_templates():
     # Exercise round-trip
-    round_trip_yaml = yaml.dump(yaml.safe_load(EXAMPLE_YAML))
+    yaml = local.yaml_instance()
+    round_trip_yaml = yaml.dump(yaml.load(EXAMPLE_YAML))
 
-    assert "!template 'entry1_{{ x }}.csv'" in round_trip_yaml
-    assert "!template 'entry2_{{ x }}.csv'" in round_trip_yaml
+    assert "!template entry1_{{ x }}.csv" in round_trip_yaml
+    assert "!template entry2_{{ x }}.csv" in round_trip_yaml
 
 
 @pytest.fixture

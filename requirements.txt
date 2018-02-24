@@ -4,7 +4,7 @@ msgpack-numpy
 msgpack-python
 numpy
 pandas
-ruamel_yaml >= 0.15
+ruamel_yaml >= 0.15.0
 requests
 appdirs
 tornado >= 4.5.1
