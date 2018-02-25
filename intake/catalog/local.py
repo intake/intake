@@ -13,7 +13,7 @@ import pandas
 import six
 
 from .entry import CatalogEntry
-from .utils import PermissionsError
+from .exceptions import PermissionsError, ValidationError
 from ..source.base import Plugin
 from ..source import registry as global_registry
 from ..source.discovery import load_plugins_from_module
@@ -419,12 +419,6 @@ class CatalogConfigSchema(marshmallow.Schema):
     @marshmallow.post_load
     def validate(self, data):
         check_uniqueness(data['data_sources'], 'name')
-
-
-class ValidationError(Exception):
-    def __init__(self, message, errors):
-        super(ValidationError, self).__init__(message)
-        self.errors = errors
 
 
 class CatalogConfig(object):

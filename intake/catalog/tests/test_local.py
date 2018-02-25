@@ -9,7 +9,7 @@ import pytest
 import pandas
 
 from .util import assert_items_equal
-from ..utils import PermissionsError
+from ..exceptions import PermissionsError
 from intake.catalog import Catalog, local
 
 
