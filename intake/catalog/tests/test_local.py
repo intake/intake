@@ -9,8 +9,7 @@ import pytest
 import pandas
 
 from .util import assert_items_equal
-from ..exceptions import PermissionsError
-from intake.catalog import Catalog, local
+from intake.catalog import Catalog, exceptions, local
 
 
 def test_template_str():
@@ -38,7 +37,7 @@ def test_expand_template_env_str():
     assert ts != local.TemplateStr('other')
 
     context = local.TemplateContext('', env_access=False)
-    with pytest.raises(PermissionsError):
+    with pytest.raises(exceptions.EnvironmentPermissionDenied):
         assert ts.expand(context) == 'foo {} baz'.format(os.environ['USER'])
 
 
@@ -55,7 +54,7 @@ def test_expand_template_shell_str():
     assert ts != local.TemplateStr('other')
 
     context = local.TemplateContext('', shell_access=False)
-    with pytest.raises(PermissionsError):
+    with pytest.raises(exceptions.ShellPermissionDenied):
         assert ts.expand(context) == 'foo bar baz'
 
 
@@ -276,7 +275,7 @@ def test_duplicate_data_sources():
     path = os.path.dirname(__file__)
     uri = os.path.join(path, 'catalog_dup_sources.yml')
 
-    with pytest.raises(local.ValidationError) as except_info:
+    with pytest.raises(exceptions.ValidationError) as except_info:
         c = Catalog(uri)
     assert 'already exists' in str(except_info.value)
 
@@ -285,7 +284,7 @@ def test_duplicate_parameters():
     path = os.path.dirname(__file__)
     uri = os.path.join(path, 'catalog_dup_parameters.yml')
 
-    with pytest.raises(local.ValidationError) as except_info:
+    with pytest.raises(exceptions.ValidationError) as except_info:
         c = Catalog(uri)
     assert 'already exists' in str(except_info.value)
 

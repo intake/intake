@@ -12,10 +12,10 @@ import marshmallow
 import pandas
 import six
 
+from . import exceptions
 from .entry import CatalogEntry
-from .exceptions import PermissionsError, ValidationError
-from ..source.base import Plugin
 from ..source import registry as global_registry
+from ..source.base import Plugin
 from ..source.discovery import load_plugins_from_module
 
 try:
@@ -69,8 +69,7 @@ class TemplateContext(dict):
         permission to execute shell commands, raise a PermissionsError.
         """
         if not self._shell_access:
-            raise PermissionsError('Additional permissions needed to execute '
-                                   'shell commands.')
+            raise exceptions.ShellPermissionDenied
         import shlex, subprocess
         return subprocess.check_output(shlex.split(cmd),
                                        universal_newlines=True).strip().split()
@@ -81,8 +80,7 @@ class TemplateContext(dict):
         to read environment variables, raise a PermissionsError.
         """
         if not self._env_access:
-            raise PermissionsError('Additional permissions needed to read '
-                                   'environment variables.')
+            raise exceptions.EnvironmentPermissionDenied
         return os.environ.get(env_var, '')
 
 
@@ -437,8 +435,8 @@ class CatalogConfig(object):
         schema = CatalogConfigSchema(context=context)
         result = schema.load(data)
         if result.errors:
-            raise ValidationError("Catalog '{}' has validation errors: {}"
-                                  "".format(path, result.errors), result.errors)
+            raise exceptions.ValidationError("Catalog '{}' has validation errors: {}"
+                                             "".format(path, result.errors), result.errors)
 
         cfg = result.data
 
