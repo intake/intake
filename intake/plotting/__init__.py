@@ -77,7 +77,7 @@ def streaming(method):
 
 class HoloViewsConverter(object):
 
-    def __init__(self, data, kind=None, by=None, width=800,
+    def __init__(self, data, kind=None, by=None, width=700,
                  height=300, shared_axes=False, columns=None,
                  grid=False, legend=True, rot=None, title=None,
                  xlim=None, ylim=None, xticks=None, yticks=None,
@@ -379,7 +379,7 @@ class HoloViewsDataSourcePlot(object):
         self._data = data
 
     def __call__(self, x=None, y=None, kind='line', backlog=1000,
-             width=800, height=300, title=None, grid=False,
+             width=700, height=300, title=None, grid=False,
              legend=True, logx=False, logy=False, loglog=False,
              xticks=None, yticks=None, xlim=None, ylim=None, rot=None,
              fontsize=None, colormap=None, hover=True, **kwds):
