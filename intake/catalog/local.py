@@ -14,6 +14,7 @@ import six
 
 from . import exceptions
 from .entry import CatalogEntry
+from .utils import find_path, flatten_dict
 from ..source import registry as global_registry
 from ..source.base import Plugin
 from ..source.discovery import load_plugins_from_module
@@ -435,8 +436,22 @@ class CatalogConfig(object):
         schema = CatalogConfigSchema(context=context)
         result = schema.load(data)
         if result.errors:
-            raise exceptions.ValidationError("Catalog '{}' has validation errors: {}"
-                                             "".format(path, result.errors), result.errors)
+            print(result.errors)
+            print(flatten_dict(result.errors).keys())
+            for path in flatten_dict(result.errors):
+                v = find_path(data, path[:-1])
+                print(v)
+                print(v.lc.line, v.lc.col)
+                line, column = v.lc.key(path[-1])
+                print(line, column)
+            raise exceptions.ValidationError("catalog '{}' has validation errors".format(path), result.errors)
+            #line, column = data['sources'][1]['parameters'][0].lc.key('type')
+            #line += 1
+            #column += 1
+            #error = result.errors['sources'][1]['parameters'][0]['type'][0]
+            #raise exceptions.ValidationError("catalog '{}' has validation errors:\n\n"
+            #                                 "line {}, column {}: {}"
+            #                                 "".format(path, line, column, error), result.errors)
 
         cfg = result.data
 

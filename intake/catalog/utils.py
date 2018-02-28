@@ -1,5 +1,6 @@
 import functools
 import itertools
+import operator
 import sys
 
 
@@ -55,3 +56,24 @@ def make_prefix_tree(flat_dict):
         subtree[parts[-1]] = value
 
     return tree
+
+
+def flatten_dict(mapping, sep=None):
+    def flatten(kv, path=None):
+        if path is None:
+            path = []
+        for key in kv:
+            newpath = path + [key]
+            if isinstance(kv[key], dict):
+                for u in flatten(kv[key], newpath):
+                    yield u
+            elif sep:
+                yield sep.join(newpath), kv[key]
+            else:
+                yield tuple(newpath), kv[key]
+
+    return dict(flatten(mapping))
+
+
+def find_path(obj, path):
+    return functools.reduce(operator.getitem, path, obj)
