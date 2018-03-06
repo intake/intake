@@ -331,12 +331,6 @@ class PluginSource(object):
         return {}
 
 
-class ValidationError(Exception):
-    def __init__(self, message, errors):
-        super(ValidationError, self).__init__(message)
-        self.errors = errors
-
-
 class CatalogParser(object):
     def __init__(self, data, context=None):
         self._context = context if context else {}
