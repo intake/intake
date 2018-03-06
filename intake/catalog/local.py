@@ -6,9 +6,9 @@ import runpy
 
 from ruamel_yaml import YAML
 from ruamel_yaml.compat import StringIO
+from ruamel_yaml.constructor import DuplicateKeyError
 
 import jinja2
-import marshmallow
 import pandas
 import six
 
@@ -151,16 +151,6 @@ def yaml_instance():
     yaml = CatalogYAML()
     yaml.register_class(TemplateStr)
     return yaml
-
-
-def check_uniqueness(objs, key):
-    values = [getattr(obj, key) for obj in objs]
-    unique_values = set()
-    for value in values:
-        if value in unique_values:
-            raise marshmallow.ValidationError("{} already exists: '{}'".format(key, value), key)
-        else:
-            unique_values.add(value)
 
 
 class UserParameter(object):
@@ -342,82 +332,174 @@ class PluginSource(object):
         return {}
 
 
-class UserParameterSchema(marshmallow.Schema):
-    name = marshmallow.fields.String(required=True)
-    description = marshmallow.fields.String(required=True)
-    type = marshmallow.fields.String(required=True)
-    default = marshmallow.fields.Raw(missing=None)
-    min = marshmallow.fields.Raw(missing=None)
-    max = marshmallow.fields.Raw(missing=None)
-    allowed = marshmallow.fields.Raw(missing=None)
+class ValidationError(Exception):
+    def __init__(self, message, errors):
+        super(ValidationError, self).__init__(message)
+        self.errors = errors
 
-    @marshmallow.validates('type')
-    def validate_type(self, data):
-        marshmallow.validate.OneOf(list(UserParameter.COERCION_RULES))(data)
 
-    @marshmallow.post_load
-    def instantiate(self, params):
+class CatalogParser(object):
+    def __init__(self, data, context=None):
+        self._context = context if context else {}
+        self._errors = []
+        self._warnings = []
+        self._data = self._parse(data)
+
+    @property
+    def ok(self):
+        return len(self._errors) == 0
+
+    @property
+    def data(self):
+        return self._data
+
+    @property
+    def errors(self):
+        return self._errors
+
+    @property
+    def warnings(self):
+        return self._warnings
+
+    def error(self, source, msg):
+        self._errors.append((0, 0, msg))
+
+    def warning(self, source, msg):
+        self._warnings.append((0, 0, msg))
+
+    def _parse_plugins(self, data):
+        sources = []
+
+        if 'plugins' not in data:
+            return sources
+
+        if not isinstance(data['plugins'], dict):
+            self.error(data['plugins'], "missing plugin sources")
+            return
+
+        if 'source' not in data['plugins']:
+            self.error(data['plugins'], "missing plugin source")
+            return
+
+        if not isinstance(data['plugins']['source'], list):
+            self.error(data['plugins']['source'], "expected list")
+            return
+
+        for plugin_source in data['plugins']['source']:
+            if not isinstance(plugin_source, dict):
+                self.error(plugin_source, "expected dictionary")
+                continue
+
+            if 'module' in plugin_source and 'dir' in plugin_source:
+                self.error(plugin_source, "module and directory both exist")
+            elif 'module' in plugin_source:
+                if isinstance(plugin_source['module'], (str, TemplateStr)):
+                    obj = PluginSource(type='module', source=plugin_source['module'])
+                    sources.append(obj)
+                else:
+                    self.error(data, "plugin source must be either be a string or template")
+
+                invalid_keys = set(plugin_source) - set(['module'])
+                for key in invalid_keys:
+                    self.warning(key, "extra key")
+            elif 'dir' in plugin_source:
+                if isinstance(plugin_source['dir'], (str, TemplateStr)):
+                    obj = PluginSource(type='dir', source=plugin_source['dir'])
+                    sources.append(obj)
+                else:
+                    self.error(data, "plugin source must be either be a string or template")
+
+                invalid_keys = set(plugin_source) - set(['dir'])
+                for key in invalid_keys:
+                    self.warning(key, "extra key")
+            else:
+                self.error(plugin_source, "expected module or directory")
+        return sources
+
+    def _getitem(self, obj, key, dtype, required=True, default=None, choices=None):
+        if key in obj:
+            if isinstance(obj[key], dtype):
+                return obj[key]
+            else:
+                self.error(obj[key], 'expected {}'.format(dtype))
+                return None
+        elif required:
+            self.error(obj, 'expected {}'.format(key))
+            return None
+        elif default:
+            return default
+
+        return None if dtype is object else dtype()
+
+    def _parse_user_parameter(self, name, data):
+        valid_types = list(UserParameter.COERCION_RULES)
+
+        params = {}
+        params['name'] = name
+        params['description'] = self._getitem(data, 'description', str)
+        params['type'] = self._getitem(data, 'type', str, choices=valid_types)
+        params['default'] = self._getitem(data, 'default', object, required=False)
+        params['min'] = self._getitem(data, 'min', object, required=False)
+        params['max'] = self._getitem(data, 'max', object, required=False)
+        params['allowed'] = self._getitem(data, 'allowed', object, required=False)
+
         return UserParameter(**params)
 
+    def _parse_data_source(self, name, data):
+        if not isinstance(data, dict):
+            self.error(data, "data source must be a dictionary")
+            return None
 
-class LocalCatalogEntrySchema(marshmallow.Schema):
-    name = marshmallow.fields.String(required=True)
-    description = marshmallow.fields.String(missing='')
-    driver = marshmallow.fields.String(required=True)
-    direct_access = marshmallow.fields.String(missing='forbid')
-    args = marshmallow.fields.Dict(missing={})
-    metadata = marshmallow.fields.Dict(missing={})
-    parameters = marshmallow.fields.Nested(UserParameterSchema, many=True, missing=[])
+        ds = {}
 
-    @marshmallow.validates('direct_access')
-    def validate_direct_access(self, data):
-        marshmallow.validate.OneOf(['forbid', 'allow', 'force'])(data)
+        ds['name'] = name
+        ds['description'] = self._getitem(data, 'description', str, required=False)
+        ds['driver'] = self._getitem(data, 'driver', str)
+        ds['direct_access'] = self._getitem(data, 'direct_access', str, required=False, default='forbid', choices=['forbid', 'allow', 'force'])
+        ds['args'] = self._getitem(data, 'args', dict, required=False)
+        ds['metadata'] = self._getitem(data, 'metadata', dict, required=False)
 
-    @marshmallow.post_load
-    def instantiate(self, data):
-        check_uniqueness(data['parameters'], 'name')
-        return LocalCatalogEntry(catalog_dir=self.context['root'], **data)
+        ds['parameters'] = []
 
+        if 'parameters' in data:
+            for name, parameter in data['parameters'].items():
+                if not isinstance(name, str):
+                    self.error(name, "user parameter name must be a string")
+                    continue
 
-class PluginSourceSchema(marshmallow.Schema):
-    type = marshmallow.fields.String(required=True)
-    source = marshmallow.fields.Raw(required=True)
+                obj = self._parse_user_parameter(name, parameter)
+                if obj:
+                    ds['parameters'].append(obj)
 
-    @marshmallow.validates('type')
-    def validate_type(self, data):
-        marshmallow.validate.OneOf(['dir', 'module'])(data)
+        return LocalCatalogEntry(catalog_dir=self._context['root'], **ds)
 
-    @marshmallow.validates('source')
-    def validate_source(self, data):
-        if not isinstance(data, (str, TemplateStr)):
-            raise marshmallow.ValidationError('Plugin source must be either be a string or template', 'source')
+    def _parse_data_sources(self, data):
+        sources = []
 
-    @marshmallow.post_load
-    def instantiate(self, data):
-        return PluginSource(**data)
+        if 'sources' not in data:
+            self.error(data, "missing sources")
+            return sources
 
+        if 'sources' in data:
+            for name, source in data['sources'].items():
+                if not isinstance(name, str):
+                    self.error(name, "data source name must be a string")
+                    continue
 
-class CatalogConfigSchema(marshmallow.Schema):
-    plugin_sources = marshmallow.fields.Nested(PluginSourceSchema, many=True, missing=[])
-    data_sources = marshmallow.fields.Nested(LocalCatalogEntrySchema,
-                                             many=True,
-                                             missing=[],
-                                             load_from='sources',
-                                             dump_to='sources')
+                obj = self._parse_data_source(name, source)
+                if obj:
+                    sources.append(obj)
 
-    @marshmallow.pre_load(pass_many=True)
-    def transform(self, data, many):
-        data['plugin_sources'] = []
-        if 'plugins' in data:
-            for obj in data['plugins']['source']:
-                key = list(obj)[0]
-                data['plugin_sources'].append(dict(type=key, source=obj[key]))
-            del data['plugins']
-        return data
+        return sources
 
-    @marshmallow.post_load
-    def validate(self, data):
-        check_uniqueness(data['data_sources'], 'name')
+    def _parse(self, data):
+        if not isinstance(data, dict):
+            self.error(data, "expected dictionary")
+            return
+
+        return dict(
+            plugin_sources=self._parse_plugins(data),
+            data_sources=self._parse_data_sources(data))
 
 
 class CatalogConfig(object):
@@ -429,21 +511,24 @@ class CatalogConfig(object):
         # First, we load from YAML, failing if syntax errors are found
         yaml = yaml_instance()
         with open(self._path, 'r') as f:
-            data = yaml.load(f.read())
+            try:
+                data = yaml.load(f.read())
+            except DuplicateKeyError as e:
+                # Wrap internal exception with our own exception
+                raise exceptions.DuplicateKeyError(e)
 
         # Second, we validate the schema and semantics
         context = dict(root=self._dir)
-        schema = CatalogConfigSchema(context=context)
-        result = schema.load(data)
+        result = CatalogParser(data, context=context)
         if result.errors:
-            print(result.errors)
-            print(flatten_dict(result.errors).keys())
-            for path in flatten_dict(result.errors):
-                v = find_path(data, path[:-1])
-                print(v)
-                print(v.lc.line, v.lc.col)
-                line, column = v.lc.key(path[-1])
-                print(line, column)
+            #print(result.errors)
+            #print(flatten_dict(result.errors).keys())
+            #for path in flatten_dict(result.errors):
+            #    v = find_path(data, path[:-1])
+            #    print(v)
+            #    print(v.lc.line, v.lc.col)
+            #    line, column = v.lc.key(path[-1])
+            #    print(line, column)
             raise exceptions.ValidationError("catalog '{}' has validation errors".format(path), result.errors)
             #line, column = data['sources'][1]['parameters'][0].lc.key('type')
             #line += 1

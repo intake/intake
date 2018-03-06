@@ -275,18 +275,16 @@ def test_duplicate_data_sources():
     path = os.path.dirname(__file__)
     uri = os.path.join(path, 'catalog_dup_sources.yml')
 
-    with pytest.raises(exceptions.ValidationError) as except_info:
+    with pytest.raises(exceptions.DuplicateKeyError) as except_info:
         c = Catalog(uri)
-    assert 'already exists' in str(except_info.value)
 
 
 def test_duplicate_parameters():
     path = os.path.dirname(__file__)
     uri = os.path.join(path, 'catalog_dup_parameters.yml')
 
-    with pytest.raises(exceptions.ValidationError) as except_info:
+    with pytest.raises(exceptions.DuplicateKeyError) as except_info:
         c = Catalog(uri)
-    assert 'already exists' in str(except_info.value)
 
 
 @pytest.fixture
@@ -296,11 +294,11 @@ def temp_catalog_file():
     with open(catalog_file, 'w') as f:
         f.write('''
 sources:
-  - name: a
+  a:
     driver: csv
     args:
       urlpath: /not/a/file
-  - name: b
+  b:
     driver: csv
     args:
       urlpath: /not/a/file

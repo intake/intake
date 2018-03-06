@@ -1,9 +1,9 @@
 sources:
-  - name: ex3
+  ex3:
     description: this source doesn't work
     driver: csv
     args: {}
-  - name: ex4
+  ex4:
     description: this source doesn't work
     metadata:
       foo: 'bar'

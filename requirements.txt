@@ -1,5 +1,4 @@
 jinja2
-marshmallow
 msgpack-numpy
 msgpack-python
 numpy

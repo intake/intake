@@ -28,3 +28,8 @@ class ValidationError(CatalogException):
     def __init__(self, message, errors):
         super(ValidationError, self).__init__(message)
         self.errors = errors
+
+
+class DuplicateKeyError(ValidationError):
+    def __init__(self, exception):
+        super(DuplicateKeyError, self).__init__("found duplicate key", [])

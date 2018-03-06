@@ -3,7 +3,7 @@ plugins:
     - module: intake.catalog.tests.example1_source
     - dir: !template '{{ CATALOG_DIR }}/example_plugin_dir'
 sources:
-  - name: entry1
+  entry1:
     description: entry1 full
     metadata:
       foo: 'bar'
@@ -12,10 +12,10 @@ sources:
     # Default direct_access is "forbid" by default
     args: # passed to the open() method
       urlpath: !template '{{ CATALOG_DIR }}/entry1_*.csv'
-  - name: entry1_part
+  entry1_part:
     description: entry1 part
     parameters: # User defined parameters
-      - name: part
+      part:
         description: part of filename
         type: str
         default: "1"

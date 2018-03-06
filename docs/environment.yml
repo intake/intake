@@ -9,7 +9,6 @@ dependencies:
   - python=3.6
   - python-snappy
   - pip:
-    - marshmallow
     - msgpack-numpy
     - sphinx
     - sphinx-rtd-theme
