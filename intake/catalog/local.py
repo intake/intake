@@ -360,6 +360,16 @@ class CatalogParser(object):
     def warning(self, source, msg):
         self._warnings.append((0, 0, msg))
 
+    def _validate_plugin(self, obj, key):
+        if isinstance(obj[key], (str, TemplateStr)):
+            return PluginSource(type=key, source=obj[key])
+        else:
+            self.error(data, "plugin source must be either be a string or template")
+
+        invalid_keys = set(obj) - set([key])
+        for key in invalid_keys:
+            self.warning(key, "extra key")
+
     def _parse_plugins(self, data):
         sources = []
 
@@ -386,25 +396,13 @@ class CatalogParser(object):
             if 'module' in plugin_source and 'dir' in plugin_source:
                 self.error(plugin_source, "module and directory both exist")
             elif 'module' in plugin_source:
-                if isinstance(plugin_source['module'], (str, TemplateStr)):
-                    obj = PluginSource(type='module', source=plugin_source['module'])
-                    sources.append(obj)
-                else:
-                    self.error(data, "plugin source must be either be a string or template")
-
-                invalid_keys = set(plugin_source) - set(['module'])
-                for key in invalid_keys:
-                    self.warning(key, "extra key")
+                ps = self._validate_plugin(plugin_source, 'module')
+                if ps:
+                    sources.append(ps)
             elif 'dir' in plugin_source:
-                if isinstance(plugin_source['dir'], (str, TemplateStr)):
-                    obj = PluginSource(type='dir', source=plugin_source['dir'])
-                    sources.append(obj)
-                else:
-                    self.error(data, "plugin source must be either be a string or template")
-
-                invalid_keys = set(plugin_source) - set(['dir'])
-                for key in invalid_keys:
-                    self.warning(key, "extra key")
+                ps = self._validate_plugin(plugin_source, 'dir')
+                if ps:
+                    sources.append(ps)
             else:
                 self.error(plugin_source, "expected module or directory")
         return sources
