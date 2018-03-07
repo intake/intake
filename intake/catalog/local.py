@@ -360,23 +360,24 @@ class CatalogParser(object):
     def warnings(self):
         return self._warnings
 
-    def error(self, msg, obj=None, key=None):
+    def error(self, msg, obj, key=None):
         line, col = get_line_column(obj, key)
         self._errors.append((line, col, msg))
 
-    def warning(self, msg, obj=None, key=None):
+    def warning(self, msg, obj, key=None):
         line, col = get_line_column(obj, key)
         self._warnings.append((line, col, msg))
 
-    def _validate_plugin(self, obj, key):
-        if isinstance(obj[key], (str, TemplateStr)):
-            return PluginSource(type=key, source=obj[key])
-        else:
+    def _parse_plugin(self, obj, key):
+        if not isinstance(obj[key], (str, TemplateStr)):
             self.error("plugin source must be either be a string or template", obj, key)
+            return None
 
         invalid_keys = set(obj) - set([key])
         for key in invalid_keys:
             self.warning("extra key", key)
+
+        return PluginSource(type=key, source=obj[key])
 
     def _parse_plugins(self, data):
         sources = []
@@ -386,15 +387,15 @@ class CatalogParser(object):
 
         if not isinstance(data['plugins'], dict):
             self.error("expected dictionary value assigned to 'plugins'", data, 'plugins')
-            return
+            return sources
 
         if 'source' not in data['plugins']:
             self.error("missing plugin source", data['plugins'])
-            return
+            return sources
 
         if not isinstance(data['plugins']['source'], list):
             self.error("expected list value assigned to 'source'", data['plugins'], 'source')
-            return
+            return sources
 
         for plugin_source in data['plugins']['source']:
             if not isinstance(plugin_source, dict):
@@ -404,15 +405,16 @@ class CatalogParser(object):
             if 'module' in plugin_source and 'dir' in plugin_source:
                 self.error("module and directory both exist", plugin_source)
             elif 'module' in plugin_source:
-                ps = self._validate_plugin(plugin_source, 'module')
-                if ps:
-                    sources.append(ps)
+                obj = self._parse_plugin(plugin_source, 'module')
+                if obj:
+                    sources.append(obj)
             elif 'dir' in plugin_source:
-                ps = self._validate_plugin(plugin_source, 'dir')
-                if ps:
-                    sources.append(ps)
+                obj = self._parse_plugin(plugin_source, 'dir')
+                if obj:
+                    sources.append(obj)
             else:
                 self.error("expected module or directory", plugin_source)
+
         return sources
 
     def _getitem(self, obj, key, dtype, required=True, default=None, choices=None):
@@ -488,19 +490,18 @@ class CatalogParser(object):
             self.error("missing sources", data)
             return sources
 
-        if 'sources' in data:
-            for name, source in data['sources'].items():
-                if not isinstance(name, str):
-                    self.error("data source name must be a string", data['sources'], name)
-                    continue
+        for name, source in data['sources'].items():
+            if not isinstance(name, str):
+                self.error("data source name must be a string", data['sources'], name)
+                continue
 
-                if not isinstance(source, dict):
-                    self.error("data source must be a dictionary", data['sources'], name)
-                    continue
+            if not isinstance(source, dict):
+                self.error("data source must be a dictionary", data['sources'], name)
+                continue
 
-                obj = self._parse_data_source(name, source)
-                if obj:
-                    sources.append(obj)
+            obj = self._parse_data_source(name, source)
+            if obj:
+                sources.append(obj)
 
         return sources
 
