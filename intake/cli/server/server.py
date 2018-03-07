@@ -58,8 +58,7 @@ class IntakeServer(object):
     def _make_cache_callback(self, callback, idle_time):
         # Check ever 1/10 of the idle_time
         interval_ms = (idle_time / 10.0) * 1000
-        callback = tornado.ioloop.PeriodicCallback(callback, interval_ms,
-                                                   io_loop=tornado.ioloop.IOLoop.current())
+        callback = tornado.ioloop.PeriodicCallback(callback, interval_ms)
         return callback
 
 
