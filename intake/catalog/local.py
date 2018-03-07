@@ -331,6 +331,11 @@ class PluginSource(object):
         return {}
 
 
+def get_line_column(obj, key=None):
+    line, col = obj.lc.key(key) if key else (obj.lc.line, obj.lc.col)
+    return line + 1, col + 1
+
+
 class CatalogParser(object):
     def __init__(self, data, context=None):
         self._context = context if context else {}
@@ -355,10 +360,18 @@ class CatalogParser(object):
         return self._warnings
 
     def error(self, source, msg):
-        self._errors.append((0, 0, msg))
+        if isinstance(source, tuple):
+            line, col = get_line_column(*source)
+        else:
+            line, col = get_line_column(source)
+        self._errors.append((line, col, msg))
 
     def warning(self, source, msg):
-        self._warnings.append((0, 0, msg))
+        if isinstance(source, tuple):
+            line, col = get_line_column(*source)
+        else:
+            line, col = get_line_column(source)
+        self._warnings.append((line, col, msg))
 
     def _validate_plugin(self, obj, key):
         if isinstance(obj[key], (str, TemplateStr)):
@@ -410,10 +423,13 @@ class CatalogParser(object):
     def _getitem(self, obj, key, dtype, required=True, default=None, choices=None):
         if key in obj:
             if isinstance(obj[key], dtype):
-                return obj[key]
+                if choices and obj[key] not in choices:
+                    self.error((obj, key), 'invalid choice')
+                else:
+                    return obj[key]
             else:
                 self.error(obj[key], 'expected {}'.format(dtype))
-                return None
+            return None
         elif required:
             self.error(obj, 'expected {}'.format(key))
             return None
@@ -512,8 +528,9 @@ class CatalogConfig(object):
         context = dict(root=self._dir)
         result = CatalogParser(data, context=context)
         if result.errors:
-            raise exceptions.ValidationError("Catalog '{}' has validation errors: {}"
-                                             "".format(path, result.errors), result.errors)
+            errors = ["line {}, column {}: {}".format(*error) for error in result.errors]
+            raise exceptions.ValidationError("Catalog '{}' has validation errors:\n\n{}"
+                                             "".format(path, "\n".join(errors)), result.errors)
 
         cfg = result.data
 
