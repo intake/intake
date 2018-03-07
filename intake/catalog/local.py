@@ -370,12 +370,12 @@ class CatalogParser(object):
 
     def _parse_plugin(self, obj, key):
         if not isinstance(obj[key], (str, TemplateStr)):
-            self.error("plugin source must be either be a string or template", obj, key)
+            self.error("value of key '{}' must be either be a string or template".format(key), obj, key)
             return None
 
-        invalid_keys = set(obj) - set([key])
-        for key in invalid_keys:
-            self.warning("extra key", key)
+        extra_keys = set(obj) - set([key])
+        for key in extra_keys:
+            self.warning("key '{}' defined but not needed".format(key), key)
 
         return PluginSource(type=key, source=obj[key])
 
@@ -386,24 +386,24 @@ class CatalogParser(object):
             return sources
 
         if not isinstance(data['plugins'], dict):
-            self.error("expected dictionary value assigned to 'plugins'", data, 'plugins')
+            self.error("value of key 'plugins' must be a dictionary", data, 'plugins')
             return sources
 
         if 'source' not in data['plugins']:
-            self.error("missing plugin source", data['plugins'])
+            self.error("missing key 'source'", data['plugins'])
             return sources
 
         if not isinstance(data['plugins']['source'], list):
-            self.error("expected list value assigned to 'source'", data['plugins'], 'source')
+            self.error("value of key 'source' must be a list", data['plugins'], 'source')
             return sources
 
         for plugin_source in data['plugins']['source']:
             if not isinstance(plugin_source, dict):
-                self.error("expected dictionary", data['plugins'], 'source')
+                self.error("value in list of plugins sources must be a dictionary", data['plugins'], 'source')
                 continue
 
             if 'module' in plugin_source and 'dir' in plugin_source:
-                self.error("module and directory both exist", plugin_source)
+                self.error("keys 'module' and 'dir' both exist (select only one)", plugin_source)
             elif 'module' in plugin_source:
                 obj = self._parse_plugin(plugin_source, 'module')
                 if obj:
@@ -413,7 +413,7 @@ class CatalogParser(object):
                 if obj:
                     sources.append(obj)
             else:
-                self.error("expected module or directory", plugin_source)
+                self.error("missing one of the available keys ('module' or 'dir')", plugin_source)
 
         return sources
 
@@ -421,14 +421,14 @@ class CatalogParser(object):
         if key in obj:
             if isinstance(obj[key], dtype):
                 if choices and obj[key] not in choices:
-                    self.error("invalid choice", obj, key)
+                    self.error("value '{}' is invalid (choose from {})".format(obj[key], choices), obj, key)
                 else:
                     return obj[key]
             else:
                 self.error("value '{}' is not expected type '{}'".format(obj[key], dtype.__name__), obj, key)
             return None
         elif required:
-            self.error("expected {}".format(key), obj)
+            self.error("missing required key '{}'".format(key), obj)
             return None
         elif default:
             return default
@@ -470,11 +470,11 @@ class CatalogParser(object):
         if 'parameters' in data:
             for name, parameter in data['parameters'].items():
                 if not isinstance(name, str):
-                    self.error("user parameter name must be a string", data['parameters'], name)
+                    self.error("key '{}' must be a string".format(name), data['parameters'], name)
                     continue
 
                 if not isinstance(parameter, dict):
-                    self.error("user parameter must be a dictionary", data['parameters'], name)
+                    self.error("value of key '{}' must be a dictionary".format(name), data['parameters'], name)
                     continue
 
                 obj = self._parse_user_parameter(name, parameter)
@@ -487,16 +487,16 @@ class CatalogParser(object):
         sources = []
 
         if 'sources' not in data:
-            self.error("missing sources", data)
+            self.error("missing key 'sources'", data)
             return sources
 
         for name, source in data['sources'].items():
             if not isinstance(name, str):
-                self.error("data source name must be a string", data['sources'], name)
+                self.error("key '{}' must be a string".format(name), data['sources'], name)
                 continue
 
             if not isinstance(source, dict):
-                self.error("data source must be a dictionary", data['sources'], name)
+                self.error("value of key '{}' must be a dictionary".format(name), data['sources'], name)
                 continue
 
             obj = self._parse_data_source(name, source)
@@ -507,7 +507,7 @@ class CatalogParser(object):
 
     def _parse(self, data):
         if not isinstance(data, dict):
-            self.error("expected dictionary", data)
+            self.error("catalog must be a dictionary", data)
             return
 
         return dict(
