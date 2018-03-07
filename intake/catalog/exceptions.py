@@ -35,3 +35,45 @@ class DuplicateKeyError(ValidationError):
         line, column = exception.problem_mark.line, exception.problem_mark.column
         msg = "duplicate key found on line {}, column {}".format(line + 1, column + 1)
         super(DuplicateKeyError, self).__init__(msg, [])
+
+
+class ObsoleteError(ValidationError):
+    pass
+
+
+class ObsoleteParameterError(ObsoleteError):
+    def __init__(self):
+        msg = """Detected old syntax. See details for upgrade instructions to new syntax:
+
+[old syntax]
+
+parameters:
+  - name: abc
+    type: str
+
+[new syntax]
+
+parameters:
+  abc:
+    type: str
+"""
+        super(ObsoleteParameterError, self).__init__(msg, [])
+
+
+class ObsoleteDataSourceError(ObsoleteError):
+    def __init__(self):
+        msg = """Detected old syntax. See details for upgrade instructions to new syntax:
+
+[old syntax]
+
+sources:
+  - name: abc
+    driver: csv
+
+[new syntax]
+
+sources:
+  abc:
+    driver: csv
+"""
+        super(ObsoleteDataSourceError, self).__init__(msg, [])

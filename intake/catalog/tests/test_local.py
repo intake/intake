@@ -228,9 +228,11 @@ def test_user_parameter_validation_allowed():
     "catalog_non_dict",
     "data_source_missing",
     "data_source_name_non_string",
+    "data_source_non_dict",
     "data_source_value_non_dict",
     "params_missing_required",
     "params_name_non_string",
+    "params_non_dict",
     "params_value_bad_choice",
     "params_value_bad_type",
     "params_value_non_dict",
@@ -244,6 +246,15 @@ def test_user_parameter_validation_allowed():
 ])
 def test_parser_validation_error(filename):
     with pytest.raises(exceptions.ValidationError):
+        catalog = Catalog(abspath(filename + ".yml"))
+
+
+@pytest.mark.parametrize("filename", [
+    "obsolete_data_source_list",
+    "obsolete_params_list",
+])
+def test_parser_obsolete_error(filename):
+    with pytest.raises(exceptions.ObsoleteError):
         catalog = Catalog(abspath(filename + ".yml"))
 
 

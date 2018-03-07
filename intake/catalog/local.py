@@ -468,6 +468,13 @@ class CatalogParser(object):
         ds['parameters'] = []
 
         if 'parameters' in data:
+            if isinstance(data['parameters'], list):
+                raise exceptions.ObsoleteParameterError
+
+            if not isinstance(data['parameters'], dict):
+                self.error("value of key 'parameters' must be a dictionary", data, 'parameters')
+                return None
+
             for name, parameter in data['parameters'].items():
                 if not isinstance(name, str):
                     self.error("key '{}' must be a string".format(name), data['parameters'], name)
@@ -488,6 +495,13 @@ class CatalogParser(object):
 
         if 'sources' not in data:
             self.error("missing key 'sources'", data)
+            return sources
+
+        if isinstance(data['sources'], list):
+            raise exceptions.ObsoleteDataSourceError
+
+        if not isinstance(data['sources'], dict):
+            self.error("value of key 'sources' must be a dictionary", data, 'sources')
             return sources
 
         for name, source in data['sources'].items():
