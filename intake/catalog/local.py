@@ -423,7 +423,7 @@ class CatalogParser(object):
                 else:
                     return obj[key]
             else:
-                self.error("expected {}".format(dtype), obj[key])
+                self.error("value '{}' is not expected type '{}'".format(obj[key], dtype.__name__), obj, key)
             return None
         elif required:
             self.error("expected {}".format(key), obj)
@@ -445,13 +445,12 @@ class CatalogParser(object):
         params['max'] = self._getitem(data, 'max', object, required=False)
         params['allowed'] = self._getitem(data, 'allowed', object, required=False)
 
+        if params['description'] is None or params['type'] is None:
+            return None
+
         return UserParameter(**params)
 
     def _parse_data_source(self, name, data):
-        if not isinstance(data, dict):
-            self.error("data source must be a dictionary", data)
-            return None
-
         ds = {}
 
         ds['name'] = name
@@ -461,12 +460,19 @@ class CatalogParser(object):
         ds['args'] = self._getitem(data, 'args', dict, required=False)
         ds['metadata'] = self._getitem(data, 'metadata', dict, required=False)
 
+        if ds['driver'] is None:
+            return None
+
         ds['parameters'] = []
 
         if 'parameters' in data:
             for name, parameter in data['parameters'].items():
                 if not isinstance(name, str):
-                    self.error("user parameter name must be a string", name)
+                    self.error("user parameter name must be a string", data['parameters'], name)
+                    continue
+
+                if not isinstance(parameter, dict):
+                    self.error("user parameter must be a dictionary", data['parameters'], name)
                     continue
 
                 obj = self._parse_user_parameter(name, parameter)
@@ -485,7 +491,11 @@ class CatalogParser(object):
         if 'sources' in data:
             for name, source in data['sources'].items():
                 if not isinstance(name, str):
-                    self.error("data source name must be a string", name)
+                    self.error("data source name must be a string", data['sources'], name)
+                    continue
+
+                if not isinstance(source, dict):
+                    self.error("data source must be a dictionary", data['sources'], name)
                     continue
 
                 obj = self._parse_data_source(name, source)
