@@ -32,4 +32,6 @@ class ValidationError(CatalogException):
 
 class DuplicateKeyError(ValidationError):
     def __init__(self, exception):
-        super(DuplicateKeyError, self).__init__("found duplicate key", [])
+        line, column = exception.problem_mark.line, exception.problem_mark.column
+        msg = "duplicate key found on line {}, column {}".format(line + 1, column + 1)
+        super(DuplicateKeyError, self).__init__(msg, [])
