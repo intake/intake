@@ -1,0 +1,4 @@
+plugins:
+  source:
+    - module
+sources: {}

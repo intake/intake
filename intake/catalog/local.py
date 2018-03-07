@@ -332,6 +332,7 @@ class PluginSource(object):
 
 
 def get_line_column(obj, key=None):
+    """Retrieve line/column from internal ruamel structure."""
     line, col = obj.lc.key(key) if key else (obj.lc.line, obj.lc.col)
     return line + 1, col + 1
 
@@ -359,29 +360,23 @@ class CatalogParser(object):
     def warnings(self):
         return self._warnings
 
-    def error(self, source, msg):
-        if isinstance(source, tuple):
-            line, col = get_line_column(*source)
-        else:
-            line, col = get_line_column(source)
+    def error(self, msg, obj=None, key=None):
+        line, col = get_line_column(obj, key)
         self._errors.append((line, col, msg))
 
-    def warning(self, source, msg):
-        if isinstance(source, tuple):
-            line, col = get_line_column(*source)
-        else:
-            line, col = get_line_column(source)
+    def warning(self, msg, obj=None, key=None):
+        line, col = get_line_column(obj, key)
         self._warnings.append((line, col, msg))
 
     def _validate_plugin(self, obj, key):
         if isinstance(obj[key], (str, TemplateStr)):
             return PluginSource(type=key, source=obj[key])
         else:
-            self.error(data, "plugin source must be either be a string or template")
+            self.error("plugin source must be either be a string or template", obj, key)
 
         invalid_keys = set(obj) - set([key])
         for key in invalid_keys:
-            self.warning(key, "extra key")
+            self.warning("extra key", key)
 
     def _parse_plugins(self, data):
         sources = []
@@ -390,24 +385,24 @@ class CatalogParser(object):
             return sources
 
         if not isinstance(data['plugins'], dict):
-            self.error(data['plugins'], "missing plugin sources")
+            self.error("expected dictionary value assigned to 'plugins'", data, 'plugins')
             return
 
         if 'source' not in data['plugins']:
-            self.error(data['plugins'], "missing plugin source")
+            self.error("missing plugin source", data['plugins'])
             return
 
         if not isinstance(data['plugins']['source'], list):
-            self.error(data['plugins']['source'], "expected list")
+            self.error("expected list value assigned to 'source'", data['plugins'], 'source')
             return
 
         for plugin_source in data['plugins']['source']:
             if not isinstance(plugin_source, dict):
-                self.error(plugin_source, "expected dictionary")
+                self.error("expected dictionary", data['plugins'], 'source')
                 continue
 
             if 'module' in plugin_source and 'dir' in plugin_source:
-                self.error(plugin_source, "module and directory both exist")
+                self.error("module and directory both exist", plugin_source)
             elif 'module' in plugin_source:
                 ps = self._validate_plugin(plugin_source, 'module')
                 if ps:
@@ -417,21 +412,21 @@ class CatalogParser(object):
                 if ps:
                     sources.append(ps)
             else:
-                self.error(plugin_source, "expected module or directory")
+                self.error("expected module or directory", plugin_source)
         return sources
 
     def _getitem(self, obj, key, dtype, required=True, default=None, choices=None):
         if key in obj:
             if isinstance(obj[key], dtype):
                 if choices and obj[key] not in choices:
-                    self.error((obj, key), 'invalid choice')
+                    self.error("invalid choice", obj, key)
                 else:
                     return obj[key]
             else:
-                self.error(obj[key], 'expected {}'.format(dtype))
+                self.error("expected {}".format(dtype), obj[key])
             return None
         elif required:
-            self.error(obj, 'expected {}'.format(key))
+            self.error("expected {}".format(key), obj)
             return None
         elif default:
             return default
@@ -454,7 +449,7 @@ class CatalogParser(object):
 
     def _parse_data_source(self, name, data):
         if not isinstance(data, dict):
-            self.error(data, "data source must be a dictionary")
+            self.error("data source must be a dictionary", data)
             return None
 
         ds = {}
@@ -471,7 +466,7 @@ class CatalogParser(object):
         if 'parameters' in data:
             for name, parameter in data['parameters'].items():
                 if not isinstance(name, str):
-                    self.error(name, "user parameter name must be a string")
+                    self.error("user parameter name must be a string", name)
                     continue
 
                 obj = self._parse_user_parameter(name, parameter)
@@ -484,13 +479,13 @@ class CatalogParser(object):
         sources = []
 
         if 'sources' not in data:
-            self.error(data, "missing sources")
+            self.error("missing sources", data)
             return sources
 
         if 'sources' in data:
             for name, source in data['sources'].items():
                 if not isinstance(name, str):
-                    self.error(name, "data source name must be a string")
+                    self.error("data source name must be a string", name)
                     continue
 
                 obj = self._parse_data_source(name, source)
@@ -501,7 +496,7 @@ class CatalogParser(object):
 
     def _parse(self, data):
         if not isinstance(data, dict):
-            self.error(data, "expected dictionary")
+            self.error("expected dictionary", data)
             return
 
         return dict(
