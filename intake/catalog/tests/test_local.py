@@ -5,13 +5,15 @@ import tempfile
 import time
 
 import pytest
-import yaml
 
 import pandas
 
 from .util import assert_items_equal
-from ..utils import PermissionsError
-from intake.catalog import Catalog, local
+from intake.catalog import Catalog, exceptions, local
+
+
+def abspath(filename):
+    return os.path.join(os.path.dirname(__file__), filename)
 
 
 def test_template_str():
@@ -39,7 +41,7 @@ def test_expand_template_env_str():
     assert ts != local.TemplateStr('other')
 
     context = local.TemplateContext('', env_access=False)
-    with pytest.raises(PermissionsError):
+    with pytest.raises(exceptions.EnvironmentPermissionDenied):
         assert ts.expand(context) == 'foo {} baz'.format(os.environ['USER'])
 
 
@@ -56,7 +58,7 @@ def test_expand_template_shell_str():
     assert ts != local.TemplateStr('other')
 
     context = local.TemplateContext('', shell_access=False)
-    with pytest.raises(PermissionsError):
+    with pytest.raises(exceptions.ShellPermissionDenied):
         assert ts.expand(context) == 'foo bar baz'
 
 
@@ -72,10 +74,11 @@ taxi_data:
 
 def test_yaml_with_templates():
     # Exercise round-trip
-    round_trip_yaml = yaml.dump(yaml.safe_load(EXAMPLE_YAML))
+    yaml = local.yaml_instance()
+    round_trip_yaml = yaml.dump(yaml.load(EXAMPLE_YAML))
 
-    assert "!template 'entry1_{{ x }}.csv'" in round_trip_yaml
-    assert "!template 'entry2_{{ x }}.csv'" in round_trip_yaml
+    assert "!template entry1_{{ x }}.csv" in round_trip_yaml
+    assert "!template entry2_{{ x }}.csv" in round_trip_yaml
 
 
 @pytest.fixture
@@ -221,6 +224,40 @@ def test_user_parameter_validation_allowed():
     assert 'allowed' in str(except_info.value)
 
 
+@pytest.mark.parametrize("filename", [
+    "catalog_non_dict",
+    "data_source_missing",
+    "data_source_name_non_string",
+    "data_source_non_dict",
+    "data_source_value_non_dict",
+    "params_missing_required",
+    "params_name_non_string",
+    "params_non_dict",
+    "params_value_bad_choice",
+    "params_value_bad_type",
+    "params_value_non_dict",
+    "plugins_non_dict",
+    "plugins_source_both",
+    "plugins_source_missing",
+    "plugins_source_missing_key",
+    "plugins_source_non_dict",
+    "plugins_source_non_list",
+    "plugins_source_non_string",
+])
+def test_parser_validation_error(filename):
+    with pytest.raises(exceptions.ValidationError):
+        catalog = Catalog(abspath(filename + ".yml"))
+
+
+@pytest.mark.parametrize("filename", [
+    "obsolete_data_source_list",
+    "obsolete_params_list",
+])
+def test_parser_obsolete_error(filename):
+    with pytest.raises(exceptions.ObsoleteError):
+        catalog = Catalog(abspath(filename + ".yml"))
+
+
 def test_union_catalog():
     path = os.path.dirname(__file__)
     uri1 = os.path.join(path, 'catalog_union_1.yml')
@@ -276,18 +313,16 @@ def test_duplicate_data_sources():
     path = os.path.dirname(__file__)
     uri = os.path.join(path, 'catalog_dup_sources.yml')
 
-    with pytest.raises(local.ValidationError) as except_info:
+    with pytest.raises(exceptions.DuplicateKeyError) as except_info:
         c = Catalog(uri)
-    assert 'already exists' in str(except_info.value)
 
 
 def test_duplicate_parameters():
     path = os.path.dirname(__file__)
     uri = os.path.join(path, 'catalog_dup_parameters.yml')
 
-    with pytest.raises(local.ValidationError) as except_info:
+    with pytest.raises(exceptions.DuplicateKeyError) as except_info:
         c = Catalog(uri)
-    assert 'already exists' in str(except_info.value)
 
 
 @pytest.fixture
@@ -297,11 +332,11 @@ def temp_catalog_file():
     with open(catalog_file, 'w') as f:
         f.write('''
 sources:
-  - name: a
+  a:
     driver: csv
     args:
       urlpath: /not/a/file
-  - name: b
+  b:
     driver: csv
     args:
       urlpath: /not/a/file

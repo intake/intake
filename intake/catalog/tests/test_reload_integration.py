@@ -22,7 +22,7 @@ plugins:
     - module: intake.catalog.tests.example1_source
     - dir: !template '{{ CATALOG_DIR }}/example_plugin_dir'
 sources:
-  - name: use_example1
+  use_example1:
     description: example1 source plugin
     driver: example1
     args: {}
@@ -46,11 +46,11 @@ plugins:
     - module: intake.catalog.tests.example1_source
     - dir: !template '{{ CATALOG_DIR }}/example_plugin_dir'
 sources:
-  - name: use_example1
+  use_example1:
     description: example1 source plugin
     driver: example1
     args: {}
-  - name: use_example1_1
+  use_example1_1:
     description: example1 other
     driver: example1
     args: {}
@@ -71,7 +71,7 @@ def test_reload_newfile(intake_server):
     with open(filename, 'w') as f:
         f.write('''
 sources:
-  - name: example2
+  example2:
     description: source 2
     driver: csv
     args: {}

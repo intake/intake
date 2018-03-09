@@ -2,7 +2,7 @@ plugins:
   source:
     - module: intake.catalog.tests.example1_source
 sources:
-  - name: use_example1
+  use_example1:
     description: example1 source plugin
     driver: example1
     args: {}

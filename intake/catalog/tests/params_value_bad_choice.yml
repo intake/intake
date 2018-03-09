@@ -1,0 +1,7 @@
+sources:
+  a:
+    driver: csv
+    parameters:
+      b:
+        description: B
+        type: string

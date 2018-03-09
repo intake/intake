@@ -1,0 +1,5 @@
+sources:
+  a:
+    driver: csv
+    parameters:
+      b: 1

@@ -26,10 +26,9 @@ requirements:
     - requests
     - tornado
     - jinja2
-    - pyyaml
+    - ruamel_yaml >=0.15.0
     - dask
     - python-snappy
-    - marshmallow
     - appdirs
 
 test:
