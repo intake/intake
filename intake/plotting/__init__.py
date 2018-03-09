@@ -9,7 +9,7 @@ from holoviews.core.spaces import DynamicMap, Callable
 from holoviews.core.overlay import NdOverlay
 from holoviews.element import (
     Curve, Scatter, Area, Bars, BoxWhisker, Dataset, Distribution,
-    Table, Violin, HeatMap
+    Table, HeatMap
 )
 from holoviews.operation import histogram
 from holoviews.streams import Buffer
@@ -335,6 +335,10 @@ class HoloViewsConverter(object):
 
     @streaming
     def violin(self, x, y, data=None):
+        try:
+            from holoviews.element import Violin
+        except ImportError:
+            raise ImportError('Violin plot requires HoloViews version >=1.10')
         return self._stats_plot(Violin, y, data)
 
     @streaming
