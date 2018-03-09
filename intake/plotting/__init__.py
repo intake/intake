@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from functools import partial
+from distutils.version import LooseVersion
 
 import param
 import holoviews as hv
@@ -27,6 +28,14 @@ try:
 except ImportError:
     dd = None
 
+try:
+    import bokeh
+    if LooseVersion(bokeh.__version__) <= '0.12.14':
+        import warnings
+        # Ignore NumPy future warnings triggered by bokeh
+        warnings.simplefilter(action='ignore', category=FutureWarning)
+except:
+    pass
 
 class StreamingCallable(Callable):
     """
