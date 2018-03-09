@@ -11,6 +11,8 @@ dependencies:
   - intake::airline_flights
   - intake::us_crime
   - holoviews
+  - selenium=3.3.1
+  - phantomjs=2.2.1
   - pip:
     - marshmallow
     - msgpack-numpy
