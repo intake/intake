@@ -8,6 +8,7 @@ dependencies:
   - pandas
   - python=3.6
   - python-snappy
+  - xarray
   - intake::airline_flights
   - intake::us_crime
   - holoviews
