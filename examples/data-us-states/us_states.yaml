@@ -1,5 +1,5 @@
 sources:
-  - name: states
+  states:
     description: US state information from [CivilServices](https://civil.services/)
     driver: csv
     args:

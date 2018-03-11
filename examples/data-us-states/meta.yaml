@@ -7,7 +7,7 @@ source:
   git_url: https://github.com/CivilServiceUSA/us-states
 
 build:
-  number: 0
+  number: 1
   noarch: generic
 
 requirements:

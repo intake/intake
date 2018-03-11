@@ -86,7 +86,7 @@ Finishing out this example, the catalog file for this data source looks like thi
 .. code-block:: yaml
 
     sources:
-      - name: states
+      states:
         description: US state information from [CivilServices](https://civil.services/)
         driver: csv
         args:

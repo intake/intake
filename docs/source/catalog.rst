@@ -17,12 +17,12 @@ Intake catalogs are described with YAML files.  Here is an example:
 .. code-block:: yaml
 
     sources:
-      - name: example
+      example:
         description: test  
         driver: random
         args: {}
 
-      - name: entry1_full
+      entry1_full:
         description: entry1 full
         metadata:
           foo: 'bar'
@@ -31,7 +31,7 @@ Intake catalogs are described with YAML files.  Here is an example:
         args: # passed to the open() method
           urlpath: !template '{{ CATALOG_DIR }}/entry1_*.csv'
 
-      - name: entry1_part
+      entry1_part:
         description: entry1 part
         parameters: # User defined parameters
           part:
@@ -75,7 +75,7 @@ In addition to using plugins already installed in the Python environment with co
         - module: intake.catalog.tests.example1_source
         - dir: !template '{{ CATALOG_DIR }}/example_plugin_dir'
     sources:
-      - ...
+      ...
 
 
 The following import methods are allow:
@@ -89,7 +89,7 @@ Each of the above methods can be used multiple times, and in combination, to loa
 Sources
 '''''''
 
-The majority of a catalog file is a list of data sources, which are named data sets that can be loaded for the user.  Catalog authors describe the cotents of data set, how to load it, and optionally offer some customization of the returned data.  Each data source has several attributes:
+The majority of a catalog file is composed of data sources, which are named data sets that can be loaded for the user.  Catalog authors describe the cotents of data set, how to load it, and optionally offer some customization of the returned data.  Each data source has several attributes:
 
 - ``name``: The canonical name of the source.  Best practice is to compose source names from valid Python identifiers separated by dots.  This allows Intake to support things like tab completion of data source names on catalog objects. For example, ``monthly_downloads``, ``ops.servers.cpu_status``, and ``region1.satellite.IR`` are all good source names.  Tools that display Intake catalogs should interpret the dot notation as describing a hierarchy.
 - ``description``: Human readable description of the source.  To help catalog browsing tools, the description should be Markdown.
