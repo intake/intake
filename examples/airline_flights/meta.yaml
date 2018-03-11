@@ -3,7 +3,7 @@ package:
   name: 'airline_flights'
 
 build:
-  number: 0
+  number: 1
   noarch: generic
 
 requirements:
