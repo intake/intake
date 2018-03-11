@@ -3,7 +3,7 @@ package:
   name: 'us_crime'
 
 build:
-  number: 0
+  number: 1
   noarch: generic
 
 requirements:
