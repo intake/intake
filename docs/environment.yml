@@ -12,7 +12,7 @@ dependencies:
   - intake::us_crime
   - holoviews
   - selenium=3.3.1
-  - phantomjs=2.2.1
+  - phantomjs=2.1.1
   - pip:
     - msgpack-numpy
     - sphinx
