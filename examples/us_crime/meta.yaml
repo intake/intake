@@ -1,0 +1,18 @@
+package:
+  version: '0.1.0'
+  name: 'us_crime'
+
+build:
+  number: 1
+  noarch: generic
+
+requirements:
+  run:
+    - intake
+  build: []
+
+about:
+  description: US Crime data [UCRDataTool](https://www.ucrdatatool.gov/Search/Crime/State/StatebyState.cfm)
+  license: MIT
+  license_family: MIT
+  summary: Data about US Crime rates from Uniform Crime Reporting Statistics tool

@@ -1,0 +1,18 @@
+package:
+  version: '0.1.0'
+  name: 'airline_flights'
+
+build:
+  number: 1
+  noarch: generic
+
+requirements:
+  run:
+    - intake
+  build: []
+
+about:
+  description: Airline Flight data
+  license: MIT
+  license_family: MIT
+  summary: Airline flight data
