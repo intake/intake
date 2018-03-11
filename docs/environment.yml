@@ -9,6 +9,7 @@ dependencies:
   - python=3.6
   - python-snappy
   - xarray
+  - datashader
   - intake::airline_flights
   - intake::us_crime
   - holoviews
