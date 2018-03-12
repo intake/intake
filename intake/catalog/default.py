@@ -43,7 +43,7 @@ def conda_prefix():
     """Fallback: ask conda in PATH for its prefix"""
     try:
         out = subprocess.check_output(['conda', 'info', '--json'])
-        return json.loads(out.decode())["conda_prefix"]
+        return json.loads(out.decode())["default_prefix"]
     except (subprocess.CalledProcessError, json.JSONDecodeError):
         return False
 
@@ -51,9 +51,7 @@ def conda_prefix():
 def global_data_dir():
     """Return the global Intake catalog dir for the current environment"""
 
-    if CONDA_VAR in os.environ:
-        prefix = os.environ[CONDA_VAR]
-    elif VIRTUALENV_VAR in os.environ:
+    if VIRTUALENV_VAR in os.environ:
         prefix = os.environ[VIRTUALENV_VAR]
     else:
         prefix = conda_prefix()

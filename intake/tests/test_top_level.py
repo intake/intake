@@ -28,14 +28,6 @@ def user_catalog():
     os.remove(target_catalog)
 
 
-@pytest.fixture
-def env_catalog():
-    conda_env_dir = os.path.join(os.environ.get('CONDA_PREFIX', '/tmp'), 'share', 'intake')
-    target_catalog = copy_test_file('catalog2.yml', conda_env_dir)
-    yield target_catalog
-    os.remove(target_catalog)
-
-
 def test_autoregister_open():
     assert hasattr(intake, 'open_csv')
 
@@ -50,15 +42,3 @@ def test_user_catalog(user_catalog):
     cat = intake.load_combo_catalog()
     time.sleep(2) # wait 2 seconds for catalog to refresh
     assert set(cat) >= set(['ex1', 'ex2'])
-
-
-def test_env_catalog(env_catalog):
-    cat = intake.load_combo_catalog()
-    time.sleep(2) # wait 2 seconds for catalog to refresh
-    assert set(cat) >= set(['ex3', 'ex4'])
-
-
-def test_user_and_env_catalog(user_catalog, env_catalog):
-    cat = intake.load_combo_catalog()
-    time.sleep(2) # wait 2 seconds for catalog to refresh
-    assert set(cat) >= set(['ex1', 'ex2', 'ex3', 'ex4'])
