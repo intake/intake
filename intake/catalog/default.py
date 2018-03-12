@@ -51,9 +51,7 @@ def conda_prefix():
 def global_data_dir():
     """Return the global Intake catalog dir for the current environment"""
 
-    if CONDA_VAR in os.environ:
-        prefix = os.environ[CONDA_VAR]
-    elif VIRTUALENV_VAR in os.environ:
+    if VIRTUALENV_VAR in os.environ:
         prefix = os.environ[VIRTUALENV_VAR]
     else:
         prefix = conda_prefix()
