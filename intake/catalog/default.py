@@ -43,7 +43,7 @@ def conda_prefix():
     """Fallback: ask conda in PATH for its prefix"""
     try:
         out = subprocess.check_output(['conda', 'info', '--json'])
-        return json.loads(out.decode())["conda_prefix"]
+        return json.loads(out.decode())["default_prefix"]
     except (subprocess.CalledProcessError, json.JSONDecodeError):
         return False
 
