@@ -100,11 +100,14 @@ def datashading(method):
             return plot
         try:
             from holoviews.operation.datashader import datashade
+            from datashader import count_cat
         except:
             raise ImportError('Datashading is not available')
         opts = dict(width=self._plot_opts['width'], height=self._plot_opts['height'])
         if 'cmap' in self._style_opts:
             opts['cmap'] = self._style_opts['cmap']
+        if self.by:
+            opts['aggregator'] = count_cat(self.by)
         return datashade(plot, **opts).opts(plot=self._plot_opts)
     return datashading_plot
 
