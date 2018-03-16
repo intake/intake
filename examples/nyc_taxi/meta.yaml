@@ -9,6 +9,8 @@ build:
 requirements:
   run:
     - intake
+    - intake-parquet
+    - s3fs
   build: []
 
 about:
