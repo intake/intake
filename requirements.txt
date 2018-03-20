@@ -3,6 +3,8 @@ msgpack-numpy
 msgpack-python
 numpy
 pandas
+pytest
+python-snappy
 ruamel.yaml >= 0.15.0
 requests
 appdirs
