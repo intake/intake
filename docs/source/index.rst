@@ -13,6 +13,7 @@ Welcome to Intake's documentation!
     making-plugins.rst
     data-packages.rst
     plotting.ipynb
+    plugin-directory.rst
 
 
 Indices and tables
