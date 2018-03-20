@@ -89,6 +89,29 @@ def streaming(method):
     return streaming_plot
 
 
+def datashading(method):
+    """
+    Decorator to add datashading support to a plot.
+    """
+    def datashading_plot(*args, **kwargs):
+        self = args[0]
+        plot = method(*args, **kwargs)
+        if not self.datashade:
+            return plot
+        try:
+            from holoviews.operation.datashader import datashade
+            from datashader import count_cat
+        except:
+            raise ImportError('Datashading is not available')
+        opts = dict(width=self._plot_opts['width'], height=self._plot_opts['height'])
+        if 'cmap' in self._style_opts:
+            opts['cmap'] = self._style_opts['cmap']
+        if self.by:
+            opts['aggregator'] = count_cat(self.by)
+        return datashade(plot, **opts).opts(plot=self._plot_opts)
+    return datashading_plot
+
+
 class HoloViewsConverter(object):
 
     def __init__(self, data, kind=None, by=None, width=700,
@@ -100,7 +123,8 @@ class HoloViewsConverter(object):
                  style_opts={}, plot_opts={}, use_index=False,
                  value_label='value', group_label='Group',
                  colorbar=False, streaming=False, backlog=1000,
-                 timeout=1000, persist=False, use_dask=False, **kwds):
+                 timeout=1000, persist=False, use_dask=False,
+                 datashade=False, **kwds):
 
         # Validate DataSource
         if not isinstance(data, DataSource):
@@ -121,7 +145,7 @@ class HoloViewsConverter(object):
             def f():
                 self.stream.send(data.read())
             self.cb = PeriodicCallback(f, timeout)
-        elif use_dask and dd is not None:
+        elif (use_dask or persist) and dd is not None:
             ddf = data.to_dask()
             self.data = ddf.persist() if persist else ddf
         else:
@@ -135,6 +159,7 @@ class HoloViewsConverter(object):
         self.kwds = kwds
         self.value_label = value_label
         self.group_label = group_label
+        self.datashade = datashade
 
         # Process style options
         if 'cmap' in kwds and colormap:
@@ -248,10 +273,12 @@ class HoloViewsConverter(object):
                              'either x and y parameters to be declared '
                              'or use_index to be enabled.')
 
+    @datashading
     @streaming
     def line(self, x, y, data=None):
         return self.chart(Curve, x, y, data)
 
+    @datashading
     @streaming
     def scatter(self, x, y, data=None):
         scatter = self.chart(Scatter, x, y, data)

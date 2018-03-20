@@ -1,0 +1,6 @@
+sources:
+  nyc_taxi:
+    description: NYC Taxi dataset
+    driver: parquet
+    args:
+      urlpath: 's3://datashader-data/nyc_taxi_wide.parq'

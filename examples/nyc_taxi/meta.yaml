@@ -1,0 +1,20 @@
+package:
+  version: '0.1.0'
+  name: 'nyc_taxi'
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - intake
+    - intake-parquet
+    - s3fs
+  build: []
+
+about:
+  description: NYC Taxi Trip data
+  license: MIT
+  license_family: MIT
+  summary: A dataset of NYC Taxi trips
