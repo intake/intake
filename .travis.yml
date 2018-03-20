@@ -23,7 +23,7 @@ install:
 script:
 - conda build -c intake/label/main ./conda
 - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then anaconda -t ${ANACONDA_TOKEN}
-  upload `conda build -c intake/label/main --output ./conda`; fi
+  upload --force `conda build -c intake/label/main --output ./conda`; fi
 notifications:
   email: false
   on_success: change
