@@ -4,14 +4,14 @@ Plugin Directory
 This is a list of known projects which install plugins for Intake:
 
 * `intake-avro <https://github.com/ContinuumIO/intake-avro>`_: Apache Avro data serialization format
-* `intake-elasticsearch <https://github.com/ContinuumIO/intake-elasticsearch>`_: Elasticsearch database
-* `intake-hbase <https://github.com/ContinuumIO/intake-elasticsearch>`_: Apache HBase database
+* `intake-elasticsearch <https://github.com/ContinuumIO/intake-elasticsearch>`_: Elasticsearch search and analytics engine
+* `intake-hbase <https://github.com/ContinuumIO/intake-hbase>`_: Apache HBase database
 * `intake-odbc <https://github.com/ContinuumIO/intake-odbc>`_: ODBC database
 * `intake-parquet <https://github.com/ContinuumIO/intake-parquet>`_: Apache Parquet file format
 * `intake-pcap <https://github.com/ContinuumIO/intake-pcap>`_: PCAP network packet format
-* `intake-postgres <https://github.com/ContinuumIO/intake-postgres>`_: PostgreSQL datbase
+* `intake-postgres <https://github.com/ContinuumIO/intake-postgres>`_: PostgreSQL database
 * `intake-netflow <https://github.com/ContinuumIO/intake-netflow>`_: Netflow packet format
-* `intake-solr <https://github.com/ContinuumIO/intake-netflow>`_: Apache Solr search engine
+* `intake-solr <https://github.com/ContinuumIO/intake-solr>`_: Apache Solr search platform
 
 Don't see your favorite format?  See :doc:`making-plugins` for how to create new plugins.
 
