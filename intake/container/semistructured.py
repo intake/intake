@@ -7,7 +7,7 @@ from .base import BaseContainer
 class SemiStructured(BaseContainer):
 
     @staticmethod
-    def merge(parts):
+    def merge(parts, dim=None):
         # This seems to be the fastest way to do this for large lists
         data = []
         for p in parts:
@@ -15,7 +15,7 @@ class SemiStructured(BaseContainer):
         return data
 
     @staticmethod
-    def to_dask(parts, dtype):
+    def to_dask(parts, dtype=None):
         return dask.bag.from_delayed(parts)
 
     @staticmethod

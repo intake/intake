@@ -1,11 +1,11 @@
 class BaseContainer(object):
 
     @staticmethod
-    def merge(parts):
+    def merge(parts, dim=None):
         raise NotImplementedError
 
     @staticmethod
-    def to_dask(parts, dtype):
+    def to_dask(parts, dtype=None):
         raise NotImplementedError
 
     @staticmethod

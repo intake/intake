@@ -4,6 +4,7 @@ import pickle
 import pytest
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from .. import base
 
@@ -292,3 +293,80 @@ def test_datasource_python_to_dask(source_python):
     assert db == [{'x': 'foo', 'y': 'bar'},
                   {'x': 'foo', 'y': 'bar', 'z': 'baz'},
                   {'x': 1}, {}]
+
+arr = xr.DataArray(np.random.randn(2, 3),
+            [('x', ['a', 'b']), ('y', [10, 20, 30])])
+
+class MockDataSourceDataArray(base.DataSource):
+    '''Mock Data Source subclass that returns xarray DataArray containers
+
+    Used to verify that the base DataSource class logic works for xarray.
+    '''
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+
+        self.call_count = defaultdict(lambda: 0)
+
+        super(MockDataSourceDataArray, self).__init__(
+            container='dataarray',
+            metadata=dict(a=1, b=2)
+        )
+
+    def _get_schema(self):
+        self.call_count['_get_schema'] += 1
+
+        return base.Schema(datashape='datashape',
+                           dtype=np.dtype([('x', np.int64), ('y', np.int64)]),
+                           shape=(6,),
+                           npartitions=2,
+                           extra_metadata=dict(c=3, d=4))
+
+    def _get_partition(self, i):
+        self.call_count['_get_partition'] += 1
+
+        if i == 0:
+            return arr[:, :1]
+        elif i == 1:
+            return arr[:, 1:]
+        else:
+            raise Exception('This should never happen')
+
+    def _close(self):
+        self.call_count['_close'] += 1
+
+
+@pytest.fixture
+def source_dataarray():
+    return MockDataSourceDataArray(a=1, b=2)
+
+def test_datasource_dataarray_discover(source_dataarray):
+    r = source_dataarray.discover()
+
+    assert source_dataarray.container == 'dataarray'
+
+    row_dtype = np.dtype([('x', np.int64), ('y', np.int64)])
+    assert r == {
+        'datashape': 'datashape',
+        'dtype': row_dtype,
+        'shape': (6,),
+        'npartitions': 2,
+        'metadata': dict(a=1, b=2, c=3, d=4),
+    }
+
+    # check attributes have been set
+    assert source_dataarray.datashape == 'datashape'
+    assert source_dataarray.dtype == row_dtype
+    assert source_dataarray.shape == (6,)
+    assert source_dataarray.npartitions == 2
+    assert source_dataarray.metadata == dict(a=1, b=2, c=3, d=4)
+
+    # check that _get_schema is only called once
+    assert source_dataarray.call_count['_get_schema'] == 1
+    source_dataarray.discover()
+    assert source_dataarray.call_count['_get_schema'] == 1
+
+def test_datasource_dataarray_read(source_dataarray):
+    data = source_dataarray.read(dim='y')
+    assert np.all(arr[0] == data[0])
+    assert np.all(arr[1] == data[1])

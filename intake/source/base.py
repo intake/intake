@@ -100,16 +100,16 @@ class DataSource(object):
                     npartitions=self.npartitions,
                     metadata=self.metadata)
 
-    def read(self):
+    def read(self, dim=None):
         '''Load entire dataset into a container and return it'''
         self._load_metadata()
 
         parts = [self._get_partition(i) for i in range(self.npartitions)]
 
-        return self._merge(parts)
+        return self._merge(parts, dim=dim)
 
-    def _merge(self, parts):
-        return get_container_klass(self.container).merge(parts)
+    def _merge(self, parts, dim=None):
+        return get_container_klass(self.container).merge(parts, dim=dim)
 
     def read_chunked(self):
         '''Return iterator over container fragments of data source'''
