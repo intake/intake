@@ -1,6 +1,7 @@
-# intake
+# Intake: A general interface for loading data
 
-[![Build Status](https://api.travis-ci.org/ContinuumIO/intake.svg?branch=master)](https://travis-ci.org/ContinuumIO/intake)
+[![Build Status](https://travis-ci.org/ContinuumIO/intake.svg?branch=master)](https://travis-ci.org/ContinuumIO/intake)
+[![Documentation Status](https://readthedocs.org/projects/intake/badge/?version=latest)](http://intake.readthedocs.io/en/latest/?badge=latest)
 
 Development Environment
 ----------------------------
