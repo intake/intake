@@ -6,10 +6,12 @@ from .base import BaseContainer
 
 class NdArray(BaseContainer):
 
-    def merge(self, parts):
+    @staticmethod
+    def merge(parts):
         raise Exception('Need to implement ndarray case')
 
-    def to_dask(self, parts, dtype):
+    @staticmethod
+    def to_dask(parts, dtype):
         raise Exception('Need to implement ndarray case')
 
     @staticmethod
