@@ -11,3 +11,4 @@ appdirs
 tornado >= 4.5.1
 dask[complete]
 holoviews
+xarray

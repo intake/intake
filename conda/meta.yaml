@@ -30,6 +30,7 @@ requirements:
     - dask
     - python-snappy
     - appdirs
+    - xarray
 
 test:
   requires:
