@@ -4,6 +4,7 @@ from collections import namedtuple
 import pandas as pd
 import dask
 import dask.bag
+import dask.dataframe
 
 
 class Plugin(object):
@@ -16,7 +17,8 @@ class Plugin(object):
     def open(self, *args, **kwargs):
         raise Exception('Implement open')
 
-    def separate_base_kwargs(self, kwargs):
+    @staticmethod
+    def separate_base_kwargs(kwargs):
         kwargs = kwargs.copy()
 
         base_keys = ['metadata']
@@ -62,18 +64,18 @@ class DataSource(object):
         self._schema = None
 
     def _get_schema(self):
-        '''Subclasses should return an instance of base.Schema'''
+        """Subclasses should return an instance of base.Schema"""
         raise Exception('Subclass should implement _get_schema()')
 
     def _get_partition(self, i):
-        '''Subclasses should return a container object for this partition
+        """Subclasses should return a container object for this partition
 
         This function will never be called with an out-of-range value for i.
-        '''
+        """
         raise Exception('Subclass should implement _get_partition()')
 
     def _close(self):
-        '''Subclasses should close all open resources'''
+        """Subclasses should close all open resources"""
         raise Exception('Subclass should implement _close()')
 
     # These methods are implemented from the above two methods and do not need
@@ -90,7 +92,7 @@ class DataSource(object):
             self.metadata.update(self._schema.extra_metadata)
 
     def discover(self):
-        '''Open resource and populate the source attributes.'''
+        """Open resource and populate the source attributes."""
         self._load_metadata()
 
         return dict(datashape=self.datashape,
@@ -100,7 +102,7 @@ class DataSource(object):
                     metadata=self.metadata)
 
     def read(self):
-        '''Load entire dataset into a container and return it'''
+        """Load entire dataset into a container and return it"""
         self._load_metadata()
 
         parts = [self._get_partition(i) for i in range(self.npartitions)]
@@ -120,16 +122,16 @@ class DataSource(object):
             raise Exception('Need to implement ndarray case')
 
     def read_chunked(self):
-        '''Return iterator over container fragments of data source'''
+        """Return iterator over container fragments of data source"""
         self._load_metadata()
         for i in range(self.npartitions):
             yield self._get_partition(i)
 
     def read_partition(self, i):
-        '''Return a (offset_tuple, container) corresponding to i-th partition.
+        """Return a (offset_tuple, container) corresponding to i-th partition.
 
         Offset tuple is of same length as shape.
-        '''
+        """
         self._load_metadata()
         if i < 0 or i >= self.npartitions:
             raise IndexError('%d is out of range' % i)
@@ -137,7 +139,7 @@ class DataSource(object):
         return self._get_partition(i)
 
     def to_dask(self):
-        '''Return a dask container for this data source'''
+        """Return a dask container for this data source"""
         self._load_metadata()
 
         delayed_get_partition = dask.delayed(self._get_partition)
@@ -155,7 +157,7 @@ class DataSource(object):
             raise Exception('Not implemented')
 
     def close(self):
-        '''Close open resources corresponding to this data source.'''
+        """Close open resources corresponding to this data source."""
         self._close()
 
     # Boilerplate to make this object also act like a context manager

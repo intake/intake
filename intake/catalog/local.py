@@ -1,5 +1,6 @@
 import glob
 import inspect
+import logging
 import os
 import os.path
 import runpy
@@ -18,10 +19,11 @@ from ..source import registry as global_registry
 from ..source.base import Plugin
 from ..source.discovery import load_plugins_from_module
 
-try:
+if six.PY3:
     import builtins
-except:
+else:
     import __builtin__ as builtins
+logger = logging.getLogger('intake')
 
 
 class TemplateContext(dict):
@@ -70,7 +72,8 @@ class TemplateContext(dict):
         """
         if not self._shell_access:
             raise exceptions.ShellPermissionDenied
-        import shlex, subprocess
+        import shlex
+        import subprocess
         return subprocess.check_output(shlex.split(cmd),
                                        universal_newlines=True).strip().split()
 
@@ -155,7 +158,8 @@ def yaml_instance():
 class UserParameter(object):
     COERCION_RULES = {
         'bool': bool,
-        'datetime': lambda v=None: pandas.to_datetime(v) if v else pandas.to_datetime(0),
+        'datetime': lambda v=None: (pandas.to_datetime(v)
+                                    if v else pandas.to_datetime(0)),
         'float': float,
         'int': int,
         'list': list,
@@ -163,7 +167,8 @@ class UserParameter(object):
         'unicode': getattr(builtins, 'unicode', str)
     }
 
-    def __init__(self, name, description, type, default=None, min=None, max=None, allowed=None):
+    def __init__(self, name, description, type, default=None, min=None,
+                 max=None, allowed=None):
         self.name = name
         self.description = description
         self.type = type
@@ -181,7 +186,8 @@ class UserParameter(object):
             self.max = UserParameter.coerce(self.type, self.max)
 
         if self.allowed:
-            self.allowed = [UserParameter.coerce(self.type, item) for item in self.allowed]
+            self.allowed = [UserParameter.coerce(self.type, item)
+                            for item in self.allowed]
 
     def describe(self):
         desc = {
@@ -215,11 +221,14 @@ class UserParameter(object):
         value = UserParameter.coerce(self.type, value)
 
         if self.min is not None and value < self.min:
-            raise ValueError('%s=%s is less than %s' % (self.name, value, self.min))
+            raise ValueError('%s=%s is less than %s' % (self.name, value,
+                                                        self.min))
         if self.max is not None and value > self.max:
-            raise ValueError('%s=%s is greater than %s' % (self.name, value, self.max))
+            raise ValueError('%s=%s is greater than %s' % (
+                self.name, value, self.max))
         if self.allowed is not None and value not in self.allowed:
-            raise ValueError('%s=%s is not one of the allowed values: %s' % (self.name, value, ','.join(map(str, self.allowed))))
+            raise ValueError('%s=%s is not one of the allowed values: %s' % (
+                self.name, value, ','.join(map(str, self.allowed))))
 
         return value
 
@@ -259,7 +268,8 @@ class LocalCatalogEntry(CatalogEntry):
         params = TemplateContext(self._catalog_dir)
         for parameter in self._user_parameters:
             if parameter.name in user_parameters:
-                params[parameter.name] = parameter.validate(user_parameters[parameter.name])
+                params[parameter.name] = parameter.validate(
+                    user_parameters[parameter.name])
             else:
                 params[parameter.name] = parameter.default
 
@@ -302,22 +312,26 @@ class PluginSource(object):
             try:
                 globals = runpy.run_path(filename)
                 for name, o in globals.items():
-                    # Don't try to registry plugins imported into this module from somewhere else
-                    if inspect.isclass(o) and issubclass(o, Plugin) and o.__module__ == '<run_path>':
+                    # Don't try to registry plugins imported into this module
+                    # from somewhere else
+                    if (inspect.isclass(o) and issubclass(o, Plugin)
+                            and o.__module__ == '<run_path>'):
                         p = o()
                         plugins[p.name] = p
                 # If no exceptions, continue to next filename
                 continue
-            except:
-                pass
+            except Exception as ex:
+                logger.warning('When importing {}:\n{}'.format(filename, ex))
 
             import imp
             base = os.path.splitext(filename)[0]
             mod = imp.load_source(base, filename)
             for name in mod.__dict__:
                 obj = getattr(mod, name)
-                # Don't try to registry plugins imported into this module from somewhere else
-                if inspect.isclass(obj) and issubclass(obj, Plugin) and obj.__module__ == base:
+                # Don't try to registry plugins imported into this module from
+                # somewhere else
+                if (inspect.isclass(obj) and issubclass(obj, Plugin)
+                        and obj.__module__ == base):
                     p = obj()
                     plugins[p.name] = p
 
@@ -370,10 +384,11 @@ class CatalogParser(object):
 
     def _parse_plugin(self, obj, key):
         if not isinstance(obj[key], (str, TemplateStr)):
-            self.error("value of key '{}' must be either be a string or template".format(key), obj, key)
+            self.error("value of key '{}' must be either be a string "
+                       "or template".format(key), obj, key)
             return None
 
-        extra_keys = set(obj) - set([key])
+        extra_keys = set(obj) - {[key]}
         for key in extra_keys:
             self.warning("key '{}' defined but not needed".format(key), key)
 
@@ -394,16 +409,19 @@ class CatalogParser(object):
             return sources
 
         if not isinstance(data['plugins']['source'], list):
-            self.error("value of key 'source' must be a list", data['plugins'], 'source')
+            self.error("value of key 'source' must be a list", data['plugins'],
+                       'source')
             return sources
 
         for plugin_source in data['plugins']['source']:
             if not isinstance(plugin_source, dict):
-                self.error("value in list of plugins sources must be a dictionary", data['plugins'], 'source')
+                self.error("value in list of plugins sources must be "
+                           "a dictionary", data['plugins'], 'source')
                 continue
 
             if 'module' in plugin_source and 'dir' in plugin_source:
-                self.error("keys 'module' and 'dir' both exist (select only one)", plugin_source)
+                self.error("keys 'module' and 'dir' both exist "
+                           "(select only one)", plugin_source)
             elif 'module' in plugin_source:
                 obj = self._parse_plugin(plugin_source, 'module')
                 if obj:
@@ -413,19 +431,23 @@ class CatalogParser(object):
                 if obj:
                     sources.append(obj)
             else:
-                self.error("missing one of the available keys ('module' or 'dir')", plugin_source)
+                self.error("missing one of the available keys ('module' or "
+                           "'dir')", plugin_source)
 
         return sources
 
-    def _getitem(self, obj, key, dtype, required=True, default=None, choices=None):
+    def _getitem(self, obj, key, dtype, required=True, default=None,
+                 choices=None):
         if key in obj:
             if isinstance(obj[key], dtype):
                 if choices and obj[key] not in choices:
-                    self.error("value '{}' is invalid (choose from {})".format(obj[key], choices), obj, key)
+                    self.error("value '{}' is invalid (choose from "
+                               "{})".format(obj[key], choices), obj, key)
                 else:
                     return obj[key]
             else:
-                self.error("value '{}' is not expected type '{}'".format(obj[key], dtype.__name__), obj, key)
+                self.error("value '{}' is not expected type "
+                           "'{}'".format(obj[key], dtype.__name__), obj, key)
             return None
         elif required:
             self.error("missing required key '{}'".format(key), obj)
@@ -442,10 +464,12 @@ class CatalogParser(object):
         params['name'] = name
         params['description'] = self._getitem(data, 'description', str)
         params['type'] = self._getitem(data, 'type', str, choices=valid_types)
-        params['default'] = self._getitem(data, 'default', object, required=False)
+        params['default'] = self._getitem(data, 'default', object,
+                                          required=False)
         params['min'] = self._getitem(data, 'min', object, required=False)
         params['max'] = self._getitem(data, 'max', object, required=False)
-        params['allowed'] = self._getitem(data, 'allowed', object, required=False)
+        params['allowed'] = self._getitem(data, 'allowed', object,
+                                          required=False)
 
         if params['description'] is None or params['type'] is None:
             return None
@@ -456,9 +480,12 @@ class CatalogParser(object):
         ds = {}
 
         ds['name'] = name
-        ds['description'] = self._getitem(data, 'description', str, required=False)
+        ds['description'] = self._getitem(data, 'description', str,
+                                          required=False)
         ds['driver'] = self._getitem(data, 'driver', str)
-        ds['direct_access'] = self._getitem(data, 'direct_access', str, required=False, default='forbid', choices=['forbid', 'allow', 'force'])
+        ds['direct_access'] = self._getitem(
+            data, 'direct_access', str, required=False, default='forbid',
+            choices=['forbid', 'allow', 'force'])
         ds['args'] = self._getitem(data, 'args', dict, required=False)
         ds['metadata'] = self._getitem(data, 'metadata', dict, required=False)
 
@@ -472,16 +499,19 @@ class CatalogParser(object):
                 raise exceptions.ObsoleteParameterError
 
             if not isinstance(data['parameters'], dict):
-                self.error("value of key 'parameters' must be a dictionary", data, 'parameters')
+                self.error("value of key 'parameters' must be a dictionary",
+                           data, 'parameters')
                 return None
 
             for name, parameter in data['parameters'].items():
                 if not isinstance(name, str):
-                    self.error("key '{}' must be a string".format(name), data['parameters'], name)
+                    self.error("key '{}' must be a string".format(name),
+                               data['parameters'], name)
                     continue
 
                 if not isinstance(parameter, dict):
-                    self.error("value of key '{}' must be a dictionary".format(name), data['parameters'], name)
+                    self.error("value of key '{}' must be a dictionary"
+                               "".format(name), data['parameters'], name)
                     continue
 
                 obj = self._parse_user_parameter(name, parameter)
@@ -501,16 +531,19 @@ class CatalogParser(object):
             raise exceptions.ObsoleteDataSourceError
 
         if not isinstance(data['sources'], dict):
-            self.error("value of key 'sources' must be a dictionary", data, 'sources')
+            self.error("value of key 'sources' must be a dictionary", data,
+                       'sources')
             return sources
 
         for name, source in data['sources'].items():
             if not isinstance(name, str):
-                self.error("key '{}' must be a string".format(name), data['sources'], name)
+                self.error("key '{}' must be a string".format(name),
+                           data['sources'], name)
                 continue
 
             if not isinstance(source, dict):
-                self.error("value of key '{}' must be a dictionary".format(name), data['sources'], name)
+                self.error("value of key '{}' must be a dictionary"
+                           "".format(name), data['sources'], name)
                 continue
 
             obj = self._parse_data_source(name, source)
@@ -532,7 +565,8 @@ class CatalogParser(object):
 class CatalogConfig(object):
     def __init__(self, path):
         self._path = path
-        self._name = os.path.splitext(os.path.basename(self._path))[0].replace('.', '_')
+        self._name = os.path.splitext(os.path.basename(
+            self._path))[0].replace('.', '_')
         self._dir = os.path.dirname(os.path.abspath(self._path))
 
         # First, we load from YAML, failing if syntax errors are found
@@ -548,9 +582,11 @@ class CatalogConfig(object):
         context = dict(root=self._dir)
         result = CatalogParser(data, context=context)
         if result.errors:
-            errors = ["line {}, column {}: {}".format(*error) for error in result.errors]
-            raise exceptions.ValidationError("Catalog '{}' has validation errors:\n\n{}"
-                                             "".format(path, "\n".join(errors)), result.errors)
+            errors = ["line {}, column {}: {}".format(*error)
+                      for error in result.errors]
+            raise exceptions.ValidationError(
+                "Catalog '{}' has validation errors:\n\n{}"
+                "".format(path, "\n".join(errors)), result.errors)
 
         cfg = result.data
 
