@@ -1,3 +1,4 @@
+import logging
 import os.path
 import time
 
@@ -8,6 +9,7 @@ from requests.compat import urljoin, urlparse
 from .local import CatalogConfig
 from .remote import RemoteCatalogEntry
 from .utils import clamp, flatten, reload_on_change, make_prefix_tree
+logger = logging.getLogger('intake')
 
 
 class State(object):
@@ -50,8 +52,11 @@ class DirectoryState(State):
         for f in os.listdir(self.observable):
             if f.endswith('.yml') or f.endswith('.yaml'):
                 path = os.path.join(self.observable, f)
-                catalogs.append(Catalog(path))
-                self._last_files.append(path)
+                try:
+                    catalogs.append(Catalog(path))
+                    self._last_files.append(path)
+                except Exception as e:
+                    logger.warning("%s: %s" % (str(e), f))
 
         self.catalogs = catalogs
         children = {catalog.name: catalog for catalog in self.catalogs}
@@ -182,7 +187,8 @@ class Catalog(object):
 
     def reload(self):
         self.name, self._children, self._entries, self._plugins = self._state.refresh()
-        self._all_entries = { source: cat_entry for _, source, cat_entry in self.walk(leaves=True) }
+        self._all_entries = {source: cat_entry for _, source, cat_entry
+                             in self.walk(leaves=True) }
         self._entry_tree = make_prefix_tree(self._all_entries)
 
     @property

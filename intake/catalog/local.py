@@ -578,6 +578,8 @@ class CatalogConfig(object):
                 # Wrap internal exception with our own exception
                 raise exceptions.DuplicateKeyError(e)
 
+        if data is None:
+            raise exceptions.CatalogException('No YAML data in file')
         # Second, we validate the schema and semantics
         context = dict(root=self._dir)
         result = CatalogParser(data, context=context)
