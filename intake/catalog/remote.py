@@ -7,6 +7,7 @@ import requests
 
 from . import dask_util
 from . import serializer
+from ..container import get_container_klass
 from ..source import registry as plugin_registry
 from ..source.base import DataSource
 from .entry import CatalogEntry
@@ -182,12 +183,7 @@ class RemoteDataSourceProxied(DataSource):
 
     def _read(self, partition=None):
         chunks = list(self._get_chunks(partition=partition))
-        if self.container == 'dataframe':
-            return pandas.concat(chunks)
-        elif self.container == 'ndarray':
-            return numpy.concatenate(chunks, axis=0)
-        elif self.container == 'python':
-            return reduce(operator.add, chunks)
+        return get_container_klass(self.container).read(chunks)
 
     def discover(self):
         self._open_source()

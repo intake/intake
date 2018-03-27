@@ -42,9 +42,9 @@ def test_python(ser):
 def test_msgpack_unknown_container():
     ser = serializer.MsgPackSerializer()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(NotImplementedError):
         ser.encode([1, 2, 3], 'mystery')
-    with pytest.raises(ValueError):
+    with pytest.raises(NotImplementedError):
         ser.decode(b'1234', 'mystery')
 
 
