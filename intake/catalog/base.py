@@ -107,7 +107,7 @@ class LocalState(State):
 
     def refresh(self):
         cfg = CatalogConfig(self.observable)
-        return cfg.name, {}, cfg.entries, cfg.plugins
+        return cfg.name, cfg.cats, cfg.entries, cfg.plugins
 
     def changed(self):
         return self.update_modification_time(os.path.getmtime(self.observable))
