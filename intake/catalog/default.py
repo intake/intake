@@ -6,17 +6,11 @@ import subprocess
 from .base import Catalog
 
 
-def make_empty_catalog():
-    # TODO: replace with Catalog() (or None or []) and implement in the constructor
-    empty = os.path.join(os.path.dirname(__file__), 'empty.yml')
-    return Catalog(empty)
-
-
 def load_user_catalog():
     """Return a catalog for the platform-specific user Intake directory"""
     cat_dir = user_data_dir()
     if not os.path.isdir(cat_dir):
-        return make_empty_catalog()
+        return Catalog()
     else:
         return Catalog(cat_dir)
 
@@ -30,7 +24,7 @@ def load_global_catalog():
     """Return a catalog for the environment-specific Intake directory"""
     cat_dir = global_data_dir()
     if not os.path.isdir(cat_dir):
-        return make_empty_catalog()
+        return Catalog()
     else:
         return Catalog(cat_dir)
 
@@ -79,4 +73,4 @@ def load_combo_catalog():
     if len(cat_dirs) > 0:
         return Catalog(cat_dirs)
     else:
-        return make_empty_catalog()
+        return Catalog()

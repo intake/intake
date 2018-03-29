@@ -388,7 +388,7 @@ class CatalogParser(object):
                        "or template".format(key), obj, key)
             return None
 
-        extra_keys = set(obj) - {[key]}
+        extra_keys = set(obj) - set([key])
         for key in extra_keys:
             self.warning("key '{}' defined but not needed".format(key), key)
 
