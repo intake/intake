@@ -91,9 +91,6 @@ class TemplateContext(dict):
         """Return a list of strings, representing each line of stdout after
         executing ``cmd`` on the local machine. Does not require permission.
         """
-        if self['CATALOG_DIR'] is not None:
-            # pass-through shell commands to run on the remote server
-            raise TypeError('Local shell command attempted on remote server')
         return subprocess.check_output(shlex.split(cmd),
                                        universal_newlines=True).strip().split()
 
@@ -101,9 +98,6 @@ class TemplateContext(dict):
         """Return a string representing the state of environment variable
         ``env_var`` on the local machine. Does not require permission.
         """
-        if self['CATALOG_DIR'] is not None:
-            # pass-through shell commands to run on the remote server
-            raise TypeError('Local env lookup attempted on remote server')
         return os.environ.get(env_var, '')
 
 
