@@ -11,17 +11,14 @@ from ruamel_yaml.constructor import DuplicateKeyError
 import jinja2
 import pandas
 import six
+import shlex
+import subprocess
 
 from . import exceptions
 from .entry import CatalogEntry
 from ..source import registry as global_registry
 from ..source.base import Plugin
 from ..source.discovery import load_plugins_from_module
-
-try:
-    import builtins
-except:
-    import __builtin__ as builtins
 
 
 class TemplateContext(dict):
@@ -42,8 +39,10 @@ class TemplateContext(dict):
         """Constructor.
 
         Arguments:
-            catalog_dir (str) :
-                Value of the 'CATALOG_DIR' entry in ``self``.
+            catalog_dir (str or None) :
+                Value of the 'CATALOG_DIR', the location of the catalogue being
+                evaluated. Should be None when handing local shell/env
+                parameters, but using a remote server.
             shell_access (bool) :
                 Default: True
                 Whether the user has sufficient permissions to execute shell
@@ -54,9 +53,9 @@ class TemplateContext(dict):
                 variables.
         """
         super(dict, self).__init__()
-        assert isinstance(catalog_dir, six.string_types), (
-            'catalog_dir argument must be a string.'
-        )
+        if catalog_dir is not None and not isinstance(catalog_dir,
+                                                      six.string_types):
+            raise ValueError('catalog_dir argument must be a string.')
         self._shell_access = shell_access
         self._env_access = env_access
         self['CATALOG_DIR'] = catalog_dir
@@ -65,22 +64,46 @@ class TemplateContext(dict):
 
     def shell(self, cmd):
         """Return a list of strings, representing each line of stdout after
-        executing ``cmd`` on the local machine. If the user does not have
-        permission to execute shell commands, raise a PermissionsError.
+        executing ``cmd`` on the local machine or server. If the user does not
+        have permission to execute shell commands, raise a PermissionsError.
         """
+        if self['CATALOG_DIR'] is None:
+            # pass-through shell commands to run on the remote server
+            return cmd
         if not self._shell_access:
             raise exceptions.ShellPermissionDenied
-        import shlex, subprocess
         return subprocess.check_output(shlex.split(cmd),
                                        universal_newlines=True).strip().split()
 
     def env(self, env_var):
         """Return a string representing the state of environment variable
-        ``env_var`` on the local machine. If the user does not have permission
-        to read environment variables, raise a PermissionsError.
+        ``env_var`` on the local machine or server. If the user does not have
+        permission to read environment variables, raise a PermissionsError.
         """
+        if self['CATALOG_DIR'] is None:
+            # pass-through env lookup to the remote server
+            return env_var
         if not self._env_access:
             raise exceptions.EnvironmentPermissionDenied
+        return os.environ.get(env_var, '')
+
+    def local_shell(self, cmd):
+        """Return a list of strings, representing each line of stdout after
+        executing ``cmd`` on the local machine. Does not require permission.
+        """
+        if self['CATALOG_DIR'] is not None:
+            # pass-through shell commands to run on the remote server
+            raise TypeError('Local shell command attempted on remote server')
+        return subprocess.check_output(shlex.split(cmd),
+                                       universal_newlines=True).strip().split()
+
+    def local_env(self, env_var):
+        """Return a string representing the state of environment variable
+        ``env_var`` on the local machine. Does not require permission.
+        """
+        if self['CATALOG_DIR'] is not None:
+            # pass-through shell commands to run on the remote server
+            raise TypeError('Local env lookup attempted on remote server')
         return os.environ.get(env_var, '')
 
 
@@ -160,7 +183,7 @@ class UserParameter(object):
         'int': int,
         'list': list,
         'str': str,
-        'unicode': getattr(builtins, 'unicode', str)
+        'unicode': six.text_type
     }
 
     def __init__(self, name, description, type, default=None, min=None, max=None, allowed=None):
@@ -259,7 +282,8 @@ class LocalCatalogEntry(CatalogEntry):
         params = TemplateContext(self._catalog_dir)
         for parameter in self._user_parameters:
             if parameter.name in user_parameters:
-                params[parameter.name] = parameter.validate(user_parameters[parameter.name])
+                params[parameter.name] = parameter.validate(
+                    user_parameters[parameter.name])
             else:
                 params[parameter.name] = parameter.default
 
@@ -302,8 +326,10 @@ class PluginSource(object):
             try:
                 globals = runpy.run_path(filename)
                 for name, o in globals.items():
-                    # Don't try to registry plugins imported into this module from somewhere else
-                    if inspect.isclass(o) and issubclass(o, Plugin) and o.__module__ == '<run_path>':
+                    # Don't try to register plugins imported into this module
+                    # from somewhere else
+                    if inspect.isclass(o) and issubclass(
+                            o, Plugin) and o.__module__ == '<run_path>':
                         p = o()
                         plugins[p.name] = p
                 # If no exceptions, continue to next filename
@@ -316,8 +342,10 @@ class PluginSource(object):
             mod = imp.load_source(base, filename)
             for name in mod.__dict__:
                 obj = getattr(mod, name)
-                # Don't try to registry plugins imported into this module from somewhere else
-                if inspect.isclass(obj) and issubclass(obj, Plugin) and obj.__module__ == base:
+                # Don't try to register plugins imported into this module
+                # from somewhere else
+                if inspect.isclass(obj) and issubclass(
+                        obj, Plugin) and obj.__module__ == base:
                     p = obj()
                     plugins[p.name] = p
 

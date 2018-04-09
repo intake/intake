@@ -11,6 +11,7 @@ from ..container import get_container_klass
 from ..source import registry as plugin_registry
 from ..source.base import DataSource
 from .entry import CatalogEntry
+from .local import TemplateContext, expand_templates
 
 
 class RemoteCatalogEntry(CatalogEntry):
@@ -26,21 +27,28 @@ class RemoteCatalogEntry(CatalogEntry):
     def get(self, **user_parameters):
         entry = self.kwargs
 
-        return RemoteDataSource(self.url, entry['name'], container=entry['container'], user_parameters=user_parameters, description=entry['description'])
+        return RemoteDataSource(
+            self.url, entry['name'], container=entry['container'],
+            user_parameters=user_parameters, description=entry['description'])
 
 
 class RemoteDataSource(DataSource):
-    def __init__(self, url, entry_name, container, user_parameters, description):
-        self._init_args = dict(url=url, entry_name=entry_name, container=container, user_parameters=user_parameters, description=description)
+    def __init__(self, url, entry_name, container, user_parameters,
+                 description):
+        self._init_args = dict(
+            url=url, entry_name=entry_name, container=container,
+            user_parameters=user_parameters, description=description)
 
         self._url = url
         self._entry_name = entry_name
-        self._user_parameters = user_parameters
+        self._user_parameters = expand_templates(
+            user_parameters, template_context=TemplateContext(None))
 
         self._real_source = None
         self.direct = None
 
-        super(RemoteDataSource, self).__init__(container=container, description=description)
+        super(RemoteDataSource, self).__init__(container=container,
+                                               description=description)
 
     def _open_source(self):
         if self._real_source is None:
@@ -48,8 +56,9 @@ class RemoteDataSource(DataSource):
                            name=self._entry_name,
                            parameters=self._user_parameters,
                            available_plugins=list(plugin_registry.keys()))
-            req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
-            if req.status_code == 200:
+            req = requests.post(self._url, data=msgpack.packb(
+                payload, use_bin_type=True))
+            if req.ok:
                 response = msgpack.unpackb(req.content, encoding='utf-8')
 
                 if 'plugin' in response:
@@ -58,7 +67,8 @@ class RemoteDataSource(DataSource):
                     self.direct = True
                 else:
                     # Proxied access
-                    self._real_source = RemoteDataSourceProxied(**self._init_args)
+                    self._real_source = RemoteDataSourceProxied(
+                        **self._init_args)
                     self._real_source._parse_open_response(response)
                     self.direct = False
 
@@ -116,8 +126,11 @@ class RemoteDataSource(DataSource):
 
 
 class RemoteDataSourceProxied(DataSource):
-    def __init__(self, url, entry_name, container, user_parameters, description):
-        self._init_args = dict(url=url, entry_name=entry_name, container=container, user_parameters=user_parameters, description=description)
+    def __init__(self, url, entry_name, container, user_parameters,
+                 description):
+        self._init_args = dict(
+            url=url, entry_name=entry_name, container=container,
+            user_parameters=user_parameters, description=description)
 
         self._url = url
         self._entry_name = entry_name
@@ -125,12 +138,15 @@ class RemoteDataSourceProxied(DataSource):
 
         self._source_id = None
 
-        super(RemoteDataSourceProxied, self).__init__(container=container, description=description)
+        super(RemoteDataSourceProxied, self).__init__(container=container,
+                                                      description=description)
 
     def _open_source(self):
         if self._source_id is None:
-            payload = dict(action='open', name=self._entry_name, parameters=self._user_parameters)
-            req = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True))
+            payload = dict(action='open', name=self._entry_name,
+                           parameters=self._user_parameters)
+            req = requests.post(self._url, data=msgpack.packb(
+                payload, use_bin_type=True))
             if req.status_code == 200:
                 response = msgpack.unpackb(req.content, encoding='utf-8')
                 self._parse_open_response(response)
@@ -164,7 +180,8 @@ class RemoteDataSourceProxied(DataSource):
 
         resp = None
         try:
-            resp = requests.post(self._url, data=msgpack.packb(payload, use_bin_type=True), stream=True)
+            resp = requests.post(self._url, data=msgpack.packb(
+                payload, use_bin_type=True), stream=True)
             if resp.status_code != 200:
                 raise Exception('Error reading data')
 
@@ -175,7 +192,8 @@ class RemoteDataSourceProxied(DataSource):
 
                 compressor = serializer.compression_registry[compression]
                 encoder = serializer.format_registry[format]
-                chunk = encoder.decode(compressor.decompress(msg['data']), container=container)
+                chunk = encoder.decode(compressor.decompress(msg['data']),
+                                       container=container)
                 yield chunk
         finally:
             if resp is not None:
@@ -187,7 +205,8 @@ class RemoteDataSourceProxied(DataSource):
 
     def discover(self):
         self._open_source()
-        return dict(datashape=self.datashape, dtype=self.dtype, shape=self.shape, npartitions=self.npartitions)
+        return dict(datashape=self.datashape, dtype=self.dtype,
+                    shape=self.shape, npartitions=self.npartitions)
 
     def read(self):
         return self._read()
