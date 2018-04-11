@@ -136,9 +136,9 @@ Then sources can be listed::
 
     list(cat)
 
-and data sources are loaded with ``get()``::
+and data sources are loaded via their name:
 
-    data = cat['entry_part1'].get(part='1')
+    data = cat.entry_part1(part='1')
 
 Intake also supports loading all of the files ending in ``.yml`` and ``.yaml`` in a directory::
 
