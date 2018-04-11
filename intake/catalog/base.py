@@ -1,3 +1,4 @@
+import logging
 import os.path
 import time
 
@@ -8,6 +9,7 @@ from requests.compat import urljoin, urlparse
 from .local import CatalogConfig
 from .remote import RemoteCatalogEntry
 from .utils import clamp, flatten, reload_on_change, make_prefix_tree
+logger = logging.getLogger('intake')
 
 
 class State(object):
@@ -50,8 +52,11 @@ class DirectoryState(State):
         for f in os.listdir(self.observable):
             if f.endswith('.yml') or f.endswith('.yaml'):
                 path = os.path.join(self.observable, f)
-                catalogs.append(Catalog(path))
-                self._last_files.append(path)
+                try:
+                    catalogs.append(Catalog(path))
+                    self._last_files.append(path)
+                except Exception as e:
+                    logger.warning("%s: %s" % (str(e), f))
 
         self.catalogs = catalogs
         children = {catalog.name: catalog for catalog in self.catalogs}
@@ -59,9 +64,11 @@ class DirectoryState(State):
         return self.name, children, {}, []
 
     def changed(self):
-        modified = self.update_modification_time(os.path.getmtime(self.observable))
+        modified = self.update_modification_time(
+            os.path.getmtime(self.observable))
         # Were any files removed?
-        modified = modified or any(not os.path.exists(filename) for filename in self._last_files)
+        modified = modified or any(not os.path.exists(filename)
+                                   for filename in self._last_files)
         if modified:
             self.refresh()
         return any([modified] + [catalog.changed for catalog in self.catalogs])
@@ -77,14 +84,17 @@ class RemoteState(State):
         self.source_url = urljoin(self.base_url, 'v1/source')
 
     def refresh(self):
-        name = urlparse(self.observable).netloc.replace('.', '_').replace(':', '_')
+        name = urlparse(self.observable).netloc.replace(
+            '.', '_').replace(':', '_')
 
         response = requests.get(self.info_url)
         if response.status_code != 200:
-            raise Exception('%s: status code %d' % (response.url, response.status_code))
+            raise Exception('%s: status code %d' % (response.url,
+                                                    response.status_code))
         info = msgpack.unpackb(response.content, encoding='utf-8')
 
-        entries = {s['name']: RemoteCatalogEntry(url=self.source_url, **s) for s in info['sources']}
+        entries = {s['name']: RemoteCatalogEntry(url=self.source_url, **s)
+                   for s in info['sources']}
 
         return name, {}, entries, []
 
@@ -108,8 +118,10 @@ class CollectionState(State):
 
     def __init__(self, name, observable, ttl):
         super(CollectionState, self).__init__(name, observable, ttl)
-        # This name is a workaround to deal with issue that will be solved in another PR
-        self.catalogs = [Catalog(uri, name='cat%d'%i) for i, uri in enumerate(self.observable)]
+        # This name is a workaround to deal with issue that will be
+        # solved in another PR
+        self.catalogs = [Catalog(uri, name='cat%d' % i)
+                         for i, uri in enumerate(self.observable)]
 
     def refresh(self):
         for catalog in self.catalogs:
@@ -175,7 +187,8 @@ class Catalog(object):
 
     def reload(self):
         self.name, self._children, self._entries, self._plugins = self._state.refresh()
-        self._all_entries = { source: cat_entry for _, source, cat_entry in self.walk(leaves=True) }
+        self._all_entries = {source: cat_entry for _, source, cat_entry
+                             in self.walk(leaves=True) }
         self._entry_tree = make_prefix_tree(self._all_entries)
 
     @property
@@ -225,7 +238,7 @@ class Catalog(object):
         if isinstance(subtree, dict):
             return CatalogSubtree(subtree)
         else:
-            return subtree # is catalog entry
+            return subtree  # is catalog entry
 
     def __getitem__(self, key):
         return self._get_entry(key)
@@ -248,4 +261,4 @@ class CatalogSubtree(object):
         if isinstance(subtree, dict):
             return CatalogSubtree(subtree)
         else:
-            return subtree # is catalog entry
+            return subtree  # is catalog entry
