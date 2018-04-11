@@ -1,6 +1,6 @@
 package:
    name: intake
-   version: {{ GIT_DESCRIBE_TAG }}
+   version: {{ environ.get('GIT_DESCRIBE_TAG', 'unknown') }}
 
 source:
    path: ..
