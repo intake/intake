@@ -10,7 +10,7 @@ sources:
         type: int
     driver: csv
     args: # passed to the open() method
-      urlpath: !template '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'
+      urlpath: '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'
   entry2_part:
     description: entry2 part
     parameters:
@@ -19,4 +19,4 @@ sources:
         type: str
     driver: csv
     args: # passed to the open() method
-      urlpath: !template '{{ CATALOG_DIR }}/entry2_{{ part }}.csv'
+      urlpath: '{{ CATALOG_DIR }}/entry2_{{ part }}.csv'

@@ -4,9 +4,8 @@ import logging
 import os
 import os.path
 import runpy
+import yaml
 
-from ruamel_yaml import YAML
-from ruamel_yaml.compat import StringIO
 from ruamel_yaml.constructor import DuplicateKeyError
 
 import jinja2
@@ -23,163 +22,6 @@ from ..source.discovery import load_plugins_from_module
 
 
 logger = logging.getLogger('intake')
-
-
-class TemplateContext(dict):
-    """Collection of attributes and methods which are made available to a
-    catalog's global namespace during template expansion.
-
-    Usage:
-        >>> import jinja2
-        >>> context = TemplateContext('/some/dir')
-        >>> jinja2.Template('The CATALOG_DIR variable is: {{ CATALOG_DIR }}'
-        ... ).render(context)
-        'The CATALOG_DIR variable is: /some/dir'
-        >>> jinja2.Template('"ls" command results: {{ shell("ls /some/dir") }}'
-        ... ).render(context)
-        '"ls" command results: ["/some/dir/meta.txt", "/some/dir/test.dat"]'
-        >>> jinja2.Template('"DBNAME" env var: {{ env("DBNAME") }}'
-        ... ).render(context)
-        '"DBNAME" env var: postgres'
-    """
-    def __init__(self, catalog_dir, shell_access=True, env_access=True,
-                 run_local=True):
-        """Constructor.
-
-        Arguments:
-            catalog_dir (str or None) :
-                Value of the 'CATALOG_DIR', the location of the catalogue being
-                evaluated. Should be None when handing local shell/env
-                parameters, but using a remote server.
-            shell_access (bool) :
-                Default: True
-                Whether the user has sufficient permissions to execute shell
-                commands.
-            env_access (bool) :
-                Default: True
-                Whether the user has sufficient permissions to read environment
-                variables.
-            run_local (bool):
-                Whether
-        """
-        super(dict, self).__init__()
-        if catalog_dir is not None and not isinstance(catalog_dir,
-                                                      six.string_types):
-            raise ValueError('catalog_dir argument must be a string.')
-        self._shell_access = shell_access
-        self._env_access = env_access
-        self['CATALOG_DIR'] = catalog_dir
-        self['shell'] = self.shell
-        self['env'] = self.env
-
-        self['localenv'] = self.localenv
-        self['localshell'] = self.localshell
-
-    def shell(self, cmd):
-        """Return a list of strings, representing each line of stdout after
-        executing ``cmd`` on the local machine or server. If the user does not
-        have permission to execute shell commands, raise a PermissionsError.
-        """
-        if self['CATALOG_DIR'] is None:
-            # pass-through shell commands to run on the remote server
-            return cmd
-        if not self._shell_access:
-            raise exceptions.ShellPermissionDenied
-        return subprocess.check_output(shlex.split(cmd),
-                                       universal_newlines=True).strip().split()
-
-    def env(self, env_var):
-        """Return a string representing the state of environment variable
-        ``env_var`` on the local machine or server. If the user does not have
-        permission to read environment variables, raise a PermissionsError.
-        """
-        if self['CATALOG_DIR'] is None:
-            # pass-through env lookup to the remote server
-            return env_var
-        if not self._env_access:
-            raise exceptions.EnvironmentPermissionDenied
-        return os.environ.get(env_var, '')
-
-    def localshell(self, cmd):
-        """Return a list of strings, representing each line of stdout after
-        executing ``cmd`` on the local machine. Does not require permission.
-        """
-        return subprocess.check_output(shlex.split(cmd),
-                                       universal_newlines=True).strip().split()
-
-    def localenv(self, env_var):
-        """Return a string representing the state of environment variable
-        ``env_var`` on the local machine. Does not require permission.
-        """
-        return os.environ.get(env_var, '')
-
-
-class TemplateStr(object):
-    """A string-a-like that tags this string as being a Jinja template"""
-    yaml_tag = '!template'
-
-    def __init__(self, s):
-        self._str = s
-        self._template = jinja2.Template(s)
-
-    def expand(self, context):
-        return self._template.render(context)
-
-    def __repr__(self):
-        return 'TemplateStr(%s)' % repr(self._str)
-
-    def __str__(self):
-        return self._str
-
-    def __eq__(self, other):
-        if isinstance(other, TemplateStr):
-            return self._str == other._str
-        else:
-            return False
-
-    @classmethod
-    def from_yaml(cls, loader, node):
-        return TemplateStr(node.value)
-
-    @classmethod
-    def to_yaml(cls, dumper, data):
-        return dumper.represent_scalar(cls.yaml_tag, data._str)
-
-
-def expand_template(data, context):
-    return data.expand(context) if isinstance(data, TemplateStr) else data
-
-
-def expand_templates(args, template_context):
-    expanded_args = {}
-
-    for k, v in args.items():
-        expanded_args[k] = expand_template(v, template_context)
-
-    return expanded_args
-
-
-class CatalogYAML(YAML):
-    def dump(self, data, stream=None, **kwargs):
-        """
-        Output data to a given stream.
-
-        If no stream is given, then the data is returned as a string.
-        """
-        inefficient = False
-        if stream is None:
-            inefficient = True
-            stream = StringIO()
-        YAML.dump(self, data, stream, **kwargs)
-        if inefficient:
-            return stream.getvalue()
-
-
-def yaml_instance():
-    """Get a new YAML instance that supports templates"""
-    yaml = CatalogYAML()
-    yaml.register_class(TemplateStr)
-    return yaml
 
 
 class UserParameter(object):
@@ -293,7 +135,7 @@ class LocalCatalogEntry(CatalogEntry):
         }
 
     def _create_open_args(self, user_parameters):
-        params = TemplateContext(self._catalog_dir)
+        params = {'CATALOG_DIR': self._catalog_dir}
         for parameter in self._user_parameters:
             if parameter.name in user_parameters:
                 params[parameter.name] = parameter.validate(
@@ -301,9 +143,7 @@ class LocalCatalogEntry(CatalogEntry):
             else:
                 params[parameter.name] = parameter.default
 
-        # FIXME: Check for unused user_parameters!
-
-        open_args = expand_templates(self._open_args, template_context=params)
+        open_args = expand_templates(self._open_args, params)
         open_args['metadata'] = self._metadata
 
         return open_args
@@ -373,10 +213,46 @@ class PluginSource(object):
         return {}
 
 
-def get_line_column(obj, key=None):
-    """Retrieve line/column from internal ruamel structure."""
-    line, col = obj.lc.key(key) if key else (obj.lc.line, obj.lc.col)
-    return line + 1, col + 1
+def expand_templates(pars, context):
+    """
+    Render variables in context into the set of parameters with jinja2
+
+    Parameters
+    ----------
+    pars: dict
+        values are strings containing some jinja2 controls
+    context: dict
+        values to use while rendering
+
+    Returns
+    -------
+    dict with the same keys as ``pars``, but updated values.
+    """
+    return {k: jinja2.Template(v).render(context) for k, v in pars.items()}
+
+
+def no_duplicates_constructor(loader, node, deep=False):
+    """Check for duplicate keys while loading YAML
+
+    https://gist.github.com/pypt/94d747fe5180851196eb
+    """
+
+    mapping = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        value = loader.construct_object(value_node, deep=deep)
+        if key in mapping:
+            raise DuplicateKeyError("while constructing a mapping",
+                                    node.start_mark,
+                                    "found duplicate key (%s)" % key,
+                                    key_node.start_mark)
+        mapping[key] = value
+
+    return loader.construct_mapping(node, deep)
+
+
+yaml.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+                     no_duplicates_constructor)
 
 
 class CatalogParser(object):
@@ -403,15 +279,17 @@ class CatalogParser(object):
         return self._warnings
 
     def error(self, msg, obj, key=None):
-        line, col = get_line_column(obj, key)
-        self._errors.append((line, col, msg))
+        if key is not None:
+            self._errors.append(str((msg, obj, key)))
+        else:
+            self._errors.append(str((msg, obj)))
 
     def warning(self, msg, obj, key=None):
         line, col = get_line_column(obj, key)
         self._warnings.append((line, col, msg))
 
     def _parse_plugin(self, obj, key):
-        if not isinstance(obj[key], (str, TemplateStr)):
+        if not isinstance(obj[key], six.string_types):
             self.error("value of key '{}' must be either be a string or "
                        "template".format(key), obj, key)
             return None
@@ -490,7 +368,7 @@ class CatalogParser(object):
         valid_types = list(UserParameter.COERCION_RULES)
 
         params = {
-            'name':name,
+            'name': name,
             'description': self._getitem(data, 'description', str),
             'type': self._getitem(data, 'type', str, choices=valid_types),
             'default': self._getitem(data, 'default', object, required=False),
@@ -505,17 +383,17 @@ class CatalogParser(object):
         return UserParameter(**params)
 
     def _parse_data_source(self, name, data):
-        ds = {}
-
-        ds['name'] = name
-        ds['description'] = self._getitem(data, 'description', str,
-                                          required=False)
-        ds['driver'] = self._getitem(data, 'driver', str)
-        ds['direct_access'] = self._getitem(
-            data, 'direct_access', str, required=False, default='forbid',
-            choices=['forbid', 'allow', 'force'])
-        ds['args'] = self._getitem(data, 'args', dict, required=False)
-        ds['metadata'] = self._getitem(data, 'metadata', dict, required=False)
+        ds = {
+            'name': name,
+            'description': self._getitem(data, 'description', str,
+                                         required=False),
+            'driver': self._getitem(data, 'driver', str),
+            'direct_access': self._getitem(
+                data, 'direct_access', str, required=False, default='forbid',
+                choices=['forbid', 'allow', 'force']),
+            'args': self._getitem(data, 'args', dict, required=False),
+            'metadata': self._getitem(data, 'metadata', dict, required=False)
+        }
 
         if ds['driver'] is None:
             return None
@@ -598,7 +476,6 @@ class CatalogConfig(object):
         self._dir = os.path.dirname(os.path.abspath(self._path))
 
         # First, we load from YAML, failing if syntax errors are found
-        yaml = yaml_instance()
         with open(self._path, 'r') as f:
             try:
                 data = yaml.load(f.read())
@@ -625,7 +502,7 @@ class CatalogConfig(object):
 
         self._plugins = {}
         for ps in cfg['plugin_sources']:
-            ps.source = expand_template(ps.source, params)
+            ps.source = jinja2.Template(ps.source).render(params)
             self._plugins.update(ps.load())
 
         self._entries = {}

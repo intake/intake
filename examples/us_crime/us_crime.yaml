@@ -3,4 +3,4 @@ sources:
     description: US Crime data [UCRDataTool](https://www.ucrdatatool.gov/Search/Crime/State/StatebyState.cfm)
     driver: csv
     args:
-      urlpath: !template '{{ CATALOG_DIR }}/us_crime/crime.csv'
+      urlpath: '{{ CATALOG_DIR }}/us_crime/crime.csv'

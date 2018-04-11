@@ -1,8 +1,5 @@
-import operator
-
 import msgpack
 import numpy
-import pandas
 import requests
 
 from . import dask_util
@@ -11,7 +8,6 @@ from ..container import get_container_klass
 from ..source import registry as plugin_registry
 from ..source.base import DataSource
 from .entry import CatalogEntry
-from .local import TemplateContext, expand_templates
 
 
 class RemoteCatalogEntry(CatalogEntry):
@@ -41,8 +37,7 @@ class RemoteDataSource(DataSource):
 
         self._url = url
         self._entry_name = entry_name
-        self._user_parameters = expand_templates(
-            user_parameters, template_context=TemplateContext(None))
+        self._user_parameters = user_parameters
 
         self._real_source = None
         self.direct = None
