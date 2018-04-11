@@ -124,6 +124,12 @@ class RemoteDataSource(DataSource):
         if self._real_source is not None:
             self._copy_attributes()
 
+    def _load_metadata(self):
+        pass
+
+    def _get_schema(self):
+        pass
+
 
 class RemoteDataSourceProxied(DataSource):
     def __init__(self, url, entry_name, container, user_parameters,
@@ -232,3 +238,9 @@ class RemoteDataSourceProxied(DataSource):
     def __setstate__(self, state):
         self.__init__(**state['init_args'])
         self._source_id = state['source_id']
+
+    def _load_metadata(self):
+        pass
+
+    def _get_schema(self):
+        pass

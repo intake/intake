@@ -1,5 +1,6 @@
 import glob
 import inspect
+import logging
 import os
 import os.path
 import runpy
@@ -19,6 +20,9 @@ from .entry import CatalogEntry
 from ..source import registry as global_registry
 from ..source.base import Plugin
 from ..source.discovery import load_plugins_from_module
+
+
+logger = logging.getLogger('intake')
 
 
 class TemplateContext(dict):
@@ -247,12 +251,11 @@ class UserParameter(object):
             raise ValueError('%s=%s is less than %s' % (self.name, value,
                                                         self.min))
         if self.max is not None and value > self.max:
-            raise ValueError('%s=%s is greater than %s' % (self.name, value,
-                                                           self.max))
+            raise ValueError('%s=%s is greater than %s' % (
+                self.name, value, self.max))
         if self.allowed is not None and value not in self.allowed:
-            raise ValueError('%s=%s is not one of the allowed values: %s'%
-                             (self.name, value, ','.join(map(
-                                 str, self.allowed))))
+            raise ValueError('%s=%s is not one of the allowed values: %s' % (
+                self.name, value, ','.join(map(str, self.allowed))))
 
         return value
 
@@ -345,8 +348,8 @@ class PluginSource(object):
                         plugins[p.name] = p
                 # If no exceptions, continue to next filename
                 continue
-            except:
-                pass
+            except Exception as ex:
+                logger.warning('When importing {}:\n{}'.format(filename, ex))
 
             import imp
             base = os.path.splitext(filename)[0]
@@ -505,9 +508,12 @@ class CatalogParser(object):
         ds = {}
 
         ds['name'] = name
-        ds['description'] = self._getitem(data, 'description', str, required=False)
+        ds['description'] = self._getitem(data, 'description', str,
+                                          required=False)
         ds['driver'] = self._getitem(data, 'driver', str)
-        ds['direct_access'] = self._getitem(data, 'direct_access', str, required=False, default='forbid', choices=['forbid', 'allow', 'force'])
+        ds['direct_access'] = self._getitem(
+            data, 'direct_access', str, required=False, default='forbid',
+            choices=['forbid', 'allow', 'force'])
         ds['args'] = self._getitem(data, 'args', dict, required=False)
         ds['metadata'] = self._getitem(data, 'metadata', dict, required=False)
 
@@ -600,6 +606,8 @@ class CatalogConfig(object):
                 # Wrap internal exception with our own exception
                 raise exceptions.DuplicateKeyError(e)
 
+        if data is None:
+            raise exceptions.CatalogException('No YAML data in file')
         # Second, we validate the schema and semantics
         context = dict(root=self._dir)
         result = CatalogParser(data, context=context)
