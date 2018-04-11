@@ -51,15 +51,15 @@ class DirectoryState(State):
         catalogs = []
 
         if os.path.isdir(self.observable):
-        self._last_files = []
-        for f in os.listdir(self.observable):
-            if f.endswith('.yml') or f.endswith('.yaml'):
-                path = os.path.join(self.observable, f)
-                try:
-                    catalogs.append(Catalog(path))
-                    self._last_files.append(path)
-                except Exception as e:
-                    logger.warning("%s: %s" % (str(e), f))
+            self._last_files = []
+            for f in os.listdir(self.observable):
+                if f.endswith('.yml') or f.endswith('.yaml'):
+                    path = os.path.join(self.observable, f)
+                    try:
+                        catalogs.append(Catalog(path))
+                        self._last_files.append(path)
+                    except Exception as e:
+                        logger.warning("%s: %s" % (str(e), f))
 
         self.catalogs = catalogs
         children = {catalog.name: catalog for catalog in self.catalogs}
