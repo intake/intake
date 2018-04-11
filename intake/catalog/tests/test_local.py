@@ -303,9 +303,8 @@ def test_union_catalog():
     assert union_cat.entry1_part(part='2').container == 'dataframe'
 
 
-def test_empty_catalog_file():
-    empty = os.path.join(os.path.dirname(__file__), '..', 'empty.yml')
-    cat = Catalog(empty)
+def test_empty_catalog():
+    cat = Catalog()
     assert list(cat) == []
 
 
