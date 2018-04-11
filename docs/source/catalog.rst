@@ -134,11 +134,11 @@ A Catalog can be loaded from a YAML file on the local filesystem by creating a C
 
 Then sources can be listed::
 
-    cat.list()
+    list(cat)
 
 and data sources are loaded with ``get()``::
 
-    data = cat.get('entry1_part', part='1')
+    data = cat['entry_part1'].get(part='1')
 
 Intake also supports loading all of the files ending in ``.yml`` and ``.yaml`` in a directory::
 
