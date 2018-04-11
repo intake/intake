@@ -8,6 +8,7 @@ import msgpack_numpy
 import pandas
 import snappy
 
+from ..container import get_container_klass
 
 class NoneCompressor(object):
     name = 'none'
@@ -47,24 +48,10 @@ class MsgPackSerializer(object):
     name = 'msgpack'
 
     def encode(self, obj, container):
-        if container == 'dataframe':
-            return obj.to_msgpack()
-        elif container == 'ndarray':
-            return msgpack.packb(obj, default=msgpack_numpy.encode)
-        elif container == 'python':
-            return msgpack.packb(obj, use_bin_type=True)
-        else:
-            raise ValueError('unknown container: %s' % container)
+        return get_container_klass(container).encode(obj)
 
     def decode(self, bytestr, container):
-        if container == 'dataframe':
-            return pandas.read_msgpack(bytestr)
-        elif container == 'ndarray':
-            return msgpack.unpackb(bytestr, object_hook=msgpack_numpy.decode)
-        elif container == 'python':
-            return msgpack.unpackb(bytestr, encoding='utf-8')
-        else:
-            raise ValueError('unknown container: %s' % container)
+        return get_container_klass(container).decode(bytestr)
 
 
 class PickleSerializer(object):

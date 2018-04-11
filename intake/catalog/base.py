@@ -241,7 +241,7 @@ class Catalog(object):
             return subtree  # is catalog entry
 
     def __getitem__(self, key):
-        return self._get_entry(key)
+        return getattr(self, key)
 
     @property
     @reload_on_change

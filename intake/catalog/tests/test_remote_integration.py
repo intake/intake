@@ -146,6 +146,13 @@ def test_close(intake_server):
     d.close()
 
 
+def test_with(intake_server):
+    catalog = Catalog(intake_server)
+
+    with catalog.entry1.get() as f:
+        assert f.discover()
+
+
 def test_pickle(intake_server):
     catalog = Catalog(intake_server)
 

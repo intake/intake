@@ -6,6 +6,7 @@ import dask
 import dask.bag
 import dask.dataframe
 
+from ..container import get_container_klass
 
 class Plugin(object):
     def __init__(self, name, version, container, partition_access):
@@ -110,16 +111,7 @@ class DataSource(object):
         return self._merge(parts)
 
     def _merge(self, parts):
-        if self.container == 'dataframe':
-            return pd.concat(parts, ignore_index=True)
-        elif self.container == 'python':
-            # This seems to be the fastest way to do this for large lists
-            data = []
-            for p in parts:
-                data.extend(p)
-            return data
-        elif self.container == 'ndarray':
-            raise Exception('Need to implement ndarray case')
+        return get_container_klass(self.container).merge(parts)
 
     def read_chunked(self):
         """Return iterator over container fragments of data source"""
@@ -145,16 +137,7 @@ class DataSource(object):
         delayed_get_partition = dask.delayed(self._get_partition)
         parts = [delayed_get_partition(i) for i in range(self.npartitions)]
 
-        if self.container == 'dataframe':
-            # Construct metadata
-            meta = {name: arg[0] for name, arg in self.dtype.fields.items()}
-            ddf = dask.dataframe.from_delayed(parts, meta=meta)
-
-            return ddf
-        elif self.container == 'python':
-            return dask.bag.from_delayed(parts)
-        else:
-            raise Exception('Not implemented')
+        return get_container_klass(self.container).to_dask(parts, self.dtype)
 
     def close(self):
         """Close open resources corresponding to this data source."""
