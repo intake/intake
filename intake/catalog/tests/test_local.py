@@ -88,7 +88,8 @@ def catalog1():
 
 
 def test_local_catalog(catalog1):
-    assert_items_equal(list(catalog1), ['use_example1', 'entry1', 'entry1_part'])
+    assert_items_equal(list(catalog1), ['use_example1', 'entry1', 'entry1_part',
+                                        'remote_env', 'local_env'])
     assert catalog1['entry1'].describe() == {
         'container': 'dataframe',
         'direct_access': 'forbid',

@@ -9,6 +9,7 @@ def test_make_prefix_tree():
 
 
 class Plugin(base.Plugin):
+    """A plugin that gives back whatever parameters were passed to it"""
     def __init__(self):
         super(Plugin, self).__init__(name='test',
                                      version=0,
@@ -16,10 +17,10 @@ class Plugin(base.Plugin):
                                      partition_access=False)
 
     def open(self, *args, **kwargs):
-        return TestSource(*args, **kwargs)
+        return TestingSource(*args, **kwargs)
 
 
-class TestSource(base.DataSource):
+class TestingSource(base.DataSource):
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs

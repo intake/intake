@@ -15,7 +15,8 @@ TEST_CATALOG_YAML = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 def test_info_describe(intake_server):
     catalog = Catalog(intake_server)
 
-    assert_items_equal(list(catalog), ['use_example1', 'entry1', 'entry1_part'])
+    assert_items_equal(list(catalog), ['use_example1', 'entry1', 'entry1_part',
+                                       'remote_env', 'local_env'])
 
     info = catalog['entry1'].describe()
 
@@ -59,8 +60,6 @@ def test_environment_evaluation(intake_server):
     import os
     os.environ['INTAKE_TEST'] = 'client'
     d = catalog['remote_env']
-    import pdb
-    pdb.set_trace()
 
 
 def test_read(intake_server):
