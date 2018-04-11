@@ -31,3 +31,15 @@ sources:
     direct_access: "allow"
     args: # passed to the open() method
       urlpath: !template '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'
+  remote_env:
+    description: path gets interpreted remotely
+    driver: csv
+    direct_access: "allow"
+    args:
+      urlpath: !template 'path-{{ env("INTAKE_TEST") }}'
+  local_env:
+    description: path gets interpreted locally
+    driver: csv
+    direct_access: "allow"
+    args:
+      urlpath: !template 'path-{{ localenv("INTAKE_TEST") }}'

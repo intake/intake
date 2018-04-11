@@ -38,7 +38,8 @@ class TemplateContext(dict):
         ... ).render(context)
         '"DBNAME" env var: postgres'
     """
-    def __init__(self, catalog_dir, shell_access=True, env_access=True):
+    def __init__(self, catalog_dir, shell_access=True, env_access=True,
+                 run_local=True):
         """Constructor.
 
         Arguments:
@@ -54,6 +55,8 @@ class TemplateContext(dict):
                 Default: True
                 Whether the user has sufficient permissions to read environment
                 variables.
+            run_local (bool):
+                Whether
         """
         super(dict, self).__init__()
         if catalog_dir is not None and not isinstance(catalog_dir,
@@ -64,6 +67,9 @@ class TemplateContext(dict):
         self['CATALOG_DIR'] = catalog_dir
         self['shell'] = self.shell
         self['env'] = self.env
+
+        self['localenv'] = self.localenv
+        self['localshell'] = self.localshell
 
     def shell(self, cmd):
         """Return a list of strings, representing each line of stdout after
@@ -90,14 +96,14 @@ class TemplateContext(dict):
             raise exceptions.EnvironmentPermissionDenied
         return os.environ.get(env_var, '')
 
-    def local_shell(self, cmd):
+    def localshell(self, cmd):
         """Return a list of strings, representing each line of stdout after
         executing ``cmd`` on the local machine. Does not require permission.
         """
         return subprocess.check_output(shlex.split(cmd),
                                        universal_newlines=True).strip().split()
 
-    def local_env(self, env_var):
+    def localenv(self, env_var):
         """Return a string representing the state of environment variable
         ``env_var`` on the local machine. Does not require permission.
         """
