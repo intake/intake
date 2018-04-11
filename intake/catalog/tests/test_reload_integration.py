@@ -8,7 +8,7 @@ from .util import assert_items_equal
 from intake.catalog import Catalog
 
 TMP_DIR = tempfile.mkdtemp()
-TEST_CATALOG_YAML = [TMP_DIR]
+TEST_CATALOG_PATH = [TMP_DIR]
 
 YAML_FILENAME = 'intake_test_catalog.yml'
 
