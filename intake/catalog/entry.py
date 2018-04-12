@@ -1,4 +1,9 @@
 class CatalogEntry(object):
+    """A single item appearing in a catalog
+
+    This is the base class, used by local entries (i.e., read from a YAML file)
+    and by remote entries (read from a server).
+    """
     def __init__(self):
         self._default_source = None
 

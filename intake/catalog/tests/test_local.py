@@ -10,6 +10,7 @@ import pandas
 
 from .util import assert_items_equal
 from intake.catalog import Catalog, exceptions, local
+from intake.catalog.local import UserParameter
 
 
 def abspath(filename):
@@ -290,3 +291,30 @@ def test_catalog_file_removal(temp_catalog_file):
     os.remove(temp_catalog_file)
     time.sleep(1.5)  # wait for catalog refresh
     assert set(cat) == set()
+
+
+def test_default_expansions():
+    par = UserParameter('', '', 'str', default='env(USER)')
+    par.expand_defaults(getenv=False)
+    assert par.default == 'env(USER)'
+    par.expand_defaults()
+    assert par.default == os.getenv('USER', '')
+
+    par = UserParameter('', '', 'str', default='client_env(USER)')
+    par.expand_defaults()
+    assert par.default == 'client_env(USER)'
+    par.expand_defaults(client=True)
+    assert par.default == os.getenv('USER', '')
+
+    par = UserParameter('', '', 'str', default='shell(echo success)')
+    par.expand_defaults(getshell=False)
+    assert par.default == 'shell(echo success)'
+    par.expand_defaults()
+    assert par.default == 'success'
+
+    par = UserParameter('', '', 'str', default='client_shell(echo success)')
+    par.expand_defaults(client=True)
+    assert par.default == 'success'
+
+    par = UserParameter('', '', 'int', default=1)
+    par.expand_defaults()  # no error from string ops

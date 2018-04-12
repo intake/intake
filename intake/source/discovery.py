@@ -7,14 +7,14 @@ from .base import Plugin
 
 
 def autodiscover(path=None, plugin_prefix='intake_'):
-    '''Scan for Intake plugin packages and return a dict of plugins.
+    """Scan for Intake plugin packages and return a dict of plugins.
 
     This function searches path (or sys.path) for packages with names that
     start with plugin_prefix.  Those modules will be imported and scanned for
     subclasses of intake.source.base.Plugin.  Any subclasses found will be
     instantiated and returned in a dictionary, with the plugin's name attribute
     as the key.
-    '''
+    """
 
     plugins = {}
 
@@ -39,11 +39,11 @@ def autodiscover(path=None, plugin_prefix='intake_'):
 
 
 def load_plugins_from_module(module_name):
-    '''Imports a module and returns dictionary of discovered Intake plugins.
+    """Imports a module and returns dictionary of discovered Intake plugins.
 
     Plugin classes are instantiated and added to the dictionary, keyed by the
     name attribute of the plugin object.
-    '''
+    """
     plugins = {}
 
     mod = importlib.import_module(module_name)

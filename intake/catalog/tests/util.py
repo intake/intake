@@ -1,4 +1,4 @@
-from ...source import base
+from ...source import base, registry
 
 
 def assert_items_equal(a, b):
@@ -22,9 +22,15 @@ class TestingSource(base.DataSource):
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
+        super(TestingSource, self).__init__('python')
+        self.npartitions = 1
 
-    def describe(self):
+    def _load_metadata(self):
+        pass
+
+    def _get_partition(self, _):
         return self.args, self.kwargs
 
-    def read(self):
-        return self.args, self.kwargs
+
+def register():
+    registry['test'] = Plugin()

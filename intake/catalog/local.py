@@ -3,6 +3,7 @@ import inspect
 import logging
 import os
 import os.path
+import re
 import runpy
 import yaml
 
@@ -27,13 +28,27 @@ logger = logging.getLogger('intake')
 
 class UserParameter(object):
     """
-    A user-settable item that is passed to a DataSource upon instantiation
+    A user-settable item that is passed to a DataSource upon instantiation.
+
+    For string parameters, default may include special functions ``func(args)``,
+    which *may* be expanded from environment variables or by executing a shell
+    command.
 
     Parameters
     ----------
     name: str
         the key that appears in the DataSource argument strings
     description: str
+        narrative text
+    type: str
+        one of list``(UserParameters.COERSION_RULES)``
+    default: type value
+        same type as ``type``. It a str, may include special functions
+        env, shell, client_env, client_shell.
+    min, max: type value
+        for validation of user input
+    allowed: list of type
+        for validation of user input
     """
 
 
@@ -49,16 +64,15 @@ class UserParameter(object):
     }
 
     def __init__(self, name, description, type, default=None, min=None,
-                 max=None, allowed=None, template=False):
+                 max=None, allowed=None):
         self.name = name
         self.description = description
         self.type = type
-        self.default = default
         self.min = min
         self.max = max
         self.allowed = allowed
 
-        self.default = UserParameter.coerce(self.type, self.default)
+        self.default = UserParameter.coerce(self.type, default)
 
         if self.min:
             self.min = UserParameter.coerce(self.type, self.min)
@@ -82,6 +96,46 @@ class UserParameter(object):
             if v is not None:
                 desc[attr] = v
         return desc
+
+    def expand_defaults(self, client=False, getenv=True, getshell=True):
+        """Compile env, client_env, shell and client_shell commands
+
+        Execution rules:
+        - env() and shell() execute on server or client, if getenv and getshell
+          are True, respectively
+        - client_env() and client_shell() execute only if client is True and
+          getenv/getshell are also True.
+
+        If both getenv and getshell are False, this method does nothing.
+
+        If the environment variable is missing or the shell command fails, the
+        output is an empty string.
+        """
+        if self.type != 'str':
+            return
+        r = re.match(r'env\((.*)\)', self.default)
+        if r and getenv:
+            self.default = os.environ.get(r.groups()[0], '')
+        r = re.match(r'client_env\((.*)\)', self.default)
+        if r and client and getenv:
+            self.default = os.environ.get(r.groups()[0], '')
+        r = re.match(r'shell\((.*)\)', self.default)
+        if r and getshell:
+            try:
+                cmd = shlex.split(r.groups()[0])
+                self.default = subprocess.check_output(
+                    cmd).rstrip().decode('utf8')
+            except (subprocess.CalledProcessError, OSError):
+                self.default = ''
+        r = re.match(r'client_shell\((.*)\)', self.default)
+        if r and client and getshell:
+            try:
+                cmd = shlex.split(r.groups()[0])
+                self.default = subprocess.check_output(
+                    cmd).rstrip().decode('utf8')
+            except (subprocess.CalledProcessError, OSError):
+                self.default = ''
+
 
     @staticmethod
     def coerce(dtype, value):
