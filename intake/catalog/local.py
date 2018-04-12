@@ -8,7 +8,7 @@ import yaml
 
 from ruamel_yaml.constructor import DuplicateKeyError
 
-import jinja2
+from jinja2 import Template
 import pandas
 import six
 import shlex
@@ -19,12 +19,24 @@ from .entry import CatalogEntry
 from ..source import registry as global_registry
 from ..source.base import Plugin
 from ..source.discovery import load_plugins_from_module
+from .utils import expand_templates
 
 
 logger = logging.getLogger('intake')
 
 
 class UserParameter(object):
+    """
+    A user-settable item that is passed to a DataSource upon instantiation
+
+    Parameters
+    ----------
+    name: str
+        the key that appears in the DataSource argument strings
+    description: str
+    """
+
+
     COERCION_RULES = {
         'bool': bool,
         'datetime': (lambda v=None: pandas.to_datetime(v)
@@ -37,7 +49,7 @@ class UserParameter(object):
     }
 
     def __init__(self, name, description, type, default=None, min=None,
-                 max=None, allowed=None):
+                 max=None, allowed=None, template=False):
         self.name = name
         self.description = description
         self.type = type
@@ -213,24 +225,6 @@ class PluginSource(object):
         return {}
 
 
-def expand_templates(pars, context):
-    """
-    Render variables in context into the set of parameters with jinja2
-
-    Parameters
-    ----------
-    pars: dict
-        values are strings containing some jinja2 controls
-    context: dict
-        values to use while rendering
-
-    Returns
-    -------
-    dict with the same keys as ``pars``, but updated values.
-    """
-    return {k: jinja2.Template(v).render(context) for k, v in pars.items()}
-
-
 def no_duplicates_constructor(loader, node, deep=False):
     """Check for duplicate keys while loading YAML
 
@@ -285,8 +279,10 @@ class CatalogParser(object):
             self._errors.append(str((msg, obj)))
 
     def warning(self, msg, obj, key=None):
-        line, col = get_line_column(obj, key)
-        self._warnings.append((line, col, msg))
+        if key is None:
+            self._warnings.append(str((msg, obj)))
+        else:
+            self._warnings.append(str((msg, obj, key)))
 
     def _parse_plugin(self, obj, key):
         if not isinstance(obj[key], six.string_types):
@@ -502,7 +498,7 @@ class CatalogConfig(object):
 
         self._plugins = {}
         for ps in cfg['plugin_sources']:
-            ps.source = jinja2.Template(ps.source).render(params)
+            ps.source = Template(ps.source).render(params)
             self._plugins.update(ps.load())
 
         self._entries = {}

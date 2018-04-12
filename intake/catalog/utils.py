@@ -1,5 +1,6 @@
 import functools
 import itertools
+from jinja2 import Environment, meta, Template
 import sys
 
 
@@ -55,3 +56,33 @@ def make_prefix_tree(flat_dict):
         subtree[parts[-1]] = value
 
     return tree
+
+
+def expand_templates(pars, context, return_left=False):
+    """
+    Render variables in context into the set of parameters with jinja2
+
+    Parameters
+    ----------
+    pars: dict
+        values are strings containing some jinja2 controls
+    context: dict
+        values to use while rendering
+    return_left: bool
+        whether to return the set of variables in context that were not used
+        in rendering parameters
+
+    Returns
+    -------
+    dict with the same keys as ``pars``, but updated values; optionally also
+    return set of unused parameter names.
+    """
+    all_vars = set(context)
+    out = {}
+    for k, v in pars.items():
+        ast = Environment().parse(v)
+        all_vars -= meta.find_undeclared_variables(ast)
+        out[k] = Template(v).render(context)
+    if return_left:
+        return out, all_vars
+    return out

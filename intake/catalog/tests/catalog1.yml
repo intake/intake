@@ -32,14 +32,22 @@ sources:
     args: # passed to the open() method
       urlpath: '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'
   remote_env:
-    description: path gets interpreted remotely
+    description: env gets interpreted in server
     driver: csv
-    direct_access: "allow"
     args:
-      urlpath: 'path-{{ env("INTAKE_TEST") }}'
+      urlpath: 'path-{{intake_test}}'
+    parameters:
+      intake_test:
+        description: none
+        type: str
+        default: 'env("INTAKE_TEST")'
   local_env:
-    description: path gets interpreted locally
+    description: env gets interpreted in client
     driver: csv
-    direct_access: "allow"
     args:
-      urlpath: 'path-{{ localenv("INTAKE_TEST") }}'
+      urlpath: 'path-{{intake_test}}'
+    parameters:
+      intake_test:
+        description: none
+        type: str
+        default: 'local_env("INTAKE_TEST")'

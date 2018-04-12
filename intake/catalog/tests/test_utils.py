@@ -1,5 +1,4 @@
 from .. import utils
-from ...source import base
 
 
 def test_make_prefix_tree():
@@ -8,25 +7,8 @@ def test_make_prefix_tree():
         {'abc': {'xyz': 1, 'def': 2, 'www': {'yyy': 3}}, 'www': 4}
 
 
-class Plugin(base.Plugin):
-    """A plugin that gives back whatever parameters were passed to it"""
-    def __init__(self):
-        super(Plugin, self).__init__(name='test',
-                                     version=0,
-                                     container='python',
-                                     partition_access=False)
-
-    def open(self, *args, **kwargs):
-        return TestingSource(*args, **kwargs)
-
-
-class TestingSource(base.DataSource):
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-
-    def describe(self):
-        return self.args, self.kwargs
-
-    def read(self):
-        return self.args, self.kwargs
+def test_expand_templates():
+    pars = {'a': "{{par}} hi"}
+    context = {'b': 1, 'par': 'ho'}
+    assert utils.expand_templates(pars, context)['a'] == 'ho hi'
+    assert utils.expand_templates(pars, context, True)[1] == {'b'}

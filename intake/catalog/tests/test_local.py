@@ -182,7 +182,7 @@ def test_user_parameter_validation_allowed():
 ])
 def test_parser_validation_error(filename):
     with pytest.raises(exceptions.ValidationError):
-        catalog = Catalog(abspath(filename + ".yml"))
+        Catalog(abspath(filename + ".yml"))
 
 
 @pytest.mark.parametrize("filename", [
@@ -191,7 +191,7 @@ def test_parser_validation_error(filename):
 ])
 def test_parser_obsolete_error(filename):
     with pytest.raises(exceptions.ObsoleteError):
-        catalog = Catalog(abspath(filename + ".yml"))
+        Catalog(abspath(filename + ".yml"))
 
 
 def test_union_catalog():
@@ -285,8 +285,8 @@ sources:
 def test_catalog_file_removal(temp_catalog_file):
     cat_dir = os.path.dirname(temp_catalog_file)
     cat = Catalog(cat_dir) 
-    assert set(cat) == set(['a', 'b'])
+    assert set(cat) == {'a', 'b'}
 
     os.remove(temp_catalog_file)
-    time.sleep(1.5) # wait for catalog refresh
+    time.sleep(1.5)  # wait for catalog refresh
     assert set(cat) == set()
