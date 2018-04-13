@@ -8,19 +8,26 @@ from ..container import get_container_klass
 from ..source import registry as plugin_registry
 from ..source.base import DataSource
 from .entry import CatalogEntry
+from .utils import expand_defaults
 
 
 class RemoteCatalogEntry(CatalogEntry):
-    def __init__(self, url, *args, **kwargs):
+    def __init__(self, url, getenv=True, getshell=True, *args, **kwargs):
         self.url = url
         self.args = args
         self.kwargs = kwargs
+        self.getenv = getenv
+        self.getshell = getshell
         super(RemoteCatalogEntry, self).__init__()
 
     def describe(self):
         return self.kwargs
 
     def get(self, **user_parameters):
+        for par in self.kwargs['user_parameters']:
+            if par['name'] not in user_parameters:
+                user_parameters[par['name']] = expand_defaults(
+                    par['default'], True, self.getenv, self.getshell)
         entry = self.kwargs
 
         return RemoteDataSource(

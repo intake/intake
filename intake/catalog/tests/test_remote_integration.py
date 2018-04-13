@@ -184,3 +184,14 @@ def test_to_dask(intake_server):
     df = d.to_dask()
 
     assert df.npartitions == 2
+
+
+def test_remote_env(intake_server):
+    import os
+    os.environ['INTAKE_TEST'] = 'client'
+    catalog = Catalog(intake_server)
+    s = catalog.remote_env.get()
+    assert 'INTAKE_TEST' in s._user_parameters['intake_test']
+
+    s = catalog.local_env.get()
+    assert 'client' == s._user_parameters['intake_test']

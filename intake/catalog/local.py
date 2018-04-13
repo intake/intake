@@ -3,7 +3,6 @@ import inspect
 import logging
 import os
 import os.path
-import re
 import runpy
 import yaml
 
@@ -12,15 +11,13 @@ from ruamel_yaml.constructor import DuplicateKeyError
 from jinja2 import Template
 import pandas
 import six
-import shlex
-import subprocess
 
 from . import exceptions
 from .entry import CatalogEntry
 from ..source import registry as global_registry
 from ..source.base import Plugin
 from ..source.discovery import load_plugins_from_module
-from .utils import expand_templates
+from .utils import expand_templates, expand_defaults
 
 
 logger = logging.getLogger('intake')
@@ -99,43 +96,10 @@ class UserParameter(object):
 
     def expand_defaults(self, client=False, getenv=True, getshell=True):
         """Compile env, client_env, shell and client_shell commands
-
-        Execution rules:
-        - env() and shell() execute on server or client, if getenv and getshell
-          are True, respectively
-        - client_env() and client_shell() execute only if client is True and
-          getenv/getshell are also True.
-
-        If both getenv and getshell are False, this method does nothing.
-
-        If the environment variable is missing or the shell command fails, the
-        output is an empty string.
         """
         if self.type != 'str':
             return
-        r = re.match(r'env\((.*)\)', self.default)
-        if r and getenv:
-            self.default = os.environ.get(r.groups()[0], '')
-        r = re.match(r'client_env\((.*)\)', self.default)
-        if r and client and getenv:
-            self.default = os.environ.get(r.groups()[0], '')
-        r = re.match(r'shell\((.*)\)', self.default)
-        if r and getshell:
-            try:
-                cmd = shlex.split(r.groups()[0])
-                self.default = subprocess.check_output(
-                    cmd).rstrip().decode('utf8')
-            except (subprocess.CalledProcessError, OSError):
-                self.default = ''
-        r = re.match(r'client_shell\((.*)\)', self.default)
-        if r and client and getshell:
-            try:
-                cmd = shlex.split(r.groups()[0])
-                self.default = subprocess.check_output(
-                    cmd).rstrip().decode('utf8')
-            except (subprocess.CalledProcessError, OSError):
-                self.default = ''
-
+        self.default = expand_defaults(self.default, client, getenv, getshell)
 
     @staticmethod
     def coerce(dtype, value):
@@ -170,7 +134,7 @@ class UserParameter(object):
 
 class LocalCatalogEntry(CatalogEntry):
     def __init__(self, name, description, driver, direct_access, args,
-                 parameters, metadata, catalog_dir):
+                 parameters, metadata, catalog_dir, getenv=True, getshell=True):
         self._name = name
         self._description = description
         self._driver = driver
@@ -180,6 +144,8 @@ class LocalCatalogEntry(CatalogEntry):
         self._metadata = metadata
         self._catalog_dir = catalog_dir
         self._plugin = None
+        self._getenv = getenv
+        self._getshell = getshell
         super(LocalCatalogEntry, self).__init__()
 
     @property
@@ -207,6 +173,8 @@ class LocalCatalogEntry(CatalogEntry):
                 params[parameter.name] = parameter.validate(
                     user_parameters[parameter.name])
             else:
+                parameter.expand_defaults(getenv=self._getenv,
+                                          getshell=self._getshell)
                 params[parameter.name] = parameter.default
 
         open_args = expand_templates(self._open_args, params)

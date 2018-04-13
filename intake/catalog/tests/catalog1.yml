@@ -40,7 +40,7 @@ sources:
       intake_test:
         description: none
         type: str
-        default: 'env("INTAKE_TEST")'
+        default: 'env(INTAKE_TEST)'
   local_env:
     description: env gets interpreted in client
     driver: csv
@@ -50,4 +50,4 @@ sources:
       intake_test:
         description: none
         type: str
-        default: 'local_env("INTAKE_TEST")'
+        default: 'client_env(INTAKE_TEST)'

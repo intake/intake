@@ -1,6 +1,10 @@
 import functools
 import itertools
 from jinja2 import Environment, meta, Template
+import os
+import re
+import shlex
+import subprocess
 import sys
 
 
@@ -86,3 +90,42 @@ def expand_templates(pars, context, return_left=False):
     if return_left:
         return out, all_vars
     return out
+
+
+def expand_defaults(default, client=False, getenv=True, getshell=True):
+    """Compile env, client_env, shell and client_shell commands
+
+    Execution rules:
+    - env() and shell() execute on server or client, if getenv and getshell
+      are True, respectively
+    - client_env() and client_shell() execute only if client is True and
+      getenv/getshell are also True.
+
+    If both getenv and getshell are False, this method does nothing.
+
+    If the environment variable is missing or the shell command fails, the
+    output is an empty string.
+    """
+    r = re.match(r'env\((.*)\)', default)
+    if r and not client and getenv:
+        default = os.environ.get(r.groups()[0], '')
+    r = re.match(r'client_env\((.*)\)', default)
+    if r and client and getenv:
+        default = os.environ.get(r.groups()[0], '')
+    r = re.match(r'shell\((.*)\)', default)
+    if r and not client and getshell:
+        try:
+            cmd = shlex.split(r.groups()[0])
+            default = subprocess.check_output(
+                cmd).rstrip().decode('utf8')
+        except (subprocess.CalledProcessError, OSError):
+            default = ''
+    r = re.match(r'client_shell\((.*)\)', default)
+    if r and client and getshell:
+        try:
+            cmd = shlex.split(r.groups()[0])
+            default = subprocess.check_output(
+                cmd).rstrip().decode('utf8')
+        except (subprocess.CalledProcessError, OSError):
+            default = ''
+    return default
