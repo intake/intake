@@ -498,8 +498,12 @@ class CatalogConfig(object):
 
         # First, we load from YAML, failing if syntax errors are found
         with open(self._path, 'r') as f:
+            text = f.read()
+            if "!template " in text:
+                logger.warning("Use of '!template' deprecated - fixing")
+                text = text.replace('!template ', '')
             try:
-                data = yaml.load(f.read())
+                data = yaml.load(text)
             except DuplicateKeyError as e:
                 # Wrap internal exception with our own exception
                 raise exceptions.DuplicateKeyError(e)
