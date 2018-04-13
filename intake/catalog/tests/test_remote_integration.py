@@ -195,3 +195,8 @@ def test_remote_env(intake_server):
 
     s = catalog.local_env.get()
     assert 'client' == s._user_parameters['intake_test']
+
+    # prevents *client* from getting env
+    catalog = Catalog(intake_server, getenv=False)
+    s = catalog.local_env.get()
+    assert 'INTAKE_TEST' in s._user_parameters['intake_test']

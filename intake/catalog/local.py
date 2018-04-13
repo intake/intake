@@ -144,9 +144,8 @@ class LocalCatalogEntry(CatalogEntry):
         self._metadata = metadata
         self._catalog_dir = catalog_dir
         self._plugin = None
-        self._getenv = getenv
-        self._getshell = getshell
-        super(LocalCatalogEntry, self).__init__()
+        super(LocalCatalogEntry, self).__init__(
+            getenv=getenv, getshell=getshell)
 
     @property
     def name(self):
@@ -173,8 +172,8 @@ class LocalCatalogEntry(CatalogEntry):
                 params[parameter.name] = parameter.validate(
                     user_parameters[parameter.name])
             else:
-                parameter.expand_defaults(getenv=self._getenv,
-                                          getshell=self._getshell)
+                parameter.expand_defaults(getenv=self.getenv,
+                                          getshell=self.getshell)
                 params[parameter.name] = parameter.default
 
         open_args = expand_templates(self._open_args, params)
@@ -272,10 +271,12 @@ yaml.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
 
 
 class CatalogParser(object):
-    def __init__(self, data, context=None):
+    def __init__(self, data, getenv=True, getshell=True, context=None):
         self._context = context if context else {}
         self._errors = []
         self._warnings = []
+        self.getenv = getenv
+        self.getshell = getshell
         self._data = self._parse(data)
 
     @property
@@ -442,7 +443,9 @@ class CatalogParser(object):
                 if obj:
                     ds['parameters'].append(obj)
 
-        return LocalCatalogEntry(catalog_dir=self._context['root'], **ds)
+        return LocalCatalogEntry(catalog_dir=self._context['root'],
+                                 getenv=self.getenv, getshell=self.getshell,
+                                 **ds)
 
     def _parse_data_sources(self, data):
         sources = []
@@ -487,7 +490,7 @@ class CatalogParser(object):
 
 
 class CatalogConfig(object):
-    def __init__(self, path):
+    def __init__(self, path, getenv=True, getshell=True):
         self._path = path
         self._name = os.path.splitext(os.path.basename(
             self._path))[0].replace('.', '_')
@@ -505,7 +508,8 @@ class CatalogConfig(object):
             raise exceptions.CatalogException('No YAML data in file')
         # Second, we validate the schema and semantics
         context = dict(root=self._dir)
-        result = CatalogParser(data, context=context)
+        result = CatalogParser(data, context=context, getenv=getenv,
+                               getshell=getshell)
         if result.errors:
             errors = ["line {}, column {}: {}".format(*error)
                       for error in result.errors]

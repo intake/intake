@@ -15,12 +15,14 @@ logger = logging.getLogger('intake')
 class State(object):
     """Base class representing the state of a catalog source"""
 
-    def __init__(self, name, observable, ttl):
+    def __init__(self, name, observable, ttl, getenv=True, getshell=True):
         self.name = name
         self.observable = observable
         self.ttl = clamp(ttl)
         self._modification_time = 0
         self._last_updated = 0
+        self.getenv = getenv
+        self.getshell = getshell
 
     def refresh(self):
         return None, {}, {}, []
@@ -41,8 +43,9 @@ class State(object):
 class DirectoryState(State):
     """The state of a directory of catalog files"""
 
-    def __init__(self, name, observable, ttl):
-        super(DirectoryState, self).__init__(name, observable, ttl)
+    def __init__(self, name, observable, ttl, getenv=True, getshell=True):
+        super(DirectoryState, self).__init__(name, observable, ttl,
+                                             getenv=getenv, getshell=getshell)
         self.catalogs = []
         self._last_files = []
 
@@ -77,8 +80,9 @@ class DirectoryState(State):
 class RemoteState(State):
     """The state of a remote Intake server"""
 
-    def __init__(self, name, observable, ttl):
-        super(RemoteState, self).__init__(name, observable, ttl)
+    def __init__(self, name, observable, ttl, getenv=True, getshell=True):
+        super(RemoteState, self).__init__(name, observable, ttl,
+                                          getenv=getenv, getshell=getshell)
         self.base_url = observable + '/'
         self.info_url = urljoin(self.base_url, 'v1/info')
         self.source_url = urljoin(self.base_url, 'v1/source')
@@ -93,7 +97,9 @@ class RemoteState(State):
                                                     response.status_code))
         info = msgpack.unpackb(response.content, encoding='utf-8')
 
-        entries = {s['name']: RemoteCatalogEntry(url=self.source_url, **s)
+        entries = {s['name']: RemoteCatalogEntry(url=self.source_url,
+                                                 getenv=self.getenv,
+                                                 getshell=self.getshell, **s)
                    for s in info['sources']}
 
         return name, {}, entries, []
@@ -102,11 +108,13 @@ class RemoteState(State):
 class LocalState(State):
     """The state of a catalog file on the local filesystem"""
 
-    def __init__(self, name, observable, ttl):
-        super(LocalState, self).__init__(name, observable, ttl)
+    def __init__(self, name, observable, ttl, getenv=True, getshell=True):
+        super(LocalState, self).__init__(name, observable, ttl,
+                                         getenv=getenv, getshell=getshell)
 
     def refresh(self):
-        cfg = CatalogConfig(self.observable)
+        cfg = CatalogConfig(self.observable, getenv=self.getenv,
+                            getshell=self.getshell)
         return cfg.name, {}, cfg.entries, cfg.plugins
 
     def changed(self):
@@ -116,11 +124,12 @@ class LocalState(State):
 class CollectionState(State):
     """The state of a collection of other states"""
 
-    def __init__(self, name, observable, ttl):
+    def __init__(self, name, observable, ttl, getenv=True, getshell=True):
         super(CollectionState, self).__init__(name, observable, ttl)
         # This name is a workaround to deal with issue that will be
         # solved in another PR
-        self.catalogs = [Catalog(uri, name='cat%d' % i)
+        self.catalogs = [Catalog(uri, name='cat%d' % i, getenv=getenv,
+                                 getshell=getshell)
                          for i, uri in enumerate(self.observable)]
 
     def refresh(self):
@@ -134,15 +143,19 @@ class CollectionState(State):
         return any([catalog.changed for catalog in self.catalogs])
 
 
-def create_state(name, observable, ttl):
+def create_state(name, observable, ttl, getenv=True, getshell=True):
     if isinstance(observable, list):
-        return CollectionState(name, observable, ttl)
+        return CollectionState(name, observable, ttl, getenv=getenv,
+                               getshell=getshell)
     elif observable.startswith('http://') or observable.startswith('https://'):
-        return RemoteState(name, observable, ttl)
+        return RemoteState(name, observable, ttl, getenv=getenv,
+                           getshell=getshell)
     elif os.path.isdir(observable):
-        return DirectoryState(name, observable, ttl)
+        return DirectoryState(name, observable, ttl, getenv=getenv,
+                              getshell=getshell)
     elif observable.endswith('.yml') or observable.endswith('.yaml'):
-        return LocalState(name, observable, ttl)
+        return LocalState(name, observable, ttl, getenv=getenv,
+                          getshell=getshell)
 
     raise TypeError
 
@@ -178,11 +191,14 @@ class Catalog(object):
         """
         name = kwargs.get('name', None)
         ttl = kwargs.get('ttl', 1)
+        self.getenv = kwargs.pop('getenv', True)
+        self.getshell = kwargs.pop('getshell', True)
 
         args = list(flatten(args))
         args = args[0] if len(args) == 1 else args
 
-        self._state = create_state(name, args, ttl)
+        self._state = create_state(name, args, ttl, getenv=self.getenv,
+                                   getshell=self.getshell)
         self.reload()
 
     def reload(self):

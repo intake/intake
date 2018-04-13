@@ -12,13 +12,14 @@ from .utils import expand_defaults
 
 
 class RemoteCatalogEntry(CatalogEntry):
-    def __init__(self, url, getenv=True, getshell=True, *args, **kwargs):
+    def __init__(self, url, *args, **kwargs):
         self.url = url
         self.args = args
         self.kwargs = kwargs
-        self.getenv = getenv
-        self.getshell = getshell
-        super(RemoteCatalogEntry, self).__init__()
+        getenv = kwargs.pop('getenv', True)
+        getshell = kwargs.pop('getshell', True)
+        super(RemoteCatalogEntry, self).__init__(getenv=getenv,
+                                                 getshell=getshell)
 
     def describe(self):
         return self.kwargs

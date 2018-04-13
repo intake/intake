@@ -4,8 +4,10 @@ class CatalogEntry(object):
     This is the base class, used by local entries (i.e., read from a YAML file)
     and by remote entries (read from a server).
     """
-    def __init__(self):
+    def __init__(self, getenv=True, getshell=True):
         self._default_source = None
+        self.getenv = getenv
+        self.getshell = getshell
 
     def __repr__(self):
         return repr(self.describe())
