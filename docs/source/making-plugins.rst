@@ -145,3 +145,36 @@ When Intake is imported, it will search the Python module path (by default inclu
 After the discovery phase, Intake will automatically create ``open_[plugin_name]`` convenience functions under the ``intake`` module namespace.  Calling a function like ``open_csv()`` is equivalent to calling the ``open()`` method on the ``csv`` plugin.
 
 To take advantage of plugin discovery, give your installed package a name that starts with ``intake_`` and define your plugin class(es) in the ``__init__.py`` of the package.
+
+Remote Data
+-----------
+
+For plugins loading from files, the author should be aware that it is easy to implement loading
+from files stored in remote services. A simplistic case is demonstrated by the included CSV plugin,
+which simply passes a URL to Dask, which in turn can interpret the URL as a remote data service,
+and use the ``storage_options`` as required (see the Dask documentation on `remote data`_).
+
+.. _remote data: http://dask.pydata.org/en/latest/remote-data-services.html
+
+More advanced usage, where a Dask loader does not already exist, will likely rely on
+`dask.bytes.open_files`_ . Use this function to produce lazy ``OpenFile`` object for local
+or remote data, based on a URL, which will have a protocol designation and possibly contain
+glob "*" characters. Additional parameters may be passed to ``open_files``, which should,
+by convention, be supplied by a plugin argument named ``storage_options`` (a dictionary).
+
+.. _dask.bytes.open_files: http://dask.pydata.org/en/latest/bytes.html#dask.bytes.open_files
+
+To use an ``OpenFile`` object, make it concrete by using a context:
+
+
+.. code-block::python
+
+    # at setup, to discover the number of files/partitions
+    set_of_open_files = dask.bytes.open_files(urlpath, mode='rb', **storage_options)
+
+    # when actually loading data; here we loop over all files, but maybe we just do one partition
+    for an_open_file in set_of_open_files:
+        # `with` causes the object to become concrete until the end of the block
+        with an_open_file as f:
+            # do things with f, which is a file-like object
+            f.seek(); f.read()
