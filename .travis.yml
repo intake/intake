@@ -19,7 +19,7 @@ install:
 - |
   echo "Configuring conda."
   source $HOME/miniconda3/bin/activate root
-  conda install -y conda-build=3.7.2 anaconda-client
+  conda install -y conda-build anaconda-client
 script:
 - conda build -c intake/label/main ./conda
 - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then anaconda -t ${ANACONDA_TOKEN}
