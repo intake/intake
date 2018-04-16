@@ -36,16 +36,16 @@ def pick_port():
 
 @pytest.fixture(scope="module")
 def intake_server(request):
-    # Catalog URL comes from the test module
-    catalog_yaml = request.module.TEST_CATALOG_YAML
+    # Catalog path comes from the test module
+    catalog_path = request.module.TEST_CATALOG_PATH
 
     # Start a catalog server on nonstandard port
     port = pick_port()
     cmd = ['python', '-m', 'intake.cli.server', '--sys-exit-on-sigterm', '--port', str(port)]
-    if isinstance(catalog_yaml, list):
-        cmd.extend(catalog_yaml)
+    if isinstance(catalog_path, list):
+        cmd.extend(catalog_path)
     else:
-        cmd.append(catalog_yaml)
+        cmd.append(catalog_path)
 
     env = dict(os.environ)
     env['INTAKE_TEST'] = 'server'

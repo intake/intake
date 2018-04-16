@@ -5,6 +5,7 @@ import time
 import msgpack
 import requests
 from requests.compat import urljoin, urlparse
+import six
 
 from .local import CatalogConfig
 from .remote import RemoteCatalogEntry
@@ -51,15 +52,17 @@ class DirectoryState(State):
 
     def refresh(self):
         catalogs = []
-        self._last_files = []
-        for f in os.listdir(self.observable):
-            if f.endswith('.yml') or f.endswith('.yaml'):
-                path = os.path.join(self.observable, f)
-                try:
-                    catalogs.append(Catalog(path))
-                    self._last_files.append(path)
-                except Exception as e:
-                    logger.warning("%s: %s" % (str(e), f))
+
+        if os.path.isdir(self.observable):
+            self._last_files = []
+            for f in os.listdir(self.observable):
+                if f.endswith('.yml') or f.endswith('.yaml'):
+                    path = os.path.join(self.observable, f)
+                    try:
+                        catalogs.append(Catalog(path))
+                        self._last_files.append(path)
+                    except Exception as e:
+                        logger.warning("%s: %s" % (str(e), f))
 
         self.catalogs = catalogs
         children = {catalog.name: catalog for catalog in self.catalogs}
@@ -67,6 +70,8 @@ class DirectoryState(State):
         return self.name, children, {}, []
 
     def changed(self):
+        if not os.path.isdir(self.observable):
+            return False
         modified = self.update_modification_time(
             os.path.getmtime(self.observable))
         # Were any files removed?

@@ -7,6 +7,8 @@ import shlex
 import subprocess
 import sys
 
+import six
+
 
 def flatten(iterable):
     """Flatten an arbitrarily deep list"""
@@ -17,7 +19,7 @@ def flatten(iterable):
         except StopIteration:
             break
 
-        if isinstance(item, (str, bytes)):
+        if isinstance(item, six.string_types):
             yield item
             continue
 

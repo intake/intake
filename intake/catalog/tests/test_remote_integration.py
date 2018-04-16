@@ -9,7 +9,7 @@ from ...source.tests.util import verify_datasource_interface
 from .util import assert_items_equal
 from intake.catalog import Catalog
 
-TEST_CATALOG_YAML = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
+TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
 
 def test_info_describe(intake_server):
