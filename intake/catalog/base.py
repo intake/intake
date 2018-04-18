@@ -155,14 +155,13 @@ def create_state(name, observable, ttl, getenv=True, getshell=True):
     elif observable.startswith('http://') or observable.startswith('https://'):
         return RemoteState(name, observable, ttl, getenv=getenv,
                            getshell=getshell)
-    elif os.path.isdir(observable):
-        return DirectoryState(name, observable, ttl, getenv=getenv,
-                              getshell=getshell)
     elif observable.endswith('.yml') or observable.endswith('.yaml'):
         return LocalState(name, observable, ttl, getenv=getenv,
                           getshell=getshell)
+    else:
+        return DirectoryState(name, observable, ttl, getenv=getenv,
+                              getshell=getshell)
 
-    raise TypeError
 
 
 class Catalog(object):

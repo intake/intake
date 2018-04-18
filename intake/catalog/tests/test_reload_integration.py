@@ -97,7 +97,10 @@ sources:
 def intake_server_with_missing_dir(intake_server):
     yield MISSING_PATH
 
-    shutil.rmtree(MISSING_PATH)
+    try:
+        shutil.rmtree(MISSING_PATH)
+    except OSError:
+        pass
 
 
 def test_reload_missing_remote_directory(intake_server_with_missing_dir):
