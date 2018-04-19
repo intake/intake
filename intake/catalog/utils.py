@@ -67,7 +67,9 @@ def make_prefix_tree(flat_dict):
 
 def expand_templates(pars, context, return_left=False):
     """
-    Render variables in context into the set of parameters with jinja2
+    Render variables in context into the set of parameters with jinja2.
+
+    For variables that are not strings, nothing happens.
 
     Parameters
     ----------
@@ -89,7 +91,10 @@ def expand_templates(pars, context, return_left=False):
     for k, v in pars.items():
         ast = Environment().parse(v)
         all_vars -= meta.find_undeclared_variables(ast)
-        out[k] = Template(v).render(context)
+        if isinstance(v, six.string_types):
+            out[k] = Template(v).render(context)
+        else:
+            out[k] = v
     if return_left:
         return out, all_vars
     return out

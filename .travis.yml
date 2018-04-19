@@ -1,4 +1,6 @@
 language: generic
+git:
+  depth: false
 os:
   - linux
 branches:
