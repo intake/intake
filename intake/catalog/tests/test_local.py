@@ -294,6 +294,14 @@ def test_catalog_file_removal(temp_catalog_file):
 
 
 def test_default_expansions():
+    try:
+        os.environ['INTAKE_INT_TEST'] = '1'
+        par = UserParameter('', '', 'int', default='env(INTAKE_INT_TEST)')
+        par.expand_defaults()
+        assert par.default == 1
+    finally:
+        del os.environ['INTAKE_INT_TEST']
+
     par = UserParameter('', '', 'str', default='env(USER)')
     par.expand_defaults(getenv=False)
     assert par.default == 'env(USER)'

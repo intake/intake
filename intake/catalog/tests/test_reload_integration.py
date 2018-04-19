@@ -113,7 +113,7 @@ def test_reload_missing_remote_directory(intake_server_with_missing_dir):
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: !template '{{ CATALOG_DIR }}/example_plugin_dir'
+    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
 sources:
   use_example1:
     description: example1 source plugin
@@ -144,7 +144,7 @@ def test_reload_missing_local_directory(tmpdir):
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: !template '{{ CATALOG_DIR }}/example_plugin_dir'
+    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
 sources:
   use_example1:
     description: example1 source plugin

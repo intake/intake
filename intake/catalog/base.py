@@ -163,7 +163,6 @@ def create_state(name, observable, ttl, getenv=True, getshell=True):
                               getshell=getshell)
 
 
-
 class Catalog(object):
     """Manages a hierarchy of data sources and plugins as a collective unit.
 

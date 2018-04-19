@@ -2,6 +2,7 @@ import functools
 import itertools
 from jinja2 import Environment, meta, Template
 import os
+import pandas
 import re
 import shlex
 import subprocess
@@ -131,3 +132,30 @@ def expand_defaults(default, client=False, getenv=True, getshell=True):
         except (subprocess.CalledProcessError, OSError):
             default = ''
     return default
+
+
+COERCION_RULES = {
+    'bool': bool,
+    'datetime': (lambda v=None: pandas.to_datetime(v)
+                 if v else pandas.to_datetime(0)),
+    'float': float,
+    'int': int,
+    'list': list,
+    'str': str,
+    'unicode': six.text_type
+}
+
+
+def coerce(dtype, value):
+    """
+    Convert a value to a specific type.
+
+    If the value is already the given type, then the original value is
+    returned. If the value is None, then the default value given by the
+    type constructor is returned. Otherwise, the type constructor converts
+    and returns the value.
+    """
+    if type(value).__name__ == dtype:
+        return value
+    op = COERCION_RULES[dtype]
+    return op() if value is None else op(value)

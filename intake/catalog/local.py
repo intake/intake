@@ -9,7 +9,6 @@ import yaml
 from ruamel_yaml.constructor import DuplicateKeyError
 
 from jinja2 import Template
-import pandas
 import six
 
 from . import exceptions
@@ -17,7 +16,7 @@ from .entry import CatalogEntry
 from ..source import registry as global_registry
 from ..source.base import Plugin
 from ..source.discovery import load_plugins_from_module
-from .utils import expand_templates, expand_defaults
+from .utils import expand_templates, expand_defaults, coerce, COERCION_RULES
 
 
 logger = logging.getLogger('intake')
@@ -38,7 +37,7 @@ class UserParameter(object):
     description: str
         narrative text
     type: str
-        one of list``(UserParameters.COERSION_RULES)``
+        one of list``(COERSION_RULES)``
     default: type value
         same type as ``type``. It a str, may include special functions
         env, shell, client_env, client_shell.
@@ -47,19 +46,6 @@ class UserParameter(object):
     allowed: list of type
         for validation of user input
     """
-
-
-    COERCION_RULES = {
-        'bool': bool,
-        'datetime': (lambda v=None: pandas.to_datetime(v)
-                     if v else pandas.to_datetime(0)),
-        'float': float,
-        'int': int,
-        'list': list,
-        'str': str,
-        'unicode': six.text_type
-    }
-
     def __init__(self, name, description, type, default=None, min=None,
                  max=None, allowed=None):
         self.name = name
@@ -69,16 +55,20 @@ class UserParameter(object):
         self.max = max
         self.allowed = allowed
 
-        self.default = UserParameter.coerce(self.type, default)
+        self._default = default
+        try:
+            self.default = coerce(self.type, default)
+        except (ValueError, TypeError):
+            self.default = None
 
         if self.min:
-            self.min = UserParameter.coerce(self.type, self.min)
+            self.min = coerce(self.type, self.min)
 
         if self.max:
-            self.max = UserParameter.coerce(self.type, self.max)
+            self.max = coerce(self.type, self.max)
 
         if self.allowed:
-            self.allowed = [UserParameter.coerce(self.type, item)
+            self.allowed = [coerce(self.type, item)
                             for item in self.allowed]
 
     def describe(self):
@@ -97,27 +87,13 @@ class UserParameter(object):
     def expand_defaults(self, client=False, getenv=True, getshell=True):
         """Compile env, client_env, shell and client_shell commands
         """
-        if self.type != 'str':
+        if not isinstance(self._default, six.string_types):
             return
-        self.default = expand_defaults(self.default, client, getenv, getshell)
-
-    @staticmethod
-    def coerce(dtype, value):
-        """
-        Convert a value to a specific type.
-
-        If the value is already the given type, then the original value is
-        returned. If the value is None, then the default value given by the
-        type constructor is returned. Otherwise, the type constructor converts
-        and returns the value.
-        """
-        if type(value).__name__ == dtype:
-            return value
-        op = UserParameter.COERCION_RULES[dtype]
-        return op() if value is None else op(value)
+        self.default = coerce(self.type, expand_defaults(
+            self._default, client, getenv, getshell))
 
     def validate(self, value):
-        value = UserParameter.coerce(self.type, value)
+        value = coerce(self.type, value)
 
         if self.min is not None and value < self.min:
             raise ValueError('%s=%s is less than %s' % (self.name, value,
@@ -384,7 +360,7 @@ class CatalogParser(object):
         return None if dtype is object else dtype()
 
     def _parse_user_parameter(self, name, data):
-        valid_types = list(UserParameter.COERCION_RULES)
+        valid_types = list(COERCION_RULES)
 
         params = {
             'name': name,

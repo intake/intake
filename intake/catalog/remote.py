@@ -1,6 +1,7 @@
 import msgpack
 import numpy
 import requests
+import six
 
 from . import dask_util
 from . import serializer
@@ -8,7 +9,7 @@ from ..container import get_container_klass
 from ..source import registry as plugin_registry
 from ..source.base import DataSource
 from .entry import CatalogEntry
-from .utils import expand_defaults
+from .utils import expand_defaults, coerce
 
 
 class RemoteCatalogEntry(CatalogEntry):
@@ -27,8 +28,11 @@ class RemoteCatalogEntry(CatalogEntry):
     def get(self, **user_parameters):
         for par in self.kwargs['user_parameters']:
             if par['name'] not in user_parameters:
-                user_parameters[par['name']] = expand_defaults(
-                    par['default'], True, self.getenv, self.getshell)
+                default = par['default']
+                if isinstance(default, six.string_types):
+                    default = coerce(par['type'], expand_defaults(
+                        par['default'], True, self.getenv, self.getshell))
+                user_parameters[par['name']] = default
         entry = self.kwargs
 
         return RemoteDataSource(
