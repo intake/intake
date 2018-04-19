@@ -1,7 +1,7 @@
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: !template '{{ CATALOG_DIR }}/example_plugin_dir'
+    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
 sources:
   use_example1:
     description: example1 source plugin
@@ -15,7 +15,7 @@ sources:
     driver: csv
     # Default direct_access is "forbid" by default
     args: # passed to the open() method
-      urlpath: !template '{{ CATALOG_DIR }}/entry1_*.csv'
+      urlpath: '{{ CATALOG_DIR }}/entry1_*.csv'
   entry1_part:
     description: entry1 part
     parameters: # User defined parameters
@@ -30,4 +30,4 @@ sources:
     driver: csv
     direct_access: "allow"
     args: # passed to the open() method
-      urlpath: !template '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'
+      urlpath: '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'

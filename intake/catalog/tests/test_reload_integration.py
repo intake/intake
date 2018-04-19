@@ -29,7 +29,7 @@ def intake_server_with_config(intake_server):
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: !template '{{ CATALOG_DIR }}/example_plugin_dir'
+    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
 sources:
   use_example1:
     description: example1 source plugin
@@ -55,7 +55,7 @@ def test_reload_updated_config(intake_server_with_config):
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: !template '{{ CATALOG_DIR }}/example_plugin_dir'
+    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
 sources:
   use_example1:
     description: example1 source plugin
@@ -97,7 +97,10 @@ sources:
 def intake_server_with_missing_dir(intake_server):
     yield MISSING_PATH
 
-    shutil.rmtree(MISSING_PATH)
+    try:
+        shutil.rmtree(MISSING_PATH)
+    except OSError:
+        pass
 
 
 def test_reload_missing_remote_directory(intake_server_with_missing_dir):
@@ -110,7 +113,7 @@ def test_reload_missing_remote_directory(intake_server_with_missing_dir):
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: !template '{{ CATALOG_DIR }}/example_plugin_dir'
+    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
 sources:
   use_example1:
     description: example1 source plugin
@@ -141,7 +144,7 @@ def test_reload_missing_local_directory(tmpdir):
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: !template '{{ CATALOG_DIR }}/example_plugin_dir'
+    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
 sources:
   use_example1:
     description: example1 source plugin

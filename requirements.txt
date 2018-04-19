@@ -8,6 +8,7 @@ python-snappy
 ruamel.yaml >= 0.15.0
 requests
 appdirs
+six
 tornado >= 4.5.1
 dask[complete]
 holoviews

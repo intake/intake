@@ -97,7 +97,7 @@ It is often useful to move the descriptions of data sources out of your code and
         description: US state information from [CivilServices](https://civil.services/)
         driver: csv
         args:
-          urlpath: !template '{{ CATALOG_DIR }}/states_*.csv'
+          urlpath: '{{ CATALOG_DIR }}/states_*.csv'
         metadata:
           origin_url: 'https://github.com/CivilServiceUSA/us-states/blob/v1.0.0/data/states.csv'
 

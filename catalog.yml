@@ -22,4 +22,4 @@ sources:
 #    driver: hdf5
 #    args:
 #      filename: data/images.hdf5
-#      dataset: !template "{{ setname }}"  # Mark this string as a Jinja2 template
+#      dataset: "{{ setname }}"  # Mark this string as a Jinja2 template

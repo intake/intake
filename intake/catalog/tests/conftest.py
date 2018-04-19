@@ -48,6 +48,7 @@ def intake_server(request):
         cmd.append(catalog_path)
 
     env = dict(os.environ)
+    env['INTAKE_TEST'] = 'server'
 
     p = subprocess.Popen(cmd, env=env)
     url = 'http://localhost:%d' % (port,)

@@ -90,7 +90,7 @@ Finishing out this example, the catalog file for this data source looks like thi
         description: US state information from [CivilServices](https://civil.services/)
         driver: csv
         args:
-          urlpath: !template '{{ CATALOG_DIR }}/civilservices/states.csv'
+          urlpath: '{{ CATALOG_DIR }}/civilservices/states.csv'
         metadata:
           origin_url: 'https://github.com/CivilServiceUSA/us-states/blob/v1.0.0/data/states.csv'
 

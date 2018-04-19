@@ -15,7 +15,8 @@ TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 def test_info_describe(intake_server):
     catalog = Catalog(intake_server)
 
-    assert_items_equal(list(catalog), ['use_example1', 'entry1', 'entry1_part'])
+    assert_items_equal(list(catalog), ['use_example1', 'entry1', 'entry1_part',
+                                       'remote_env', 'local_env'])
 
     info = catalog['entry1'].describe()
 
@@ -52,6 +53,13 @@ def test_remote_datasource_interface(intake_server):
     d = catalog['entry1'].get()
 
     verify_datasource_interface(d)
+
+
+def test_environment_evaluation(intake_server):
+    catalog = Catalog(intake_server)
+    import os
+    os.environ['INTAKE_TEST'] = 'client'
+    d = catalog['remote_env']
 
 
 def test_read(intake_server):
@@ -176,3 +184,19 @@ def test_to_dask(intake_server):
     df = d.to_dask()
 
     assert df.npartitions == 2
+
+
+def test_remote_env(intake_server):
+    import os
+    os.environ['INTAKE_TEST'] = 'client'
+    catalog = Catalog(intake_server)
+    s = catalog.remote_env.get()
+    assert 'INTAKE_TEST' in s._user_parameters['intake_test']
+
+    s = catalog.local_env.get()
+    assert 'client' == s._user_parameters['intake_test']
+
+    # prevents *client* from getting env
+    catalog = Catalog(intake_server, getenv=False)
+    s = catalog.local_env.get()
+    assert 'INTAKE_TEST' in s._user_parameters['intake_test']

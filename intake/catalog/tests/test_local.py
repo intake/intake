@@ -10,75 +10,11 @@ import pandas
 
 from .util import assert_items_equal
 from intake.catalog import Catalog, exceptions, local
+from intake.catalog.local import UserParameter
 
 
 def abspath(filename):
     return os.path.join(os.path.dirname(__file__), filename)
-
-
-def test_template_str():
-    template = 'foo {{ x }} baz'
-    ts = local.TemplateStr(template)
-
-    assert repr(ts) == 'TemplateStr(\'foo {{ x }} baz\')'
-    assert str(ts) == template
-    assert ts.expand(dict(x='bar')) == 'foo bar baz'
-    assert ts == local.TemplateStr(template)
-    assert ts != template
-    assert ts != local.TemplateStr('other')
-
-
-def test_expand_template_env_str():
-    template = 'foo {{ env("USER") }} baz'
-    ts = local.TemplateStr(template)
-    context = local.TemplateContext('')
-
-    assert repr(ts) == 'TemplateStr(\'foo {{ env("USER") }} baz\')'
-    assert str(ts) == template
-    assert ts.expand(context) == 'foo {} baz'.format(os.environ['USER'])
-    assert ts == local.TemplateStr(template)
-    assert ts != template
-    assert ts != local.TemplateStr('other')
-
-    context = local.TemplateContext('', env_access=False)
-    with pytest.raises(exceptions.EnvironmentPermissionDenied):
-        assert ts.expand(context) == 'foo {} baz'.format(os.environ['USER'])
-
-
-def test_expand_template_shell_str():
-    template = 'foo {{ shell("echo bar")[0] }} baz'
-    ts = local.TemplateStr(template)
-    context = local.TemplateContext('')
-
-    assert repr(ts) == 'TemplateStr(\'foo {{ shell("echo bar")[0] }} baz\')'
-    assert str(ts) == template
-    assert ts.expand(context) == 'foo bar baz'
-    assert ts == local.TemplateStr(template)
-    assert ts != template
-    assert ts != local.TemplateStr('other')
-
-    context = local.TemplateContext('', shell_access=False)
-    with pytest.raises(exceptions.ShellPermissionDenied):
-        assert ts.expand(context) == 'foo bar baz'
-
-
-EXAMPLE_YAML = '''
-taxi_data:
-  description: entry1
-  driver: csv
-  args: # passed to the open() method
-    urlpath: !template entry1_{{ x }}.csv
-    other: !template "entry2_{{ x }}.csv"
-'''
-
-
-def test_yaml_with_templates():
-    # Exercise round-trip
-    yaml = local.yaml_instance()
-    round_trip_yaml = yaml.dump(yaml.load(EXAMPLE_YAML))
-
-    assert "!template entry1_{{ x }}.csv" in round_trip_yaml
-    assert "!template entry2_{{ x }}.csv" in round_trip_yaml
 
 
 @pytest.fixture
@@ -88,7 +24,8 @@ def catalog1():
 
 
 def test_local_catalog(catalog1):
-    assert_items_equal(list(catalog1), ['use_example1', 'entry1', 'entry1_part'])
+    assert_items_equal(list(catalog1), ['use_example1', 'entry1', 'entry1_part',
+                                        'remote_env', 'local_env'])
     assert catalog1['entry1'].describe() == {
         'container': 'dataframe',
         'direct_access': 'forbid',
@@ -246,7 +183,7 @@ def test_user_parameter_validation_allowed():
 ])
 def test_parser_validation_error(filename):
     with pytest.raises(exceptions.ValidationError):
-        catalog = Catalog(abspath(filename + ".yml"))
+        Catalog(abspath(filename + ".yml"))
 
 
 @pytest.mark.parametrize("filename", [
@@ -255,7 +192,7 @@ def test_parser_validation_error(filename):
 ])
 def test_parser_obsolete_error(filename):
     with pytest.raises(exceptions.ObsoleteError):
-        catalog = Catalog(abspath(filename + ".yml"))
+        Catalog(abspath(filename + ".yml"))
 
 
 def test_union_catalog():
@@ -349,8 +286,43 @@ sources:
 def test_catalog_file_removal(temp_catalog_file):
     cat_dir = os.path.dirname(temp_catalog_file)
     cat = Catalog(cat_dir) 
-    assert set(cat) == set(['a', 'b'])
+    assert set(cat) == {'a', 'b'}
 
     os.remove(temp_catalog_file)
-    time.sleep(1.5) # wait for catalog refresh
+    time.sleep(1.5)  # wait for catalog refresh
     assert set(cat) == set()
+
+
+def test_default_expansions():
+    try:
+        os.environ['INTAKE_INT_TEST'] = '1'
+        par = UserParameter('', '', 'int', default='env(INTAKE_INT_TEST)')
+        par.expand_defaults()
+        assert par.default == 1
+    finally:
+        del os.environ['INTAKE_INT_TEST']
+
+    par = UserParameter('', '', 'str', default='env(USER)')
+    par.expand_defaults(getenv=False)
+    assert par.default == 'env(USER)'
+    par.expand_defaults()
+    assert par.default == os.getenv('USER', '')
+
+    par = UserParameter('', '', 'str', default='client_env(USER)')
+    par.expand_defaults()
+    assert par.default == 'client_env(USER)'
+    par.expand_defaults(client=True)
+    assert par.default == os.getenv('USER', '')
+
+    par = UserParameter('', '', 'str', default='shell(echo success)')
+    par.expand_defaults(getshell=False)
+    assert par.default == 'shell(echo success)'
+    par.expand_defaults()
+    assert par.default == 'success'
+
+    par = UserParameter('', '', 'str', default='client_shell(echo success)')
+    par.expand_defaults(client=True)
+    assert par.default == 'success'
+
+    par = UserParameter('', '', 'int', default=1)
+    par.expand_defaults()  # no error from string ops

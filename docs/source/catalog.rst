@@ -46,21 +46,11 @@ Intake catalogs are described with YAML files.  Here is an example:
 Templating
 ''''''''''
 
-Intake catalog files support special string types which are actually Jinja2 templates.  These are indicated with the YAML type syntax:
-
-- ``!template``: a template that yields a string
-- (TBD) ``!template_int``: a template that is cast to an integer (using the Python `int()` function) after template execution
-- (TBD) ``!template_datetime``: a template that is cast to a Python datetime object assuming it is an ISO 8601 timestamp
-
-Typically, templates are used to construct plugin arguments based on user-provided parameters in the context of a particular catalog entry.  There are also special Jinja2 variables functions that are automatically available in all template strings:
+Intake catalog files support Jinja2 templating for plugin arguments. Any occurrence of
+a substring like ``{{field}}`` will be replaced by the value of the user parameters with
+that same name. Some additional values are always available:
 
 - ``CATALOG_DIR``: The full path to the directory containing the YAML catalog file.  This is especially useful for constructing paths relative to the catalog directory to locate data files and custom plugins.
-- (TBD) ``env(ENV_VAR)``: Access an environment variable (useful for passing tokens that should not be hardcoded into the file)
-- (TBD) ``shell(CMD)``: Run a command in the shell each time the source is loaded from the catalog and return standard out.  If the command does not have a zero return code, then an exception will be raised, aborting the operation in progress.
-
-.. warning::
-
-    TBD: explain best practices to avoid file system and SQL injection attacks.
 
 
 Extra Plugins
@@ -73,7 +63,7 @@ In addition to using plugins already installed in the Python environment with co
     plugins:
       source:
         - module: intake.catalog.tests.example1_source
-        - dir: !template '{{ CATALOG_DIR }}/example_plugin_dir'
+        - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
     sources:
       ...
 
@@ -122,6 +112,28 @@ Also the ``datetime`` type accepts multiple values:
 * an integer representing a Unix timestamp
 * ``now``, a string representing the current timestamp
 * ``today``, a string representing today at midnight UTC
+
+The ``default`` field allows for special syntax to get information from the system. This is
+particularly useful for user credentials, which may be defined by environment variables or
+fetched by running some external command. The special syntax are:
+
+- ``env(USER)``: look in the environment for the named variable; in the example, this will
+  be the username.
+- ``client_env(USER)``: exactly the same, except that when using a client-server topology, the
+  value will come from the environment of the client.
+- ``shell(get_login thisuser -t)``: execute the command, and use the output as the value. The
+  output will be trimmed of any trailing whitespace.
+- ``shell(get_login thisuser -t)``: exactly the same, except that when using a client-server
+  topology, the value will come from the system of the client.
+
+Since it may not be desirable to have the access of
+a catalog get information from the system, the keywords ``getenv`` and ``getshell`` (passed to
+``Catalog``) allow these
+mechanisms to by turned off, in which case the value of the default will still appear as the
+original template string (and so the user should override with a value they have obtained
+elsewhere). Note that in the case of a remote catalog, the client cannot see the values that
+will be evaluated on the server side, the evaluation only happens if the user did not override
+the value when accessing the data.
 
 Local Catalogs
 --------------
