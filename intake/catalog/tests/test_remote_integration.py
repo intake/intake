@@ -67,22 +67,21 @@ def test_read(intake_server):
 
     d = catalog['entry1'].get()
 
-    info = d.discover()
-
-    assert info == {
-        'datashape': None,
-        'dtype': np.dtype([('name', 'O'), ('score', '<f8'), ('rank', '<i8')]),
-        'npartitions': 2,
-        'shape': (None,)  # Do not know CSV size ahead of time
-    }
-
-    assert d.metadata == dict(foo='bar', bar=[1, 2, 3])
-
-    df = d.read()
     test_dir = os.path.dirname(__file__)
     file1 = os.path.join(test_dir, 'entry1_1.csv')
     file2 = os.path.join(test_dir, 'entry1_2.csv')
     expected_df = pd.concat((pd.read_csv(file1), pd.read_csv(file2)))
+    meta = expected_df[:0]
+
+    info = d.discover()
+    assert info['datashape'] is None
+    assert info['dtype'].equals(meta)
+    assert info['npartitions'] == 2
+    assert info['shape'] == (None, 3)  # Do not know CSV size ahead of time
+
+    assert d.metadata == dict(foo='bar', bar=[1, 2, 3])
+
+    df = d.read()
 
     assert not d.direct  # this should be proxied
 
@@ -93,23 +92,22 @@ def test_read_direct(intake_server):
     catalog = Catalog(intake_server)
 
     d = catalog['entry1_part'].get(part='2')
+    test_dir = os.path.dirname(__file__)
+    file2 = os.path.join(test_dir, 'entry1_2.csv')
+    expected_df = pd.read_csv(file2)
+    meta = expected_df[:0]
 
     info = d.discover()
 
-    assert info == {
-        'datashape': None,
-        'dtype': np.dtype([('name', 'O'), ('score', '<f8'), ('rank', '<i8')]),
-        'npartitions': 1,
-        'shape': (None,), # do not know size of CSV ahead of time
-        'metadata': {'bar': [2, 4, 6], 'foo': 'baz'}
-    }
+    assert info['datashape'] is None
+    assert info['dtype'].equals(meta)
+    assert info['npartitions'] == 1
+    assert info['shape'] == (None, 3)  # Do not know CSV size ahead of time
+    assert info['metadata'] == {'bar': [2, 4, 6], 'foo': 'baz'}
 
     assert d.metadata == dict(foo='baz', bar=[2, 4, 6])
     assert d.description == 'entry1 part'
     df = d.read()
-    test_dir = os.path.dirname(__file__)
-    file2 = os.path.join(test_dir, 'entry1_2.csv')
-    expected_df = pd.read_csv(file2)
 
     assert d.direct  # this should be direct
 
