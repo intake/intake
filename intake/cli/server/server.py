@@ -148,7 +148,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
 
                 response = dict(
                     datashape=source.datashape,
-                    dtype=pickle.dumps(source.dtype),
+                    dtype=pickle.dumps(source.dtype, 2),
                     shape=source.shape, container=source.container,
                     metadata=source.metadata, npartitions=source.npartitions,
                     source_id=source_id)
