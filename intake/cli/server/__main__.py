@@ -8,6 +8,7 @@ import tornado.ioloop
 import tornado.web
 
 from .server import IntakeServer
+from .config import conf
 from intake.catalog import Catalog
 
 
@@ -20,7 +21,7 @@ def main(argv=None):
         argv = sys.argv
 
     parser = argparse.ArgumentParser(description='Intake Catalog Server')
-    parser.add_argument('-p', '--port', type=int, default=5000,
+    parser.add_argument('-p', '--port', type=int, default=conf['port'],
                         help='port number for server to listen on')
     parser.add_argument('--sys-exit-on-sigterm', action='store_true',
                         help='internal flag used during unit testing to ensure .coverage file is written')
