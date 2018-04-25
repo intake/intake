@@ -17,7 +17,7 @@ class SecretAuth(BasicAuth):
 
     def __init__(self, secret=None, key='intake-secret'):
         if secret is None:
-            secret = uuid.uuid1().bytes.decode()
+            secret = uuid.uuid1().hex
         self.secret = secret
         self.key = key
 
