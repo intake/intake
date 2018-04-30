@@ -163,5 +163,15 @@ class DataSource(object):
 
     @property
     def plot(self):
-        from ..plotting import HoloViewsDataSourcePlot
-        return HoloViewsDataSourcePlot(self)
+        """
+        Returns a HoloPlot object to provide a high-level plotting API.
+        """
+        try:
+            from holoplot import HoloPlot
+        except ImportError:
+            raise ImportError("The intake plotting API requires holoplot."
+                              "holoplot may be installed with:\n\n"
+                              "``conda install -c pyviz holoplot``")
+        metadata = self.metadata.get('plot', {})
+        metadata['fields'] = self.metadata.get('fields', {})
+        return HoloPlot(self, **metadata)
