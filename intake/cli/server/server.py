@@ -20,12 +20,16 @@ class IntakeServer(object):
         self._catalog = catalog
         self._cache = SourceCache()
         self._periodic_callbacks = []
+        auth = conf.get('auth', 'intake.auth.base.BasicAuthPlugin')
+        self._auth = get_auth_class(auth['class'], *auth.get('args', tuple()),
+                                    **auth.get('kwargs', {}))
 
     def get_handlers(self):
         return [
-            (r"/v1/info", ServerInfoHandler, dict(catalog=self._catalog)),
-            (r"/v1/source", ServerSourceHandler, dict(catalog=self._catalog,
-                                                      cache=self._cache)),
+            (r"/v1/info", ServerInfoHandler,
+             dict(catalog=self._catalog, auth=self._auth)),
+            (r"/v1/source", ServerSourceHandler,
+             dict(catalog=self._catalog, cache=self._cache, auth=self._auth)),
         ]
 
     def make_app(self):
@@ -68,11 +72,9 @@ class IntakeServer(object):
 
 
 class ServerInfoHandler(tornado.web.RequestHandler):
-    def initialize(self, catalog):
+    def initialize(self, catalog, auth):
         self.catalog = catalog
-        auth = conf.get('auth', 'intake.auth.base.BasicAuth')
-        self.auth = get_auth_class(auth['class'], *auth.get('args', tuple()),
-                                   **auth.get('kwargs', {}))
+        self.auth = auth
 
     def get(self):
         head = self.request.headers
@@ -86,7 +88,9 @@ class ServerInfoHandler(tornado.web.RequestHandler):
 
             server_info = dict(version='0.0.1', sources=sources)
         else:
-            server_info = dict(version='0.0.1', sources=[])
+            msg = 'Access forbidden'
+            raise tornado.web.HTTPError(status_code=403, log_message=msg,
+                                        reason=msg)
         self.write(msgpack.packb(server_info, use_bin_type=True))
 
 
@@ -129,12 +133,10 @@ class SourceCache(object):
 
 
 class ServerSourceHandler(tornado.web.RequestHandler):
-    def initialize(self, catalog, cache):
+    def initialize(self, catalog, cache, auth):
         self._catalog = catalog
         self._cache = cache
-        auth = conf.get('auth', 'intake.auth.base.BasicAuth')
-        self.auth = get_auth_class(auth['class'], *auth.get('args', tuple()),
-                                   **auth.get('kwargs', {}))
+        self.auth = auth
 
     @tornado.gen.coroutine
     def post(self):

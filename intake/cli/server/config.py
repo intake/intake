@@ -4,11 +4,18 @@ import yaml
 
 confdir = os.getenv('INTAKE_CONF_DIR',
                     os.path.join(os.path.expanduser('~'), '.intake'))
+conffile = os.getenv('INTAKE_CONF_FILE', None)
 
 
-defaults = {'auth': {'class': 'intake.auth.base.BasicAuth'},
+defaults = {'auth': {'class': 'intake.auth.base.BasicAuthPlugin'},
             'port': 5000}
-conf = defaults.copy()
+conf = {}
+
+
+def reset_conf():
+    """Set conf values back to defaults"""
+    conf.clear()
+    conf.update(defaults)
 
 
 def load_conf(fn=None):
@@ -24,4 +31,5 @@ def load_conf(fn=None):
             conf.update(yaml.load(f))
 
 
-load_conf()
+reset_conf()
+load_conf(conffile)
