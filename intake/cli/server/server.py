@@ -4,7 +4,7 @@ import time
 from uuid import uuid4
 
 import msgpack
-import numpy
+import pickle
 import tornado.gen
 import tornado.ioloop
 import tornado.web
@@ -101,7 +101,8 @@ class SourceCache(object):
     def add(self, source):
         source_id = str(uuid4())
         now = time.time()
-        self._sources[source_id] = dict(source=source, open_time=now, last_time=now)
+        self._sources[source_id] = dict(source=source, open_time=now,
+                                        last_time=now)
         return source_id
 
     def get(self, uuid):
@@ -110,7 +111,7 @@ class SourceCache(object):
         return record['source']
 
     def peek(self, uuid):
-        '''Get the source but do not change the last access time'''
+        """Get the source but do not change the last access time"""
         return self._sources[uuid]['source']
 
     def touch(self, uuid):
@@ -127,7 +128,7 @@ class SourceCache(object):
     def remove_idle(self, idle_secs):
         threshold = time.time() - idle_secs
 
-        for uuid, record in self._sources.items():
+        for uuid, record in self._sources.items().copy():
             if record['last_time'] < threshold:
                 del self._sources[uuid]
 
@@ -167,8 +168,8 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 source_id = self._cache.add(source)
 
                 response = dict(
-                    datashape=source.datashape, dtype=numpy.dtype(
-                        source.dtype).descr,
+                    datashape=source.datashape,
+                    dtype=pickle.dumps(source.dtype, 2),
                     shape=source.shape, container=source.container,
                     metadata=source.metadata, npartitions=source.npartitions,
                     source_id=source_id)
@@ -243,7 +244,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         error_exception = kwargs.get('exc_info', None)
         if error_exception is not None:
             print(error_exception)
-            msg = dict(error=error_exception[1].reason)
+            msg = dict(error=str(error_exception[1]))
         else:
             msg = dict(error='unknown error')
         self.write(msgpack.packb(msg, use_bin_type=True))

@@ -48,11 +48,10 @@ def test_open(data_filenames):
 def test_discover(sample1_datasource):
     info = sample1_datasource.discover()
 
-    assert info['dtype'] == np.dtype([('name', 'O'),
-                                      ('score', 'f8'),
-                                      ('rank', 'i8')])
+    assert info['dtype'].dtypes.to_dict() == {'name': 'O', 'score': 'f8',
+                                              'rank': 'i8'}
     # Do not know length without parsing CSV
-    assert info['shape'] == (None,)
+    assert info['shape'] == (None, 3)
     assert info['npartitions'] == 1
 
 

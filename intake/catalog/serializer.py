@@ -81,7 +81,7 @@ class ComboSerializer(object):
 
 
 # Insert in preference order
-picklers = [PickleSerializer(protocol) for protocol in range(pickle.HIGHEST_PROTOCOL + 1)]
+picklers = [PickleSerializer(protocol) for protocol in [2, 1]]
 serializers = [MsgPackSerializer()] + picklers
 format_registry = OrderedDict([(e.name, e) for e in serializers])
 

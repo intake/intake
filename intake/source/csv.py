@@ -1,6 +1,4 @@
 import dask.dataframe
-import numpy as np
-
 from . import base
 
 
@@ -56,12 +54,10 @@ class CSVSource(base.DataSource):
                 self._urlpath, storage_options=self._storage_options,
                 **self._csv_kwargs)
 
-        dtypes = self._dataframe.dtypes
+        dtypes = self._dataframe._meta
         return base.Schema(datashape=None,
-                           dtype=np.dtype(list(zip(dtypes.index, dtypes))),
-                           # Shape not known without parsing all the files,
-                           # so leave it as 1D unknown
-                           shape=(None,),
+                           dtype=dtypes,
+                           shape=(None, len(dtypes.columns)),
                            npartitions=self._dataframe.npartitions,
                            extra_metadata={})
 
