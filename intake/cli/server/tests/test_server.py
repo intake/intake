@@ -66,7 +66,8 @@ class TestServerV1Info(TestServerV1Base):
         def sort_by_name(seq):
             return sorted(seq, key=lambda d: d['name'])
 
-        for left, right in zip(sort_by_name(info['sources']), sort_by_name(expected)):
+        for left, right in zip(sort_by_name(info['sources']),
+                               sort_by_name(expected)):
             self.assertDictEqual(left, right)
 
 
@@ -74,7 +75,8 @@ class TestServerV1Source(TestServerV1Base):
     def make_post_request(self, msg, expected_status=200):
         request = self.encode(msg)
         response = self.fetch('/v1/source', method='POST', body=request,
-                              headers={'Content-type': 'application/vnd.msgpack'})
+                              headers={'Content-type':
+                                       'application/vnd.msgpack'})
         self.assertEqual(response.code, expected_status)
 
         responses = []
@@ -87,13 +89,14 @@ class TestServerV1Source(TestServerV1Base):
         return responses
 
     def test_open(self):
+        import pickle
         msg = dict(action='open', name='entry1', parameters={})
         resp_msg, = self.make_post_request(msg)
 
         self.assertEqual(resp_msg['container'], 'dataframe')
-        self.assertEqual(resp_msg['shape'], [None])
-        expected_dtype = np.dtype([('name', 'O'), ('score', 'f8'), ('rank', 'i8')])
-        actual_dtype = np.dtype([tuple(x) for x in resp_msg['dtype']])
+        self.assertEqual(resp_msg['shape'], [None, 3])
+        expected_dtype = {'name': 'O', 'score': 'f8', 'rank': 'i8'}
+        actual_dtype = pickle.loads(resp_msg['dtype']).dtypes.to_dict()
         self.assertEqual(expected_dtype, actual_dtype)
         self.assertEqual(resp_msg['npartitions'], 2)
         self.assertEqual(resp_msg['metadata'], dict(foo='bar', bar=[1, 2, 3]))
@@ -101,7 +104,8 @@ class TestServerV1Source(TestServerV1Base):
         self.assert_(isinstance(resp_msg['source_id'], str))
 
     def test_open_direct(self):
-        msg = dict(action='open', name='entry1_part', parameters=dict(part='2'), available_plugins=['csv'])
+        msg = dict(action='open', name='entry1_part', parameters=dict(part='2'),
+                   available_plugins=['csv'])
         resp_msg, = self.make_post_request(msg)
 
         self.assertEqual(resp_msg['plugin'], 'csv')
@@ -116,7 +120,8 @@ class TestServerV1Source(TestServerV1Base):
         resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
-        msg2 = dict(action='read', source_id=source_id, accepted_formats=['msgpack'])
+        msg2 = dict(action='read', source_id=source_id,
+                    accepted_formats=['msgpack'])
         resp_msgs = self.make_post_request(msg2)
 
         self.assertEqual(len(resp_msgs), 2)
@@ -135,7 +140,8 @@ class TestServerV1Source(TestServerV1Base):
         resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
-        msg2 = dict(action='read', source_id=source_id, accepted_formats=['msgpack'], accepted_compression=['gzip'])
+        msg2 = dict(action='read', source_id=source_id,
+                    accepted_formats=['msgpack'], accepted_compression=['gzip'])
         resp_msgs = self.make_post_request(msg2)
 
         self.assertEqual(len(resp_msgs), 2)
@@ -147,7 +153,8 @@ class TestServerV1Source(TestServerV1Base):
             self.assertEqual(chunk['compression'], 'gzip')
             self.assertEqual(chunk['container'], 'dataframe')
 
-            data = ser.decode(comp.decompress(chunk['data']), container='dataframe')
+            data = ser.decode(comp.decompress(chunk['data']),
+                              container='dataframe')
             self.assertEqual(len(data), 4)
 
     def test_read_partition(self):
@@ -155,7 +162,8 @@ class TestServerV1Source(TestServerV1Base):
         resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
-        msg2 = dict(action='read', partition=1, source_id=source_id, accepted_formats=['msgpack'])
+        msg2 = dict(action='read', partition=1, source_id=source_id,
+                    accepted_formats=['msgpack'])
         resp_msgs = self.make_post_request(msg2)
 
         self.assertEqual(len(resp_msgs), 1)
@@ -179,18 +187,21 @@ class TestServerV1Source(TestServerV1Base):
         resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
-        msg2 = dict(action='read', source_id=source_id, accepted_formats=['unknown_format'])
+        msg2 = dict(action='read', source_id=source_id,
+                    accepted_formats=['unknown_format'])
         response, = self.make_post_request(msg2, expected_status=400)
         self.assertIn('compatible', response['error'])
 
     def test_idle_timer(self):
-        self.server.start_periodic_functions(close_idle_after=0.1, remove_idle_after=0.2)
+        self.server.start_periodic_functions(close_idle_after=0.1,
+                                             remove_idle_after=0.2)
 
         msg = dict(action='open', name='entry1', parameters={})
         resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
-        # Let ioloop run once with do-nothing function to make sure source isn't closed
+        # Let ioloop run once with do-nothing function to make sure source
+        # isn't closed
         time.sleep(0.05)
         IOLoop.current().run_sync(lambda: None)
 
@@ -198,7 +209,8 @@ class TestServerV1Source(TestServerV1Base):
         source = self.server._cache.peek(source_id)
         assert source._dataframe is not None
 
-        # now wait slightly over idle time, run periodic functions, and check again
+        # now wait slightly over idle time, run periodic functions,
+        # and check again
         time.sleep(0.06)
         IOLoop.current().run_sync(lambda: None)
 

@@ -4,7 +4,7 @@ import time
 from uuid import uuid4
 
 import msgpack
-import numpy
+import pickle
 import tornado.gen
 import tornado.ioloop
 import tornado.web
@@ -22,14 +22,16 @@ class IntakeServer(object):
     def get_handlers(self):
         return [
             (r"/v1/info", ServerInfoHandler, dict(catalog=self._catalog)),
-            (r"/v1/source", ServerSourceHandler, dict(catalog=self._catalog, cache=self._cache)),
+            (r"/v1/source", ServerSourceHandler, dict(catalog=self._catalog,
+                                                      cache=self._cache)),
         ]
 
     def make_app(self):
         handlers = get_browser_handlers(self._catalog) + self.get_handlers()
         return tornado.web.Application(handlers)
 
-    def start_periodic_functions(self, close_idle_after=None, remove_idle_after=None):
+    def start_periodic_functions(self, close_idle_after=None,
+                                 remove_idle_after=None):
         if len(self._periodic_callbacks) > 0:
             raise Exception('Periodic functions already started for this server')
 
@@ -84,7 +86,8 @@ class SourceCache(object):
     def add(self, source):
         source_id = str(uuid4())
         now = time.time()
-        self._sources[source_id] = dict(source=source, open_time=now, last_time=now)
+        self._sources[source_id] = dict(source=source, open_time=now,
+                                        last_time=now)
         return source_id
 
     def get(self, uuid):
@@ -93,7 +96,7 @@ class SourceCache(object):
         return record['source']
 
     def peek(self, uuid):
-        '''Get the source but do not change the last access time'''
+        """Get the source but do not change the last access time"""
         return self._sources[uuid]['source']
 
     def touch(self, uuid):
@@ -131,7 +134,8 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             client_plugins = request.get('available_plugins', [])
 
             # Can the client directly access the data themselves?
-            open_desc = self._catalog[entry_name].describe_open(**user_parameters)
+            open_desc = self._catalog[entry_name].describe_open(
+                **user_parameters)
             direct_access = open_desc['direct_access']
             plugin_name = open_desc['plugin']
             client_has_plugin = plugin_name in client_plugins
@@ -143,15 +147,18 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 source_id = self._cache.add(source)
 
                 response = dict(
-                    datashape=source.datashape, dtype=numpy.dtype(source.dtype).descr,
+                    datashape=source.datashape,
+                    dtype=pickle.dumps(source.dtype, 2),
                     shape=source.shape, container=source.container,
                     metadata=source.metadata, npartitions=source.npartitions,
                     source_id=source_id)
                 self.write(msgpack.packb(response, use_bin_type=True))
                 self.finish()
             elif direct_access == 'force' and not client_has_plugin:
-                msg = 'client must have plugin "%s" to access source "%s"' % (plugin_name, entry_name)
-                raise tornado.web.HTTPError(status_code=400, log_message=msg, reason=msg)
+                msg = 'client must have plugin "%s" to access source "%s"' \
+                      '' % (plugin_name, entry_name)
+                raise tornado.web.HTTPError(status_code=400, log_message=msg,
+                                            reason=msg)
             else:
                 # If we get here, the client can access the source directly
                 response = dict(
@@ -190,7 +197,8 @@ class ServerSourceHandler(tornado.web.RequestHandler):
 
         else:
             msg = '"%s" not a valid source action' % action
-            raise tornado.web.HTTPError(status_code=400, log_message=msg, reason=msg)
+            raise tornado.web.HTTPError(status_code=400, log_message=msg,
+                                        reason=msg)
 
     def _pick_encoder(self, accepted_formats, accepted_compression, container):
         format_encoder = None
@@ -201,7 +209,8 @@ class ServerSourceHandler(tornado.web.RequestHandler):
 
         if format_encoder is None:
             msg = 'Unable to find compatible format'
-            raise tornado.web.HTTPError(status_code=400, log_message=msg, reason=msg)
+            raise tornado.web.HTTPError(status_code=400, log_message=msg,
+                                        reason=msg)
 
         compressor = serializer.NoneCompressor()  # Default
         for f in accepted_compression:
@@ -214,7 +223,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         error_exception = kwargs.get('exc_info', None)
         if error_exception is not None:
             print(error_exception)
-            msg = dict(error=error_exception[1].reason)
+            msg = dict(error=str(error_exception[1]))
         else:
             msg = dict(error='unknown error')
         self.write(msgpack.packb(msg, use_bin_type=True))

@@ -28,8 +28,22 @@ class Plugin(object):
         return base_kwargs, kwargs
 
 
-Schema = namedtuple('Schema', ['datashape', 'dtype', 'shape',
-                               'npartitions', 'extra_metadata'])
+class Schema(object):
+    """Holds details of data description for any type of data-source"""
+    def __init__(self, datashape=None, dtype=None, shape=None, npartitions=None,
+                 extra_metadata=None):
+        self.datashape = datashape
+        self.dtype = dtype
+        self.shape = shape
+        self.npartitions = npartitions
+        self.extra_metadata = extra_metadata
+
+    def __repr__(self):
+        return ("<Schema instance>\n"
+                "dtype: {}\n"
+                "shape: {}\n"
+                "metadata: {}"
+                "".format(self.dtype, self.shape, self.extra_metadata))
 
 
 class DataSource(object):

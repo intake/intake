@@ -1,5 +1,6 @@
 import msgpack
 import numpy
+import pickle
 import requests
 import six
 
@@ -91,6 +92,8 @@ class RemoteDataSource(DataSource):
     def _copy_attributes(self):
         for attr in ['datashape', 'dtype', 'shape', 'npartitions', 'metadata']:
             setattr(self, attr, getattr(self._real_source, attr))
+        if isinstance(self.dtype, bytes):
+            self.dtype = pickle.loads(self.dtype)
 
     def discover(self):
         self._open_source()
@@ -172,7 +175,10 @@ class RemoteDataSourceProxied(DataSource):
         if isinstance(dtype_descr, list):
             # Reformat because NumPy needs list of tuples
             dtype_descr = [tuple(x) for x in response['dtype']]
-        self.dtype = numpy.dtype(dtype_descr)
+        if isinstance(dtype_descr, bytes):
+            self.dtype = pickle.loads(dtype_descr)
+        else:
+            self.dtype = numpy.dtype(dtype_descr)
         self.shape = tuple(response['shape'])
         self.npartitions = response['npartitions']
         self.metadata = response['metadata']
