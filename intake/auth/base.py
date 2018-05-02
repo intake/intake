@@ -1,6 +1,6 @@
 
 
-class BasicAuthPlugin(object):
+class BaseAuth(object):
     """Base class for authorization
 
     This basic class allows all access.

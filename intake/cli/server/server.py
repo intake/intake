@@ -20,7 +20,7 @@ class IntakeServer(object):
         self._catalog = catalog
         self._cache = SourceCache()
         self._periodic_callbacks = []
-        auth = conf.get('auth', 'intake.auth.base.BasicAuthPlugin')
+        auth = conf.get('auth', 'intake.auth.base.BaseAuth')
         self._auth = get_auth_class(auth['class'], *auth.get('args', tuple()),
                                     **auth.get('kwargs', {}))
 

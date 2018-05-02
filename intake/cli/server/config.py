@@ -7,7 +7,7 @@ confdir = os.getenv('INTAKE_CONF_DIR',
 conffile = os.getenv('INTAKE_CONF_FILE', None)
 
 
-defaults = {'auth': {'class': 'intake.auth.base.BasicAuthPlugin'},
+defaults = {'auth': {'class': 'intake.auth.base.BaseAuth'},
             'port': 5000}
 conf = {}
 

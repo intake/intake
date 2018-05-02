@@ -1,18 +1,18 @@
 
-from intake.auth.base import BasicAuthPlugin
+from intake.auth.base import BaseAuth
 from intake.auth.secret import SecretAuth
 from intake.auth import get_auth_class
 
 
 def test_get():
-    auth = get_auth_class('intake.auth.base.BasicAuthPlugin')
-    assert isinstance(auth, BasicAuthPlugin)
+    auth = get_auth_class('intake.auth.base.BaseAuth')
+    assert isinstance(auth, BaseAuth)
     auth= get_auth_class('intake.auth.secret.SecretAuth')
     assert isinstance(auth, SecretAuth)
 
 
 def test_basic():
-    auth = BasicAuthPlugin()
+    auth = BaseAuth()
     assert auth.allow_connect(None)
     assert auth.allow_access(None, None)
 

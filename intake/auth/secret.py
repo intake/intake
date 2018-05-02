@@ -1,11 +1,11 @@
 import logging
-from .base import BasicAuthPlugin
+from .base import BaseAuth
 import uuid
 
 logger = logging.getLogger('intake')
 
 
-class SecretAuth(BasicAuthPlugin):
+class SecretAuth(BaseAuth):
     """A very simple auth mechanism using a shared secret
 
     Parameters
