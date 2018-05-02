@@ -2,14 +2,16 @@ import os.path
 import subprocess
 import tempfile
 import shutil
+import sys
 
 import pytest
 
+from intake.util_tests import ex
 TEST_CATALOG_YAML = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
 
 def test_list():
-    cmd = ['python', '-m', 'intake.cli.client', 'list', TEST_CATALOG_YAML]
+    cmd = [ex, '-m', 'intake.cli.client', 'list', TEST_CATALOG_YAML]
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     out, _ = process.communicate()
     out = out.decode('utf-8')
@@ -21,7 +23,7 @@ def test_list():
 
 
 def test_full_list():
-    cmd = ['python', '-m', 'intake.cli.client', 'list', '--full', TEST_CATALOG_YAML]
+    cmd = [ex, '-m', 'intake.cli.client', 'list', '--full', TEST_CATALOG_YAML]
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     out, _ = process.communicate()
     out = out.decode('utf-8')
@@ -33,7 +35,8 @@ def test_full_list():
 
 
 def test_describe():
-    cmd = ['python', '-m', 'intake.cli.client', 'describe', TEST_CATALOG_YAML, 'entry1']
+    cmd = [ex, '-m', 'intake.cli.client', 'describe', TEST_CATALOG_YAML,
+           'entry1']
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     out, _ = process.communicate()
 
@@ -48,7 +51,7 @@ def test_describe():
 
 
 def test_exists_pass():
-    cmd = ['python', '-m', 'intake.cli.client', 'exists', TEST_CATALOG_YAML, 'entry1']
+    cmd = [ex, '-m', 'intake.cli.client', 'exists', TEST_CATALOG_YAML, 'entry1']
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     out, _ = process.communicate()
 
@@ -56,7 +59,7 @@ def test_exists_pass():
 
 
 def test_exists_fail():
-    cmd = ['python', '-m', 'intake.cli.client', 'exists', TEST_CATALOG_YAML, 'entry2']
+    cmd = [ex, '-m', 'intake.cli.client', 'exists', TEST_CATALOG_YAML, 'entry2']
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     out, _ = process.communicate()
 
@@ -64,7 +67,8 @@ def test_exists_fail():
 
 
 def test_discover():
-    cmd = ['python', '-m', 'intake.cli.client', 'discover', TEST_CATALOG_YAML, 'entry1']
+    cmd = [ex, '-m', 'intake.cli.client', 'discover', TEST_CATALOG_YAML,
+           'entry1']
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     out, _ = process.communicate()
     out = out.decode('utf-8')
@@ -77,7 +81,7 @@ def test_discover():
 
 
 def test_get_pass():
-    cmd = ['python', '-m', 'intake.cli.client', 'get', TEST_CATALOG_YAML, 'entry1']
+    cmd = [ex, '-m', 'intake.cli.client', 'get', TEST_CATALOG_YAML, 'entry1']
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     out, _ = process.communicate()
 
@@ -97,8 +101,9 @@ def test_get_pass():
 
 
 def test_get_fail():
-    cmd = ['python', '-m', 'intake.cli.client', 'get', TEST_CATALOG_YAML, 'entry2']
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = [ex, '-m', 'intake.cli.client', 'get', TEST_CATALOG_YAML, 'entry2']
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
     _, err = process.communicate()
 
     assert "KeyError: 'entry2'" in err.decode('utf-8')
@@ -116,8 +121,9 @@ def temp_current_working_directory():
 
 
 def test_example(temp_current_working_directory):
-    cmd = ['python', '-m', 'intake.cli.client', 'example']
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = [ex, '-m', 'intake.cli.client', 'example']
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
 
     assert process.returncode == 0
@@ -126,8 +132,9 @@ def test_example(temp_current_working_directory):
     assert os.path.exists('states_2.csv')
     
     # should fail second time due to existing files
-    cmd = ['python', '-m', 'intake.cli.client', 'example']
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = [ex, '-m', 'intake.cli.client', 'example']
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
     _, err = process.communicate()
 
     assert process.returncode > 0

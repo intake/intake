@@ -10,7 +10,9 @@ import tornado.ioloop
 import tornado.web
 
 from .browser import get_browser_handlers
+from .config import conf
 from intake.catalog import serializer
+from intake.auth import get_auth_class
 
 
 class IntakeServer(object):
@@ -18,12 +20,16 @@ class IntakeServer(object):
         self._catalog = catalog
         self._cache = SourceCache()
         self._periodic_callbacks = []
+        auth = conf.get('auth', 'intake.auth.base.BaseAuth')
+        self._auth = get_auth_class(auth['class'], *auth.get('args', tuple()),
+                                    **auth.get('kwargs', {}))
 
     def get_handlers(self):
         return [
-            (r"/v1/info", ServerInfoHandler, dict(catalog=self._catalog)),
-            (r"/v1/source", ServerSourceHandler, dict(catalog=self._catalog,
-                                                      cache=self._cache)),
+            (r"/v1/info", ServerInfoHandler,
+             dict(catalog=self._catalog, auth=self._auth)),
+            (r"/v1/source", ServerSourceHandler,
+             dict(catalog=self._catalog, cache=self._cache, auth=self._auth)),
         ]
 
     def make_app(self):
@@ -33,7 +39,8 @@ class IntakeServer(object):
     def start_periodic_functions(self, close_idle_after=None,
                                  remove_idle_after=None):
         if len(self._periodic_callbacks) > 0:
-            raise Exception('Periodic functions already started for this server')
+            raise Exception('Periodic functions already started '
+                            'for this server')
 
         # Disabling periodic timers with None makes testing easier
         if close_idle_after is not None:
@@ -65,17 +72,25 @@ class IntakeServer(object):
 
 
 class ServerInfoHandler(tornado.web.RequestHandler):
-    def initialize(self, catalog):
+    def initialize(self, catalog, auth):
         self.catalog = catalog
+        self.auth = auth
 
     def get(self):
-        sources = []
-        for _, name, source in self.catalog.walk():
-            info = source.describe()
-            info['name'] = name
-            sources.append(info)
+        head = self.request.headers
+        if self.auth.allow_connect(head):
+            sources = []
+            for _, name, source in self.catalog.walk():
+                if self.auth.allow_access(head, source):
+                    info = source.describe()
+                    info['name'] = name
+                    sources.append(info)
 
-        server_info = dict(version='0.0.1', sources=sources)
+            server_info = dict(version='0.0.1', sources=sources)
+        else:
+            msg = 'Access forbidden'
+            raise tornado.web.HTTPError(status_code=403, log_message=msg,
+                                        reason=msg)
         self.write(msgpack.packb(server_info, use_bin_type=True))
 
 
@@ -113,36 +128,42 @@ class SourceCache(object):
     def remove_idle(self, idle_secs):
         threshold = time.time() - idle_secs
 
-        for uuid, record in self._sources.items():
+        for uuid, record in self._sources.items().copy():
             if record['last_time'] < threshold:
                 del self._sources[uuid]
 
 
 class ServerSourceHandler(tornado.web.RequestHandler):
-    def initialize(self, catalog, cache):
+    def initialize(self, catalog, cache, auth):
         self._catalog = catalog
         self._cache = cache
+        self.auth = auth
 
     @tornado.gen.coroutine
     def post(self):
         request = msgpack.unpackb(self.request.body, encoding='utf-8')
         action = request['action']
+        head = self.request.headers
 
         if action == 'open':
             entry_name = request['name']
+            entry = self._catalog[entry_name]
+            if not self.auth.allow_access(head, entry):
+                msg = 'Access forbidden'
+                raise tornado.web.HTTPError(status_code=403, log_message=msg,
+                                            reason=msg)
             user_parameters = request['parameters']
             client_plugins = request.get('available_plugins', [])
 
             # Can the client directly access the data themselves?
-            open_desc = self._catalog[entry_name].describe_open(
-                **user_parameters)
+            open_desc = entry.describe_open(**user_parameters)
             direct_access = open_desc['direct_access']
             plugin_name = open_desc['plugin']
             client_has_plugin = plugin_name in client_plugins
 
             if direct_access == 'forbid' or \
                     (direct_access == 'allow' and not client_has_plugin):
-                source = self._catalog[entry_name].get(**user_parameters)
+                source = entry.get(**user_parameters)
                 source.discover()
                 source_id = self._cache.add(source)
 

@@ -5,6 +5,8 @@ import time
 import pytest
 import requests
 
+from intake.util_tests import ex
+
 
 MIN_PORT = 7480
 MAX_PORT = 7489
@@ -41,7 +43,8 @@ def intake_server(request):
 
     # Start a catalog server on nonstandard port
     port = pick_port()
-    cmd = ['python', '-m', 'intake.cli.server', '--sys-exit-on-sigterm', '--port', str(port)]
+    cmd = [ex, '-m', 'intake.cli.server', '--sys-exit-on-sigterm',
+           '--port', str(port)]
     if isinstance(catalog_path, list):
         cmd.extend(catalog_path)
     else:
@@ -50,15 +53,18 @@ def intake_server(request):
     env = dict(os.environ)
     env['INTAKE_TEST'] = 'server'
 
-    p = subprocess.Popen(cmd, env=env)
-    url = 'http://localhost:%d' % (port,)
+    try:
+        p = subprocess.Popen(cmd, env=env)
+        url = 'http://localhost:%d' % (port,)
 
-    # wait for server to finish initalizing, but let the exception through on last retry
-    retries = 100
-    while not ping_server(url, swallow_exception=(retries > 1)):
-        time.sleep(0.1)
-        retries -= 1
+        # wait for server to finish initalizing, but let the exception through
+        # on last retry
+        retries = 500
+        while not ping_server(url, swallow_exception=(retries > 1)):
+            time.sleep(0.1)
+            retries -= 1
 
-    yield url
-    p.terminate()
-    p.wait()
+        yield url
+    finally:
+        p.terminate()
+        p.wait()
