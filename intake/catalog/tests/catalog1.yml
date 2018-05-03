@@ -1,3 +1,5 @@
+metadata:
+  test: true
 plugins:
   source:
     - module: intake.catalog.tests.example1_source

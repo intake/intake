@@ -462,7 +462,9 @@ class CatalogParser(object):
 
         return dict(
             plugin_sources=self._parse_plugins(data),
-            data_sources=self._parse_data_sources(data))
+            data_sources=self._parse_data_sources(data),
+            metadata=data.get('metadata', {})
+        )
 
 
 class CatalogConfig(object):
@@ -511,6 +513,8 @@ class CatalogConfig(object):
         for entry in cfg['data_sources']:
             entry.find_plugin(self._plugins)
             self._entries[entry.name] = entry
+
+        self.metadata = cfg.get('metadata', {})
 
     @property
     def name(self):

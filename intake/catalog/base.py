@@ -49,9 +49,11 @@ class DirectoryState(State):
                                              getenv=getenv, getshell=getshell)
         self.catalogs = []
         self._last_files = []
+        self.metadata = {}
 
     def refresh(self):
         catalogs = []
+        self.metadata.clear()
 
         if os.path.isdir(self.observable):
             self._last_files = []
@@ -61,6 +63,7 @@ class DirectoryState(State):
                     try:
                         catalogs.append(Catalog(path))
                         self._last_files.append(path)
+                        self.metadata[path] = catalogs[-1].metadata
                     except Exception as e:
                         logger.warning("%s: %s" % (str(e), f))
 
@@ -91,6 +94,7 @@ class RemoteState(State):
         self.base_url = observable + '/'
         self.info_url = urljoin(self.base_url, 'v1/info')
         self.source_url = urljoin(self.base_url, 'v1/source')
+        self.metadata = {}
 
     def refresh(self):
         name = urlparse(self.observable).netloc.replace(
@@ -101,6 +105,7 @@ class RemoteState(State):
             raise Exception('%s: status code %d' % (response.url,
                                                     response.status_code))
         info = msgpack.unpackb(response.content, encoding='utf-8')
+        self.metadata = info['metadata']
 
         entries = {s['name']: RemoteCatalogEntry(url=self.source_url,
                                                  getenv=self.getenv,
@@ -116,10 +121,12 @@ class LocalState(State):
     def __init__(self, name, observable, ttl, getenv=True, getshell=True):
         super(LocalState, self).__init__(name, observable, ttl,
                                          getenv=getenv, getshell=getshell)
+        self.metadata = {}
 
     def refresh(self):
         cfg = CatalogConfig(self.observable, getenv=self.getenv,
                             getshell=self.getshell)
+        self.metadata = cfg.metadata
         return cfg.name, {}, cfg.entries, cfg.plugins
 
     def changed(self):
@@ -136,6 +143,8 @@ class CollectionState(State):
         self.catalogs = [Catalog(uri, name='cat%d' % i, getenv=getenv,
                                  getshell=getshell)
                          for i, uri in enumerate(self.observable)]
+        self.metadata = {uri: c.metadata for uri, c in zip(self.observable,
+                                                           self.catalogs)}
 
     def refresh(self):
         for catalog in self.catalogs:
@@ -202,13 +211,20 @@ class Catalog(object):
 
         self._state = create_state(name, args, ttl, getenv=self.getenv,
                                    getshell=self.getshell)
+        self.metadata = {}
         self.reload()
 
     def reload(self):
         self.name, self._children, self._entries, self._plugins = self._state.refresh()
+        self.metadata = self._state.metadata
         self._all_entries = {source: cat_entry for _, source, cat_entry
                              in self.walk(leaves=True) }
         self._entry_tree = make_prefix_tree(self._all_entries)
+
+    @property
+    def version(self):
+        # default version for pre-v1 files
+        return self.metadata.get('version', 1)
 
     @property
     def changed(self):
