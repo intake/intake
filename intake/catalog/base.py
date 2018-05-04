@@ -121,16 +121,15 @@ class LocalState(State):
         self.token = ''
 
     def refresh(self):
-        f = self.observable
-        cfg = CatalogConfig(f, getenv=self.getenv,
+        cfg = CatalogConfig(self.observable, getenv=self.getenv,
                             getshell=self.getshell,
                             storage_options=self.storage_options)
-        self.token = f.fs.ukey(f.path)
+        self.token = cfg.token
         return cfg.name, {}, cfg.entries, cfg.plugins
 
     def changed(self):
-        f = self.observable
-        token = f.fs.ukey(f.path)
+        token = CatalogConfig(self.observable, getenv=False, getshell=False,
+                              storage_options=self.storage_options).token
         return token != self.token
 
 

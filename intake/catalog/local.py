@@ -479,6 +479,7 @@ class CatalogConfig(object):
             file_open = open_files(self._path, mode='rb', **options)
             assert len(file_open) == 1
             file_open = file_open[0]
+        self.token = file_open.fs.ukey(file_open.path)
         self._name = os.path.splitext(os.path.basename(
             self._path))[0].replace('.', '_')
         self._dir = os.path.dirname(self._path)
