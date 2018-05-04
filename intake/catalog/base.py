@@ -118,15 +118,20 @@ class LocalState(State):
         self.storage_options = storage_options
         super(LocalState, self).__init__(name, observable, ttl,
                                          getenv=getenv, getshell=getshell)
+        self.token = ''
 
     def refresh(self):
-        cfg = CatalogConfig(self.observable, getenv=self.getenv,
+        f = self.observable
+        cfg = CatalogConfig(f, getenv=self.getenv,
                             getshell=self.getshell,
                             storage_options=self.storage_options)
+        self.token = f.fs.ukey(f.path)
         return cfg.name, {}, cfg.entries, cfg.plugins
 
     def changed(self):
-        return False
+        f = self.observable
+        token = f.fs.ukey(f.path)
+        return token != self.token
 
 
 class CollectionState(State):
