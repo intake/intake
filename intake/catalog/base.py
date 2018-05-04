@@ -87,7 +87,9 @@ class RemoteState(State):
         super(RemoteState, self).__init__(name, observable, ttl,
                                           getenv=getenv, getshell=getshell)
         self.http_args = http_args or {}
-        self.base_url = observable.replace('intake', 'http') + '/'
+        secure = http_args.pop('ssl', False)
+        scheme = 'https' if secure else 'http'
+        self.base_url = observable.replace('intake', scheme) + '/'
         self.info_url = urljoin(self.base_url, 'v1/info')
         self.source_url = urljoin(self.base_url, 'v1/source')
 

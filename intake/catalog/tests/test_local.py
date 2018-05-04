@@ -326,3 +326,10 @@ def test_default_expansions():
 
     par = UserParameter('', '', 'int', default=1)
     par.expand_defaults()  # no error from string ops
+
+
+def test_remote_cat(http_server):
+    url = http_server + 'catalog1.yml'
+    cat = Catalog(url)
+    assert 'entry1' in cat
+    assert cat.entry1.describe()
