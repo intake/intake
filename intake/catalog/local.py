@@ -10,6 +10,7 @@ from ruamel_yaml.constructor import DuplicateKeyError
 
 from jinja2 import Template
 import six
+from dask.bytes import open_files
 
 from . import exceptions
 from .entry import CatalogEntry
@@ -466,23 +467,31 @@ class CatalogParser(object):
 
 
 class CatalogConfig(object):
-    def __init__(self, path, getenv=True, getshell=True):
+    def __init__(self, path, getenv=True, getshell=True, storage_options=None):
         self._path = path
-        self._name = os.path.splitext(os.path.basename(
-            self._path))[0].replace('.', '_')
-        self._dir = os.path.dirname(os.path.abspath(self._path))
 
         # First, we load from YAML, failing if syntax errors are found
-        with open(self._path, 'r') as f:
-            text = f.read()
-            if "!template " in text:
-                logger.warning("Use of '!template' deprecated - fixing")
-                text = text.replace('!template ', '')
-            try:
-                data = yaml.load(text)
-            except DuplicateKeyError as e:
-                # Wrap internal exception with our own exception
-                raise exceptions.DuplicateKeyError(e)
+        options = storage_options or {}
+        if hasattr(path, 'path') or hasattr(path, 'read'):
+            file_open = path
+            self._path = getattr(path, 'path', getattr(path, 'name', 'file'))
+        else:
+            file_open = open_files(self._path, mode='rb', **options)
+            assert len(file_open) == 1
+            file_open = file_open[0]
+        self._name = os.path.splitext(os.path.basename(
+            self._path))[0].replace('.', '_')
+        self._dir = os.path.dirname(self._path)
+        with file_open as f:
+            text = f.read().decode()
+        if "!template " in text:
+            logger.warning("Use of '!template' deprecated - fixing")
+            text = text.replace('!template ', '')
+        try:
+            data = yaml.load(text)
+        except DuplicateKeyError as e:
+            # Wrap internal exception with our own exception
+            raise exceptions.DuplicateKeyError(e)
 
         if data is None:
             raise exceptions.CatalogException('No YAML data in file')

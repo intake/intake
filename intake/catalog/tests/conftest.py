@@ -64,7 +64,7 @@ def intake_server(request):
             time.sleep(0.1)
             retries -= 1
 
-        yield url
+        yield 'intake://localhost:%d' % port
     finally:
         p.terminate()
         p.wait()
