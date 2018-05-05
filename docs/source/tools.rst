@@ -8,7 +8,7 @@ Configuration
 -------------
 
 A file-based configuration service is available to Intake. This file is by default
-sought at the location ``~/.intake/conf.yaml``, but either the environment variable
+sought at the location ``~/.intake/conf.yaml``, but either of the environment variables
 ``INTAKE_CONF_DIR`` or ``INTAKE_CONF_FILE`` can be used to specify another directory
 or file. If both are given, the latter takes priority.
 
