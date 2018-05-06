@@ -59,6 +59,12 @@ def test_source_plugin_config(catalog1):
     assert_items_equal(list(catalog1.plugins), ['example1', 'example2'])
 
 
+def test_metadata(catalog1):
+    assert hasattr(catalog1, 'metadata')
+    assert catalog1['metadata']['test'] is True
+    assert catalog1.version == 1
+
+
 def test_use_source_plugin_from_config(catalog1):
     catalog1['use_example1'].get()
 

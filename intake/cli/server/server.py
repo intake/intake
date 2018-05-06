@@ -13,6 +13,7 @@ from .browser import get_browser_handlers
 from .config import conf
 from intake.catalog import serializer
 from intake.auth import get_auth_class
+from intake import __version__
 
 
 class IntakeServer(object):
@@ -86,7 +87,8 @@ class ServerInfoHandler(tornado.web.RequestHandler):
                     info['name'] = name
                     sources.append(info)
 
-            server_info = dict(version='0.0.1', sources=sources)
+            server_info = dict(version=__version__, sources=sources,
+                               metadata=self.catalog.metadata)
         else:
             msg = 'Access forbidden'
             raise tornado.web.HTTPError(status_code=403, log_message=msg,

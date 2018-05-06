@@ -40,6 +40,13 @@ def test_bad_url(intake_server):
         Catalog(bad_url)
 
 
+def test_metadata(intake_server):
+    catalog = Catalog(intake_server)
+    assert hasattr(catalog, 'metadata')
+    assert catalog['metadata']['test'] is True
+    assert catalog.version == 1
+
+
 def test_unknown_source(intake_server):
     catalog = Catalog(intake_server)
 
