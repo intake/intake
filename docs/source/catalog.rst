@@ -16,6 +16,8 @@ Intake catalogs are described with YAML files.  Here is an example:
 
 .. code-block:: yaml
 
+    metadata:
+      version: 1
     sources:
       example:
         description: test
@@ -52,6 +54,13 @@ that same name. Some additional values are always available:
 
 - ``CATALOG_DIR``: The full path to the directory containing the YAML catalog file.  This is especially useful for constructing paths relative to the catalog directory to locate data files and custom plugins.
 
+Metadata
+''''''''
+
+Arbitrary extra descriptive information can go into the metadata section. Some fields will be
+claimed for internal use and some fields may be restricted to local reading; but for now the only
+field that is expected is ``version``, which will be updated when a breaking change is made to the
+file format. Any catalog will have ``.metadata`` and ``.version`` attributes available.
 
 Extra Plugins
 '''''''''''''
