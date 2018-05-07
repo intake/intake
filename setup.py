@@ -25,6 +25,7 @@ setup(
             'intake = intake.cli.client.__main__:main'
         ]
     },
-    long_description=open('README.rst').read(),
+    long_description=open('README.md').read(),
+    long_description_content_type="text/markdown",
     zip_safe=False,
 )
