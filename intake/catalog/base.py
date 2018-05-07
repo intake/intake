@@ -7,6 +7,7 @@ import requests
 from requests.compat import urljoin, urlparse
 import six
 
+from ..auth.base import BaseClientAuth
 from .local import CatalogConfig
 from .remote import RemoteCatalogEntry
 from .utils import clamp, flatten, reload_on_change, make_prefix_tree
@@ -88,19 +89,21 @@ class DirectoryState(State):
 class RemoteState(State):
     """The state of a remote Intake server"""
 
-    def __init__(self, name, observable, ttl, getenv=True, getshell=True):
+    def __init__(self, name, observable, ttl, auth, getenv=True, getshell=True):
         super(RemoteState, self).__init__(name, observable, ttl,
                                           getenv=getenv, getshell=getshell)
         self.base_url = observable + '/'
         self.info_url = urljoin(self.base_url, 'v1/info')
         self.source_url = urljoin(self.base_url, 'v1/source')
+        self.auth = auth # instance of BaseClientAuth
         self.metadata = {}
 
     def refresh(self):
         name = urlparse(self.observable).netloc.replace(
             '.', '_').replace(':', '_')
 
-        response = requests.get(self.info_url)
+        headers = self.auth.get_headers()
+        response = requests.get(self.info_url, headers=headers)
         if response.status_code != 200:
             raise Exception('%s: status code %d' % (response.url,
                                                     response.status_code))
@@ -109,7 +112,9 @@ class RemoteState(State):
 
         entries = {s['name']: RemoteCatalogEntry(url=self.source_url,
                                                  getenv=self.getenv,
-                                                 getshell=self.getshell, **s)
+                                                 getshell=self.getshell,
+                                                 auth=self.auth,
+                                                 **s)
                    for s in info['sources']}
 
         return name, {}, entries, []
@@ -157,13 +162,13 @@ class CollectionState(State):
         return any([catalog.changed for catalog in self.catalogs])
 
 
-def create_state(name, observable, ttl, getenv=True, getshell=True):
+def create_state(name, observable, ttl, auth, getenv=True, getshell=True):
     if isinstance(observable, list):
         return CollectionState(name, observable, ttl, getenv=getenv,
                                getshell=getshell)
     elif observable.startswith('http://') or observable.startswith('https://'):
         return RemoteState(name, observable, ttl, getenv=getenv,
-                           getshell=getshell)
+                           getshell=getshell, auth=auth)
     elif observable.endswith('.yml') or observable.endswith('.yaml'):
         return LocalState(name, observable, ttl, getenv=getenv,
                           getshell=getshell)
@@ -205,11 +210,17 @@ class Catalog(object):
         ttl = kwargs.get('ttl', 1)
         self.getenv = kwargs.pop('getenv', True)
         self.getshell = kwargs.pop('getshell', True)
+        self.auth = kwargs.pop('auth', None)
+
+        if self.auth == None:
+            self.auth = BaseClientAuth()
 
         args = list(flatten(args))
         args = args[0] if len(args) == 1 else args
 
-        self._state = create_state(name, args, ttl, getenv=self.getenv,
+        self._state = create_state(name, args, ttl,
+                                   auth=self.auth,
+                                   getenv=self.getenv,
                                    getshell=self.getshell)
         self.metadata = {}
         self.reload()

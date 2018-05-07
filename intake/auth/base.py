@@ -30,3 +30,18 @@ class BaseAuth(object):
             The data source the user wants to access.
         """
         return True
+
+
+class BaseClientAuth(object):
+    """Base class for client-side setting of authorization headers
+
+    This basic class adds no headers to remote catalog reqests
+    """
+
+    def __init__(self, *args):
+        self.args = args
+
+    def get_headers(self):
+        """Returns a dictionary of HTTP headers to add to the remote catalog request.
+        """
+        return {}

@@ -1,5 +1,5 @@
 import logging
-from .base import BaseAuth
+from .base import BaseAuth, BaseClientAuth
 import uuid
 
 logger = logging.getLogger('intake')
@@ -35,3 +35,22 @@ class SecretAuth(BaseAuth):
             return header.get(self.key, '') == self.secret
         except:
             return False
+
+
+class SecretClientAuth(BaseClientAuth):
+    """Matching client auth plugin to SecretAuth
+
+    Parameters
+    ----------
+    secret: str
+        The string that must be included requests.
+    key: str
+        HTTP Header key for the shared secret
+    """
+
+    def __init__(self, secret, key='intake-secret'):
+        self.secret = secret
+        self.key = key
+
+    def get_headers(self):
+        return {self.key: self.secret}
