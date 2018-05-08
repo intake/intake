@@ -30,6 +30,8 @@ def test_secret():
     assert not auth.allow_connect({'intake-secret': None})
     assert not auth.allow_connect({'intake-secret': 'wrong'})
     assert auth.allow_connect({'intake-secret': secret})
+    # HTTP headers are not case sensitive, and frequently recapitalized
+    assert auth.allow_connect({'Intake-Secret': secret})
 
     assert not auth.allow_access({'intake-secret': 'wrong'}, None)
     assert auth.allow_access({'intake-secret': secret}, None)
