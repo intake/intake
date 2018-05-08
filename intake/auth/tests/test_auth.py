@@ -22,6 +22,21 @@ def test_base_client():
     assert auth.get_headers() == {}
 
 
+def test_base_get_case_insensitive():
+    auth = BaseAuth()
+    d = {'foo': 1, 'BAR': 2}
+    assert auth.get_case_insensitive(d, 'foo') == 1
+    assert auth.get_case_insensitive(d, 'Foo') == 1
+    assert auth.get_case_insensitive(d, 'FOO') == 1
+
+    assert auth.get_case_insensitive(d, 'bar') == 2
+    assert auth.get_case_insensitive(d, 'Bar') == 2
+    assert auth.get_case_insensitive(d, 'BAR') == 2
+
+    assert auth.get_case_insensitive(d, 'no') is None
+    assert auth.get_case_insensitive(d, 'no', '') == ''
+
+
 def test_secret():
     secret = 'test-secret'
     auth = SecretAuth(secret=secret)

@@ -26,25 +26,17 @@ class SecretAuth(BaseAuth):
 
     def allow_connect(self, header):
         try:
-            return self._get_case_insensitive(header, self.key, '') \
+            return self.get_case_insensitive(header, self.key, '') \
                         == self.secret
         except:
             return False
 
     def allow_access(self, header, source):
         try:
-            return self._get_case_insensitive(header, self.key, '') \
+            return self.get_case_insensitive(header, self.key, '') \
                         == self.secret
         except:
             return False
-
-    def _get_case_insensitive(self, dictionary, key, default=None):
-        lower_key = key.lower()
-        for k, v in dictionary.items():
-            if lower_key == k.lower():
-                return v
-        else:
-            return default
 
 
 class SecretClientAuth(BaseClientAuth):

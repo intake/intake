@@ -31,6 +31,18 @@ class BaseAuth(object):
         """
         return True
 
+    def get_case_insensitive(self, dictionary, key, default=None):
+        """Case-insensitive search of a dictionary for key.
+
+        Returns the value if key match is found, otherwise default.
+        """
+        lower_key = key.lower()
+        for k, v in dictionary.items():
+            if lower_key == k.lower():
+                return v
+        else:
+            return default
+
 
 class BaseClientAuth(object):
     """Base class for client-side setting of authorization headers
