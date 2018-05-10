@@ -130,7 +130,7 @@ class SourceCache(object):
     def remove_idle(self, idle_secs):
         threshold = time.time() - idle_secs
 
-        for uuid, record in self._sources.items().copy():
+        for uuid, record in self._sources.copy().items():
             if record['last_time'] < threshold:
                 del self._sources[uuid]
 

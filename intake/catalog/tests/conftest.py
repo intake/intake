@@ -5,7 +5,8 @@ import time
 import pytest
 import requests
 
-from intake.util_tests import ex
+from intake.util_tests import ex, PY2
+here = os.path.dirname(__file__)
 
 
 MIN_PORT = 7480
@@ -64,7 +65,30 @@ def intake_server(request):
             time.sleep(0.1)
             retries -= 1
 
-        yield url
+        yield 'intake://localhost:%d' % port
     finally:
         p.terminate()
         p.wait()
+
+
+@pytest.fixture(scope='module')
+def http_server():
+    if PY2:
+        cmd = ['python', '-m', 'SimpleHTTPServer', '8000']
+    else:
+        cmd = ['python', '-m', 'http.server', '8000']
+    p = subprocess.Popen(cmd, cwd=here)
+    timeout = 5
+    while True:
+        try:
+            requests.get('http://localhost:8000/')
+            break
+        except:
+            time.sleep(0.1)
+            timeout -= 0.1
+            assert timeout > 0, "timeout waiting for http server"
+    try:
+        yield 'http://localhost:8000/'
+    finally:
+        p.terminate()
+        p.communicate()

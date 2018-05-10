@@ -2,6 +2,7 @@ import os
 import pytest
 import requests
 
+import intake
 from intake.cli.server import config
 from intake.util_tests import temp_conf, server
 
@@ -53,9 +54,23 @@ def test_conf():
 
 
 def test_conf_auth():
-    with temp_conf({'auth': {'class': 'intake.auth.secret.SecretAuth'}}) as fn:
+    with temp_conf({'auth': {'class': 'intake.auth.secret.SecretAuth',
+                             'kwargs': {'secret': 'test'}}}) as fn:
         env = os.environ.copy()
         env['INTAKE_CONF_FILE'] = fn
         with server(env=env, wait=5000):
+            # raw request
             r = requests.get('http://localhost:5000/v1/info')
             assert r.status_code == 403
+            r = requests.get('http://localhost:5000/v1/info',
+                             headers={'intake-secret': 'test'})
+            assert r.ok
+
+            # with cat
+            with pytest.raises(Exception):
+                intake.Catalog('intake://localhost:5000')
+
+            cat = intake.Catalog('intake://localhost:5000',
+                                 storage_options={'headers':
+                                                  {'intake-secret': 'test'}})
+            assert 'entry1' in cat

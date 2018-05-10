@@ -22,16 +22,18 @@ class SecretAuth(BaseAuth):
             secret = uuid.uuid1().hex
             logger.info('Random server secret: %s' % secret)
         self.secret = secret
-        self.key = key
+        self.key = key.lower()
 
     def allow_connect(self, header):
+        head2 = {k.lower(): v for k, v in header.items()}
         try:
-            return header.get(self.key, '') == self.secret
+            return head2.get(self.key, '') == self.secret
         except:
             return False
 
     def allow_access(self, header, source):
+        head2 = {k.lower(): v for k, v in header.items()}
         try:
-            return header.get(self.key, '') == self.secret
+            return head2.get(self.key, '') == self.secret
         except:
             return False

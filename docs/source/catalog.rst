@@ -20,7 +20,7 @@ Intake catalogs are described with YAML files.  Here is an example:
       version: 1
     sources:
       example:
-        description: test  
+        description: test
         driver: random
         args: {}
 
@@ -172,9 +172,10 @@ Intake Catalog objects will automatically detect changes or new additions to cat
 Remote Catalogs
 ---------------
 
-Intake also includes a server which can share an Intake catalog over HTTP (or HTTPS with the help of a TLS-enabled reverse proxy).  From the user perspective, remote catalogs function identically to local catalogs::
+Intake also includes a server which can share an Intake catalog over HTTP
+(or HTTPS with the help of a TLS-enabled reverse proxy).  From the user perspective, remote catalogs function identically to local catalogs::
 
-    cat = Catalog('http://catalog1:5000')
+    cat = Catalog('intake://catalog1:5000')
     cat.list()
 
 The difference is that operations on the catalog translate to requests sent to the catalog server.  Catalog servers provide access to data sources in one of two modes:

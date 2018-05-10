@@ -44,7 +44,7 @@ You can use the catalog client (defined below) using:
 
 ::
 
-  >>> intake list http://localhost:5000
+  $ intake list intake://localhost:5000
   entry1
   entry1_part
   use_example1
