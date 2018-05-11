@@ -1,11 +1,10 @@
 import logging
-import os.path
 import time
 
 import msgpack
 import requests
 from requests.compat import urljoin, urlparse
-import six
+from dask.bytes import open_files
 
 from ..auth.base import BaseClientAuth
 from .local import CatalogConfig
@@ -25,6 +24,7 @@ class State(object):
         self._last_updated = 0
         self.getenv = getenv
         self.getshell = getshell
+        self.metadata = {}
 
     def refresh(self):
         return None, {}, {}, []
@@ -45,28 +45,29 @@ class State(object):
 class DirectoryState(State):
     """The state of a directory of catalog files"""
 
-    def __init__(self, name, observable, ttl, getenv=True, getshell=True):
+    def __init__(self, name, observable, ttl, getenv=True, getshell=True,
+                 storage_options=None):
         super(DirectoryState, self).__init__(name, observable, ttl,
                                              getenv=getenv, getshell=getshell)
         self.catalogs = []
+        self.storage_options = storage_options
         self._last_files = []
         self.metadata = {}
 
     def refresh(self):
         catalogs = []
         self.metadata.clear()
+        self._last_files.clear()
 
-        if os.path.isdir(self.observable):
-            self._last_files = []
-            for f in os.listdir(self.observable):
-                if f.endswith('.yml') or f.endswith('.yaml'):
-                    path = os.path.join(self.observable, f)
-                    try:
-                        catalogs.append(Catalog(path))
-                        self._last_files.append(path)
-                        self.metadata[path] = catalogs[-1].metadata
-                    except Exception as e:
-                        logger.warning("%s: %s" % (str(e), f))
+        fns = (open_files(self.observable + '/*.yaml') +
+               open_files(self.observable + '/*.yml'))
+        for f in fns:
+            try:
+                self._last_files.append(f.path)
+                catalogs.append(Catalog(f))
+                self.metadata[f.path] = catalogs[-1].metadata
+            except Exception as e:
+                logger.warning("%s: %s" % (str(e), f))
 
         self.catalogs = catalogs
         children = {catalog.name: catalog for catalog in self.catalogs}
@@ -74,13 +75,10 @@ class DirectoryState(State):
         return self.name, children, {}, []
 
     def changed(self):
-        if not os.path.isdir(self.observable):
-            return False
-        modified = self.update_modification_time(
-            os.path.getmtime(self.observable))
-        # Were any files removed?
-        modified = modified or any(not os.path.exists(filename)
-                                   for filename in self._last_files)
+        fns = (open_files(self.observable + '/*.yaml') +
+               open_files(self.observable + '/*.yml'))
+
+        modified = set(fn.path for fn in fns) != set(self._last_files)
         if modified:
             self.refresh()
         return any([modified] + [catalog.changed for catalog in self.catalogs])
@@ -89,10 +87,14 @@ class DirectoryState(State):
 class RemoteState(State):
     """The state of a remote Intake server"""
 
-    def __init__(self, name, observable, ttl, auth, getenv=True, getshell=True):
+    def __init__(self, name, observable, ttl, auth, getenv=True, getshell=True,
+                 http_args=None):
         super(RemoteState, self).__init__(name, observable, ttl,
                                           getenv=getenv, getshell=getshell)
-        self.base_url = observable + '/'
+        self.http_args = http_args or {}
+        secure = http_args.pop('ssl', False)
+        scheme = 'https' if secure else 'http'
+        self.base_url = observable.replace('intake', scheme) + '/'
         self.info_url = urljoin(self.base_url, 'v1/info')
         self.source_url = urljoin(self.base_url, 'v1/source')
         self.auth = auth # instance of BaseClientAuth
@@ -102,8 +104,15 @@ class RemoteState(State):
         name = urlparse(self.observable).netloc.replace(
             '.', '_').replace(':', '_')
 
-        headers = self.auth.get_headers()
-        response = requests.get(self.info_url, headers=headers)
+        # Add the auth headers to any other headers
+        auth_headers = self.auth.get_headers()
+        headers = self.http_args.get('headers', {})
+        headers.update(auth_headers)
+
+        # build new http args with these headers
+        http_args = self.http_args.copy()
+        http_args['headers'] = headers
+        response = requests.get(self.info_url, **http_args)
         if response.status_code != 200:
             raise Exception('%s: status code %d' % (response.url,
                                                     response.status_code))
@@ -114,7 +123,7 @@ class RemoteState(State):
                                                  getenv=self.getenv,
                                                  getshell=self.getshell,
                                                  auth=self.auth,
-                                                 **s)
+                                                 http_args=self.http_args, **s)
                    for s in info['sources']}
 
         return name, {}, entries, []
@@ -123,30 +132,39 @@ class RemoteState(State):
 class LocalState(State):
     """The state of a catalog file on the local filesystem"""
 
-    def __init__(self, name, observable, ttl, getenv=True, getshell=True):
+    def __init__(self, name, observable, ttl, getenv=True, getshell=True,
+                 storage_options=None):
+        self.storage_options = storage_options
         super(LocalState, self).__init__(name, observable, ttl,
                                          getenv=getenv, getshell=getshell)
+        self.token = ''
         self.metadata = {}
 
     def refresh(self):
         cfg = CatalogConfig(self.observable, getenv=self.getenv,
-                            getshell=self.getshell)
+                            getshell=self.getshell,
+                            storage_options=self.storage_options)
+        self.token = cfg.token
         self.metadata = cfg.metadata
         return cfg.name, {}, cfg.entries, cfg.plugins
 
     def changed(self):
-        return self.update_modification_time(os.path.getmtime(self.observable))
+        token = CatalogConfig(self.observable, getenv=False, getshell=False,
+                              storage_options=self.storage_options).token
+        return token != self.token
 
 
 class CollectionState(State):
     """The state of a collection of other states"""
 
-    def __init__(self, name, observable, ttl, getenv=True, getshell=True):
+    def __init__(self, name, observable, ttl, getenv=True, getshell=True,
+                 storage_options=None):
         super(CollectionState, self).__init__(name, observable, ttl)
         # This name is a workaround to deal with issue that will be
         # solved in another PR
         self.catalogs = [Catalog(uri, name='cat%d' % i, getenv=getenv,
-                                 getshell=getshell)
+                                 getshell=getshell,
+                                 storage_options=storage_options)
                          for i, uri in enumerate(self.observable)]
         self.metadata = {uri: c.metadata for uri, c in zip(self.observable,
                                                            self.catalogs)}
@@ -162,19 +180,36 @@ class CollectionState(State):
         return any([catalog.changed for catalog in self.catalogs])
 
 
-def create_state(name, observable, ttl, auth, getenv=True, getshell=True):
+def create_state(name, observable, ttl, auth, getenv=True, getshell=True,
+                 storage_options=None):
+    if observable is None or observable == []:
+        return State(name, observable, ttl)
     if isinstance(observable, list):
-        return CollectionState(name, observable, ttl, getenv=getenv,
-                               getshell=getshell)
-    elif observable.startswith('http://') or observable.startswith('https://'):
-        return RemoteState(name, observable, ttl, getenv=getenv,
-                           getshell=getshell, auth=auth)
-    elif observable.endswith('.yml') or observable.endswith('.yaml'):
+        if len(observable) > 1:
+            return CollectionState(name, observable, ttl, getenv=getenv,
+                                   getshell=getshell,
+                                   storage_options=storage_options)
+        if len(observable) == 0:
+            return Catalog()
+        observable = observable[0]
+    if isinstance(observable, str):
+        if observable.startswith('intake://'):
+            return RemoteState(name, observable, ttl,
+                               auth=auth,
+                               getenv=getenv,
+                               getshell=getshell, http_args=storage_options)
+        elif observable.endswith('.yml') or observable.endswith('.yaml'):
+            return LocalState(name, observable, ttl, getenv=getenv,
+                              getshell=getshell,
+                              storage_options=storage_options)
+        else:
+            return DirectoryState(name, observable, ttl, getenv=getenv,
+                                  getshell=getshell,
+                                  storage_options=storage_options)
+    else:
+        # try file-like
         return LocalState(name, observable, ttl, getenv=getenv,
                           getshell=getshell)
-    else:
-        return DirectoryState(name, observable, ttl, getenv=getenv,
-                              getshell=getshell)
 
 
 class Catalog(object):
@@ -205,6 +240,11 @@ class Catalog(object):
         ttl : float, optional
             Lifespan (time to live) of cached modification time. Units are in
             seconds. Defaults to 1.
+        storage_options : dict
+            If using a URL beginning with 'intake://' (remote Intake server),
+            parameters to pass to requests when issuing http commands; otherwise
+            parameters to pass to remote backend file-system. Ignored for
+            normal local files.
         """
         name = kwargs.get('name', None)
         ttl = kwargs.get('ttl', 1)
@@ -215,13 +255,18 @@ class Catalog(object):
         if self.auth == None:
             self.auth = BaseClientAuth()
 
-        args = list(flatten(args))
-        args = args[0] if len(args) == 1 else args
+        self.storage_options = kwargs.pop('storage_options', {})
+
+        if all(isinstance(a, (tuple, list)) for a in args):
+            args = list(flatten(args))
+        if len(args) == 1:
+            args = args[0]
 
         self._state = create_state(name, args, ttl,
                                    auth=self.auth,
                                    getenv=self.getenv,
-                                   getshell=self.getshell)
+                                   getshell=self.getshell,
+                                   storage_options=self.storage_options)
         self.metadata = {}
         self.reload()
 

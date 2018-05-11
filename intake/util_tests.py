@@ -11,7 +11,7 @@ import yaml
 ex = sys.executable
 here = os.path.dirname(__file__)
 defcat = os.path.join(here, 'cli', 'server', 'tests', 'catalog1.yml')
-
+PY2 = sys.version_info[0] == 2
 
 @contextmanager
 def tempdir():

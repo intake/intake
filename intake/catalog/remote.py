@@ -21,7 +21,9 @@ class RemoteCatalogEntry(CatalogEntry):
         self.kwargs = kwargs
         getenv = kwargs.pop('getenv', True)
         getshell = kwargs.pop('getshell', True)
-
+        self.http_args = kwargs.pop('http_args', {}).copy()
+        if 'headers' not in self.http_args:
+            self.http_args['headers'] = {}
         super(RemoteCatalogEntry, self).__init__(getenv=getenv,
                                                  getshell=getshell)
 
@@ -39,24 +41,28 @@ class RemoteCatalogEntry(CatalogEntry):
         entry = self.kwargs
 
         # We must freeze the auth headers at this point since RemoteDataSource may be serialized
+        http_args = self.http_args.copy()
+        http_args['headers'] = self.http_args['headers'].copy()
+        http_args['headers'].update(self.auth.get_headers())
         return RemoteDataSource(
             self.url, entry['name'], container=entry['container'],
             user_parameters=user_parameters, description=entry['description'],
-            extra_headers=self.auth.get_headers())
+            http_args=self.http_args
+            )
 
 
 class RemoteDataSource(DataSource):
     def __init__(self, url, entry_name, container, user_parameters,
-                 description, extra_headers):
+                 description, http_args):
         self._init_args = dict(
             url=url, entry_name=entry_name, container=container,
             user_parameters=user_parameters, description=description,
-            extra_headers=extra_headers)
+            http_args=http_args)
 
         self._url = url
         self._entry_name = entry_name
         self._user_parameters = user_parameters
-        self._extra_headers = extra_headers
+        self._http_args = http_args
 
         self._real_source = None
         self.direct = None
@@ -71,7 +77,7 @@ class RemoteDataSource(DataSource):
                            parameters=self._user_parameters,
                            available_plugins=list(plugin_registry.keys()))
             req = requests.post(self._url, data=msgpack.packb(
-                payload, use_bin_type=True), headers=self._extra_headers)
+                payload, use_bin_type=True), **self._http_args)
             if req.ok:
                 response = msgpack.unpackb(req.content, encoding='utf-8')
 
@@ -149,16 +155,16 @@ class RemoteDataSource(DataSource):
 
 class RemoteDataSourceProxied(DataSource):
     def __init__(self, url, entry_name, container, user_parameters,
-                 description, extra_headers):
+                 description, http_args):
         self._init_args = dict(
             url=url, entry_name=entry_name, container=container,
             user_parameters=user_parameters, description=description,
-            extra_headers=extra_headers)
+            http_args=http_args)
 
         self._url = url
         self._entry_name = entry_name
         self._user_parameters = user_parameters
-        self._extra_headers = extra_headers
+        self._http_args = http_args
 
         self._source_id = None
 
@@ -170,7 +176,7 @@ class RemoteDataSourceProxied(DataSource):
             payload = dict(action='open', name=self._entry_name,
                            parameters=self._user_parameters)
             req = requests.post(self._url, data=msgpack.packb(
-                payload, use_bin_type=True), headers=self._extra_headers)
+                payload, use_bin_type=True), **self._http_args)
             if req.status_code == 200:
                 response = msgpack.unpackb(req.content, encoding='utf-8')
                 self._parse_open_response(response)
@@ -208,8 +214,7 @@ class RemoteDataSourceProxied(DataSource):
         resp = None
         try:
             resp = requests.post(self._url, data=msgpack.packb(
-                payload, use_bin_type=True), stream=True,
-                headers=self._extra_headers)
+                payload, use_bin_type=True), stream=True, **self._http_args)
             if resp.status_code != 200:
                 raise Exception('Error reading data')
 
