@@ -41,6 +41,7 @@ def pick_port():
 def intake_server(request):
     # Catalog path comes from the test module
     catalog_path = request.module.TEST_CATALOG_PATH
+    server_conf = getattr(request.module, 'TEST_SERVER_CONF', None)
 
     # Start a catalog server on nonstandard port
     port = pick_port()
@@ -53,6 +54,8 @@ def intake_server(request):
 
     env = dict(os.environ)
     env['INTAKE_TEST'] = 'server'
+    if server_conf is not None:
+        env['INTAKE_CONF_FILE'] = server_conf
 
     try:
         p = subprocess.Popen(cmd, env=env)

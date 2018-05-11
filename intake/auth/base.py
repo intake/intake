@@ -30,3 +30,30 @@ class BaseAuth(object):
             The data source the user wants to access.
         """
         return True
+
+    def get_case_insensitive(self, dictionary, key, default=None):
+        """Case-insensitive search of a dictionary for key.
+
+        Returns the value if key match is found, otherwise default.
+        """
+        lower_key = key.lower()
+        for k, v in dictionary.items():
+            if lower_key == k.lower():
+                return v
+        else:
+            return default
+
+
+class BaseClientAuth(object):
+    """Base class for client-side setting of authorization headers
+
+    This basic class adds no headers to remote catalog reqests
+    """
+
+    def __init__(self, *args):
+        self.args = args
+
+    def get_headers(self):
+        """Returns a dictionary of HTTP headers to add to the remote catalog request.
+        """
+        return {}

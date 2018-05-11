@@ -191,3 +191,8 @@ Whether a particular catalog entry supports direct or proxied access is determin
 - ``force``: Force all clients to access the data directly.  If they do not have the required plugin, an exception will be raised.
 
 Note that when the client is loading a data source via direct access, the catalog server will need to send the plugin arguments to the client.  Do not include sensitive credentials in a data source that allows direct access.
+
+Client Authorization Plugins
+''''''''''''''''''''''''''''
+
+Intake servers can check if clients are authorized to access the catalog as a whole, or individual catalog entries.  Typically a matched pair of server-side plugin (called an "auth plugin") and a client-side plugin (called a "client auth plugin) need to be enabled for authorization checks to work.  This feature is still in early development, so please `open a Github issue <https://github.com/ContinuumIO/intake/issues/new>`_ to discuss your use case before creating a plugin.

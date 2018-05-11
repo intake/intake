@@ -1,5 +1,5 @@
 import logging
-from .base import BaseAuth
+from .base import BaseAuth, BaseClientAuth
 import uuid
 
 logger = logging.getLogger('intake')
@@ -22,18 +22,37 @@ class SecretAuth(BaseAuth):
             secret = uuid.uuid1().hex
             logger.info('Random server secret: %s' % secret)
         self.secret = secret
-        self.key = key.lower()
+        self.key = key
 
     def allow_connect(self, header):
-        head2 = {k.lower(): v for k, v in header.items()}
         try:
-            return head2.get(self.key, '') == self.secret
+            return self.get_case_insensitive(header, self.key, '') \
+                        == self.secret
         except:
             return False
 
     def allow_access(self, header, source):
-        head2 = {k.lower(): v for k, v in header.items()}
         try:
-            return head2.get(self.key, '') == self.secret
+            return self.get_case_insensitive(header, self.key, '') \
+                        == self.secret
         except:
             return False
+
+
+class SecretClientAuth(BaseClientAuth):
+    """Matching client auth plugin to SecretAuth
+
+    Parameters
+    ----------
+    secret: str
+        The string that must be included requests.
+    key: str
+        HTTP Header key for the shared secret
+    """
+
+    def __init__(self, secret, key='intake-secret'):
+        self.secret = secret
+        self.key = key
+
+    def get_headers(self):
+        return {self.key: self.secret}

@@ -14,13 +14,16 @@ from .utils import expand_defaults, coerce
 
 
 class RemoteCatalogEntry(CatalogEntry):
-    def __init__(self, url, *args, **kwargs):
+    def __init__(self, url, auth, *args, **kwargs):
         self.url = url
+        self.auth = auth
         self.args = args
         self.kwargs = kwargs
         getenv = kwargs.pop('getenv', True)
         getshell = kwargs.pop('getshell', True)
-        self.http_args = kwargs.pop('http_args')
+        self.http_args = kwargs.pop('http_args', {}).copy()
+        if 'headers' not in self.http_args:
+            self.http_args['headers'] = {}
         super(RemoteCatalogEntry, self).__init__(getenv=getenv,
                                                  getshell=getshell)
 
@@ -37,6 +40,10 @@ class RemoteCatalogEntry(CatalogEntry):
                 user_parameters[par['name']] = default
         entry = self.kwargs
 
+        # We must freeze the auth headers at this point since RemoteDataSource may be serialized
+        http_args = self.http_args.copy()
+        http_args['headers'] = self.http_args['headers'].copy()
+        http_args['headers'].update(self.auth.get_headers())
         return RemoteDataSource(
             self.url, entry['name'], container=entry['container'],
             user_parameters=user_parameters, description=entry['description'],

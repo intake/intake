@@ -6,6 +6,7 @@ import requests
 from requests.compat import urljoin, urlparse
 from dask.bytes import open_files
 
+from ..auth.base import BaseClientAuth
 from .local import CatalogConfig
 from .remote import RemoteCatalogEntry
 from .utils import clamp, flatten, reload_on_change, make_prefix_tree
@@ -86,7 +87,7 @@ class DirectoryState(State):
 class RemoteState(State):
     """The state of a remote Intake server"""
 
-    def __init__(self, name, observable, ttl, getenv=True, getshell=True,
+    def __init__(self, name, observable, ttl, auth, getenv=True, getshell=True,
                  http_args=None):
         super(RemoteState, self).__init__(name, observable, ttl,
                                           getenv=getenv, getshell=getshell)
@@ -96,13 +97,22 @@ class RemoteState(State):
         self.base_url = observable.replace('intake', scheme) + '/'
         self.info_url = urljoin(self.base_url, 'v1/info')
         self.source_url = urljoin(self.base_url, 'v1/source')
+        self.auth = auth # instance of BaseClientAuth
         self.metadata = {}
 
     def refresh(self):
         name = urlparse(self.observable).netloc.replace(
             '.', '_').replace(':', '_')
 
-        response = requests.get(self.info_url, **self.http_args)
+        # Add the auth headers to any other headers
+        auth_headers = self.auth.get_headers()
+        headers = self.http_args.get('headers', {})
+        headers.update(auth_headers)
+
+        # build new http args with these headers
+        http_args = self.http_args.copy()
+        http_args['headers'] = headers
+        response = requests.get(self.info_url, **http_args)
         if response.status_code != 200:
             raise Exception('%s: status code %d' % (response.url,
                                                     response.status_code))
@@ -112,6 +122,7 @@ class RemoteState(State):
         entries = {s['name']: RemoteCatalogEntry(url=self.source_url,
                                                  getenv=self.getenv,
                                                  getshell=self.getshell,
+                                                 auth=self.auth,
                                                  http_args=self.http_args, **s)
                    for s in info['sources']}
 
@@ -169,7 +180,7 @@ class CollectionState(State):
         return any([catalog.changed for catalog in self.catalogs])
 
 
-def create_state(name, observable, ttl, getenv=True, getshell=True,
+def create_state(name, observable, ttl, auth, getenv=True, getshell=True,
                  storage_options=None):
     if observable is None or observable == []:
         return State(name, observable, ttl)
@@ -183,7 +194,9 @@ def create_state(name, observable, ttl, getenv=True, getshell=True,
         observable = observable[0]
     if isinstance(observable, str):
         if observable.startswith('intake://'):
-            return RemoteState(name, observable, ttl, getenv=getenv,
+            return RemoteState(name, observable, ttl,
+                               auth=auth,
+                               getenv=getenv,
                                getshell=getshell, http_args=storage_options)
         elif observable.endswith('.yml') or observable.endswith('.yaml'):
             return LocalState(name, observable, ttl, getenv=getenv,
@@ -237,6 +250,11 @@ class Catalog(object):
         ttl = kwargs.get('ttl', 1)
         self.getenv = kwargs.pop('getenv', True)
         self.getshell = kwargs.pop('getshell', True)
+        self.auth = kwargs.pop('auth', None)
+
+        if self.auth == None:
+            self.auth = BaseClientAuth()
+
         self.storage_options = kwargs.pop('storage_options', {})
 
         if all(isinstance(a, (tuple, list)) for a in args):
@@ -244,7 +262,9 @@ class Catalog(object):
         if len(args) == 1:
             args = args[0]
 
-        self._state = create_state(name, args, ttl, getenv=self.getenv,
+        self._state = create_state(name, args, ttl,
+                                   auth=self.auth,
+                                   getenv=self.getenv,
                                    getshell=self.getshell,
                                    storage_options=self.storage_options)
         self.metadata = {}
