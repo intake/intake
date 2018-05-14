@@ -16,7 +16,7 @@ class SemiStructured(BaseContainer):
 
     @staticmethod
     def to_dask(parts, dtype):
-        import dask.bad as db
+        import dask.bag as db
         return db.from_delayed(parts)
 
     @staticmethod
