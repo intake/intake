@@ -2,7 +2,6 @@ import functools
 import itertools
 from jinja2 import Environment, meta, Template
 import os
-import pandas
 import re
 import shlex
 import subprocess
@@ -139,10 +138,14 @@ def expand_defaults(default, client=False, getenv=True, getshell=True):
     return default
 
 
+def coerce_datetime(v=None):
+    import pandas
+    return pandas.to_datetime(v) if v else pandas.to_datetime(0)
+
+
 COERCION_RULES = {
     'bool': bool,
-    'datetime': (lambda v=None: pandas.to_datetime(v)
-                 if v else pandas.to_datetime(0)),
+    'datetime': coerce_datetime,
     'float': float,
     'int': int,
     'list': list,

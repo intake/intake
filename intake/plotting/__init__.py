@@ -3,8 +3,6 @@ from functools import partial
 from distutils.version import LooseVersion
 
 import param
-import holoviews as hv
-import pandas as pd
 
 from holoviews.core.spaces import DynamicMap, Callable
 from holoviews.core.overlay import NdOverlay
@@ -24,11 +22,6 @@ except ImportError:
     gen = None
 
 try:
-    import dask.dataframe as dd
-except ImportError:
-    dd = None
-
-try:
     import bokeh
     if LooseVersion(bokeh.__version__) <= '0.12.14':
         import warnings
@@ -36,6 +29,7 @@ try:
         warnings.simplefilter(action='ignore', category=FutureWarning)
 except:
     pass
+
 
 class StreamingCallable(Callable):
     """
@@ -145,7 +139,8 @@ class HoloViewsConverter(object):
             def f():
                 self.stream.send(data.read())
             self.cb = PeriodicCallback(f, timeout)
-        elif (use_dask or persist) and dd is not None:
+        elif use_dask or persist:
+            import dask.dataframe as dd
             ddf = data.to_dask()
             self.data = ddf.persist() if persist else ddf
         else:
@@ -299,6 +294,7 @@ class HoloViewsConverter(object):
         """
         Helper method to generate element from indexed dataframe.
         """
+        import pandas as pd
         data = self.data if data is None else data
         if isinstance(self.use_index, bool):
             index = data.index.name or 'index'
@@ -314,7 +310,7 @@ class HoloViewsConverter(object):
 
         if self.columns:
             data = data[self.columns+id_vars]
-        if dd and isinstance(data, dd.DataFrame):
+        if hasattr(data, 'compute'):
             data = data.compute()
         df = pd.melt(data, id_vars=id_vars, var_name=self.group_label,
                      value_name=self.value_label)
@@ -326,6 +322,7 @@ class HoloViewsConverter(object):
         """
         Helper method to generate element from indexed dataframe.
         """
+        import pandas as pd
         data = self.data if data is None else data
 
         opts = {'plot': dict(self._plot_opts, labelled=[]),
@@ -340,7 +337,7 @@ class HoloViewsConverter(object):
         ranges = {self.value_label: self._dim_ranges['y']}
         if self.columns:
             data = data[self.columns]
-        if dd and isinstance(data, dd.DataFrame):
+        if hasattr(data, 'compute'):
             data = data.compute()
         df = pd.melt(data, var_name=self.group_label, value_name=self.value_label)
         return (element(df, kdims, self.value_label).redim.range(**ranges)
@@ -407,6 +404,7 @@ class HoloViewsConverter(object):
 
     @streaming
     def kde(self, x, y, data=None):
+        import pandas as pd
         data = self.data if data is None else data
         plot_opts = dict(self._plot_opts)
         invert = self.kwds.get('orientation', False) == 'horizontal'

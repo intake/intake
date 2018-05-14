@@ -1,8 +1,8 @@
-import dask
 import msgpack
 import operator
 
 from .base import BaseContainer
+
 
 class SemiStructured(BaseContainer):
 
@@ -16,7 +16,8 @@ class SemiStructured(BaseContainer):
 
     @staticmethod
     def to_dask(parts, dtype):
-        return dask.bag.from_delayed(parts)
+        import dask.bag as db
+        return db.from_delayed(parts)
 
     @staticmethod
     def encode(obj):
@@ -28,4 +29,5 @@ class SemiStructured(BaseContainer):
 
     @staticmethod
     def read(chunks):
+        from functools import reduce
         return reduce(operator.add, chunks)

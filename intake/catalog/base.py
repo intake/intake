@@ -57,7 +57,7 @@ class DirectoryState(State):
     def refresh(self):
         catalogs = []
         self.metadata.clear()
-        self._last_files.clear()
+        self._last_files = []
 
         fns = (open_files(self.observable + '/*.yaml') +
                open_files(self.observable + '/*.yml'))
