@@ -1,4 +1,3 @@
-import dask.dataframe
 from . import base
 
 
@@ -49,6 +48,8 @@ class CSVSource(base.DataSource):
                                         metadata=metadata)
 
     def _get_schema(self):
+        import dask.dataframe
+
         if self._dataframe is None:
             self._dataframe = dask.dataframe.read_csv(
                 self._urlpath, storage_options=self._storage_options,
