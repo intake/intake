@@ -3,7 +3,6 @@ from functools import partial
 from distutils.version import LooseVersion
 
 import param
-import pandas as pd
 
 from holoviews.core.spaces import DynamicMap, Callable
 from holoviews.core.overlay import NdOverlay
@@ -295,6 +294,7 @@ class HoloViewsConverter(object):
         """
         Helper method to generate element from indexed dataframe.
         """
+        import pandas as pd
         data = self.data if data is None else data
         if isinstance(self.use_index, bool):
             index = data.index.name or 'index'
@@ -322,6 +322,7 @@ class HoloViewsConverter(object):
         """
         Helper method to generate element from indexed dataframe.
         """
+        import pandas as pd
         data = self.data if data is None else data
 
         opts = {'plot': dict(self._plot_opts, labelled=[]),
@@ -403,6 +404,7 @@ class HoloViewsConverter(object):
 
     @streaming
     def kde(self, x, y, data=None):
+        import pandas as pd
         data = self.data if data is None else data
         plot_opts = dict(self._plot_opts)
         invert = self.kwds.get('orientation', False) == 'horizontal'
