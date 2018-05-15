@@ -3,6 +3,7 @@ import dask
 
 from ..container import get_container_klass
 
+
 class Plugin(object):
     def __init__(self, name, version, container, partition_access):
         self.name = name

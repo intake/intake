@@ -2,6 +2,7 @@ import appdirs
 import json
 import os
 import subprocess
+import sys
 
 from .base import Catalog
 
@@ -42,12 +43,38 @@ def conda_prefix():
         return False
 
 
+def which(program):
+    """Emulate posix ``which``
+
+    https://stackoverflow.com/a/377028/3821154
+    """
+    import os
+
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+
+
 def global_data_dir():
     """Return the global Intake catalog dir for the current environment"""
 
     if VIRTUALENV_VAR in os.environ:
         prefix = os.environ[VIRTUALENV_VAR]
-    else:
+    elif CONDA_VAR in os.environ:
+        prefix = sys.prefix
+    elif which('conda'):
+        # conda exists but is not activated
         prefix = conda_prefix()
     
     if prefix:

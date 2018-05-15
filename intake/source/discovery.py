@@ -2,8 +2,12 @@ import pkgutil
 import warnings
 import importlib
 import inspect
+import sys
+import time
+import logging
 
 from .base import Plugin
+logger = logging.getLogger('intake')
 
 
 def autodiscover(path=None, plugin_prefix='intake_'):
@@ -20,6 +24,7 @@ def autodiscover(path=None, plugin_prefix='intake_'):
 
     for importer, name, ispkg in pkgutil.iter_modules(path=path):
         if name.startswith(plugin_prefix):
+            t = time.time()
             new_plugins = load_plugins_from_module(name)
 
             for plugin_name, plugin in new_plugins.items():
@@ -34,6 +39,7 @@ def autodiscover(path=None, plugin_prefix='intake_'):
                                   % (plugin_name, orig_path, new_path))
                 else:
                     plugins[plugin_name] = plugin
+            logger.debug("Import %s took: %7.2f s" % (name, time.time() - t))
 
     return plugins
 
