@@ -1,3 +1,5 @@
+.. _authplugins:
+
 Authorization Plugins
 =====================
 
@@ -18,6 +20,8 @@ An Intake server can have exactly one server side plugin enabled at startup.  Th
         secret: A_SECRET_HASH
 
 .. highlight: python
+
+For more information about configuring the Intake server, see :ref:`configuration`.
 
 The server auth plugin has two methods.  The ``allow_connect()`` method decides whether to allow a client to make any request to the server at all, and the ``allow_access()`` method decides whether the client is allowed to see a particular catalog entry in the listing and whether they are allowed to open that data source.  Note that for catalog entries which allow direct access to the data (via network or shared filesystem), the Intake authorization plugins have no impact on the visibility of the underlying data, only the entries in the catalog.
 
