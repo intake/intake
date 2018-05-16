@@ -4,6 +4,30 @@ Command Line Tools
 The package installs two scripts: one for starting the catalog server and
 another is the client for accessing local or remote catalogs.
 
+Configuration
+-------------
+
+A file-based configuration service is available to Intake. This file is by default
+sought at the location ``~/.intake/conf.yaml``, but either of the environment variables
+``INTAKE_CONF_DIR`` or ``INTAKE_CONF_FILE`` can be used to specify another directory
+or file. If both are given, the latter takes priority.
+
+At present, the configuration file might look as follows:
+
+.. code-block::yaml
+
+  auth:
+    class: "intake.auth.base.BaseAuth"
+  port: 5000
+
+These are the defaults, and any parameters not specified will take the values above
+
+* the Intake Server will listen on port 5000 (this can be overridden on the command line,
+  see below)
+* and the auth system used will be the fully-qualified class given (which, for BaseAuth,
+  always allows access). For further information on securing
+  the Intake Server, see the `auth documentation <auth.html>`_.
+
 Intake Server
 -------------
 
