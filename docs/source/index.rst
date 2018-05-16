@@ -11,6 +11,7 @@ Welcome to Intake's documentation!
     catalog.rst
     tools.rst
     making-plugins.rst
+    auth-plugins.rst
     data-packages.rst
     plotting.ipynb
     plugin-directory.rst
