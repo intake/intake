@@ -1,12 +1,8 @@
 # Base classes for Data Loader interface
-from collections import namedtuple
-
-import pandas as pd
 import dask
-import dask.bag
-import dask.dataframe
 
 from ..container import get_container_klass
+
 
 class Plugin(object):
     def __init__(self, name, version, container, partition_access):

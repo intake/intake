@@ -1,4 +1,3 @@
-import pandas as pd
 import dask
 
 from .base import BaseContainer
@@ -8,6 +7,7 @@ class DataFrame(BaseContainer):
 
     @staticmethod
     def merge(parts):
+        import pandas as pd
         return pd.concat(parts, ignore_index=True)
 
     @staticmethod
@@ -28,8 +28,10 @@ class DataFrame(BaseContainer):
 
     @staticmethod
     def decode(bytestr):
+        import pandas as pd
         return pd.read_msgpack(bytestr)
 
     @staticmethod
     def read(chunks):
+        import pandas as pd
         return pd.concat(chunks)

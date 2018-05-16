@@ -3,12 +3,10 @@ import gzip
 import io
 import pickle
 
-import msgpack
-import msgpack_numpy
-import pandas
 import snappy
 
 from ..container import get_container_klass
+
 
 class NoneCompressor(object):
     name = 'none'
