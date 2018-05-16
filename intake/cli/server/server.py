@@ -82,7 +82,7 @@ class ServerInfoHandler(tornado.web.RequestHandler):
         if self.auth.allow_connect(head):
             sources = []
             for _, name, source in self.catalog.walk():
-                if self.auth.allow_access(head, source):
+                if self.auth.allow_access(head, source, self.catalog):
                     info = source.describe()
                     info['name'] = name
                     sources.append(info)
@@ -151,7 +151,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         if action == 'open':
             entry_name = request['name']
             entry = self._catalog[entry_name]
-            if not self.auth.allow_access(head, entry):
+            if not self.auth.allow_access(head, entry, self._catalog):
                 msg = 'Access forbidden'
                 raise tornado.web.HTTPError(status_code=403, log_message=msg,
                                             reason=msg)

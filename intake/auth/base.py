@@ -19,7 +19,7 @@ class BaseAuth(object):
         """
         return True
 
-    def allow_access(self, header, source):
+    def allow_access(self, header, source, catalog):
         """Is the given HTTP header allowed to access given data source
 
         Parameters
@@ -28,6 +28,8 @@ class BaseAuth(object):
             The HTTP header from the incoming request
         source: CatalogEntry
             The data source the user wants to access.
+        catalog: Catalog
+            The catalog object containing this data source.
         """
         return True
 

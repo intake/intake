@@ -14,7 +14,7 @@ def test_get():
 def test_base():
     auth = BaseAuth()
     assert auth.allow_connect(None)
-    assert auth.allow_access(None, None)
+    assert auth.allow_access(None, None, None)
 
 
 def test_base_client():
@@ -48,8 +48,8 @@ def test_secret():
     # HTTP headers are not case sensitive, and frequently recapitalized
     assert auth.allow_connect({'Intake-Secret': secret})
 
-    assert not auth.allow_access({'intake-secret': 'wrong'}, None)
-    assert auth.allow_access({'intake-secret': secret}, None)
+    assert not auth.allow_access({'intake-secret': 'wrong'}, None, None)
+    assert auth.allow_access({'intake-secret': secret}, None, None)
 
     auth = SecretAuth(secret=secret, key='another_header')
     assert not auth.allow_connect({'intake-secret': secret})

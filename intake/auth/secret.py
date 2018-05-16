@@ -31,7 +31,7 @@ class SecretAuth(BaseAuth):
         except:
             return False
 
-    def allow_access(self, header, source):
+    def allow_access(self, header, source, catalog):
         try:
             return self.get_case_insensitive(header, self.key, '') \
                         == self.secret

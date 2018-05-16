@@ -4,6 +4,8 @@ Command Line Tools
 The package installs two scripts: one for starting the catalog server and
 another is the client for accessing local or remote catalogs.
 
+.. _configuration:
+
 Configuration
 -------------
 
@@ -26,7 +28,7 @@ These are the defaults, and any parameters not specified will take the values ab
   see below)
 * and the auth system used will be the fully-qualified class given (which, for BaseAuth,
   always allows access). For further information on securing
-  the Intake Server, see the `auth documentation <auth.html>`_.
+  the Intake Server, see the :ref:`authplugins`.
 
 Intake Server
 -------------
