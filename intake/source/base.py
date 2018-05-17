@@ -29,7 +29,7 @@ class Plugin(object):
         
         Arguments are plugin specific.
         """
-        raise Exception('Implement open')
+        raise NotImplementedError('Implement open')
 
     @staticmethod
     def separate_base_kwargs(kwargs):
