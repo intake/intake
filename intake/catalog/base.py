@@ -226,6 +226,11 @@ class Catalog(object):
     Each catalog in the hierarchy is responsible for caching the most recent
     modification time of the respective observed entity to prevent overeager
     queries.
+
+    Attributes
+    ----------
+    metadata : dict
+        Dictionary loaded from ``metadata`` section of catalog file.
     """
 
     def __init__(self, *args, **kwargs):
@@ -319,6 +324,7 @@ class Catalog(object):
         return self._entry_tree
 
     def __iter__(self):
+        """Return an iterator over catalog entries."""
         return iter(self._get_entries())
 
     def __dir__(self):
@@ -332,6 +338,10 @@ class Catalog(object):
             return subtree  # is catalog entry
 
     def __getitem__(self, key):
+        """Return a catalog entry by name.
+        
+        Can also use attribute syntax, like ``cat.entry_name``.
+        """
         return getattr(self, key)
 
     @property

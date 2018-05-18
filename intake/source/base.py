@@ -5,6 +5,19 @@ from ..container import get_container_klass
 
 
 class Plugin(object):
+    """Data loader plugin
+
+    Attributes
+    ----------
+    name : str
+        Name of plugin.
+    version : str
+        Version number of plugin
+    container : str
+        Kind of container produced by this plugin: dataframe, ndarray, python
+    partition_access : bool
+        True if this plugin can split data into multiple partitions.
+    """
     def __init__(self, name, version, container, partition_access):
         self.name = name
         self.version = version
@@ -12,7 +25,11 @@ class Plugin(object):
         self.partition_access = partition_access
 
     def open(self, *args, **kwargs):
-        raise Exception('Implement open')
+        """Return a data source.
+        
+        Arguments are plugin specific.
+        """
+        raise NotImplementedError('Implement open')
 
     @staticmethod
     def separate_base_kwargs(kwargs):

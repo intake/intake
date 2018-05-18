@@ -1,3 +1,5 @@
+.. _plugin-directory:
+
 Plugin Directory
 ================
 
@@ -19,5 +21,7 @@ This is a list of known projects which install plugins for Intake:
 
 Don't see your favorite format?  See :doc:`making-plugins` for how to create new plugins.
 
-Note that if you want your plugin listed here, open an issue in the 
-`Intake issue repository <https://github.com/ContinuumIO/intake>`_.  
+Note that if you want your plugin listed here, open an issue in the `Intake
+issue repository <https://github.com/ContinuumIO/intake>`_. We also have a
+`plugin wishlist Github issue <https://github.com/ContinuumIO/intake/issues/58>`_
+that shows the breadth of plugins we hope to see for Intake.

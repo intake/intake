@@ -1,5 +1,14 @@
-Welcome to Intake's documentation!
-==================================
+Intake: A general interface for loading data
+============================================
+
+Intake is a lightweight set of tools for loading and sharing data in data science projects.
+Intake helps you:
+
+* Load data from a variety of formats (see :ref:`plugin-directory`) into containers you already use, like Pandas dataframes, Python lists, NumPy arrays, and more.
+* Read data catalogs and actual data from remote/cloud storage
+* Translate your boilerplate data loading code into reusable Intake plugins
+* Describe data sets in catalog files for easy reuse and sharing between projects and with others.
+* Share catalog information (and data sets) over the network with the Intake server
 
 .. toctree::
     :maxdepth: 1
