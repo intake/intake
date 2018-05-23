@@ -174,6 +174,10 @@ class DataSource(object):
                               "`conda install -c pyviz holoplot` or "
                               "`pip install holoplot`.")
         metadata = self.metadata.get('plot', {})
-        metadata['fields'] = self.metadata.get('fields', {})
+        fields = self.metadata.get('fields', {})
+        for attrs in fields.values():
+            if 'range' in attrs:
+                attrs['range'] = tuple(attrs['range'])
+        metadata['fields'] = fields
         plots = self.metadata.get('plots', {})
         return HoloPlot(self, custom_plots=plots, **metadata)
