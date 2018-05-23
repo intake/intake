@@ -12,7 +12,7 @@ Welcome to Intake's documentation!
     tools.rst
     making-plugins.rst
     data-packages.rst
-    plotting.ipynb
+    plotting.rst
     plugin-directory.rst
 
 
