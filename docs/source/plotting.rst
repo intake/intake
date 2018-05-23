@@ -51,9 +51,11 @@ Once installed the plot API can be used, by using the ``.plot`` method on an int
     crime = intake.cat.us_crime
     columns = ['Burglary rate', 'Larceny-theft rate', 'Robbery rate', 'Violent Crime rate']
 
-    violin = crime.plot.violin(y=columns, group_label='Type of crime', value_label='Rate per 100k', invert=True)
+    violin = crime.plot.violin(y=columns, group_label='Type of crime',
+                               value_label='Rate per 100k', invert=True)
     hp.show(violin)
 
+.. image:: _static/images/plotting_violin.png
 
 Notebook
 --------
@@ -61,8 +63,6 @@ Notebook
 Inside the notebook plots will display themselves, however the notebook extension must be loaded first. The extension may be loaded by importing ``holoplot.intake`` module or explicitly loading the holoviews extension:
 
 .. code-block:: python
-
-    import intake
 
     # To load the extension run this import
     import holoplot.intake
@@ -72,10 +72,11 @@ Inside the notebook plots will display themselves, however the notebook extensio
     hv.extension('bokeh')
 
     crime = intake.cat.us_crime
-    columns = ['Burglary rate', 'Larceny-theft rate', 'Robbery rate', 'Violent Crime rate']
+    columns = ['Violent Crime rate', 'Robbery rate', 'Burglary rate']
+    crime.plot(x='Year', y=columns, value_label='Rate (per 100k people)')
 
-    crime.plot.violin(y=columns, group_label='Type of crime', value_label='Rate per 100k', invert=True)
-
+.. raw:: html
+   :file: _static/images/plotting_example.html
 
 Persisting metadata
 '''''''''''''''''''
