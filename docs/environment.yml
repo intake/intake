@@ -5,6 +5,7 @@ channels:
 dependencies:
   - appdirs
   - python=3.6
+  - dask
   - pip:
     - msgpack-numpy
     - sphinx
