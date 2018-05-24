@@ -189,7 +189,12 @@ class DataSource(object):
             raise ImportError("The intake plotting API requires holoplot."
                               "holoplot may be installed with:\n\n"
                               "`conda install -c pyviz holoplot` or "
-                              "`pip install holoplot`")
+                              "`pip install holoplot`.")
         metadata = self.metadata.get('plot', {})
-        metadata['fields'] = self.metadata.get('fields', {})
-        return HoloPlot(self, **metadata)
+        fields = self.metadata.get('fields', {})
+        for attrs in fields.values():
+            if 'range' in attrs:
+                attrs['range'] = tuple(attrs['range'])
+        metadata['fields'] = fields
+        plots = self.metadata.get('plots', {})
+        return HoloPlot(self, custom_plots=plots, **metadata)

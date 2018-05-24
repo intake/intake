@@ -22,7 +22,7 @@ Intake helps you:
     making-plugins.rst
     auth-plugins.rst
     data-packages.rst
-    plotting.ipynb
+    plotting.rst
     plugin-directory.rst
 
 
