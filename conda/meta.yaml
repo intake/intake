@@ -30,6 +30,7 @@ requirements:
     - dask >=0.17.0
     - python-snappy
     - appdirs
+    - holoplot
 
 test:
   requires:
