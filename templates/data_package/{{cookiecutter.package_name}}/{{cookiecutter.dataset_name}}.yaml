@@ -1,0 +1,9 @@
+metadata:
+  version: 1
+sources:
+  mydataset:
+    description: The Dataset Description
+    driver: parquet
+    args:
+      urlpath: 's3://not_a_real_bucket/star_facts.parq'
+      storage_options: {'anon': True}

@@ -1,0 +1,23 @@
+package:
+  version: '1.0'  # update version number if data contents change
+  name: {{cookiecutter.package_name}}
+
+build:
+  number: 0  # update build number for minor catalog fixes
+  noarch: generic
+
+requirements:
+  run:
+    - intake
+{%- for plugin_name in cookiecutter.required_intake_plugins.split(',') %}
+    - {{plugin_name}}
+{%- endfor %}
+    # Add additional plugins here
+  build: []
+
+about:
+  description: {{cookiecutter.description}}
+
+extra:
+  maintainers:
+   - {{cookiecutter.full_name}} <{{cookiecutter.email}}>

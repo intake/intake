@@ -1,0 +1,9 @@
+{
+    "dataset_name": "starfacts",
+    "package_name": "data-{{cookiecutter.dataset_name}}",
+    "description": "Star Facts",
+    "full_name": "Your Name",
+    "email": "you@example.com",
+    "required_intake_plugins": "intake_parquet",
+    "install_local_data_files": ["no", "yes"]
+}
