@@ -2,7 +2,13 @@ recursive-include intake *.html
 recursive-include intake *.csv
 recursive-include intake *.yml
 recursive-include intake/source/tests/plugin_searchpath *.py
+recursive-include docs/source *
+include docs/Makefile docs/make.bat
+
+recursive-include examples *
+recursive-include templates *
 
 include versioneer.py
 include intake/_version.py
 include intake/catalog/tests/example_plugin_dir/example2_source.py
+include requirements.txt
