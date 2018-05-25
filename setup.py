@@ -10,7 +10,7 @@ setup(
     name='intake',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    description='Data input plugin system',
+    description='Data input plugin and catalog system',
     url='https://github.com/ContinuumIO/intake',
     maintainer='Stan Seibert',
     maintainer_email='sseibert@anaconda.com',
