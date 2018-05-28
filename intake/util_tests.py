@@ -43,7 +43,7 @@ def server(args=None, cat=None, env=None, wait=None, timeout=25):
     if wait is not None:
         while True:
             try:
-                requests.get('http://localhost:%i' % wait)
+                requests.get('http://localhost:%i/v1/info' % wait)
                 break
             except:
                 time.sleep(0.1)

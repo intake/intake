@@ -9,7 +9,6 @@ import tornado.gen
 import tornado.ioloop
 import tornado.web
 
-from .browser import get_browser_handlers
 from .config import conf
 from intake.catalog import serializer
 from intake.auth import get_auth_class
@@ -34,7 +33,7 @@ class IntakeServer(object):
         ]
 
     def make_app(self):
-        handlers = get_browser_handlers(self._catalog) + self.get_handlers()
+        handlers = self.get_handlers()
         return tornado.web.Application(handlers)
 
     def start_periodic_functions(self, close_idle_after=None,

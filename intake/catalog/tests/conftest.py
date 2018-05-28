@@ -23,7 +23,7 @@ def ping_server(url, swallow_exception):
         else:
             raise e
 
-    return r.status_code == 200
+    return r.status_code in (200, 403)  # allow forbidden as well
 
 
 def pick_port():
@@ -59,7 +59,7 @@ def intake_server(request):
 
     try:
         p = subprocess.Popen(cmd, env=env)
-        url = 'http://localhost:%d' % (port,)
+        url = 'http://localhost:%d/v1/info' % (port,)
 
         # wait for server to finish initalizing, but let the exception through
         # on last retry
