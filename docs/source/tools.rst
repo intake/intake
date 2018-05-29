@@ -34,8 +34,7 @@ Intake Server
 -------------
 
 The server takes one or more catalog files as input and makes them available on
-port 5000 by default. You can view the data sources by opening your web browser
-to `<http://localhost:5000>`_.
+port 5000 by default.
 
 You can see the full description of the server command with:
 
