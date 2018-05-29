@@ -64,6 +64,20 @@ def make_prefix_tree(flat_dict):
     return tree
 
 
+def _expand(p, context, all_vars):
+    if isinstance(p, dict):
+        return {k: _expand(v, context, all_vars) for k, v in p.items()}
+    elif isinstance(p, (list, tuple, set)):
+        return type(p)(_expand(v, context, all_vars) for v in p)
+    elif isinstance(p, six.string_types):
+        ast = Environment().parse(p)
+        all_vars -= meta.find_undeclared_variables(ast)
+        return Template(p).render(context)
+    else:
+        # no expansion
+        return p
+
+
 def expand_templates(pars, context, return_left=False):
     """
     Render variables in context into the set of parameters with jinja2.
@@ -86,14 +100,7 @@ def expand_templates(pars, context, return_left=False):
     return set of unused parameter names.
     """
     all_vars = set(context)
-    out = {}
-    for k, v in pars.items():
-        ast = Environment().parse(v)
-        all_vars -= meta.find_undeclared_variables(ast)
-        if isinstance(v, six.string_types):
-            out[k] = Template(v).render(context)
-        else:
-            out[k] = v
+    out = _expand(pars, context, all_vars)
     if return_left:
         return out, all_vars
     return out
