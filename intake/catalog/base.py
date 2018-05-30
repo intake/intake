@@ -257,7 +257,7 @@ class Catalog(object):
         self.getshell = kwargs.pop('getshell', True)
         self.auth = kwargs.pop('auth', None)
 
-        if self.auth == None:
+        if self.auth is None:
             self.auth = BaseClientAuth()
 
         self.storage_options = kwargs.pop('storage_options', {})

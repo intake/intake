@@ -132,7 +132,7 @@ fetched by running some external command. The special syntax are:
   value will come from the environment of the client.
 - ``shell(get_login thisuser -t)``: execute the command, and use the output as the value. The
   output will be trimmed of any trailing whitespace.
-- ``shell(get_login thisuser -t)``: exactly the same, except that when using a client-server
+- ``client_shell(get_login thisuser -t)``: exactly the same, except that when using a client-server
   topology, the value will come from the system of the client.
 
 Since it may not be desirable to have the access of
