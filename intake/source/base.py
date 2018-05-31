@@ -69,7 +69,9 @@ class DataSource(object):
 
         # monkey for requests keywords
         for key in ['auth', 'verify']:
-            if 'storage_options' in kwargs and key in kwargs['storage_options']:
+            if (kwargs and kwargs.get('storage_options', None)
+                    and key in kwargs['storage_options']):
+
                 if isinstance(kwargs['storage_options'][key], list):
                     kwargs['storage_options'][key] = tuple(
                         kwargs['storage_options'][key])

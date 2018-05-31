@@ -1,5 +1,3 @@
-import dask
-
 from .base import BaseContainer
 
 
@@ -12,6 +10,7 @@ class DataFrame(BaseContainer):
 
     @staticmethod
     def to_dask(parts, dtype):
+        import dask.dataframe
         # Compat: prefer dtype to already be meta-like, but can construct
         # maybe should use dask.dataframe.utils.make_meta
         if hasattr(dtype, 'fields'):
