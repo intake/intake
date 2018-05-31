@@ -66,11 +66,13 @@ class DataSource(object):
         # automatically capture __init__ arguments for pickling
         o._captured_init_args = args
         o._captured_init_kwargs = kwargs
-        # monkey for requests auth= keyword
-        if 'storage_options' in kwargs and 'auth' in kwargs['storage_options']:
-            if isinstance(kwargs['storage_options']['auth'], list):
-                kwargs['storage_options']['auth'] = tuple(
-                    kwargs['storage_options']['auth'])
+
+        # monkey for requests keywords
+        for key in ['auth', 'verify']:
+            if 'storage_options' in kwargs and key in kwargs['storage_options']:
+                if isinstance(kwargs['storage_options'][key], list):
+                    kwargs['storage_options'][key] = tuple(
+                        kwargs['storage_options'][key])
         return o
 
     def __getstate__(self):
