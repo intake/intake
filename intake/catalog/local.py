@@ -6,7 +6,10 @@ import os.path
 import runpy
 import yaml
 
-from ruamel.yaml.constructor import DuplicateKeyError
+try:
+    from ruamel_yaml.constructor import DuplicateKeyError
+except:
+    from ruamel.yaml.constructor import DuplicateKeyError
 
 from jinja2 import Template
 import six
