@@ -47,7 +47,7 @@ class RemoteCatalogEntry(CatalogEntry):
         return RemoteDataSource(
             self.url, entry['name'], container=entry['container'],
             user_parameters=user_parameters, description=entry['description'],
-            http_args=self.http_args
+            http_args=http_args
             )
 
 

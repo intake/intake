@@ -41,17 +41,17 @@ def intake_server_with_auth(intake_server):
 
     with open(fullname, 'w') as f:
         f.write('''
-plugins:
-  source:
-    - module: intake.catalog.tests.example1_source
-    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
 sources:
-  use_example1:
+  example:
     description: example1 source plugin
-    driver: example1
-    args: {}
+    driver: csv
+    args:
+      urlpath: "{{ CATALOG_DIR }}/example.csv"
         ''')
 
+    csv_name = os.path.join(TMP_DIR, 'example.csv')
+    with open(csv_name, 'w') as f:
+        f.write('a,b,c\n1,2,3\n4,5,6\n')
     time.sleep(2)
 
     yield intake_server
@@ -64,8 +64,9 @@ def test_secret_auth(intake_server_with_auth):
     catalog = Catalog(intake_server_with_auth, auth=auth)
 
     entries = list(catalog)
-    assert entries == ['use_example1']
+    assert entries == ['example']
 
+    df = catalog.example.read()
 
 def test_secret_auth_fail(intake_server_with_auth):
     auth = SecretClientAuth(secret='test_wrong_secret')
