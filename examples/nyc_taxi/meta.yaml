@@ -14,7 +14,7 @@ requirements:
   build: []
 
 about:
-  description: NYC Taxi Trip data
+  description: NYC Taxi Trip Data - January 2015
   license: MIT
   license_family: MIT
   summary: A dataset of NYC Taxi trips
