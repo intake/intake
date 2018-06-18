@@ -37,6 +37,28 @@ def make_open_functions():
                           plugin_name)
 
 
+def output_notebook(inline=True, logo=False):
+    """
+    Load the notebook extension
+
+    Parameters
+    ----------
+    inline : boolean (optional)
+        Whether to inline JS code or load it from a CDN
+    logo : boolean (optional)
+        Whether to show the logo(s)
+    """
+    try:
+        import holoplot
+        import holoviews as hv
+    except:
+        raise ImportError("The intake plotting API requires holoplot."
+                          "holoplot may be installed with:\n\n"
+                          "`conda install -c pyviz holoplot` or "
+                          "`pip install holoplot`.")
+    hv.extension('bokeh', inline=inline, logo=logo)
+
+
 make_open_functions()
 
 # Import default catalog

@@ -206,3 +206,10 @@ class DataSource(object):
         metadata['fields'] = fields
         plots = self.metadata.get('plots', {})
         return HoloPlot(self, custom_plots=plots, **metadata)
+
+    @property
+    def holoplot(self):
+        """
+        Returns a HoloPlot object to provide a high-level plotting API.
+        """
+        return self.plot
