@@ -27,7 +27,7 @@ def catalog1():
 def test_local_catalog(catalog1):
     assert_items_equal(list(catalog1),
                        ['use_example1', 'nested', 'entry1', 'entry1_part',
-                        'remote_env', 'local_env', 'text'])
+                        'remote_env', 'local_env', 'text', 'simple_cache'])
     assert catalog1['entry1'].describe() == {
         'container': 'dataframe',
         'direct_access': 'forbid',
@@ -63,6 +63,10 @@ def test_nested(catalog1):
     assert catalog1.entry1.read().equals(catalog1.nested.nested.entry1.read())
     assert 'nested.nested' not in catalog1.walk(depth=1)
     assert 'nested.nested' in catalog1.walk(depth=2)
+
+
+def test_cache_catalog(catalog1):
+    assert 'cache' in catalog1['simple_cache'].describe_open().keys()
 
 
 def test_source_plugin_config(catalog1):
@@ -243,7 +247,8 @@ def test_union_catalog():
         'description': 'entry1 part',
         'direct_access': 'allow',
         'metadata': {'bar': [2, 4, 6], 'foo': 'baz'},
-        'plugin': 'csv'
+        'plugin': 'csv',
+        'cache': []
     }
 
     # Implied creation of data source

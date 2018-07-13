@@ -112,7 +112,7 @@ class UserParameter(object):
 class LocalCatalogEntry(CatalogEntry):
     """A catalog entry on the local system
     """
-    def __init__(self, name, description, driver, direct_access, args,
+    def __init__(self, name, description, driver, direct_access, args, cache,
                  parameters, metadata, catalog_dir, getenv=True, getshell=True):
         """
 
@@ -144,6 +144,7 @@ class LocalCatalogEntry(CatalogEntry):
         self._driver = driver
         self._direct_access = direct_access
         self._open_args = args
+        self._cache = cache
         self._user_parameters = parameters
         self._metadata = metadata
         self._catalog_dir = catalog_dir
@@ -186,7 +187,8 @@ class LocalCatalogEntry(CatalogEntry):
             'description': self._description,
             'direct_access': self._direct_access,
             'metadata': self._metadata,
-            'args': self._create_open_args(user_parameters)
+            'args': self._create_open_args(user_parameters),
+            'cache': self._cache
         }
 
     def get(self, **user_parameters):
@@ -348,6 +350,7 @@ class CatalogParser(object):
                 data, 'direct_access', str, required=False, default='forbid',
                 choices=['forbid', 'allow', 'force']),
             'args': self._getitem(data, 'args', dict, required=False),
+            'cache': self._getitem(data, 'cache', list, required=False),
             'metadata': self._getitem(data, 'metadata', dict, required=False)
         }
 
@@ -571,7 +574,7 @@ class YAMLFilesCatalog(Catalog):
             if f.path not in self._cats:
                 entry = LocalCatalogEntry(name, "YAML file: %s" % name,
                                           'yaml_file_cat', True,
-                                          kwargs, {}, self.metadata, d)
+                                          kwargs, [], {}, self.metadata, d)
                 if self._flatten:
                     # store a concrete Catalog
                     self._cats[f.path] = entry()
