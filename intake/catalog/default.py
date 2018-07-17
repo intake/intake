@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 
-from .base import Catalog
+from .local import YAMLFilesCatalog
 
 
 def load_user_catalog():
@@ -91,13 +91,12 @@ def load_combo_catalog():
 
     cat_dirs = []
     if os.path.isdir(user_dir):
-        cat_dirs.append(user_dir)
+        cat_dirs.append(user_dir + '/*.yaml')
+        cat_dirs.append(user_dir + '/*.yml')
     if os.path.isdir(global_dir):
-        cat_dirs.append(global_dir)
+        cat_dirs.append(global_dir + '/*.yaml')
+        cat_dirs.append(global_dir + '/*.yml')
 
     # TODO: if we find no dirs or dirs are empty,
     # Catalog should cope and return empty without this branching
-    if len(cat_dirs) > 0:
-        return Catalog(cat_dirs)
-    else:
-        return Catalog()
+    return YAMLFilesCatalog(cat_dirs)

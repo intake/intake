@@ -14,6 +14,7 @@ from dask.bytes import open_files
 
 from . import exceptions, register, Catalog
 from .entry import CatalogEntry
+from .. import __version__
 from ..source import registry as global_registry
 from ..source.base import Plugin
 from ..source.discovery import load_plugins_from_module
@@ -120,7 +121,7 @@ class LocalCatalogEntry(CatalogEntry):
         self._user_parameters = parameters
         self._metadata = metadata
         self._catalog_dir = catalog_dir
-        self._plugin = None
+        self._plugin = global_registry[driver]
         super(LocalCatalogEntry, self).__init__(
             getenv=getenv, getshell=getshell)
 
@@ -331,7 +332,7 @@ class CatalogParser(object):
                 self.error("missing one of the available keys ('module' or "
                            "'dir')", plugin_source)
 
-        return sources
+        global_registry.update(sources)
 
     def _getitem(self, obj, key, dtype, required=True, default=None,
                  choices=None):
@@ -463,7 +464,14 @@ class CatalogParser(object):
 
 
 class YAMLFileCatalog(Catalog):
+    """Catalog as described by a single YAML file"""
     def __init__(self, path, **kwargs):
+        """
+        Parameters
+        ----------
+        path: str
+            Location of the file to parse (can be remote)
+        """
         self.path = path
         super(YAMLFileCatalog, self).__init__(**kwargs)
 
@@ -478,12 +486,7 @@ class YAMLFileCatalog(Catalog):
             file_open = open_files(self.path, mode='rb', **options)
             assert len(file_open) == 1
             file_open = file_open[0]
-        if file_open.path.startswith('http'):
-            # do not reload from HTTP
-            self.token = file_open.path
-        else:
-            self.token = file_open.fs.ukey(file_open.path)
-        self._name = os.path.splitext(os.path.basename(
+        self.name = os.path.splitext(os.path.basename(
             self.path))[0].replace('.', '_')
         self._dir = os.path.dirname(self.path)
         with file_open as f:
@@ -522,7 +525,107 @@ class YAMLFileCatalog(Catalog):
 
         self._entries = {}
         for entry in cfg['data_sources']:
-            entry._plugin = global_registry[entry._driver]
             self._entries[entry.name] = entry
 
         self.metadata = cfg.get('metadata', {})
+
+
+class YAMLFileCatalogPlugin(Plugin):
+    def __init__(self):
+        super(YAMLFileCatalogPlugin, self).__init__(name='yaml_file_cat',
+                                                    version=__version__,
+                                                    container='catalog',
+                                                    partition_access=None)
+
+    def open(self, path, **kwargs):
+        """
+        Create SQLCatalog instance for given connection
+        """
+        base_kwargs, source_kwargs = self.separate_base_kwargs(kwargs)
+        return YAMLFileCatalog(path,
+                               metadata=base_kwargs['metadata'],
+                               **source_kwargs)
+
+
+global_registry['yaml_file_cat'] = YAMLFileCatalogPlugin()
+
+
+class YAMLFilesCatalog(Catalog):
+    """Catalog as described by a multiple YAML files"""
+    def __init__(self, path, flatten=True, **kwargs):
+        """
+        Parameters
+        ----------
+        path: str
+            Location of the files to parse (can be remote), including possible
+            glob (*) character(s). Can also be list of paths, without glob
+            characters.
+        flatten: bool (True)
+            Whether to list all entries in the cats at the top level (True)
+            or create sub-cats from each file (False).
+        """
+        self.path = path
+        self._flatten = flatten
+        self._kwargs = kwargs.copy()
+        self._cat_files = []
+        self._cats = {}
+        self.name = "multi_yamls"
+        super(YAMLFilesCatalog, self).__init__(**kwargs)
+
+    def _load(self):
+        # initial: find cat files
+        # if flattening, need to get all entries from each.
+        self._entries.clear()
+        options = self.storage_options or {}
+        if isinstance(self.path, (list, tuple)):
+            files = sum([open_files(p, mode='rb', **options)
+                         for p in self.path], [])
+        else:
+            files = open_files(self.path, mode='rb', **options)
+        if not set(f.path for f in files) == set(
+                f.path for f in self._cat_files):
+            # glob changed, reload all
+            self._cat_files = files
+            self._cats.clear()
+        for f in files:
+            name = os.path.split(f.path)[-1].replace(
+                '.yaml', '').replace('.yml', '')
+            kwargs = self.kwargs.copy()
+            kwargs['path'] = f.path
+            d = os.path.dirname(f.path)
+            if f.path not in self._cats:
+                entry = LocalCatalogEntry(name, "YAML file: %s" % name,
+                                          'yaml_file_cat', True,
+                                          kwargs, {}, self.metadata, d)
+                if self._flatten:
+                    # store a concrete Catalog
+                    self._cats[f.path] = entry()
+                else:
+                    # store a catalog entry
+                    self._cats[f.path] = entry
+        for entry in self._cats.values():
+            if self._flatten:
+                entry.reload()
+                self._entries.update(entry._entries)
+            else:
+                self._entries[entry._name] = entry
+
+
+class YAMLFilesCatalogPlugin(Plugin):
+    def __init__(self):
+        super(YAMLFilesCatalogPlugin, self).__init__(name='yaml_files_cat',
+                                                     version=__version__,
+                                                     container='catalog',
+                                                     partition_access=None)
+
+    def open(self, path, **kwargs):
+        """
+        Create SQLCatalog instance for given connection
+        """
+        base_kwargs, source_kwargs = self.separate_base_kwargs(kwargs)
+        return YAMLFilesCatalog(path,
+                                metadata=base_kwargs['metadata'],
+                                **source_kwargs)
+
+
+global_registry['yaml_files_cat'] = YAMLFilesCatalogPlugin()

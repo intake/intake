@@ -3,11 +3,11 @@ import warnings
 
 from . import source
 from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
 from .catalog.default import load_combo_catalog
 from .catalog import Catalog
 
-__version__ = get_versions()['version']
-del get_versions
 
 __all__ = ['registry', 'Catalog', 'make_open_functions', 'cat']
 

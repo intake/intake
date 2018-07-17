@@ -183,6 +183,9 @@ class Catalog(object):
     def __dir__(self):
         return list(self)
 
+    def __repr__(self):
+        return "<Intake catalog: %s>" % self.name
+
     def __getattr__(self, item):
         return self._get_entry(item)
 
@@ -191,19 +194,11 @@ class Catalog(object):
         
         Can also use attribute syntax, like ``cat.entry_name``.
         """
-        if '.' in key:
-            out = self
-            for k in key.split('.'):
-                if isinstance(out, CatalogEntry):
-                    out = out()  # default parameters
-                if not isinstance(out, Catalog):
-                    raise ValueError("Attempt to recurse into non-catalog")
-                out = getattr(out, k)
-            return out
-        else:
-            return getattr(self, key)
-
-    @property
-    @reload_on_change
-    def plugins(self):
-        return self._plugins
+        out = self
+        for k in key.split('.'):
+            if isinstance(out, CatalogEntry):
+                out = out()  # default parameters
+            if not isinstance(out, Catalog):
+                raise ValueError("Attempt to recurse into non-catalog")
+            out = getattr(out, k)
+        return out
