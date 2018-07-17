@@ -7,90 +7,17 @@ from requests.compat import urljoin, urlparse
 from dask.bytes import open_files
 
 from ..auth.base import BaseClientAuth
-from .local import CatalogConfig
+from .entry import CatalogEntry
 from .remote import RemoteCatalogEntry
-from .utils import clamp, flatten, reload_on_change, make_prefix_tree
+from .utils import clamp, flatten, reload_on_change
 logger = logging.getLogger('intake')
 
 
-class State(object):
-    """Base class representing the state of a catalog source"""
-
-    def __init__(self, name, observable, ttl, getenv=True, getshell=True):
-        self.name = name
-        self.observable = observable
-        self.ttl = clamp(ttl)
-        self._modification_time = 0
-        self._last_updated = 0
-        self.getenv = getenv
-        self.getshell = getshell
-        self.metadata = {}
-
-    def refresh(self):
-        return None, {}, {}, []
-
-    def update_modification_time(self, value):
-        now = time.time()
-        if now - self._last_updated > self.ttl:
-            updated = value > self._modification_time
-            self._modification_time = value
-            self._last_updated = now
-            return updated
-        return False
-
-    def changed(self):
-        return self.update_modification_time(time.time())
-
-
-class DirectoryState(State):
-    """The state of a directory of catalog files"""
-
-    def __init__(self, name, observable, ttl, getenv=True, getshell=True,
-                 storage_options=None):
-        super(DirectoryState, self).__init__(name, observable, ttl,
-                                             getenv=getenv, getshell=getshell)
-        self.catalogs = []
-        self.storage_options = storage_options
-        self._last_files = []
-        self.metadata = {}
-
-    def refresh(self):
-        catalogs = []
-        self.metadata.clear()
-        self._last_files = []
-
-        fns = (open_files(self.observable + '/*.yaml') +
-               open_files(self.observable + '/*.yml'))
-        for f in fns:
-            try:
-                self._last_files.append(f.path)
-                catalogs.append(Catalog(f))
-                self.metadata[f.path] = catalogs[-1].metadata
-            except Exception as e:
-                logger.warning("%s: %s" % (str(e), f))
-
-        self.catalogs = catalogs
-        children = {catalog.name: catalog for catalog in self.catalogs}
-
-        return self.name, children, {}, []
-
-    def changed(self):
-        fns = (open_files(self.observable + '/*.yaml') +
-               open_files(self.observable + '/*.yml'))
-
-        modified = set(fn.path for fn in fns) != set(self._last_files)
-        if modified:
-            self.refresh()
-        return any([modified] + [catalog.changed for catalog in self.catalogs])
-
-
-class RemoteState(State):
+class RemoteState():
     """The state of a remote Intake server"""
 
     def __init__(self, name, observable, ttl, auth, getenv=True, getshell=True,
                  http_args=None):
-        super(RemoteState, self).__init__(name, observable, ttl,
-                                          getenv=getenv, getshell=getshell)
         self.http_args = http_args or {}
         secure = http_args.pop('ssl', False)
         scheme = 'https' if secure else 'http'
@@ -127,89 +54,6 @@ class RemoteState(State):
                    for s in info['sources']}
 
         return name, {}, entries, []
-
-
-class LocalState(State):
-    """The state of a catalog file on the local filesystem"""
-
-    def __init__(self, name, observable, ttl, getenv=True, getshell=True,
-                 storage_options=None):
-        self.storage_options = storage_options
-        super(LocalState, self).__init__(name, observable, ttl,
-                                         getenv=getenv, getshell=getshell)
-        self.token = ''
-        self.metadata = {}
-
-    def refresh(self):
-        cfg = CatalogConfig(self.observable, getenv=self.getenv,
-                            getshell=self.getshell,
-                            storage_options=self.storage_options)
-        self.token = cfg.token
-        self.metadata = cfg.metadata
-        return cfg.name, {}, cfg.entries, cfg.plugins
-
-    def changed(self):
-        token = CatalogConfig(self.observable, getenv=False, getshell=False,
-                              storage_options=self.storage_options).token
-        return token != self.token
-
-
-class CollectionState(State):
-    """The state of a collection of other states"""
-
-    def __init__(self, name, observable, ttl, getenv=True, getshell=True,
-                 storage_options=None):
-        super(CollectionState, self).__init__(name, observable, ttl)
-        # This name is a workaround to deal with issue that will be
-        # solved in another PR
-        self.catalogs = [Catalog(uri, name='cat%d' % i, getenv=getenv,
-                                 getshell=getshell,
-                                 storage_options=storage_options)
-                         for i, uri in enumerate(self.observable)]
-        self.metadata = {uri: c.metadata for uri, c in zip(self.observable,
-                                                           self.catalogs)}
-
-    def refresh(self):
-        for catalog in self.catalogs:
-            catalog.reload()
-        name = None
-        children = {catalog.name: catalog for catalog in self.catalogs}
-        return name, children, {}, []
-
-    def changed(self):
-        return any([catalog.changed for catalog in self.catalogs])
-
-
-def create_state(name, observable, ttl, auth, getenv=True, getshell=True,
-                 storage_options=None):
-    if observable is None or observable == []:
-        return State(name, observable, ttl)
-    if isinstance(observable, list):
-        if len(observable) > 1:
-            return CollectionState(name, observable, ttl, getenv=getenv,
-                                   getshell=getshell,
-                                   storage_options=storage_options)
-        if len(observable) == 0:
-            return Catalog()
-        observable = observable[0]
-    if isinstance(observable, str):
-        if observable.startswith('intake://'):
-            return RemoteState(name, observable, ttl,
-                               auth=auth,
-                               getenv=getenv,
-                               getshell=getshell, http_args=storage_options)
-        elif observable.endswith('.yml') or observable.endswith('.yaml'):
-            return LocalState(name, observable, ttl, getenv=getenv,
-                              getshell=getshell,
-                              storage_options=storage_options)
-        else:
-            return DirectoryState(name, observable, ttl, getenv=getenv,
-                                  getshell=getshell,
-                                  storage_options=storage_options)
-    else:
-        # try file-like
-        return LocalState(name, observable, ttl, getenv=getenv,
-                          getshell=getshell)
 
 
 class Catalog(object):
@@ -251,115 +95,115 @@ class Catalog(object):
             parameters to pass to remote backend file-system. Ignored for
             normal local files.
         """
-        name = kwargs.get('name', None)
-        ttl = kwargs.get('ttl', 1)
+        self.name = kwargs.get('name', None)
+        self.ttl = kwargs.get('ttl', 1)
         self.getenv = kwargs.pop('getenv', True)
         self.getshell = kwargs.pop('getshell', True)
         self.auth = kwargs.pop('auth', None)
+        self.metadata = kwargs.pop('metadata', None)
+        self.storage_options = kwargs.pop('storage_options', {})
+        self.kwargs = kwargs
 
         if self.auth is None:
             self.auth = BaseClientAuth()
-
-        self.storage_options = kwargs.pop('storage_options', {})
 
         if all(isinstance(a, (tuple, list)) for a in args):
             args = list(flatten(args))
         if len(args) == 1:
             args = args[0]
+        self.args = args
+        self.updated = time.time()
+        self._entries = {}
+        self.force_reload()
 
-        self._state = create_state(name, args, ttl,
-                                   auth=self.auth,
-                                   getenv=self.getenv,
-                                   getshell=self.getshell,
-                                   storage_options=self.storage_options)
-        self.metadata = {}
-        self.reload()
+    def _load(self):
+        """Override this: load catalog entries"""
+        pass
+
+    def force_reload(self):
+        """Imperative reload data now"""
+        self._load()
+        self.updated = time.time()
 
     def reload(self):
-        self.name, self._children, self._entries, self._plugins = self._state.refresh()
-        self.metadata = self._state.metadata
-        self._all_entries = {source: cat_entry for _, source, cat_entry
-                             in self.walk(leaves=True) }
-        self._entry_tree = make_prefix_tree(self._all_entries)
+        """Reload catalog if sufficient time has passed"""
+        if time.time() - self.updated > self.ttl:
+            self.force_reload()
 
     @property
     def version(self):
         # default version for pre-v1 files
         return self.metadata.get('version', 1)
 
-    @property
-    def changed(self):
-        return self._state.changed()
-
     @reload_on_change
-    def walk(self, leaves=True):
-        visited, queue = set(), [self]
-        while queue:
-            catalog = queue.pop(0)
-            if catalog not in visited:
-                visited.add(catalog)
-                queue.extend(set(catalog._children.values()) - visited)
-                if leaves:
-                    for source in catalog._entries:
-                        yield catalog, source, catalog._entries[source]
-                else:
-                    yield catalog
+    def walk(self, sofar=None, prefix=None, depth=2):
+        """Get all entries in this catalog and sub-catalogs
 
-    def get_catalog(self, name):
-        for catalog in self.walk(leaves=False):
-            if catalog.name == name:
-                return catalog
-        raise KeyError(name)
+        Parameters
+        ----------
+        sofar: dict or None
+            Within recursion, use this dict for output
+        prefix: list of str or None
+            Names of levels already visited
+        depth: int
+            Number of levels to descend; needed to truncate circular references
+            and for cleaner output
+
+        Returns
+        -------
+        Dict where the keys are the entry names in dotted syntax, and the
+        values are entry instances.
+        """
+        out = sofar if sofar is not None else {}
+        prefix = [] if prefix is None else prefix
+        for name, item in self._get_entries().items():
+            if item.container == 'catalog' and depth > 1:
+                # recurse with default open parameters
+                try:
+                    item().walk(out, prefix + [name], depth-1)
+                except Exception as e:
+                    print(e)
+                    pass  # ignore inability to descend
+            n = '.'.join(prefix + [name])
+            out[n] = item
+        return out
 
     @reload_on_change
     def _get_entry(self, name):
-        return self._all_entries[name]
+        return self._entries[name]
 
     @reload_on_change
     def _get_entries(self):
-        return self._all_entries
-
-    @reload_on_change
-    def _get_entry_tree(self):
-        return self._entry_tree
+        return self._entries
 
     def __iter__(self):
         """Return an iterator over catalog entries."""
         return iter(self._get_entries())
 
     def __dir__(self):
-        return list(self._get_entry_tree().keys())
+        return list(self)
 
     def __getattr__(self, item):
-        subtree = self._get_entry_tree()[item]
-        if isinstance(subtree, dict):
-            return CatalogSubtree(subtree)
-        else:
-            return subtree  # is catalog entry
+        return self._get_entry(item)
 
     def __getitem__(self, key):
         """Return a catalog entry by name.
         
         Can also use attribute syntax, like ``cat.entry_name``.
         """
-        return getattr(self, key)
+        if '.' in key:
+            out = self
+            for k in key.split('.'):
+                if isinstance(out, CatalogEntry):
+                    out = out()  # default parameters
+                if not isinstance(out, Catalog):
+                    raise ValueError("Attempt to recurse into non-catalog")
+                out = getattr(out, k)
+            return out
+        else:
+            return getattr(self, key)
 
     @property
     @reload_on_change
     def plugins(self):
         return self._plugins
-
-
-class CatalogSubtree(object):
-    def __init__(self, subtree):
-        self._subtree = subtree
-
-    def __dir__(self):
-        return list(self._subtree.keys())
-
-    def __getattr__(self, item):
-        subtree = self._subtree[item]
-        if isinstance(subtree, dict):
-            return CatalogSubtree(subtree)
-        else:
-            return subtree  # is catalog entry

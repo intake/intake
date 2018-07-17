@@ -12,7 +12,7 @@ from jinja2 import Template
 import six
 from dask.bytes import open_files
 
-from . import exceptions
+from . import exceptions, register, Catalog
 from .entry import CatalogEntry
 from ..source import registry as global_registry
 from ..source.base import Plugin
@@ -127,12 +127,6 @@ class LocalCatalogEntry(CatalogEntry):
     @property
     def name(self):
         return self._name
-
-    def find_plugin(self, registry):
-        if self._driver in registry:
-            self._plugin = registry[self._driver]
-        else:
-            self._plugin = global_registry[self._driver]
 
     def describe(self):
         return {
@@ -468,17 +462,20 @@ class CatalogParser(object):
         )
 
 
-class CatalogConfig(object):
-    def __init__(self, path, getenv=True, getshell=True, storage_options=None):
-        self._path = path
+class YAMLFileCatalog(Catalog):
+    def __init__(self, path, **kwargs):
+        self.path = path
+        super(YAMLFileCatalog, self).__init__(**kwargs)
 
+    def _load(self):
         # First, we load from YAML, failing if syntax errors are found
-        options = storage_options or {}
-        if hasattr(path, 'path') or hasattr(path, 'read'):
-            file_open = path
-            self._path = getattr(path, 'path', getattr(path, 'name', 'file'))
+        options = self.storage_options or {}
+        if hasattr(self.path, 'path') or hasattr(self.path, 'read'):
+            file_open = self.path
+            self.path = getattr(self.path, 'path',
+                                getattr(self.path, 'name', 'file'))
         else:
-            file_open = open_files(self._path, mode='rb', **options)
+            file_open = open_files(self.path, mode='rb', **options)
             assert len(file_open) == 1
             file_open = file_open[0]
         if file_open.path.startswith('http'):
@@ -487,8 +484,8 @@ class CatalogConfig(object):
         else:
             self.token = file_open.fs.ukey(file_open.path)
         self._name = os.path.splitext(os.path.basename(
-            self._path))[0].replace('.', '_')
-        self._dir = os.path.dirname(self._path)
+            self.path))[0].replace('.', '_')
+        self._dir = os.path.dirname(self.path)
         with file_open as f:
             text = f.read().decode()
         if "!template " in text:
@@ -502,42 +499,30 @@ class CatalogConfig(object):
 
         if data is None:
             raise exceptions.CatalogException('No YAML data in file')
+
         # Second, we validate the schema and semantics
         context = dict(root=self._dir)
-        result = CatalogParser(data, context=context, getenv=getenv,
-                               getshell=getshell)
+        result = CatalogParser(data, context=context, getenv=self.getenv,
+                               getshell=self.getshell)
         if result.errors:
             errors = ["line {}, column {}: {}".format(*error)
                       for error in result.errors]
             raise exceptions.ValidationError(
                 "Catalog '{}' has validation errors:\n\n{}"
-                "".format(path, "\n".join(errors)), result.errors)
+                "".format(self.path, "\n".join(errors)), result.errors)
 
         cfg = result.data
 
         # Finally, we create the plugins and entries. Failure is still possible.
         params = dict(CATALOG_DIR=self._dir)
 
-        self._plugins = {}
         for ps in cfg['plugin_sources']:
             ps.source = Template(ps.source).render(params)
-            self._plugins.update(ps.load())
+            ps.load()
 
         self._entries = {}
         for entry in cfg['data_sources']:
-            entry.find_plugin(self._plugins)
+            entry._plugin = global_registry[entry._driver]
             self._entries[entry.name] = entry
 
         self.metadata = cfg.get('metadata', {})
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def plugins(self):
-        return self._plugins
-
-    @property
-    def entries(self):
-        return self._entries
