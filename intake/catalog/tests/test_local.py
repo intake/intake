@@ -65,7 +65,6 @@ def test_source_plugin_config(catalog1):
 def test_metadata(catalog1):
     assert hasattr(catalog1, 'metadata')
     assert catalog1['metadata']['test'] is True
-    assert catalog1.version == 1
 
 
 def test_use_source_plugin_from_config(catalog1):
@@ -188,7 +187,6 @@ def test_user_parameter_validation_allowed():
     "plugins_source_missing_key",
     "plugins_source_non_dict",
     "plugins_source_non_list",
-    "plugins_source_non_string",
 ])
 def test_parser_validation_error(filename):
     with pytest.raises(exceptions.ValidationError):
@@ -294,7 +292,7 @@ sources:
 
 def test_catalog_file_removal(temp_catalog_file):
     cat_dir = os.path.dirname(temp_catalog_file)
-    cat = Catalog(cat_dir) 
+    cat = Catalog(cat_dir + '/*')
     assert set(cat) == {'a', 'b'}
 
     os.remove(temp_catalog_file)

@@ -1,9 +1,6 @@
-import glob
-import inspect
 import logging
 import os
 import os.path
-import runpy
 import yaml
 
 from ruamel_yaml.constructor import DuplicateKeyError
@@ -17,8 +14,7 @@ from .base import Catalog
 from . import exceptions
 from .entry import CatalogEntry
 from ..source import registry as global_registry
-from ..source.base import DataSource
-from ..source.discovery import load_plugins_from_module
+from ..source.discovery import autodiscover, load_plugins_from_module
 from .utils import expand_templates, expand_defaults, coerce, COERCION_RULES
 
 
@@ -170,49 +166,6 @@ class LocalCatalogEntry(CatalogEntry):
         return data_source
 
 
-class PluginSource(object):
-    def __init__(self, type, source):
-        self.type = type
-        self.source = source
-
-    def _load_from_module(self):
-        return load_plugins_from_module(self.source)
-
-    def _load_from_dir(self):
-        plugins = {}
-        pyfiles = glob.glob(os.path.join(self.source, '*.py'))
-
-        for filename in pyfiles:
-            try:
-                globs = runpy.run_path(filename)
-                for name, o in globs.items():
-                    if (inspect.isclass(o)
-                            and issubclass(o, (Catalog, DataSource))):
-                        plugins[o.name] = o
-                # If no exceptions, continue to next filename
-                continue
-            except Exception as ex:
-                logger.warning('When importing {}:\n{}'.format(filename, ex))
-
-            import imp
-            base = os.path.splitext(filename)[0]
-            mod = imp.load_source(base, filename)
-            for name in mod.__dict__:
-                obj = getattr(mod, name)
-                if (inspect.isclass(obj)
-                        and issubclass(obj, (Catalog, DataSource))):
-                    plugins[obj.name] = obj
-
-        return plugins
-
-    def load(self):
-        if self.type == 'module':
-            return self._load_from_module()
-        elif self.type == 'dir':
-            return self._load_from_dir()
-        return {}
-
-
 def no_duplicates_constructor(loader, node, deep=False):
     """Check for duplicate keys while loading YAML
 
@@ -274,18 +227,6 @@ class CatalogParser(object):
         else:
             self._warnings.append(str((msg, obj, key)))
 
-    def _parse_plugin(self, obj, key):
-        if not isinstance(obj[key], six.string_types):
-            self.error("value of key '{}' must be either be a string or "
-                       "template".format(key), obj, key)
-            return None
-
-        extra_keys = set(obj) - set([key])
-        for key in extra_keys:
-            self.warning("key '{}' defined but not needed".format(key), key)
-
-        return PluginSource(type=key, source=obj[key])
-
     def _parse_plugins(self, data):
         sources = []
 
@@ -316,13 +257,18 @@ class CatalogParser(object):
                 self.error("keys 'module' and 'dir' both exist (select only "
                            "one)", plugin_source)
             elif 'module' in plugin_source:
-                obj = self._parse_plugin(plugin_source, 'module')
-                if obj:
-                    sources.append(obj)
+                for k, v in load_plugins_from_module(
+                        plugin_source['module']).items():
+                    if k:
+                        global_registry[k[0]] = v
             elif 'dir' in plugin_source:
-                obj = self._parse_plugin(plugin_source, 'dir')
-                if obj:
-                    sources.append(obj)
+                import glob
+                d = self._context['root']
+                path = Template(plugin_source['dir']).render({'CATALOG_DIR': d})
+                for f in glob.glob(path + '/*.py'):
+                    for k, v in load_plugins_from_module(f).items():
+                        if k:
+                            global_registry[k[0]] = v
             else:
                 self.error("missing one of the available keys ('module' or "
                            "'dir')", plugin_source)
@@ -514,13 +460,6 @@ class YAMLFileCatalog(Catalog):
                 "".format(self.path, "\n".join(errors)), result.errors)
 
         cfg = result.data
-
-        # Finally, we create the plugins and entries. Failure is still possible.
-        params = dict(CATALOG_DIR=self._dir)
-
-        for ps in cfg['plugin_sources']:
-            ps.source = Template(ps.source).render(params)
-            ps.load()
 
         self._entries = {}
         for entry in cfg['data_sources']:

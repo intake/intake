@@ -53,7 +53,11 @@ def load_plugins_from_module(module_name):
     plugins = {}
 
     try:
-        mod = importlib.import_module(module_name)
+        if module_name.endswith('.py'):
+            import imp
+            mod = imp.load_source('module.name', module_name)
+        else:
+            mod = importlib.import_module(module_name)
     except Exception as e:
         logger.debug("Import module <{}> failed: {}".format(module_name, e))
         return {}
