@@ -1,17 +1,25 @@
 import re
 import warnings
 
-from . import source
 from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
+from . import source
 from .catalog.default import load_combo_catalog
 from .catalog import Catalog
 
 
 __all__ = ['registry', 'Catalog', 'make_open_functions', 'cat']
 
-registry = source.registry
+from .source import registry
+from .source.discovery import autodiscover
+
+# Populate list of autodetected plugins
+registry.update(autodiscover())
+
+# FIXME: this plugin needs to eventually be retired
+from .source import csv
+registry['csv'] = csv.CSVSource
 
 # Create shortcut open methods
 if hasattr(str, 'isidentifier'):
@@ -30,7 +38,7 @@ def make_open_functions():
             # primitive name normalization
             func_name = re.sub('[-=~^&|@+]', '_', func_name)
         if isidentifier(func_name):
-            globals()[func_name] = plugin.open
+            globals()[func_name] = plugin
             __all__.append(func_name)
         else:
             warnings.warn('Invalid Intake plugin name "%s" found.' %

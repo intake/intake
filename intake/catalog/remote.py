@@ -7,7 +7,7 @@ import six
 from . import dask_util
 from . import serializer
 from ..container import get_container_klass
-from ..source import registry as plugin_registry
+#from ..source import registry as plugin_registry
 from ..source.base import DataSource
 from .entry import CatalogEntry
 from .utils import expand_defaults, coerce

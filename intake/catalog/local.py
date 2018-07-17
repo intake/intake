@@ -12,11 +12,11 @@ from jinja2 import Template
 import six
 from dask.bytes import open_files
 
-from . import exceptions, register, Catalog
-from .entry import CatalogEntry
 from .. import __version__
+from . import exceptions, Catalog
+from .entry import CatalogEntry
 from ..source import registry as global_registry
-from ..source.base import Plugin
+from ..source.base import DataSource
 from ..source.discovery import load_plugins_from_module
 from .utils import expand_templates, expand_defaults, coerce, COERCION_RULES
 
@@ -164,7 +164,7 @@ class LocalCatalogEntry(CatalogEntry):
 
     def get(self, **user_parameters):
         open_args = self._create_open_args(user_parameters)
-        data_source = self._plugin.open(**open_args)
+        data_source = self._plugin(**open_args)
 
         return data_source
 
@@ -185,12 +185,9 @@ class PluginSource(object):
             try:
                 globs = runpy.run_path(filename)
                 for name, o in globs.items():
-                    # Don't try to register plugins imported into this module
-                    # from somewhere else
-                    if inspect.isclass(o) and issubclass(
-                            o, Plugin) and o.__module__ == '<run_path>':
-                        p = o()
-                        plugins[p.name] = p
+                    if (inspect.isclass(o)
+                            and issubclass(o, (Catalog, DataSource))):
+                        plugins[o.name] = o
                 # If no exceptions, continue to next filename
                 continue
             except Exception as ex:
@@ -201,12 +198,9 @@ class PluginSource(object):
             mod = imp.load_source(base, filename)
             for name in mod.__dict__:
                 obj = getattr(mod, name)
-                # Don't try to register plugins imported into this module
-                # from somewhere else
-                if inspect.isclass(obj) and issubclass(
-                        obj, Plugin) and obj.__module__ == base:
-                    p = obj()
-                    plugins[p.name] = p
+                if (inspect.isclass(obj)
+                        and issubclass(obj, (Catalog, DataSource))):
+                    plugins[obj.name] = obj
 
         return plugins
 
@@ -465,6 +459,10 @@ class CatalogParser(object):
 
 class YAMLFileCatalog(Catalog):
     """Catalog as described by a single YAML file"""
+    version = __version__,
+    container = 'catalog',
+    partition_access = None
+
     def __init__(self, path, **kwargs):
         """
         Parameters
@@ -530,28 +528,15 @@ class YAMLFileCatalog(Catalog):
         self.metadata = cfg.get('metadata', {})
 
 
-class YAMLFileCatalogPlugin(Plugin):
-    def __init__(self):
-        super(YAMLFileCatalogPlugin, self).__init__(name='yaml_file_cat',
-                                                    version=__version__,
-                                                    container='catalog',
-                                                    partition_access=None)
-
-    def open(self, path, **kwargs):
-        """
-        Create SQLCatalog instance for given connection
-        """
-        base_kwargs, source_kwargs = self.separate_base_kwargs(kwargs)
-        return YAMLFileCatalog(path,
-                               metadata=base_kwargs['metadata'],
-                               **source_kwargs)
-
-
-global_registry['yaml_file_cat'] = YAMLFileCatalogPlugin()
+global_registry['yaml_file_cat'] = YAMLFileCatalog
 
 
 class YAMLFilesCatalog(Catalog):
     """Catalog as described by a multiple YAML files"""
+    version = __version__,
+    container = 'catalog',
+    partition_access = None
+
     def __init__(self, path, flatten=True, **kwargs):
         """
         Parameters
@@ -611,21 +596,4 @@ class YAMLFilesCatalog(Catalog):
                 self._entries[entry._name] = entry
 
 
-class YAMLFilesCatalogPlugin(Plugin):
-    def __init__(self):
-        super(YAMLFilesCatalogPlugin, self).__init__(name='yaml_files_cat',
-                                                     version=__version__,
-                                                     container='catalog',
-                                                     partition_access=None)
-
-    def open(self, path, **kwargs):
-        """
-        Create SQLCatalog instance for given connection
-        """
-        base_kwargs, source_kwargs = self.separate_base_kwargs(kwargs)
-        return YAMLFilesCatalog(path,
-                                metadata=base_kwargs['metadata'],
-                                **source_kwargs)
-
-
-global_registry['yaml_files_cat'] = YAMLFilesCatalogPlugin()
+global_registry['yaml_files_cat'] = YAMLFilesCatalog

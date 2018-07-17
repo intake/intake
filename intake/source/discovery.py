@@ -2,11 +2,11 @@ import pkgutil
 import warnings
 import importlib
 import inspect
-import sys
 import time
 import logging
 
-from .base import Plugin
+from .base import DataSource
+from ..catalog import Catalog
 logger = logging.getLogger('intake')
 
 
@@ -52,11 +52,14 @@ def load_plugins_from_module(module_name):
     """
     plugins = {}
 
-    mod = importlib.import_module(module_name)
+    try:
+        mod = importlib.import_module(module_name)
+    except Exception as e:
+        logger.debug("Import module <{}> failed: {}".format(module_name, e))
+        return {}
     for _, cls in inspect.getmembers(mod, inspect.isclass):
         # Don't try to register plugins imported into this module elsewhere
-        if issubclass(cls, Plugin) and cls.__module__ == module_name:
-            plugin = cls()
-            plugins[plugin.name] = plugin
+        if issubclass(cls, (Catalog, DataSource)):
+            plugins[cls.name] = cls
 
     return plugins
