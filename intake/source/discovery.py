@@ -6,7 +6,7 @@ import time
 import logging
 
 from .base import DataSource
-from ..catalog import Catalog
+from ..catalog.base import Catalog
 logger = logging.getLogger('intake')
 
 

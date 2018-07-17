@@ -13,7 +13,8 @@ import six
 from dask.bytes import open_files
 
 from .. import __version__
-from . import exceptions, Catalog
+from .base import Catalog
+from . import exceptions
 from .entry import CatalogEntry
 from ..source import registry as global_registry
 from ..source.base import DataSource
@@ -566,6 +567,8 @@ class YAMLFilesCatalog(Catalog):
             files = sum([open_files(p, mode='rb', **options)
                          for p in self.path], [])
         else:
+            if len(self.path) == 1 and '*' not in self.path:
+                self.path = self.path + '/*'
             files = open_files(self.path, mode='rb', **options)
         if not set(f.path for f in files) == set(
                 f.path for f in self._cat_files):

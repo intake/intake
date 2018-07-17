@@ -7,9 +7,9 @@ del get_versions
 from . import source
 from .catalog.default import load_combo_catalog
 from .catalog import Catalog
+from .catalog import local
 
-
-__all__ = ['registry', 'Catalog', 'make_open_functions', 'cat']
+__all__ = ['registry', 'make_open_functions', 'cat', 'Catalog']
 
 from .source import registry
 from .source.discovery import autodiscover
@@ -20,18 +20,19 @@ registry.update(autodiscover())
 # FIXME: this plugin needs to eventually be retired
 from .source import csv
 registry['csv'] = csv.CSVSource
+registry['empty'] = Catalog
 
-# Create shortcut open methods
-if hasattr(str, 'isidentifier'):
-    def isidentifier(x):
-        return x.isidentifier()
-else:
-    IDENTIFIER_REGEX = re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*$')
-    isidentifier = IDENTIFIER_REGEX.match
 
 
 def make_open_functions():
     """From the current state of ``registry``, create open_* functions"""
+    # Create shortcut open methods
+    if hasattr(str, 'isidentifier'):
+        def isidentifier(x):
+            return x.isidentifier()
+    else:
+        IDENTIFIER_REGEX = re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*$')
+        isidentifier = IDENTIFIER_REGEX.match
     for plugin_name, plugin in registry.items():
         func_name = 'open_' + plugin_name
         if not isidentifier(func_name):
@@ -68,6 +69,25 @@ def output_notebook(inline=True, logo=False):
 
 
 make_open_functions()
-
-# Import default catalog
 cat = load_combo_catalog()
+
+
+def open_catalog(*args, **kwargs):
+    """LONG EXPLANATION HERE"""
+    driver = kwargs.pop('driver', None)
+    if driver is None:
+        if args:
+            uri = args[0]
+            if ((isinstance(uri, str) and "*" in uri)
+                    or isinstance(uri, (list, tuple))):
+                driver = 'yaml_files_cat'
+            elif isinstance(uri, str):
+                driver = 'yaml_file_cat'
+        else:
+            driver = 'empty'
+    else:
+        cats = [name for name, s in registry.items() if issubclass(s, Catalog)]
+        raise ValueError('Unknown catalog driver, supply one of: %s')
+    return registry[driver](*args, **kwargs)
+
+Catalog = open_catalog

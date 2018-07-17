@@ -9,7 +9,8 @@ import pytest
 import pandas
 
 from .util import assert_items_equal
-from intake.catalog import Catalog, exceptions, local
+from intake import Catalog
+from intake.catalog import exceptions, local
 from intake.catalog.local import UserParameter
 
 
@@ -56,7 +57,9 @@ def test_local_catalog(catalog1):
 
 
 def test_source_plugin_config(catalog1):
-    assert_items_equal(list(catalog1.plugins), ['example1', 'example2'])
+    from intake import registry
+    assert 'example1' in registry
+    assert 'example2' in registry
 
 
 def test_metadata(catalog1):
