@@ -82,7 +82,10 @@ def open_catalog(*args, **kwargs):
                     or isinstance(uri, (list, tuple))):
                 driver = 'yaml_files_cat'
             elif isinstance(uri, str):
-                driver = 'yaml_file_cat'
+                if uri.startswith('intake:'):
+                    driver = 'intake_remote'
+                else:
+                    driver = 'yaml_file_cat'
         else:
             driver = 'empty'
     else:

@@ -29,8 +29,8 @@ def autodiscover(path=None, plugin_prefix='intake_'):
 
             for plugin_name, plugin in new_plugins.items():
                 if plugin_name in plugins:
-                    orig_path = inspect.getfile(plugins[plugin_name].__class__)
-                    new_path = inspect.getfile(plugin.__class__)
+                    orig_path = inspect.getfile(plugins[plugin_name])
+                    new_path = inspect.getfile(plugin)
                     warnings.warn('Plugin name collision for "%s" from'
                                   '\n    %s'
                                   '\nand'

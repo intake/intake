@@ -8,29 +8,6 @@ import pandas as pd
 from .. import base
 
 
-def test_plugin_base():
-    p = base.Plugin(name='test', version='0.1.0',
-                    container='dataframe', partition_access=False)
-
-    assert p.name == 'test'
-    assert p.version == '0.1.0'
-    assert p.container == 'dataframe'
-    assert not p.partition_access
-    with pytest.raises(Exception) as except_info:
-        p.open()
-
-    assert 'open' in str(except_info.value)
-
-
-def test_plugin_separate_base_kwargs():
-    p = base.Plugin(name='test', version='0.1.0',
-                    container='dataframe', partition_access=False)
-
-    base_kwargs, kwargs = p.separate_base_kwargs(dict(a=1, metadata=2))
-    assert base_kwargs == dict(metadata=2)
-    assert kwargs == dict(a=1)
-
-
 def test_datasource_base_method_exceptions():
     # Unimplemented methods should raise exceptions
     d = base.DataSource(container='dataframe')

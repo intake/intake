@@ -434,8 +434,11 @@ class YAMLFileCatalog(Catalog):
         self.name = os.path.splitext(os.path.basename(
             self.path))[0].replace('.', '_')
         self._dir = os.path.dirname(self.path)
-        with file_open as f:
-            text = f.read().decode()
+        try:
+            with file_open as f:
+                text = f.read().decode()
+        except (IOError, OSError):
+            return
         if "!template " in text:
             logger.warning("Use of '!template' deprecated - fixing")
             text = text.replace('!template ', '')

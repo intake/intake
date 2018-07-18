@@ -7,7 +7,7 @@ import time
 import pytest
 
 from .util import assert_items_equal
-from intake.catalog import Catalog
+from intake import Catalog
 
 TMP_DIR = tempfile.mkdtemp()
 TEST_CATALOG_PATH = [TMP_DIR]
@@ -135,7 +135,7 @@ def tmpdir():
 
 
 def test_reload_missing_local_directory(tmpdir):
-    catalog = Catalog(tmpdir)
+    catalog = Catalog(tmpdir + '/*')
     assert_items_equal(list(catalog), [])
 
     os.mkdir(tmpdir)
@@ -152,4 +152,5 @@ sources:
     args: {}
         ''')
 
-    assert_items_equal(list(catalog), ['use_example1'])
+    time.sleep(1)
+    assert 'use_example1' in catalog

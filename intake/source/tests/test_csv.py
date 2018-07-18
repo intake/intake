@@ -20,26 +20,23 @@ def data_filenames():
 
 @pytest.fixture
 def sample1_datasource(data_filenames):
-    p = csv.Plugin()
-    return p.open(data_filenames['sample1'])
+    return csv.CSVSource(data_filenames['sample1'])
 
 
 @pytest.fixture
 def sample2_datasource(data_filenames):
-    p = csv.Plugin()
-    return p.open(data_filenames['sample2_all'])
+    return csv.CSVSource(data_filenames['sample2_all'])
 
 
 def test_csv_plugin():
-    p = csv.Plugin()
+    p = csv.CSVSource
     assert isinstance(p.version, str)
     assert p.container == 'dataframe'
     verify_plugin_interface(p)
 
 
 def test_open(data_filenames):
-    p = csv.Plugin()
-    d = p.open(data_filenames['sample1'])
+    d = csv.CSVSource(data_filenames['sample1'])
     assert d.container == 'dataframe'
     assert d.description is None
     verify_datasource_interface(d)

@@ -24,20 +24,19 @@ def test_discover(extra_pythonpath):
     registry = discovery.autodiscover()
 
     # possible other plugins in environment
-    assert set(registry.keys()) >= set(['foo'])
-    assert registry['foo'].open() == 'open_worked'
+    'foo' in registry
+    registry['foo']()
+    registry.pop('foo', None)
 
 
 def test_discover_pluginprefix(extra_pythonpath):
     registry = discovery.autodiscover(plugin_prefix='not_intake_')
 
-    assert set(registry.keys()) == set(['otherfoo'])
-    assert registry['otherfoo'].open() == 'open_worked'
+    assert 'otherfoo' in registry
+    registry['otherfoo']()
+    registry.pop('otherfoo', None)
 
 
 def test_discover_collision(extra_pythonpath):
     with pytest.warns(UserWarning):
         registry = discovery.autodiscover(plugin_prefix='collision_')
-
-    assert set(registry.keys()) == set(['foo'])
-    assert registry['foo'].open() == 'open_worked'
