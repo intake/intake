@@ -13,49 +13,6 @@ from .utils import clamp, flatten, reload_on_change
 logger = logging.getLogger('intake')
 
 
-class RemoteState():
-    """The state of a remote Intake server"""
-
-    def __init__(self, name, observable, ttl, auth, getenv=True, getshell=True,
-                 http_args=None):
-        self.http_args = http_args or {}
-        secure = http_args.pop('ssl', False)
-        scheme = 'https' if secure else 'http'
-        self.base_url = observable.replace('intake', scheme) + '/'
-        self.info_url = urljoin(self.base_url, 'v1/info')
-        self.source_url = urljoin(self.base_url, 'v1/source')
-        self.auth = auth # instance of BaseClientAuth
-        self.metadata = {}
-
-    def refresh(self):
-        name = urlparse(self.observable).netloc.replace(
-            '.', '_').replace(':', '_')
-
-        # Add the auth headers to any other headers
-        auth_headers = self.auth.get_headers()
-        headers = self.http_args.get('headers', {})
-        headers.update(auth_headers)
-
-        # build new http args with these headers
-        http_args = self.http_args.copy()
-        http_args['headers'] = headers
-        response = requests.get(self.info_url, **http_args)
-        if response.status_code != 200:
-            raise Exception('%s: status code %d' % (response.url,
-                                                    response.status_code))
-        info = msgpack.unpackb(response.content, encoding='utf-8')
-        self.metadata = info['metadata']
-
-        entries = {s['name']: RemoteCatalogEntry(url=self.source_url,
-                                                 getenv=self.getenv,
-                                                 getshell=self.getshell,
-                                                 auth=self.auth,
-                                                 http_args=self.http_args, **s)
-                   for s in info['sources']}
-
-        return name, {}, entries, []
-
-
 class Catalog(object):
     """Manages a hierarchy of data sources and plugins as a collective unit.
 
@@ -202,3 +159,45 @@ class Catalog(object):
                 raise ValueError("Attempt to recurse into non-catalog")
             out = getattr(out, k)
         return out
+
+
+class RemoteCatalog(Catalog):
+    """The state of a remote Intake server"""
+
+    def __init__(self, *args, **kwargs):
+        self.http_args = kwargs.get('http_args', {})
+        secure = self.http_args.pop('ssl', False)
+        scheme = 'https' if secure else 'http'
+        self.base_url = observable.replace('intake', scheme) + '/'
+        self.info_url = urljoin(self.base_url, 'v1/info')
+        self.source_url = urljoin(self.base_url, 'v1/source')
+        self.auth = kwargs.get('auth', None)  # instance of BaseClientAuth
+        super(RemoteCatalog, self).__init__(self, )
+
+    def refresh(self):
+        name = urlparse(self.observable).netloc.replace(
+            '.', '_').replace(':', '_')
+
+        # Add the auth headers to any other headers
+        auth_headers = self.auth.get_headers()
+        headers = self.http_args.get('headers', {})
+        headers.update(auth_headers)
+
+        # build new http args with these headers
+        http_args = self.http_args.copy()
+        http_args['headers'] = headers
+        response = requests.get(self.info_url, **http_args)
+        if response.status_code != 200:
+            raise Exception('%s: status code %d' % (response.url,
+                                                    response.status_code))
+        info = msgpack.unpackb(response.content, encoding='utf-8')
+        self.metadata = info['metadata']
+
+        entries = {s['name']: RemoteCatalogEntry(url=self.source_url,
+                                                 getenv=self.getenv,
+                                                 getshell=self.getshell,
+                                                 auth=self.auth,
+                                                 http_args=self.http_args, **s)
+                   for s in info['sources']}
+
+        return name, {}, entries, []
