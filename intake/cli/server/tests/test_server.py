@@ -5,10 +5,9 @@ import time
 from tornado.ioloop import IOLoop
 from tornado.testing import AsyncHTTPTestCase
 import msgpack
-import numpy as np
 
-from intake.catalog import Catalog
-from intake.catalog.serializer import MsgPackSerializer, GzipCompressor
+from intake import Catalog
+from intake.container.serializer import MsgPackSerializer, GzipCompressor
 from intake.cli.server.server import IntakeServer
 
 
@@ -115,36 +114,17 @@ class TestServerV1Source(TestServerV1Base):
         self.assertEquals(args['metadata'], dict(foo='baz', bar=[2, 4, 6]))
         self.assertEqual(resp_msg['description'], 'entry1 part')
 
-    def test_read(self):
+    def test_read_part_compressed(self):
         msg = dict(action='open', name='entry1', parameters={})
         resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
 
         msg2 = dict(action='read', source_id=source_id,
-                    accepted_formats=['msgpack'])
+                    accepted_formats=['msgpack'], accepted_compression=['gzip'],
+                    partition=0)
         resp_msgs = self.make_post_request(msg2)
 
-        self.assertEqual(len(resp_msgs), 2)
-        ser = MsgPackSerializer()
-
-        for chunk in resp_msgs:
-            self.assertEqual(chunk['format'], 'msgpack')
-            self.assertEqual(chunk['compression'], 'none')
-            self.assertEqual(chunk['container'], 'dataframe')
-
-            data = ser.decode(chunk['data'], container='dataframe')
-            self.assertEqual(len(data), 4)
-
-    def test_read_compressed(self):
-        msg = dict(action='open', name='entry1', parameters={})
-        resp_msg, = self.make_post_request(msg)
-        source_id = resp_msg['source_id']
-
-        msg2 = dict(action='read', source_id=source_id,
-                    accepted_formats=['msgpack'], accepted_compression=['gzip'])
-        resp_msgs = self.make_post_request(msg2)
-
-        self.assertEqual(len(resp_msgs), 2)
+        self.assertEqual(len(resp_msgs), 1)
         ser = MsgPackSerializer()
         comp = GzipCompressor()
 

@@ -1,7 +1,4 @@
 # Base classes for Data Loader interface
-import dask
-
-from ..container import get_container_klass
 
 
 class Schema(object):
@@ -27,6 +24,7 @@ class DataSource(object):
     version = None
     container = 'python'
     partition_access = False
+    datashape = None
 
     def __new__(cls, *args, **kwargs):
         o = object.__new__(cls)
@@ -54,16 +52,11 @@ class DataSource(object):
     def __init__(self, container, description=None, metadata=None):
         self.container = container
         self.description = description
-        if metadata is None:
-            self.metadata = {}
-        else:
-            self.metadata = metadata
-
+        self.metadata = metadata or {}
         self.datashape = None
         self.dtype = None
         self.shape = None
         self.npartitions = 0
-
         self._schema = None
 
     def _get_schema(self):
@@ -106,14 +99,7 @@ class DataSource(object):
 
     def read(self):
         """Load entire dataset into a container and return it"""
-        self._load_metadata()
-
-        parts = [self._get_partition(i) for i in range(self.npartitions)]
-
-        return self._merge(parts)
-
-    def _merge(self, parts):
-        return get_container_klass(self.container).merge(parts)
+        pass
 
     def read_chunked(self):
         """Return iterator over container fragments of data source"""
@@ -134,12 +120,7 @@ class DataSource(object):
 
     def to_dask(self):
         """Return a dask container for this data source"""
-        self._load_metadata()
-
-        delayed_get_partition = dask.delayed(self._get_partition)
-        parts = [delayed_get_partition(i) for i in range(self.npartitions)]
-
-        return get_container_klass(self.container).to_dask(parts, self.dtype)
+        pass
 
     def close(self):
         """Close open resources corresponding to this data source."""

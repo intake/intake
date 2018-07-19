@@ -4,11 +4,13 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from .. import serializer
+from intake.container import serializer
 
 
-all_serializers = pytest.mark.parametrize('ser', serializer.format_registry.values())
-all_compressors = pytest.mark.parametrize('comp', serializer.compression_registry.values())
+all_serializers = pytest.mark.parametrize(
+    'ser', serializer.format_registry.values())
+all_compressors = pytest.mark.parametrize(
+    'comp', serializer.compression_registry.values())
 
 
 @all_serializers
@@ -37,15 +39,6 @@ def test_python(ser):
     actual = ser.decode(ser.encode(expected, 'python'), 'python')
 
     assert expected == actual
-
-
-def test_msgpack_unknown_container():
-    ser = serializer.MsgPackSerializer()
-
-    with pytest.raises(NotImplementedError):
-        ser.encode([1, 2, 3], 'mystery')
-    with pytest.raises(NotImplementedError):
-        ser.decode(b'1234', 'mystery')
 
 
 @all_compressors

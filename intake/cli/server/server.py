@@ -3,6 +3,7 @@ from __future__ import print_function
 import time
 from uuid import uuid4
 
+import logging
 import msgpack
 import pickle
 import tornado.gen
@@ -10,9 +11,10 @@ import tornado.ioloop
 import tornado.web
 
 from .config import conf
-from intake.catalog import serializer
+from intake.container import serializer
 from intake.auth import get_auth_class
 from intake import __version__
+logger = logging.getLogger('intake')
 
 
 class IntakeServer(object):
@@ -21,6 +23,7 @@ class IntakeServer(object):
         self._cache = SourceCache()
         self._periodic_callbacks = []
         auth = conf.get('auth', 'intake.auth.base.BaseAuth')
+        logger.debug('auth: %s' % auth)
         self._auth = get_auth_class(auth['class'], *auth.get('args', tuple()),
                                     **auth.get('kwargs', {}))
 
@@ -80,7 +83,8 @@ class ServerInfoHandler(tornado.web.RequestHandler):
         head = self.request.headers
         if self.auth.allow_connect(head):
             sources = []
-            for _, name, source in self.catalog.walk():
+            self.catalog.reload()
+            for name, source in self.catalog.walk().items():
                 if self.auth.allow_access(head, source, self.catalog):
                     info = source.describe()
                     info['name'] = name
@@ -104,6 +108,7 @@ class SourceCache(object):
         now = time.time()
         self._sources[source_id] = dict(source=source, open_time=now,
                                         last_time=now)
+        logger.debug('Adding %s to cache, uuid %s' % (source, source_id))
         return source_id
 
     def get(self, uuid):
@@ -132,6 +137,7 @@ class SourceCache(object):
         # Make a copy of the items so we can mutate the dictionary
         for uuid, record in list(self._sources.items()):
             if record['last_time'] < threshold:
+                logger.debug('Removing source %s from cache' % uuid)
                 del self._sources[uuid]
 
 
@@ -146,6 +152,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         request = msgpack.unpackb(self.request.body, encoding='utf-8')
         action = request['action']
         head = self.request.headers
+        logger.debug('Source POST: %s' % request)
 
         if action == 'open':
             entry_name = request['name']
@@ -165,10 +172,16 @@ class ServerSourceHandler(tornado.web.RequestHandler):
 
             if direct_access == 'forbid' or \
                     (direct_access == 'allow' and not client_has_plugin):
+                logger.debug("Opening entry %s" % entry)
                 source = entry.get(**user_parameters)
-                source.discover()
+                try:
+                    source.discover()
+                except Exception as e:
+                    raise tornado.web.HTTPError(status_code=400,
+                                                log_message="Discover failed",
+                                                reason=str(e))
                 source_id = self._cache.add(source)
-
+                logger.debug('**** Container %s' % source.container)
                 response = dict(
                     datashape=source.datashape,
                     dtype=pickle.dumps(source.dtype, 2),
@@ -197,24 +210,24 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             accepted_compression = request.get('accepted_compression', ['none'])
             partition = request.get('partition', None)
 
-            self._chunk_encoder = self._pick_encoder(accepted_formats,
+            chunk_encoder = self._pick_encoder(accepted_formats,
                                                      accepted_compression,
                                                      source.container)
 
+            logger.debug("Read partition %s" % partition)
             if partition is not None:
-                self._iterator = iter([source.read_partition(partition)])
+                chunk = source.read_partition(partition)
             else:
-                self._iterator = source.read_chunked()
-            self._container = source.container
+                assert source.npartitions < 2
+                chunk = source.read()
 
-            for chunk in self._iterator:
-                data = self._chunk_encoder.encode(chunk, self._container)
-                msg = dict(format=self._chunk_encoder.format_name,
-                           compression=self._chunk_encoder.compressor_name,
-                           container=self._container, data=data)
-                self.write(msgpack.packb(msg, use_bin_type=True))
-                yield self.flush()
-                self._cache.touch(source_id)  # keep source alive
+            data = chunk_encoder.encode(chunk, source.container)
+            msg = dict(format=chunk_encoder.format_name,
+                       compression=chunk_encoder.compressor_name,
+                       container=source.container, data=data)
+            self.write(msgpack.packb(msg, use_bin_type=True))
+            self.flush()
+            self._cache.touch(source_id)  # keep source alive
 
             self.finish()
 

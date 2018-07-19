@@ -127,6 +127,10 @@ class LocalCatalogEntry(CatalogEntry):
         return self._name
 
     def describe(self):
+        if isinstance(self._plugin.container, (list, tuple)):
+            import pdb
+            pdb.set_trace()
+            print('####', self._plugin)
         return {
             'container': self._plugin.container,
             'description': self._description,
@@ -260,7 +264,9 @@ class CatalogParser(object):
                 for k, v in load_plugins_from_module(
                         plugin_source['module']).items():
                     if k:
-                        global_registry[k[0]] = v
+                        if isinstance(k, (list, tuple)):
+                            k = k[0]
+                        global_registry[k] = v
             elif 'dir' in plugin_source:
                 import glob
                 d = self._context['root']

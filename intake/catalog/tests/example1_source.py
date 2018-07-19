@@ -2,9 +2,9 @@ from intake.source.base import DataSource
 
 
 class ExampleSource(DataSource):
-    name = 'example1',
-    version = '0.1',
-    container = 'dataframe',
+    name = 'example1'
+    version = '0.1'
+    container = 'dataframe'
     partition_access = True
 
     def __init__(self, **kwargs):

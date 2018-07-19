@@ -164,24 +164,25 @@ class Catalog(object):
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, url, **kwargs):
         self.http_args = kwargs.get('http_args', {})
+        self.http_args.update(kwargs.get('storage_options', {}))
         secure = self.http_args.pop('ssl', False)
         scheme = 'https' if secure else 'http'
-        self.base_url = observable.replace('intake', scheme) + '/'
+        self.base_url = url.replace('intake', scheme) + '/'
+        self.name = urlparse(self.base_url).netloc.replace(
+            '.', '_').replace(':', '_')
         self.info_url = urljoin(self.base_url, 'v1/info')
         self.source_url = urljoin(self.base_url, 'v1/source')
         self.auth = kwargs.get('auth', None)  # instance of BaseClientAuth
-        super(RemoteCatalog, self).__init__(self, )
+        super(RemoteCatalog, self).__init__(self, **kwargs)
 
-    def refresh(self):
-        name = urlparse(self.observable).netloc.replace(
-            '.', '_').replace(':', '_')
-
+    def _load(self):
         # Add the auth headers to any other headers
-        auth_headers = self.auth.get_headers()
         headers = self.http_args.get('headers', {})
-        headers.update(auth_headers)
+        if self.auth is not None:
+            auth_headers = self.auth.get_headers()
+            headers.update(auth_headers)
 
         # build new http args with these headers
         http_args = self.http_args.copy()
@@ -193,11 +194,10 @@ class RemoteCatalog(Catalog):
         info = msgpack.unpackb(response.content, encoding='utf-8')
         self.metadata = info['metadata']
 
-        entries = {s['name']: RemoteCatalogEntry(url=self.source_url,
-                                                 getenv=self.getenv,
-                                                 getshell=self.getshell,
-                                                 auth=self.auth,
-                                                 http_args=self.http_args, **s)
-                   for s in info['sources']}
-
-        return name, {}, entries, []
+        self._entries = {s['name']: RemoteCatalogEntry(
+            url=self.source_url,
+            getenv=self.getenv,
+            getshell=self.getshell,
+            auth=self.auth,
+            http_args=self.http_args, **s)
+            for s in info['sources']}

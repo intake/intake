@@ -1,6 +1,8 @@
 from __future__ import print_function
 
 import argparse
+import logging
+import os
 import signal
 import sys
 
@@ -9,7 +11,11 @@ import tornado.web
 
 from .server import IntakeServer
 from .config import conf
-from intake.catalog import Catalog
+from intake import Catalog
+logger = logging.getLogger('intake')
+logging.basicConfig()
+if os.environ.get('INTAKE_DEBUG'):
+    logger.setLevel(logging.DEBUG)
 
 
 def call_exit_on_sigterm(signal, frame):
@@ -32,16 +38,16 @@ def main(argv=None):
     if args.sys_exit_on_sigterm:
         signal.signal(signal.SIGTERM, call_exit_on_sigterm)
 
-    print('Creating catalog from:')
+    logger.info('Creating catalog from:')
     for arg in args.catalog_args:
-        print('  - %s' % arg)
+        logger.info('  - %s' % arg)
 
-    print("catalog_args", args.catalog_args)
+    logger.info("catalog_args: %s" % args.catalog_args)
     catalog = Catalog(args.catalog_args)
 
-    print('Entries:', ','.join(list(catalog)))
+    logger.info('Entries:' + ','.join(list(catalog)))
 
-    print('Listening on port %d' % args.port)
+    logger.info('Listening on port %d' % args.port)
 
     server = IntakeServer(catalog)
     app = server.make_app()

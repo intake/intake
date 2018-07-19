@@ -78,3 +78,6 @@ class CatalogEntry(object):
 
     def __getattr__(self, attr):
         return getattr(self._get_default_source(), attr)
+
+    def __repr__(self):
+        return "<Catalog Entry: %s>" % self.name

@@ -46,6 +46,7 @@ class MockDataSourceDataFrame(base.DataSource):
             container='dataframe',
             metadata=dict(a=1, b=2)
         )
+        self.npartitions = 2
 
     def _get_schema(self):
         self.call_count['_get_schema'] += 1
@@ -65,6 +66,16 @@ class MockDataSourceDataFrame(base.DataSource):
             return pd.DataFrame({'x': [4, 5, 6], 'y': [40, 50, 60]})
         else:
             raise Exception('This should never happen')
+
+    def read(self):
+        return pd.concat([self._get_partition(i)
+                          for i in range(self.npartitions)])
+
+    def to_dask(self):
+        import dask.dataframe as dd
+        import dask
+        return dd.from_delayed([dask.delayed(self._get_partition)(i)
+                                for i in range(self.npartitions)])
 
     def _close(self):
         self.call_count['_close'] += 1
@@ -199,6 +210,7 @@ class MockDataSourcePython(base.DataSource):
             container='python',
             metadata=dict(a=1, b=2)
         )
+        self.npartitions = 2
 
     def _get_schema(self):
         self.call_count['_get_schema'] += 1
@@ -219,6 +231,16 @@ class MockDataSourcePython(base.DataSource):
             return [{'x': 1}, {}]
         else:
             raise Exception('This should never happen')
+
+    def read(self):
+        return sum([self._get_partition(i) for i in range(self.npartitions)],
+               [])
+
+    def to_dask(self):
+        import dask.bag as db
+        import dask
+        return db.from_delayed([dask.delayed(self._get_partition)(i)
+                                for i in range(self.npartitions)])
 
     def _close(self):
         self.call_count['_close'] += 1

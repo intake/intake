@@ -4,8 +4,7 @@ import io
 import pickle
 
 import snappy
-
-from ..container import get_container_klass
+import msgpack
 
 
 class NoneCompressor(object):
@@ -43,13 +42,29 @@ class SnappyCompressor(object):
 
 
 class MsgPackSerializer(object):
+    # TODO: This is ugly, should maybe transition to
+    #  distributed.protocol.serialize
     name = 'msgpack'
 
     def encode(self, obj, container):
-        return get_container_klass(container).encode(obj)
+        if container in ['ndarray', 'xarray']:
+            import msgpack_numpy
+            return msgpack.packb(obj, default=msgpack_numpy.encode)
+        elif container == 'dataframe':
+            import pandas as pd
+            return obj.to_msgpack()
+        else:
+            return msgpack.packb(obj, use_bin_type=True)
 
     def decode(self, bytestr, container):
-        return get_container_klass(container).decode(bytestr)
+        if container in ['ndarray', 'xarray']:
+            import msgpack_numpy
+            return msgpack.unpackb(bytestr, object_hook=msgpack_numpy.decode)
+        elif container == 'dataframe':
+            import pandas as pd
+            return pd.read_msgpack(bytestr)
+        else:
+            return msgpack.unpackb(bytestr, encoding='utf-8')
 
 
 class PickleSerializer(object):
@@ -72,10 +87,12 @@ class ComboSerializer(object):
         self.compressor_name = compressor.name
 
     def encode(self, obj, container):
-        return self._compressor.compress(self._format_encoder.encode(obj, container))
+        return self._compressor.compress(
+            self._format_encoder.encode(obj, container))
 
     def decode(self, bytestr, container):
-        return self._format_encoder.decode(self._compressor.decompress(bytestr), container)
+        return self._format_encoder.decode(
+            self._compressor.decompress(bytestr), container)
 
 
 # Insert in preference order

@@ -1,36 +1,52 @@
-from .base import BaseContainer
+from intake.source.base import Schema
+from .base import RemoteSource, get_partition
 
 
-class DataFrame(BaseContainer):
+class RemoteDataFrame(RemoteSource):
 
-    @staticmethod
-    def merge(parts):
-        import pandas as pd
-        return pd.concat(parts, ignore_index=True)
+    name = 'remote_dataframe'
+    container = 'dataframe'
 
-    @staticmethod
-    def to_dask(parts, dtype):
-        import dask.dataframe
-        # Compat: prefer dtype to already be meta-like, but can construct
-        # maybe should use dask.dataframe.utils.make_meta
-        if hasattr(dtype, 'fields'):
-            # compound np.dtype
-            meta = {name: arg[0] for name, arg in dtype.fields.items()}
+    def __init__(self, url, headers, **kwargs):
+        import pickle
+        super(RemoteDataFrame, self).__init__(url, headers, **kwargs)
+        self.npartitions = kwargs['npartitions']
+        self.shape = tuple(kwargs['shape'])
+        self.metadata = kwargs['metadata']
+        d = kwargs['dtype']
+        if isinstance(d, bytes):
+            self.dtype = pickle.loads(d)
         else:
-            # dataframe or dict
-            meta = dtype
-        return dask.dataframe.from_delayed(parts, meta=meta)
+            self.dtype = d
+        self._schema = Schema(npartitions=self.npartitions,
+                              extra_metadata=self.metadata,
+                              dtype=self.dtype,
+                              shape=self.shape,
+                              datashape=None)
+        self.dataframe = None
 
-    @staticmethod
-    def encode(obj):
-        return obj.to_msgpack()
+    def _load_metadata(self):
+        import dask.dataframe as dd
+        import dask
+        if self.dataframe is None:
+            self.parts = [dask.delayed(get_partition)(
+                self.url, self.headers, self._source_id, self.container, i
+            )
+                          for i in range(self.npartitions)]
+            self.dataframe = dd.from_delayed(self.parts)
+        return self._schema
 
-    @staticmethod
-    def decode(bytestr):
-        import pandas as pd
-        return pd.read_msgpack(bytestr)
+    def _get_partition(self, i):
+        self._load_metadata()
+        return self.parts[i].compute()
 
-    @staticmethod
-    def read(chunks):
-        import pandas as pd
-        return pd.concat(chunks)
+    def read(self):
+        self._load_metadata()
+        return self.dataframe.compute()
+
+    def to_dask(self):
+        self._load_metadata()
+        return self.dataframe
+
+    def _close(self):
+        self.dataframe = None

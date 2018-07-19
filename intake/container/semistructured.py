@@ -1,33 +1,35 @@
-import msgpack
-import operator
-
-from .base import BaseContainer
+from intake.container.base import RemoteSource, get_partition
+from intake.source.base import Schema
 
 
-class SemiStructured(BaseContainer):
+class RemoteSequenceSource(RemoteSource):
+    name = 'remote_sequence'
+    container = 'python'
 
-    @staticmethod
-    def merge(parts):
-        # This seems to be the fastest way to do this for large lists
-        data = []
-        for p in parts:
-            data.extend(p)
-        return data
+    def __init__(self, url, headers, **kwargs):
+        self.url = url
+        self.npartitions = kwargs.get('npartition', 1)
+        self.partition_access = self.npartition > 1
+        self.headers = headers
+        self.metadata = kwargs.get('metadata', {})
+        self._schema = Schema(npartitions=self.npartition,
+                              extra_metadata=self.metadata)
+        self.bag = None
+        super(RemoteSequenceSource, self).__init__(url, headers, **kwargs)
 
-    @staticmethod
-    def to_dask(parts, dtype):
+    def _load_metadata(self):
         import dask.bag as db
-        return db.from_delayed(parts)
+        import dask
+        if self.bag is None:
+            self.parts = [dask.delayed(get_partition)(
+                self.url, self.headers, self._source_id, self.container, i
+            )
+                          for i in range(self.npartitions)]
+            self.bag = db.from_delayed(self.parts)
+        return self._schema
 
-    @staticmethod
-    def encode(obj):
-        return msgpack.packb(obj, use_bin_type=True)
-        
-    @staticmethod
-    def decode(bytestr):
-        return msgpack.unpackb(bytestr, encoding='utf-8')
+    def to_dask(self):
+        return self.bag
 
-    @staticmethod
-    def read(chunks):
-        from functools import reduce
-        return reduce(operator.add, chunks)
+    def _close(self):
+        self.bag = None

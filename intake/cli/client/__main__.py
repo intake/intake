@@ -5,7 +5,7 @@ import os
 import argparse
 import shutil
 
-from intake.catalog import Catalog
+from intake import Catalog
 
 
 def print_entry_info(catalog, name):

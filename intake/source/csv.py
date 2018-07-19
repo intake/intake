@@ -51,7 +51,16 @@ class CSVSource(base.DataSource):
                            extra_metadata={})
 
     def _get_partition(self, i):
+        self._get_schema()
         return self._dataframe.get_partition(i).compute()
+
+    def read(self):
+        self._get_schema()
+        return self._dataframe.compute()
+
+    def to_dask(self):
+        self._get_schema()
+        return self._dataframe
 
     def _close(self):
         self._dataframe = None
