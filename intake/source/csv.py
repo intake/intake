@@ -32,8 +32,7 @@ class CSVSource(base.DataSource):
         self._csv_kwargs = csv_kwargs or {}
         self._dataframe = None
 
-        super(CSVSource, self).__init__(container='dataframe',
-                                        metadata=metadata)
+        super(CSVSource, self).__init__(metadata=metadata)
 
     def _get_schema(self):
         import dask.dataframe

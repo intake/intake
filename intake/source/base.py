@@ -22,9 +22,10 @@ class Schema(object):
 class DataSource(object):
     name = None
     version = None
-    container = 'python'
+    container = None
     partition_access = False
     datashape = None
+    description = None
 
     def __new__(cls, *args, **kwargs):
         o = object.__new__(cls)
@@ -49,9 +50,7 @@ class DataSource(object):
     def __setstate__(self, state):
         self.__init__(*state['args'], **state['kwargs'])
 
-    def __init__(self, container, description=None, metadata=None):
-        self.container = container
-        self.description = description
+    def __init__(self, metadata=None):
         self.metadata = metadata or {}
         self.datashape = None
         self.dtype = None

@@ -8,4 +8,4 @@ class ExampleSource(DataSource):
     partition_access = True
 
     def __init__(self, **kwargs):
-        super(ExampleSource, self).__init__(container='dataframe')
+        super(ExampleSource, self).__init__()

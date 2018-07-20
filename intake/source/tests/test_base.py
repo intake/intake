@@ -10,7 +10,7 @@ from .. import base
 
 def test_datasource_base_method_exceptions():
     # Unimplemented methods should raise exceptions
-    d = base.DataSource(container='dataframe')
+    d = base.DataSource()
 
     for (method_name, args) in [('_get_schema', []),
                                 ('_get_partition', [1]),
@@ -26,16 +26,19 @@ def test_datasource_base_context_manager():
     # enters the context manager (which loads the schema)
 
     with pytest.raises(Exception) as except_info:
-        with base.DataSource(container='dataframe'):
+        with base.DataSource():
             pass
     assert '_get_schema' in str(except_info.value)
 
 
 class MockDataSourceDataFrame(base.DataSource):
-    '''Mock Data Source subclass that returns dataframe containers
+    """Mock Data Source subclass that returns dataframe containers
 
     Used to verify that the base DataSource class logic works for dataframes.
-    '''
+    """
+
+    container = 'dataframe'
+
     def __init__(self, a, b):
         self.a = a
         self.b = b
@@ -43,7 +46,6 @@ class MockDataSourceDataFrame(base.DataSource):
         self.call_count = defaultdict(lambda: 0)
 
         super(MockDataSourceDataFrame, self).__init__(
-            container='dataframe',
             metadata=dict(a=1, b=2)
         )
         self.npartitions = 2
@@ -195,10 +197,11 @@ def test_datasource_pickle(source_dataframe):
 
 
 class MockDataSourcePython(base.DataSource):
-    '''Mock Data Source subclass that returns Python list containers
+    """Mock Data Source subclass that returns Python list containers
 
     Used to verify that the base DataSource class logic works for Python lists.
-    '''
+    """
+    container = 'python'
 
     def __init__(self, a, b):
         self.a = a
@@ -207,7 +210,6 @@ class MockDataSourcePython(base.DataSource):
         self.call_count = defaultdict(lambda: 0)
 
         super(MockDataSourcePython, self).__init__(
-            container='python',
             metadata=dict(a=1, b=2)
         )
         self.npartitions = 2
