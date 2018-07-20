@@ -24,6 +24,17 @@ class RemoteCatalogEntry(CatalogEntry):
     def describe(self):
         return self.kwargs
 
+    def describe_open(self, **kwargs):
+        import pdb
+        pdb.set_trace()
+        return {
+            'plugin': None,
+            'description': self._description,
+            'direct_access': False,
+            'metadata': self._metadata,
+            'args': (self.url, )
+        }
+
     def get(self, **user_parameters):
         for par in self.kwargs['user_parameters']:
             if par['name'] not in user_parameters:

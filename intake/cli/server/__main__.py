@@ -42,8 +42,10 @@ def main(argv=None):
     for arg in args.catalog_args:
         logger.info('  - %s' % arg)
 
-    logger.info("catalog_args: %s" % args.catalog_args)
-    catalog = Catalog(args.catalog_args)
+    catargs = args.catalog_args
+    catargs = catargs[0] if len(catargs) == 1 else catargs
+    logger.info("catalog_args: %s" % catargs)
+    catalog = Catalog(catargs)
 
     logger.info('Entries:' + ','.join(list(catalog)))
 
