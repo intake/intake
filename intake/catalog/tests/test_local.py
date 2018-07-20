@@ -57,6 +57,12 @@ def test_local_catalog(catalog1):
     assert catalog1['entry1_part'].get(part='2').container == 'dataframe'
 
 
+def test_nested(catalog1):
+    assert 'nested' in catalog1
+    assert 'entry1' in catalog1.nested.nested()
+    assert catalog1.entry1.read().equals(catalog1.nested.nested.entry1.read())
+
+
 def test_source_plugin_config(catalog1):
     from intake import registry
     assert 'example1' in registry

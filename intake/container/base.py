@@ -45,10 +45,10 @@ class RemoteSource(DataSource):
         self._source_id = response['source_id']
 
     def _get_partition(self, i):
-        pass
+        raise NotImplementedError
 
     def to_dask(self):
-        pass
+        raise NotImplementedError
 
 
 def get_partition(url, headers, source_id, container, partition):
