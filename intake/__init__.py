@@ -96,7 +96,7 @@ def open_catalog(uri=None, **kwargs):
                     # server
                     driver = 'intake_remote'
                 else:
-                    if uri.endswith('.yml') or uri.endswith('.yaml'):
+                    if uri.endswith(('.yml', '.yaml')):
                         driver = 'yaml_file_cat'
                     else:
                         uri = uri + '/*'

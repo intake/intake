@@ -10,7 +10,7 @@ sources:
     driver: example1
     args: {}
   nested:
-    description: same again please
+    description: around again
     driver: yaml_file_cat
     args:
       path: '{{ CATALOG_DIR }}/catalog1.yml'

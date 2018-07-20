@@ -24,9 +24,9 @@ class RemoteSource(DataSource):
                            parameters=self.parameters)
             req = requests.post(self.url, data=msgpack.packb(
                 payload, use_bin_type=True), **self.headers)
-            if req.status_code == 200:
-                response = msgpack.unpackb(req.content, encoding='utf-8')
-                self._parse_open_response(response)
+            req.raise_for_status()
+            response = msgpack.unpackb(req.content, encoding='utf-8')
+            self._parse_open_response(response)
 
     def _parse_open_response(self, response):
         self.datashape = response['datashape']
@@ -45,10 +45,10 @@ class RemoteSource(DataSource):
         self._source_id = response['source_id']
 
     def _get_partition(self, i):
-        pass
+        raise NotImplementedError
 
     def to_dask(self):
-        pass
+        raise NotImplementedError
 
 
 def get_partition(url, headers, source_id, container, partition):

@@ -23,9 +23,21 @@ install:
   source $HOME/miniconda3/bin/activate root
   conda install -y conda-build anaconda-client
 script:
-- conda build -c intake/label/main ./conda
-- if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then anaconda -t ${ANACONDA_TOKEN}
-  upload --force `conda build -c intake/label/main --output ./conda`; fi
+- |
+  if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+      conda build -c defaults -c conda-forge ./conda
+  else
+      # Workaround for Travis-CI bug #2: https://github.com/travis-ci/travis-ci/issues/7773
+      conda build -c defaults -c conda-forge --no-test ./conda
+  fi
+- |
+  if [ -n "$TRAVIS_TAG" ]; then
+      # If tagged git version, upload package to main channel
+      anaconda -t ${ANACONDA_TOKEN} upload -u intake --force `conda build --output ./conda`
+  else
+      # Otherwise upload package to dev channel
+      anaconda -t ${ANACONDA_TOKEN} upload -u intake --label dev --force `conda build --output ./conda`
+  fi
 notifications:
   email: false
   on_success: change
