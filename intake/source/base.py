@@ -89,8 +89,11 @@ class DataSource(object):
     def yaml(self):
         """Return YAML representation of this data-source"""
         import ruamel.yaml
+        import inspect
         kwargs = self._captured_init_kwargs.copy()
-        meta = kwargs.pop('metadata')
+        meta = kwargs.pop('metadata', self.metadata) or {}
+        kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
+                      self._captured_init_args)))
         data = {self.name: {
             'driver': self.__class__.name,
             'description': self.description,
