@@ -4,16 +4,16 @@ import time
 import msgpack
 import requests
 from requests.compat import urljoin, urlparse
-from dask.bytes import open_files
 
 from ..auth.base import BaseClientAuth
 from .entry import CatalogEntry
 from .remote import RemoteCatalogEntry
-from .utils import clamp, flatten, reload_on_change
+from .utils import flatten, reload_on_change
+from ..source.base import DataSource
 logger = logging.getLogger('intake')
 
 
-class Catalog(object):
+class Catalog(DataSource):
     """Manages a hierarchy of data sources and plugins as a collective unit.
 
     A catalog is a set of available data sources and plugins for an individual
@@ -33,6 +33,8 @@ class Catalog(object):
     metadata : dict
         Dictionary loaded from ``metadata`` section of catalog file.
     """
+    # emulate a DataSource
+    container = 'catalog'
 
     def __init__(self, *args, **kwargs):
         """
@@ -52,6 +54,7 @@ class Catalog(object):
             parameters to pass to remote backend file-system. Ignored for
             normal local files.
         """
+        super(Catalog, self).__init__(container='catalog')
         self.name = kwargs.get('name', None)
         self.ttl = kwargs.get('ttl', 1)
         self.getenv = kwargs.pop('getenv', True)
@@ -127,7 +130,10 @@ class Catalog(object):
 
     @reload_on_change
     def _get_entry(self, name):
-        return self._entries[name]
+        try:
+            return self._entries[name]
+        except KeyError:
+            print('Not found:', name)
 
     @reload_on_change
     def _get_entries(self):
@@ -144,7 +150,8 @@ class Catalog(object):
         return "<Intake catalog: %s>" % self.name
 
     def __getattr__(self, item):
-        return self._get_entry(item)
+        if not item.startswith('_'):
+            return self._get_entry(item)
 
     def __getitem__(self, key):
         """Return a catalog entry by name.
@@ -160,20 +167,35 @@ class Catalog(object):
             out = getattr(out, k)
         return out
 
+    def discover(self):
+        return {"container": 'catalog', 'shape': None,
+                'dtype': None, 'datashape': None, 'metadata': self.metadata}
+
+    def _close(self):
+        # TODO: maybe close all entries?
+        pass
+
 
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
 
-    def __init__(self, url, **kwargs):
-        self.http_args = kwargs.get('http_args', {})
+    def __init__(self, url, http_args={}, **kwargs):
+        self.http_args = http_args
         self.http_args.update(kwargs.get('storage_options', {}))
-        secure = self.http_args.pop('ssl', False)
-        scheme = 'https' if secure else 'http'
-        self.base_url = url.replace('intake', scheme) + '/'
-        self.name = urlparse(self.base_url).netloc.replace(
-            '.', '_').replace(':', '_')
-        self.info_url = urljoin(self.base_url, 'v1/info')
-        self.source_url = urljoin(self.base_url, 'v1/source')
+        self.http_args['headers'] = self.http_args.get('headers', {})
+        self._source_id = kwargs.get('source_id', None)
+        if self._source_id is None:
+            secure = http_args.pop('ssl', False)
+            scheme = 'https' if secure else 'http'
+            base_url = url.replace('intake', scheme) + '/'
+            self.info_url = urljoin(base_url, 'v1/info')
+            self.source_url = urljoin(base_url, 'v1/source')
+            self.name = urlparse(base_url).netloc.replace(
+                '.', '_').replace(':', '_')
+        else:
+            self.name = kwargs['name']
+            self.source_url = url
+            self.info_url = url.replace('v1/source', 'v1/info')
         self.auth = kwargs.get('auth', None)  # instance of BaseClientAuth
         super(RemoteCatalog, self).__init__(self, **kwargs)
 
@@ -186,6 +208,8 @@ class RemoteCatalog(Catalog):
 
         # build new http args with these headers
         http_args = self.http_args.copy()
+        if self._source_id is not None:
+            headers['source_id'] = self._source_id
         http_args['headers'] = headers
         response = requests.get(self.info_url, **http_args)
         if response.status_code != 200:

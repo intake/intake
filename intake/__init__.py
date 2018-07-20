@@ -5,9 +5,10 @@ from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
 from . import source
-from .catalog.default import load_combo_catalog
+from .source.base import Schema, DataSource
 from .catalog.base import Catalog, RemoteCatalog
 from .catalog import local
+from .catalog.default import load_combo_catalog
 
 __all__ = ['registry', 'make_open_functions', 'cat', 'Catalog']
 
@@ -20,7 +21,7 @@ registry.update(autodiscover())
 # FIXME: this plugin needs to eventually be retired
 from .source import csv
 registry['csv'] = csv.CSVSource
-registry['empty'] = Catalog
+registry['catalog'] = Catalog
 registry['intake_remote'] = RemoteCatalog
 
 
@@ -72,18 +73,17 @@ make_open_functions()
 cat = load_combo_catalog()
 
 
-def open_catalog(*args, **kwargs):
+def open_catalog(uri=None, **kwargs):
     """LONG EXPLANATION HERE"""
     driver = kwargs.pop('driver', None)
     if driver is None:
-        if args:
-            uri = args[0]
+        if uri:
             if ((isinstance(uri, str) and "*" in uri)
                     or ((isinstance(uri, (list, tuple))) and len(uri) > 1)):
                 # glob string or list of files/globs
                 driver = 'yaml_files_cat'
             elif isinstance(uri, (list, tuple)) and len(uri) == 1:
-                args = (uri[0], ) + args[1:]
+                uri = uri[0]
                 if "*" in uri[0]:
                     # single glob string in a list
                     driver = 'yaml_files_cat'
@@ -99,14 +99,15 @@ def open_catalog(*args, **kwargs):
                     if uri.endswith('.yml') or uri.endswith('.yaml'):
                         driver = 'yaml_file_cat'
                     else:
-                        args = (uri + '/*', ) + args[1:]
+                        uri = uri + '/*'
+                        driver = 'yaml_files_cat'
         else:
-            # unknown - to error
-            driver = 'empty'
+            # empty cat
+            driver = 'catalog'
     if driver not in registry:
         raise ValueError('Unknown catalog driver, supply one of: %s'
                          % list(registry))
-    return registry[driver](*args, **kwargs)
+    return registry[driver](uri, **kwargs)
 
 
 Catalog = open_catalog

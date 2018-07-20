@@ -9,6 +9,11 @@ sources:
     description: example1 source plugin
     driver: example1
     args: {}
+  nested:
+    description: same again please
+    driver: yaml_file_cat
+    args:
+      path: '{{ CATALOG_DIR }}/catalog1.yml'
   entry1:
     description: entry1 full
     metadata:

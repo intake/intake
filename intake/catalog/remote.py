@@ -2,7 +2,6 @@ import msgpack
 import requests
 import six
 
-from ..container import container_map
 from ..source import registry as plugin_registry
 from .entry import CatalogEntry
 from .utils import expand_defaults, coerce
@@ -47,6 +46,7 @@ class RemoteCatalogEntry(CatalogEntry):
 
 def open_remote(url, entry, container, user_parameters, description, http_args):
     """Create either local direct data source or remote streamed source"""
+    from intake.container import container_map
     if url.startswith('intake://'):
         url = url[len('intake://'):]
     payload = dict(action='open',

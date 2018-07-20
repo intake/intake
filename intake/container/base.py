@@ -35,7 +35,7 @@ class RemoteSource(DataSource):
             # Reformat because NumPy needs list of tuples
             dtype_descr = [tuple(x) for x in response['dtype']]
         self.dtype = dtype_descr
-        self.shape = tuple(response['shape'])
+        self.shape = tuple(response['shape'] or ())
         self.npartitions = response['npartitions']
         self.metadata = response['metadata']
         self._schema = Schema(datashape=None, dtype=self.dtype,
