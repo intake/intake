@@ -127,10 +127,6 @@ class LocalCatalogEntry(CatalogEntry):
         return self._name
 
     def describe(self):
-        if isinstance(self._plugin.container, (list, tuple)):
-            import pdb
-            pdb.set_trace()
-            print('####', self._plugin)
         return {
             'container': self._plugin.container,
             'description': self._description,
@@ -232,24 +228,23 @@ class CatalogParser(object):
             self._warnings.append(str((msg, obj, key)))
 
     def _parse_plugins(self, data):
-        sources = []
 
         if 'plugins' not in data:
-            return sources
+            return
 
         if not isinstance(data['plugins'], dict):
             self.error("value of key 'plugins' must be a dictionary", data,
                        'plugins')
-            return sources
+            return
 
         if 'source' not in data['plugins']:
             self.error("missing key 'source'", data['plugins'])
-            return sources
+            return
 
         if not isinstance(data['plugins']['source'], list):
             self.error("value of key 'source' must be a list", data['plugins'],
                        'source')
-            return sources
+            return
 
         for plugin_source in data['plugins']['source']:
             if not isinstance(plugin_source, dict):
@@ -261,25 +256,14 @@ class CatalogParser(object):
                 self.error("keys 'module' and 'dir' both exist (select only "
                            "one)", plugin_source)
             elif 'module' in plugin_source:
-                for k, v in load_plugins_from_module(
-                        plugin_source['module']).items():
-                    if k:
-                        if isinstance(k, (list, tuple)):
-                            k = k[0]
-                        global_registry[k] = v
+                register_plugin_module(plugin_source['module'])
             elif 'dir' in plugin_source:
-                import glob
-                d = self._context['root']
-                path = Template(plugin_source['dir']).render({'CATALOG_DIR': d})
-                for f in glob.glob(path + '/*.py'):
-                    for k, v in load_plugins_from_module(f).items():
-                        if k:
-                            global_registry[k[0]] = v
+                path = Template(plugin_source['dir']).render(
+                    {'CATALOG_DIR': self._context['root']})
+                register_plugin_dir(path)
             else:
                 self.error("missing one of the available keys ('module' or "
                            "'dir')", plugin_source)
-
-        global_registry.update(sources)
 
     def _getitem(self, obj, key, dtype, required=True, default=None,
                  choices=None):
@@ -408,6 +392,25 @@ class CatalogParser(object):
             data_sources=self._parse_data_sources(data),
             metadata=data.get('metadata', {})
         )
+
+
+def register_plugin_module(mod):
+    """Find plugins in given module"""
+    for k, v in load_plugins_from_module(
+            mod).items():
+        if k:
+            if isinstance(k, (list, tuple)):
+                k = k[0]
+            global_registry[k] = v
+
+
+def register_plugin_dir(path):
+    """Find plugins in given directory"""
+    import glob
+    for f in glob.glob(path + '/*.py'):
+        for k, v in load_plugins_from_module(f).items():
+            if k:
+                global_registry[k[0]] = v
 
 
 class YAMLFileCatalog(Catalog):
