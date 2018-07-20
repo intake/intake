@@ -35,6 +35,7 @@ class Catalog(DataSource):
     """
     # emulate a DataSource
     container = 'catalog'
+    name = 'catalog'
 
     def __init__(self, *args, **kwargs):
         """
@@ -54,7 +55,7 @@ class Catalog(DataSource):
             parameters to pass to remote backend file-system. Ignored for
             normal local files.
         """
-        super(Catalog, self).__init__(container='catalog')
+        super(Catalog, self).__init__()
         self.name = kwargs.get('name', None)
         self.ttl = kwargs.get('ttl', 1)
         self.getenv = kwargs.pop('getenv', True)
@@ -130,10 +131,7 @@ class Catalog(DataSource):
 
     @reload_on_change
     def _get_entry(self, name):
-        try:
-            return self._entries[name]
-        except KeyError:
-            print('Not found:', name)
+        return self._entries[name]
 
     @reload_on_change
     def _get_entries(self):

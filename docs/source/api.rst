@@ -22,7 +22,7 @@ API Reference
 
    .. attribute:: plot
 
-      Accessor for HoloPlot methods.  See :doc:`plotting` for more details.
+      Accessor for HVPlot methods.  See :doc:`plotting` for more details.
 
 .. autoclass:: intake.source.base.Plugin
    :members: open

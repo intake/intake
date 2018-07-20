@@ -86,6 +86,19 @@ class DataSource(object):
             self.npartitions = self._schema.npartitions
             self.metadata.update(self._schema.extra_metadata)
 
+    def yaml(self):
+        """Return YAML representation of this data-source"""
+        import ruamel.yaml
+        kwargs = self._captured_init_kwargs.copy()
+        meta = kwargs.pop('metadata')
+        data = {self.name: {
+            'driver': self.__class__.name,
+            'description': self.description,
+            'metadata': meta,
+            'args': kwargs
+        }}
+        return ruamel.yaml.dump(data, default_flow_style=False)
+
     def discover(self):
         """Open resource and populate the source attributes."""
         self._load_metadata()

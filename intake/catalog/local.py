@@ -162,6 +162,8 @@ class LocalCatalogEntry(CatalogEntry):
     def get(self, **user_parameters):
         open_args = self._create_open_args(user_parameters)
         data_source = self._plugin(**open_args)
+        data_source.name = self.name
+        data_source.description = self._description
 
         return data_source
 
@@ -418,6 +420,7 @@ class YAMLFileCatalog(Catalog):
     version = __version__,
     container = 'catalog',
     partition_access = None
+    name = 'yaml_files_cat'
 
     def __init__(self, path, **kwargs):
         """
@@ -488,6 +491,7 @@ class YAMLFilesCatalog(Catalog):
     version = __version__,
     container = 'catalog',
     partition_access = None
+    name = 'yaml_file_cat'
 
     def __init__(self, path, flatten=True, **kwargs):
         """
