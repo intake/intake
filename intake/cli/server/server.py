@@ -88,7 +88,7 @@ class ServerInfoHandler(tornado.web.RequestHandler):
             else:
                 cat = self.catalog
             sources = []
-            for name, source in cat.walk().items():
+            for name, source in cat.walk(depth=1).items():
                 if self.auth.allow_access(head, source, self.catalog):
                     info = source.describe()
                     info['name'] = name

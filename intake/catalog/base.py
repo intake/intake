@@ -117,7 +117,7 @@ class Catalog(DataSource):
         """
         out = sofar if sofar is not None else {}
         prefix = [] if prefix is None else prefix
-        for name, item in self._get_entries().items():
+        for name, item in self._entries.items():
             if item.container == 'catalog' and depth > 1:
                 # recurse with default open parameters
                 try:

@@ -61,6 +61,8 @@ def test_nested(catalog1):
     assert 'nested' in catalog1
     assert 'entry1' in catalog1.nested.nested()
     assert catalog1.entry1.read().equals(catalog1.nested.nested.entry1.read())
+    assert 'nested.nested' not in catalog1.walk(depth=1)
+    assert 'nested.nested' in catalog1.walk(depth=2)
 
 
 def test_source_plugin_config(catalog1):

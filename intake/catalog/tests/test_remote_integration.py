@@ -2,11 +2,11 @@ import os.path
 import pickle
 
 import pytest
-import numpy as np
 import pandas as pd
 
 from ...source.tests.util import verify_datasource_interface
 from .util import assert_items_equal
+from .conftest import make_server
 from intake import Catalog
 
 TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
@@ -205,3 +205,18 @@ def test_remote_env(intake_server):
     with pytest.raises(Exception) as e:
         catalog.local_env.get()
     assert 'INTAKE_TEST' in str(e.value)
+
+
+def test_remote_sequence():
+    import glob
+    d = os.path.dirname(TEST_CATALOG_PATH)
+    path = os.path.join(d, 'texts.yml')
+    i = iter(make_server(path))
+    server = next(i)
+    catalog = Catalog(server)
+    assert 'text' in catalog
+    s = catalog.text()
+    s.discover()
+    assert s.npartitions == len(glob.glob(os.path.join(d, '*.yml')))
+    assert s.read_partition(0)
+    assert s.read()

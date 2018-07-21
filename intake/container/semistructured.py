@@ -9,10 +9,10 @@ class RemoteSequenceSource(RemoteSource):
     def __init__(self, url, headers, **kwargs):
         self.url = url
         self.npartitions = kwargs.get('npartition', 1)
-        self.partition_access = self.npartition > 1
+        self.partition_access = self.npartitions > 1
         self.headers = headers
         self.metadata = kwargs.get('metadata', {})
-        self._schema = Schema(npartitions=self.npartition,
+        self._schema = Schema(npartitions=self.npartitions,
                               extra_metadata=self.metadata)
         self.bag = None
         super(RemoteSequenceSource, self).__init__(url, headers, **kwargs)
@@ -27,6 +27,13 @@ class RemoteSequenceSource(RemoteSource):
                           for i in range(self.npartitions)]
             self.bag = db.from_delayed(self.parts)
         return self._schema
+
+    def _get_partition(self, i):
+        self._load_metadata()
+        return self.parts[i].compute()
+
+    def read(self):
+        return self.bag.compute()
 
     def to_dask(self):
         return self.bag

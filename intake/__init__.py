@@ -19,8 +19,9 @@ from .source.discovery import autodiscover
 registry.update(autodiscover())
 
 # FIXME: this plugin needs to eventually be retired
-from .source import csv
+from .source import csv, textfiles
 registry['csv'] = csv.CSVSource
+registry['textfiles'] = textfiles.TextFilesSource
 registry['catalog'] = Catalog
 registry['intake_remote'] = RemoteCatalog
 
@@ -59,14 +60,14 @@ def output_notebook(inline=True, logo=False):
         Whether to show the logo(s)
     """
     try:
-        import holoplot
-        import holoviews as hv
-    except:
-        raise ImportError("The intake plotting API requires holoplot."
-                          "holoplot may be installed with:\n\n"
-                          "`conda install -c pyviz holoplot` or "
-                          "`pip install holoplot`.")
-    hv.extension('bokeh', inline=inline, logo=logo)
+        import hvplot
+    except ImportError:
+        raise ImportError("The intake plotting API requires hvplot."
+                          "hvplot may be installed with:\n\n"
+                          "`conda install -c pyviz hvplot` or "
+                          "`pip install hvplot`.")
+    import holoviews as hv
+    return hv.extension('bokeh', inline=inline, logo=logo)
 
 
 make_open_functions()

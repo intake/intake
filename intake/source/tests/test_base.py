@@ -38,6 +38,7 @@ class MockDataSourceDataFrame(base.DataSource):
     """
 
     container = 'dataframe'
+    name = 'mock'
 
     def __init__(self, a, b):
         self.a = a
@@ -202,6 +203,7 @@ class MockDataSourcePython(base.DataSource):
     Used to verify that the base DataSource class logic works for Python lists.
     """
     container = 'python'
+    name = 'mock'
 
     def __init__(self, a, b):
         self.a = a
@@ -293,3 +295,10 @@ def test_datasource_python_to_dask(source_python):
     assert db == [{'x': 'foo', 'y': 'bar'},
                   {'x': 'foo', 'y': 'bar', 'z': 'baz'},
                   {'x': 1}, {}]
+
+
+def test_yaml_method(source_python):
+    out = source_python.yaml()
+    assert 'mock' in out  # the "driver"
+    assert 'metadata' in out
+    assert 'a: 1' in out

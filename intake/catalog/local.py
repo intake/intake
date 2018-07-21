@@ -417,8 +417,8 @@ def register_plugin_dir(path):
 
 class YAMLFileCatalog(Catalog):
     """Catalog as described by a single YAML file"""
-    version = __version__,
-    container = 'catalog',
+    version = __version__
+    container = 'catalog'
     partition_access = None
     name = 'yaml_files_cat'
 

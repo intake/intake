@@ -159,7 +159,7 @@ class DataSource(object):
             from hvplot import hvPlot
         except ImportError:
             raise ImportError("The intake plotting API requires hvplot."
-                              "holoplot may be installed with:\n\n"
+                              "hvplot may be installed with:\n\n"
                               "`conda install -c pyviz hvplot` or "
                               "`pip install hvplot`.")
         metadata = self.metadata.get('plot', {})
