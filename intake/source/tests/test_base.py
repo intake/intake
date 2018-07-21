@@ -8,29 +8,6 @@ import pandas as pd
 from .. import base
 
 
-def test_plugin_base():
-    p = base.Plugin(name='test', version='0.1.0',
-                    container='dataframe', partition_access=False)
-
-    assert p.name == 'test'
-    assert p.version == '0.1.0'
-    assert p.container == 'dataframe'
-    assert not p.partition_access
-    with pytest.raises(Exception) as except_info:
-        p.open()
-
-    assert 'open' in str(except_info.value)
-
-
-def test_plugin_separate_base_kwargs():
-    p = base.Plugin(name='test', version='0.1.0',
-                    container='dataframe', partition_access=False)
-
-    base_kwargs, kwargs = p.separate_base_kwargs(dict(a=1, metadata=2))
-    assert base_kwargs == dict(metadata=2)
-    assert kwargs == dict(a=1)
-
-
 def test_datasource_base_method_exceptions():
     # Unimplemented methods should raise exceptions
     d = base.DataSource(container='dataframe')
@@ -69,6 +46,7 @@ class MockDataSourceDataFrame(base.DataSource):
             container='dataframe',
             metadata=dict(a=1, b=2)
         )
+        self.npartitions = 2
 
     def _get_schema(self):
         self.call_count['_get_schema'] += 1
@@ -88,6 +66,16 @@ class MockDataSourceDataFrame(base.DataSource):
             return pd.DataFrame({'x': [4, 5, 6], 'y': [40, 50, 60]})
         else:
             raise Exception('This should never happen')
+
+    def read(self):
+        return pd.concat([self._get_partition(i)
+                          for i in range(self.npartitions)])
+
+    def to_dask(self):
+        import dask.dataframe as dd
+        import dask
+        return dd.from_delayed([dask.delayed(self._get_partition)(i)
+                                for i in range(self.npartitions)])
 
     def _close(self):
         self.call_count['_close'] += 1
@@ -222,6 +210,7 @@ class MockDataSourcePython(base.DataSource):
             container='python',
             metadata=dict(a=1, b=2)
         )
+        self.npartitions = 2
 
     def _get_schema(self):
         self.call_count['_get_schema'] += 1
@@ -242,6 +231,16 @@ class MockDataSourcePython(base.DataSource):
             return [{'x': 1}, {}]
         else:
             raise Exception('This should never happen')
+
+    def read(self):
+        return sum([self._get_partition(i) for i in range(self.npartitions)],
+               [])
+
+    def to_dask(self):
+        import dask.bag as db
+        import dask
+        return db.from_delayed([dask.delayed(self._get_partition)(i)
+                                for i in range(self.npartitions)])
 
     def _close(self):
         self.call_count['_close'] += 1

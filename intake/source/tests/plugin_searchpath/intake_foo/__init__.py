@@ -1,11 +1,11 @@
-from intake.source.base import Plugin
+from intake.source.base import DataSource
 
 
-class FooPlugin(Plugin):
-    def __init__(self):
-        super(FooPlugin, self).__init__(name='foo', version='0.1',
-                                        container='dataframe',
-                                        partition_access=False)
+class FooPlugin(DataSource):
+    name = 'foo'
+    version = '0.1'
+    container = 'dataframe'
+    partition_access = False
 
-    def open(self, **kwargs):
-        return 'open_worked'  # Don't actually use this plugin
+    def __init__(self, **kwargs):
+        pass

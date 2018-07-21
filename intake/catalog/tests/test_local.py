@@ -9,7 +9,8 @@ import pytest
 import pandas
 
 from .util import assert_items_equal
-from intake.catalog import Catalog, exceptions, local
+from intake import Catalog
+from intake.catalog import exceptions, local
 from intake.catalog.local import UserParameter
 
 
@@ -24,8 +25,9 @@ def catalog1():
 
 
 def test_local_catalog(catalog1):
-    assert_items_equal(list(catalog1), ['use_example1', 'entry1', 'entry1_part',
-                                        'remote_env', 'local_env'])
+    assert_items_equal(list(catalog1),
+                       ['use_example1', 'nested', 'entry1', 'entry1_part',
+                        'remote_env', 'local_env'])
     assert catalog1['entry1'].describe() == {
         'container': 'dataframe',
         'direct_access': 'forbid',
@@ -55,14 +57,21 @@ def test_local_catalog(catalog1):
     assert catalog1['entry1_part'].get(part='2').container == 'dataframe'
 
 
+def test_nested(catalog1):
+    assert 'nested' in catalog1
+    assert 'entry1' in catalog1.nested.nested()
+    assert catalog1.entry1.read().equals(catalog1.nested.nested.entry1.read())
+
+
 def test_source_plugin_config(catalog1):
-    assert_items_equal(list(catalog1.plugins), ['example1', 'example2'])
+    from intake import registry
+    assert 'example1' in registry
+    assert 'example2' in registry
 
 
 def test_metadata(catalog1):
     assert hasattr(catalog1, 'metadata')
     assert catalog1['metadata']['test'] is True
-    assert catalog1.version == 1
 
 
 def test_use_source_plugin_from_config(catalog1):
@@ -185,7 +194,6 @@ def test_user_parameter_validation_allowed():
     "plugins_source_missing_key",
     "plugins_source_non_dict",
     "plugins_source_non_list",
-    "plugins_source_non_string",
 ])
 def test_parser_validation_error(filename):
     with pytest.raises(exceptions.ValidationError):
@@ -291,7 +299,7 @@ sources:
 
 def test_catalog_file_removal(temp_catalog_file):
     cat_dir = os.path.dirname(temp_catalog_file)
-    cat = Catalog(cat_dir) 
+    cat = Catalog(cat_dir + '/*')
     assert set(cat) == {'a', 'b'}
 
     os.remove(temp_catalog_file)

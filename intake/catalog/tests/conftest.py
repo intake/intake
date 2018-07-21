@@ -39,8 +39,16 @@ def pick_port():
 
 @pytest.fixture(scope="module")
 def intake_server(request):
+    os.environ['INTAKE_DEBUG'] = 'true'
     # Catalog path comes from the test module
-    catalog_path = request.module.TEST_CATALOG_PATH
+    path = request.module.TEST_CATALOG_PATH
+    if isinstance(path, list):
+        catalog_path = [p + '/*' for p in path]
+    elif isinstance(path, str) and not path.endswith(
+            '.yml') and not path.endswith('.yaml'):
+        catalog_path = path + '/*'
+    else:
+        catalog_path = path
     server_conf = getattr(request.module, 'TEST_SERVER_CONF', None)
 
     # Start a catalog server on nonstandard port

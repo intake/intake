@@ -1,17 +1,11 @@
-from intake.source.base import Plugin, DataSource
-
-
-class ExamplePlugin(Plugin):
-    def __init__(self):
-        super(ExamplePlugin, self).__init__(name='example1',
-                                            version='0.1',
-                                            container='dataframe',
-                                            partition_access=True)
-
-    def open(self, *args, **kwargs):
-        return ExampleSource
+from intake.source.base import DataSource
 
 
 class ExampleSource(DataSource):
-    def __init__(self):
+    name = 'example1'
+    version = '0.1'
+    container = 'dataframe'
+    partition_access = True
+
+    def __init__(self, **kwargs):
         super(ExampleSource, self).__init__(container='dataframe')

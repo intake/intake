@@ -7,7 +7,7 @@ import time
 import pytest
 
 from .util import assert_items_equal
-from intake.catalog import Catalog
+from intake import Catalog
 
 TMP_DIR = tempfile.mkdtemp()
 TEST_CATALOG_PATH = [TMP_DIR]
@@ -17,7 +17,10 @@ MISSING_PATH = os.path.join(TMP_DIR, 'a')
 
 
 def teardown_module(module):
-    shutil.rmtree(TMP_DIR)
+    try:
+        shutil.rmtree(TMP_DIR)
+    except:
+        pass
 
 
 @pytest.fixture
@@ -85,7 +88,8 @@ sources:
   example2:
     description: source 2
     driver: csv
-    args: {}
+    args:
+        urlpath: none
         ''')
 
     time.sleep(2)
@@ -93,22 +97,18 @@ sources:
     assert_items_equal(list(catalog), ['example2'] + orig_entries)
 
 
-@pytest.fixture
-def intake_server_with_missing_dir(intake_server):
-    yield MISSING_PATH
-
+def test_reload_missing_remote_directory(intake_server):
     try:
-        shutil.rmtree(MISSING_PATH)
-    except OSError:
+        shutil.rmtree(TMP_DIR)
+    except:
         pass
 
-
-def test_reload_missing_remote_directory(intake_server_with_missing_dir):
-    catalog = Catalog(intake_server_with_missing_dir)
+    time.sleep(1)
+    catalog = Catalog(intake_server)
     assert_items_equal(list(catalog), [])
 
-    os.mkdir(MISSING_PATH)
-    with open(os.path.join(MISSING_PATH, YAML_FILENAME), 'w') as f:
+    os.mkdir(TMP_DIR)
+    with open(os.path.join(TMP_DIR, YAML_FILENAME), 'w') as f:
         f.write('''
 plugins:
   source:
@@ -120,8 +120,13 @@ sources:
     driver: example1
     args: {}
         ''')
+    time.sleep(2)
 
     assert_items_equal(list(catalog), ['use_example1'])
+    try:
+        shutil.rmtree(TMP_DIR)
+    except:
+        pass
 
 
 @pytest.fixture
@@ -135,7 +140,7 @@ def tmpdir():
 
 
 def test_reload_missing_local_directory(tmpdir):
-    catalog = Catalog(tmpdir)
+    catalog = Catalog(tmpdir + '/*')
     assert_items_equal(list(catalog), [])
 
     os.mkdir(tmpdir)
@@ -152,4 +157,5 @@ sources:
     args: {}
         ''')
 
-    assert_items_equal(list(catalog), ['use_example1'])
+    time.sleep(1)
+    assert 'use_example1' in catalog

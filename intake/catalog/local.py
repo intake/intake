@@ -1,9 +1,6 @@
-import glob
-import inspect
 import logging
 import os
 import os.path
-import runpy
 import yaml
 
 from ruamel_yaml.constructor import DuplicateKeyError
@@ -12,11 +9,12 @@ from jinja2 import Template
 import six
 from dask.bytes import open_files
 
+from .. import __version__
+from .base import Catalog
 from . import exceptions
 from .entry import CatalogEntry
 from ..source import registry as global_registry
-from ..source.base import Plugin
-from ..source.discovery import load_plugins_from_module
+from ..source.discovery import autodiscover, load_plugins_from_module
 from .utils import expand_templates, expand_defaults, coerce, COERCION_RULES
 
 
@@ -120,19 +118,13 @@ class LocalCatalogEntry(CatalogEntry):
         self._user_parameters = parameters
         self._metadata = metadata
         self._catalog_dir = catalog_dir
-        self._plugin = None
+        self._plugin = global_registry[driver]
         super(LocalCatalogEntry, self).__init__(
             getenv=getenv, getshell=getshell)
 
     @property
     def name(self):
         return self._name
-
-    def find_plugin(self, registry):
-        if self._driver in registry:
-            self._plugin = registry[self._driver]
-        else:
-            self._plugin = global_registry[self._driver]
 
     def describe(self):
         return {
@@ -169,58 +161,9 @@ class LocalCatalogEntry(CatalogEntry):
 
     def get(self, **user_parameters):
         open_args = self._create_open_args(user_parameters)
-        data_source = self._plugin.open(**open_args)
+        data_source = self._plugin(**open_args)
 
         return data_source
-
-
-class PluginSource(object):
-    def __init__(self, type, source):
-        self.type = type
-        self.source = source
-
-    def _load_from_module(self):
-        return load_plugins_from_module(self.source)
-
-    def _load_from_dir(self):
-        plugins = {}
-        pyfiles = glob.glob(os.path.join(self.source, '*.py'))
-
-        for filename in pyfiles:
-            try:
-                globs = runpy.run_path(filename)
-                for name, o in globs.items():
-                    # Don't try to register plugins imported into this module
-                    # from somewhere else
-                    if inspect.isclass(o) and issubclass(
-                            o, Plugin) and o.__module__ == '<run_path>':
-                        p = o()
-                        plugins[p.name] = p
-                # If no exceptions, continue to next filename
-                continue
-            except Exception as ex:
-                logger.warning('When importing {}:\n{}'.format(filename, ex))
-
-            import imp
-            base = os.path.splitext(filename)[0]
-            mod = imp.load_source(base, filename)
-            for name in mod.__dict__:
-                obj = getattr(mod, name)
-                # Don't try to register plugins imported into this module
-                # from somewhere else
-                if inspect.isclass(obj) and issubclass(
-                        obj, Plugin) and obj.__module__ == base:
-                    p = obj()
-                    plugins[p.name] = p
-
-        return plugins
-
-    def load(self):
-        if self.type == 'module':
-            return self._load_from_module()
-        elif self.type == 'dir':
-            return self._load_from_dir()
-        return {}
 
 
 def no_duplicates_constructor(loader, node, deep=False):
@@ -284,37 +227,24 @@ class CatalogParser(object):
         else:
             self._warnings.append(str((msg, obj, key)))
 
-    def _parse_plugin(self, obj, key):
-        if not isinstance(obj[key], six.string_types):
-            self.error("value of key '{}' must be either be a string or "
-                       "template".format(key), obj, key)
-            return None
-
-        extra_keys = set(obj) - set([key])
-        for key in extra_keys:
-            self.warning("key '{}' defined but not needed".format(key), key)
-
-        return PluginSource(type=key, source=obj[key])
-
     def _parse_plugins(self, data):
-        sources = []
 
         if 'plugins' not in data:
-            return sources
+            return
 
         if not isinstance(data['plugins'], dict):
             self.error("value of key 'plugins' must be a dictionary", data,
                        'plugins')
-            return sources
+            return
 
         if 'source' not in data['plugins']:
             self.error("missing key 'source'", data['plugins'])
-            return sources
+            return
 
         if not isinstance(data['plugins']['source'], list):
             self.error("value of key 'source' must be a list", data['plugins'],
                        'source')
-            return sources
+            return
 
         for plugin_source in data['plugins']['source']:
             if not isinstance(plugin_source, dict):
@@ -326,18 +256,14 @@ class CatalogParser(object):
                 self.error("keys 'module' and 'dir' both exist (select only "
                            "one)", plugin_source)
             elif 'module' in plugin_source:
-                obj = self._parse_plugin(plugin_source, 'module')
-                if obj:
-                    sources.append(obj)
+                register_plugin_module(plugin_source['module'])
             elif 'dir' in plugin_source:
-                obj = self._parse_plugin(plugin_source, 'dir')
-                if obj:
-                    sources.append(obj)
+                path = Template(plugin_source['dir']).render(
+                    {'CATALOG_DIR': self._context['root']})
+                register_plugin_dir(path)
             else:
                 self.error("missing one of the available keys ('module' or "
                            "'dir')", plugin_source)
-
-        return sources
 
     def _getitem(self, obj, key, dtype, required=True, default=None,
                  choices=None):
@@ -468,29 +394,60 @@ class CatalogParser(object):
         )
 
 
-class CatalogConfig(object):
-    def __init__(self, path, getenv=True, getshell=True, storage_options=None):
-        self._path = path
+def register_plugin_module(mod):
+    """Find plugins in given module"""
+    for k, v in load_plugins_from_module(
+            mod).items():
+        if k:
+            if isinstance(k, (list, tuple)):
+                k = k[0]
+            global_registry[k] = v
 
+
+def register_plugin_dir(path):
+    """Find plugins in given directory"""
+    import glob
+    for f in glob.glob(path + '/*.py'):
+        for k, v in load_plugins_from_module(f).items():
+            if k:
+                global_registry[k[0]] = v
+
+
+class YAMLFileCatalog(Catalog):
+    """Catalog as described by a single YAML file"""
+    version = __version__,
+    container = 'catalog',
+    partition_access = None
+
+    def __init__(self, path, **kwargs):
+        """
+        Parameters
+        ----------
+        path: str
+            Location of the file to parse (can be remote)
+        """
+        self.path = path
+        super(YAMLFileCatalog, self).__init__(**kwargs)
+
+    def _load(self):
         # First, we load from YAML, failing if syntax errors are found
-        options = storage_options or {}
-        if hasattr(path, 'path') or hasattr(path, 'read'):
-            file_open = path
-            self._path = getattr(path, 'path', getattr(path, 'name', 'file'))
+        options = self.storage_options or {}
+        if hasattr(self.path, 'path') or hasattr(self.path, 'read'):
+            file_open = self.path
+            self.path = getattr(self.path, 'path',
+                                getattr(self.path, 'name', 'file'))
         else:
-            file_open = open_files(self._path, mode='rb', **options)
+            file_open = open_files(self.path, mode='rb', **options)
             assert len(file_open) == 1
             file_open = file_open[0]
-        if file_open.path.startswith('http'):
-            # do not reload from HTTP
-            self.token = file_open.path
-        else:
-            self.token = file_open.fs.ukey(file_open.path)
-        self._name = os.path.splitext(os.path.basename(
-            self._path))[0].replace('.', '_')
-        self._dir = os.path.dirname(self._path)
-        with file_open as f:
-            text = f.read().decode()
+        self.name = os.path.splitext(os.path.basename(
+            self.path))[0].replace('.', '_')
+        self._dir = os.path.dirname(self.path)
+        try:
+            with file_open as f:
+                text = f.read().decode()
+        except (IOError, OSError):
+            return
         if "!template " in text:
             logger.warning("Use of '!template' deprecated - fixing")
             text = text.replace('!template ', '')
@@ -502,42 +459,95 @@ class CatalogConfig(object):
 
         if data is None:
             raise exceptions.CatalogException('No YAML data in file')
+
         # Second, we validate the schema and semantics
         context = dict(root=self._dir)
-        result = CatalogParser(data, context=context, getenv=getenv,
-                               getshell=getshell)
+        result = CatalogParser(data, context=context, getenv=self.getenv,
+                               getshell=self.getshell)
         if result.errors:
             errors = ["line {}, column {}: {}".format(*error)
                       for error in result.errors]
             raise exceptions.ValidationError(
                 "Catalog '{}' has validation errors:\n\n{}"
-                "".format(path, "\n".join(errors)), result.errors)
+                "".format(self.path, "\n".join(errors)), result.errors)
 
         cfg = result.data
 
-        # Finally, we create the plugins and entries. Failure is still possible.
-        params = dict(CATALOG_DIR=self._dir)
-
-        self._plugins = {}
-        for ps in cfg['plugin_sources']:
-            ps.source = Template(ps.source).render(params)
-            self._plugins.update(ps.load())
-
         self._entries = {}
         for entry in cfg['data_sources']:
-            entry.find_plugin(self._plugins)
             self._entries[entry.name] = entry
 
         self.metadata = cfg.get('metadata', {})
 
-    @property
-    def name(self):
-        return self._name
 
-    @property
-    def plugins(self):
-        return self._plugins
+global_registry['yaml_file_cat'] = YAMLFileCatalog
 
-    @property
-    def entries(self):
-        return self._entries
+
+class YAMLFilesCatalog(Catalog):
+    """Catalog as described by a multiple YAML files"""
+    version = __version__,
+    container = 'catalog',
+    partition_access = None
+
+    def __init__(self, path, flatten=True, **kwargs):
+        """
+        Parameters
+        ----------
+        path: str
+            Location of the files to parse (can be remote), including possible
+            glob (*) character(s). Can also be list of paths, without glob
+            characters.
+        flatten: bool (True)
+            Whether to list all entries in the cats at the top level (True)
+            or create sub-cats from each file (False).
+        """
+        self.path = path
+        self._flatten = flatten
+        self._kwargs = kwargs.copy()
+        self._cat_files = []
+        self._cats = {}
+        self.name = "multi_yamls"
+        super(YAMLFilesCatalog, self).__init__(**kwargs)
+
+    def _load(self):
+        # initial: find cat files
+        # if flattening, need to get all entries from each.
+        self._entries.clear()
+        options = self.storage_options or {}
+        if isinstance(self.path, (list, tuple)):
+            files = sum([open_files(p, mode='rb', **options)
+                         for p in self.path], [])
+        else:
+            if len(self.path) == 1 and '*' not in self.path:
+                self.path = self.path + '/*'
+            files = open_files(self.path, mode='rb', **options)
+        if not set(f.path for f in files) == set(
+                f.path for f in self._cat_files):
+            # glob changed, reload all
+            self._cat_files = files
+            self._cats.clear()
+        for f in files:
+            name = os.path.split(f.path)[-1].replace(
+                '.yaml', '').replace('.yml', '')
+            kwargs = self.kwargs.copy()
+            kwargs['path'] = f.path
+            d = os.path.dirname(f.path)
+            if f.path not in self._cats:
+                entry = LocalCatalogEntry(name, "YAML file: %s" % name,
+                                          'yaml_file_cat', True,
+                                          kwargs, {}, self.metadata, d)
+                if self._flatten:
+                    # store a concrete Catalog
+                    self._cats[f.path] = entry()
+                else:
+                    # store a catalog entry
+                    self._cats[f.path] = entry
+        for entry in self._cats.values():
+            if self._flatten:
+                entry.reload()
+                self._entries.update(entry._entries)
+            else:
+                self._entries[entry._name] = entry
+
+
+global_registry['yaml_files_cat'] = YAMLFilesCatalog

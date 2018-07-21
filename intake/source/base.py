@@ -1,44 +1,4 @@
 # Base classes for Data Loader interface
-import dask
-
-from ..container import get_container_klass
-
-
-class Plugin(object):
-    """Data loader plugin
-
-    Attributes
-    ----------
-    name : str
-        Name of plugin.
-    version : str
-        Version number of plugin
-    container : str
-        Kind of container produced by this plugin: dataframe, ndarray, python
-    partition_access : bool
-        True if this plugin can split data into multiple partitions.
-    """
-    def __init__(self, name, version, container, partition_access):
-        self.name = name
-        self.version = version
-        self.container = container
-        self.partition_access = partition_access
-
-    def open(self, *args, **kwargs):
-        """Return a data source.
-        
-        Arguments are plugin specific.
-        """
-        raise NotImplementedError('Implement open')
-
-    @staticmethod
-    def separate_base_kwargs(kwargs):
-        kwargs = kwargs.copy()
-
-        base_keys = ['metadata']
-        base_kwargs = {k: kwargs.pop(k, None) for k in base_keys}
-
-        return base_kwargs, kwargs
 
 
 class Schema(object):
@@ -60,6 +20,11 @@ class Schema(object):
 
 
 class DataSource(object):
+    name = None
+    version = None
+    container = 'python'
+    partition_access = False
+    datashape = None
 
     def __new__(cls, *args, **kwargs):
         o = object.__new__(cls)
@@ -87,16 +52,11 @@ class DataSource(object):
     def __init__(self, container, description=None, metadata=None):
         self.container = container
         self.description = description
-        if metadata is None:
-            self.metadata = {}
-        else:
-            self.metadata = metadata
-
+        self.metadata = metadata or {}
         self.datashape = None
         self.dtype = None
         self.shape = None
         self.npartitions = 0
-
         self._schema = None
 
     def _get_schema(self):
@@ -139,14 +99,7 @@ class DataSource(object):
 
     def read(self):
         """Load entire dataset into a container and return it"""
-        self._load_metadata()
-
-        parts = [self._get_partition(i) for i in range(self.npartitions)]
-
-        return self._merge(parts)
-
-    def _merge(self, parts):
-        return get_container_klass(self.container).merge(parts)
+        pass
 
     def read_chunked(self):
         """Return iterator over container fragments of data source"""
@@ -167,12 +120,7 @@ class DataSource(object):
 
     def to_dask(self):
         """Return a dask container for this data source"""
-        self._load_metadata()
-
-        delayed_get_partition = dask.delayed(self._get_partition)
-        parts = [delayed_get_partition(i) for i in range(self.npartitions)]
-
-        return get_container_klass(self.container).to_dask(parts, self.dtype)
+        pass
 
     def close(self):
         """Close open resources corresponding to this data source."""

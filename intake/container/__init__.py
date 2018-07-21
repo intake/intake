@@ -1,15 +1,11 @@
-from .base import BaseContainer
-from .dataframe import DataFrame
+from .dataframe import RemoteDataFrame
 from .ndarray import NdArray
-from .semistructured import SemiStructured
+from .semistructured import RemoteSequenceSource
 
 container_map = {
-    'dataframe': DataFrame,
-    'python': SemiStructured,
+    'dataframe': RemoteDataFrame,
+    'python': RemoteSequenceSource,
     'ndarray': NdArray
 }
-__all__ = ['DataFrame', 'NdArray', 'SemiStructured', 'get_container_klass']
 
-
-def get_container_klass(container):
-    return container_map.get(container, BaseContainer)
+__all__ = ['container_map']

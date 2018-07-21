@@ -7,7 +7,7 @@ import pandas as pd
 
 from ...source.tests.util import verify_datasource_interface
 from .util import assert_items_equal
-from intake.catalog import Catalog
+from intake import Catalog
 
 TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
@@ -15,8 +15,9 @@ TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 def test_info_describe(intake_server):
     catalog = Catalog(intake_server)
 
-    assert_items_equal(list(catalog), ['use_example1', 'entry1', 'entry1_part',
-                                       'remote_env', 'local_env'])
+    assert_items_equal(list(catalog), ['use_example1', 'nested', 'entry1',
+                                       'entry1_part', 'remote_env',
+                                       'local_env'])
 
     info = catalog['entry1'].describe()
 
@@ -90,8 +91,6 @@ def test_read(intake_server):
 
     df = d.read()
 
-    assert not d.direct  # this should be proxied
-
     assert expected_df.equals(df)
 
 
@@ -115,8 +114,6 @@ def test_read_direct(intake_server):
     assert d.metadata == dict(foo='baz', bar=[2, 4, 6])
     assert d.description == 'entry1 part'
     df = d.read()
-
-    assert d.direct  # this should be direct
 
     assert expected_df.equals(df)
 
@@ -195,13 +192,16 @@ def test_remote_env(intake_server):
     import os
     os.environ['INTAKE_TEST'] = 'client'
     catalog = Catalog(intake_server)
-    s = catalog.remote_env.get()
-    assert 'INTAKE_TEST' in s._user_parameters['intake_test']
+    with pytest.raises(Exception) as e:
+        catalog.remote_env.get()
+    assert 'path-server' in str(e.value)
 
-    s = catalog.local_env.get()
-    assert 'client' == s._user_parameters['intake_test']
+    with pytest.raises(Exception) as e:
+        catalog.local_env.get()
+    assert 'path-client' in str(e.value)
 
     # prevents *client* from getting env
     catalog = Catalog(intake_server, getenv=False)
-    s = catalog.local_env.get()
-    assert 'INTAKE_TEST' in s._user_parameters['intake_test']
+    with pytest.raises(Exception) as e:
+        catalog.local_env.get()
+    assert 'INTAKE_TEST' in str(e.value)

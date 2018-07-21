@@ -2,11 +2,11 @@ import pkgutil
 import warnings
 import importlib
 import inspect
-import sys
 import time
 import logging
 
-from .base import Plugin
+from .base import DataSource
+from ..catalog.base import Catalog
 logger = logging.getLogger('intake')
 
 
@@ -29,8 +29,8 @@ def autodiscover(path=None, plugin_prefix='intake_'):
 
             for plugin_name, plugin in new_plugins.items():
                 if plugin_name in plugins:
-                    orig_path = inspect.getfile(plugins[plugin_name].__class__)
-                    new_path = inspect.getfile(plugin.__class__)
+                    orig_path = inspect.getfile(plugins[plugin_name])
+                    new_path = inspect.getfile(plugin)
                     warnings.warn('Plugin name collision for "%s" from'
                                   '\n    %s'
                                   '\nand'
@@ -52,11 +52,18 @@ def load_plugins_from_module(module_name):
     """
     plugins = {}
 
-    mod = importlib.import_module(module_name)
+    try:
+        if module_name.endswith('.py'):
+            import imp
+            mod = imp.load_source('module.name', module_name)
+        else:
+            mod = importlib.import_module(module_name)
+    except Exception as e:
+        logger.debug("Import module <{}> failed: {}".format(module_name, e))
+        return {}
     for _, cls in inspect.getmembers(mod, inspect.isclass):
         # Don't try to register plugins imported into this module elsewhere
-        if issubclass(cls, Plugin) and cls.__module__ == module_name:
-            plugin = cls()
-            plugins[plugin.name] = plugin
+        if issubclass(cls, (Catalog, DataSource)):
+            plugins[cls.name] = cls
 
     return plugins

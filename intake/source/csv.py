@@ -1,23 +1,6 @@
 from . import base
 
 
-class Plugin(base.Plugin):
-    """
-    Creates CSVSource objects
-    """
-    def __init__(self):
-        super(Plugin, self).__init__(name='csv', version='0.1',
-                                     container='dataframe',
-                                     partition_access=True)
-
-    def open(self, urlpath, **kwargs):
-        storage_options = kwargs.pop('storage_options', None)
-        base_kwargs, source_kwargs = self.separate_base_kwargs(kwargs)
-        return CSVSource(urlpath=urlpath, csv_kwargs=source_kwargs,
-                         metadata=base_kwargs['metadata'],
-                         storage_options=storage_options)
-
-
 # For brevity, this implementation just wraps the Dask dataframe
 # implementation. Generally, plugins should not use Dask directly, as the
 # base class provides the implementation for to_dask().
@@ -37,11 +20,16 @@ class CSVSource(base.DataSource):
         Any parameters that need to be passed to the remote data backend,
         such as credentials.
     """
+    name = 'csv'
+    version = '0.0.1'
+    container = 'dataframe'
+    partition_access = True
 
-    def __init__(self, urlpath, csv_kwargs, metadata, storage_options=None):
+    def __init__(self, urlpath, csv_kwargs=None, metadata=None,
+                 storage_options=None):
         self._urlpath = urlpath
         self._storage_options = storage_options
-        self._csv_kwargs = csv_kwargs
+        self._csv_kwargs = csv_kwargs or {}
         self._dataframe = None
 
         super(CSVSource, self).__init__(container='dataframe',
@@ -63,7 +51,16 @@ class CSVSource(base.DataSource):
                            extra_metadata={})
 
     def _get_partition(self, i):
+        self._get_schema()
         return self._dataframe.get_partition(i).compute()
+
+    def read(self):
+        self._get_schema()
+        return self._dataframe.compute()
+
+    def to_dask(self):
+        self._get_schema()
+        return self._dataframe
 
     def _close(self):
         self._dataframe = None
