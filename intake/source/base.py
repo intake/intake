@@ -92,6 +92,7 @@ class DataSource(object):
         import inspect
         kwargs = self._captured_init_kwargs.copy()
         meta = kwargs.pop('metadata', self.metadata) or {}
+        # TODO: inspect.signature is py3 only
         kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
                       self._captured_init_args)))
         data = {self.name: {
