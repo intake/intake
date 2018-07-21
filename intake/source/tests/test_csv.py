@@ -92,6 +92,14 @@ def test_to_dask(sample1_datasource, data_filenames):
     assert expected_df.equals(df)
 
 
+def test_plot(sample1_datasource):
+    pytest.importorskip('hvplot')
+    import holoviews
+
+    p = sample1_datasource.plot()
+    assert isinstance(sample1_datasource.plot(), holoviews.NdOverlay)
+
+
 def test_close(sample1_datasource, data_filenames):
     sample1_datasource.close()
     # Can reopen after close

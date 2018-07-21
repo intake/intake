@@ -3,6 +3,10 @@ from . import base
 
 class TextFilesSource(base.DataSource):
     """Read textfiles as sequence of lines
+
+    Takes a set of files, and returns an iterator over the text in each of them.
+    The files can be local or remote. Extra parameters for encoding, etc.,
+    go into ``storage_options``.
     """
     name = 'textfiles'
     version = '0.0.1'
@@ -11,6 +15,18 @@ class TextFilesSource(base.DataSource):
 
     def __init__(self, urlpath, metadata=None,
                  storage_options=None):
+        """
+
+        Parameters
+        ----------
+        urlpath : str or list(str)
+            Target files. Can be a glob-path (with "*") and include protocol
+            specified (e.g., "s3://"). Can also be a list of absolute paths.
+        storage_options: dict
+            Options to pass to the file reader backend, including text-specific
+            encoding arguments, and parameters specific to the remote
+            file-system driver, if using.
+        """
         self._urlpath = urlpath
         self._storage_options = storage_options or {}
         self._dataframe = None

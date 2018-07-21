@@ -1,7 +1,7 @@
 [run]
 omit =
     */test_*.py
-    intake/_version.py
+    *_version.py
 source = 
     intake
 [report]
