@@ -88,7 +88,7 @@ class DataSource(object):
 
     def yaml(self):
         """Return YAML representation of this data-source"""
-        import ruamel.yaml
+        import ruamel_yaml
         import inspect
         kwargs = self._captured_init_kwargs.copy()
         meta = kwargs.pop('metadata', self.metadata) or {}
@@ -101,7 +101,7 @@ class DataSource(object):
             'metadata': meta,
             'args': kwargs
         }}
-        return ruamel.yaml.dump(data, default_flow_style=False)
+        return ruamel_yaml.dump(data, default_flow_style=False)
 
     def discover(self):
         """Open resource and populate the source attributes."""
