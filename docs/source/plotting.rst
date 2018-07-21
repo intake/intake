@@ -1,30 +1,30 @@
 Plotting API
 ============
 
-Intake provides a plotting API based on the `HoloPlot <https://pyviz.github.io/holoplot/index.html>`_ library, which closely mirrors the pandas plotting API but generates interactive plots using `HoloViews <http://holoviews.org/>`_ and `Bokeh <http://bokeh.pydata.org/>`_.
+Intake provides a plotting API based on the `hvPlot <https://pyviz.github.io/hvplot/index.html>`_ library, which closely mirrors the pandas plotting API but generates interactive plots using `HoloViews <http://holoviews.org/>`_ and `Bokeh <http://bokeh.pydata.org/>`_.
 
-The `HoloPlot website <https://pyviz.github.io/holoplot/index.html>`_ provides comprehensive documentation on using the plotting API to quickly visualize and explore small and large datasets. The main features offered by the plotting API include:
+The `hvPlot website <https://pyviz.github.io/hvplot/index.html>`_ provides comprehensive documentation on using the plotting API to quickly visualize and explore small and large datasets. The main features offered by the plotting API include:
 
   * Support for tabular data stored in pandas and dask dataframes
   * Support for gridded data stored in xarray backed nD-arrays
   * Support for plotting large datasets with `datashader <http://datashader.org/>`_
 
-Using Intake alongside HoloPlot allows declaratively persisting plot declarations and default options in the regular catalog.yaml files. 
+Using Intake alongside hvPlot allows declaratively persisting plot declarations and default options in the regular catalog.yaml files. 
 
 Setup
 '''''
 
-For detailed installation instructions see the `getting started section <https://pyviz.github.io/holoplot/getting_started/index.html>`_ in the HoloPlot documentation. To start with install holoplot using conda:
+For detailed installation instructions see the `getting started section <https://pyviz.github.io/hvplot/getting_started/index.html>`_ in the hvPlot documentation. To start with install hvplot using conda:
 
 .. code-block:: bash
 
-    conda install -c pyviz holoplot
+    conda install -c pyviz hvplot
 
 or using pip:
 
 .. code-block:: bash
 
-    pip install holoplot
+    pip install hvplot
 
 
 Usage
@@ -36,7 +36,7 @@ The plotting API is designed to work well in and outside the Jupyter notebook, h
 
     jupyter labextension install @pyviz/jupyterlab_pyviz
 
-For detailed instructions on displaying plots in the notebook and from the Python command prompt see the `HoloPlot user guide <https://pyviz.github.io/holoplot/user_guide/Viewing.html>`_.
+For detailed instructions on displaying plots in the notebook and from the Python command prompt see the `hvPlot user guide <https://pyviz.github.io/hvplot/user_guide/Viewing.html>`_.
 
 Python Command Prompt & Scripts 
 --------------------------------
@@ -46,7 +46,7 @@ Once installed the plot API can be used, by using the ``.plot`` method on an int
 .. code-block:: python
 
     import intake
-    import holoplot as hp
+    import hvplot as hp
 
     crime = intake.cat.us_crime
     columns = ['Burglary rate', 'Larceny-theft rate', 'Robbery rate', 'Violent Crime rate']
@@ -60,12 +60,12 @@ Once installed the plot API can be used, by using the ``.plot`` method on an int
 Notebook
 --------
 
-Inside the notebook plots will display themselves, however the notebook extension must be loaded first. The extension may be loaded by importing ``holoplot.intake`` module or explicitly loading the holoviews extension:
+Inside the notebook plots will display themselves, however the notebook extension must be loaded first. The extension may be loaded by importing ``hvplot.intake`` module or explicitly loading the holoviews extension:
 
 .. code-block:: python
 
     # To load the extension run this import
-    import holoplot.intake
+    import hvplot.intake
 
     # Or load the holoviews extension directly
     import holoviews as hv
@@ -135,7 +135,7 @@ Just like the default plot options the `fields` may be declared under the metada
 Declaring custom plots
 ----------------------
 
-As shown in the `HoloPlot user guide <https://pyviz.github.io/holoplot/user_guide/Plotting.html>`__, the plotting API provides a variety of plot types, which can be declared using the `kind` argument or via convenience methods on the plotting API, e.g. `cat.source.plot.scatter()`. In addition to declaring default plot options and field metadata data sources may also declare custom plot, which will be made available as methods on the plotting API. In this way a catalogue may declare any number of custom plots alongside a datasource.
+As shown in the `hvPlot user guide <https://pyviz.github.io/hvplot/user_guide/Plotting.html>`__, the plotting API provides a variety of plot types, which can be declared using the `kind` argument or via convenience methods on the plotting API, e.g. `cat.source.plot.scatter()`. In addition to declaring default plot options and field metadata data sources may also declare custom plot, which will be made available as methods on the plotting API. In this way a catalogue may declare any number of custom plots alongside a datasource.
 
 To make this more concrete consider the following custom plot declaration on the `plots` field in the metadata section:
 

@@ -156,12 +156,12 @@ class DataSource(object):
         Returns a HoloPlot object to provide a high-level plotting API.
         """
         try:
-            from holoplot import HoloPlot
+            from hvplot import hvPlot
         except ImportError:
-            raise ImportError("The intake plotting API requires holoplot."
+            raise ImportError("The intake plotting API requires hvplot."
                               "holoplot may be installed with:\n\n"
-                              "`conda install -c pyviz holoplot` or "
-                              "`pip install holoplot`.")
+                              "`conda install -c pyviz hvplot` or "
+                              "`pip install hvplot`.")
         metadata = self.metadata.get('plot', {})
         fields = self.metadata.get('fields', {})
         for attrs in fields.values():
@@ -169,11 +169,11 @@ class DataSource(object):
                 attrs['range'] = tuple(attrs['range'])
         metadata['fields'] = fields
         plots = self.metadata.get('plots', {})
-        return HoloPlot(self, custom_plots=plots, **metadata)
+        return hvPlot(self, custom_plots=plots, **metadata)
 
     @property
-    def holoplot(self):
+    def hvplot(self):
         """
-        Returns a HoloPlot object to provide a high-level plotting API.
+        Returns a hvPlot object to provide a high-level plotting API.
         """
         return self.plot

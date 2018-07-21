@@ -4,3 +4,4 @@ sources:
     driver: parquet
     args:
       urlpath: 's3://datashader-data/nyc_taxi_wide.parq'
+      storage_options: {'anon': True}
