@@ -1,18 +1,24 @@
 Catalogs
 ========
 
-Data catalogs provide an abstraction that allows you to externally define, and optionally share, descriptions of datasets, called *catalog entries*.  A catalog entry for a dataset includes information like:
+Data catalogs provide an abstraction that allows you to externally define, and optionally share, descriptions of
+datasets, called *catalog entries*.  A catalog entry for a dataset includes information like:
 
 * The name of the Intake plugin that can load the data
-* Arguments to the ``open()`` method of the plugin
+* Arguments to the ``__init__()`` method of the plugin
 * Metadata provided by the catalog author (such as field descriptions and types, or data provenance)
 
-In addition, Intake allows datasets to be *parameterized* in the catalog.  This is most commonly used to allow the user to filter down datasets at load time, rather than having to bring everything into memory first.  The data parameters are defined by the catalog author, then templated into the arguments for `open()` to modify the data being loaded.  This approach is less flexible for the end user than something like the `Blaze expression system <https://blaze.readthedocs.io/en/latest/expr-compute-dev.html>`_, but also significantly reduces the implementation burden for plugin authors.
+In addition, Intake allows datasets to be *parameterized* in the catalog.  This is most commonly used to allow the
+user to filter down datasets at load time, rather than having to bring everything into memory first.  The data
+parameters are defined by the catalog author, then templated into the arguments for ``__init__()`` to modify the data
+being loaded.  This approach is less flexible for the end user than something like the
+`Blaze expression system <https://blaze.readthedocs.io/en/latest/expr-compute-dev.html>`_, but also significantly
+reduces the implementation burden for plugin authors.
 
 YAML Format
 -----------
 
-Intake catalogs are described with YAML files.  Here is an example:
+Intake catalogs are typically described with YAML files.  Here is an example:
 
 .. code-block:: yaml
 
@@ -43,7 +49,7 @@ Intake catalogs are described with YAML files.  Here is an example:
             allowed: ["1", "2"]
         driver: csv
         args:
-          urlpath: !template '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'
+          urlpath: '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'
 
 Templating
 ''''''''''
@@ -52,7 +58,8 @@ Intake catalog files support Jinja2 templating for plugin arguments. Any occurre
 a substring like ``{{field}}`` will be replaced by the value of the user parameters with
 that same name. Some additional values are always available:
 
-- ``CATALOG_DIR``: The full path to the directory containing the YAML catalog file.  This is especially useful for constructing paths relative to the catalog directory to locate data files and custom plugins.
+- ``CATALOG_DIR``: The full path to the directory containing the YAML catalog file.  This is especially useful
+for constructing paths relative to the catalog directory to locate data files and custom plugins.
 
 Metadata
 ''''''''
@@ -65,7 +72,9 @@ file format. Any catalog will have ``.metadata`` and ``.version`` attributes ava
 Extra Plugins
 '''''''''''''
 
-In addition to using plugins already installed in the Python environment with conda or pip (see :ref:`plugin-discovery`), a catalog can also use additional plugins from aribtrary locations listed in the YAML file:
+In addition to using plugins already installed in the Python environment with conda or pip
+(see :ref:`plugin-discovery`), a catalog can also use additional plugins from aribtrary locations listed in the YAML
+file:
 
 .. code-block:: yaml
 
@@ -79,35 +88,66 @@ In addition to using plugins already installed in the Python environment with co
 
 The following import methods are allow:
 
-- ``- module: my.module.path``: The Python module to import and search for plugin classes.  This uses the standard notation of the Python ``import`` command and will search the PYTHONPATH in the same way.
-- ``- dir: /my/module/directory``: All of the ``*.py`` files in this directory will be executed, and any plugin classes found will be added to the catalog's plugin registry.  It is common for the directory of Python files to be stored relative to the catalog file itself, so using a ``!template`` string with the ``CATALOG_DIR`` variable will allow that relative path to be specified.
+- ``- module: my.module.path``: The Python module to import and search for plugin classes.  This uses the standard
+notation of the Python ``import`` command and will search the PYTHONPATH in the same way.
+- ``- dir: /my/module/directory``: All of the ``*.py`` files in this directory will be executed, and any plugin
+classes found will be added to the catalog's plugin registry.  It is common for the directory of Python files to be
+stored relative to the catalog file itself, so using the ``CATALOG_DIR`` variable will allow that relative path to be
+specified.
 
-Each of the above methods can be used multiple times, and in combination, to load as many extra plugins as are needed.  Most plugins should be installed as Python packages (enabling autodiscovery), but sometimes catalog-specific plugins may be needed to perform specific data transformations that are not broadly applicable enough to warrant creating a dedicated package.  In those cases, the above options allow the plugins to be bundled with the catalog instead.
+Each of the above methods can be used multiple times, and in combination, to load as many extra plugins as are needed.
+Most plugins should be installed as Python packages (enabling autodiscovery), but sometimes catalog-specific plugins may
+be needed to perform specific data transformations that are not broadly applicable enough to warrant creating a
+dedicated package.  In those cases, the above options allow the plugins to be bundled with the catalog instead.
 
 
 Sources
 '''''''
 
-The majority of a catalog file is composed of data sources, which are named data sets that can be loaded for the user.  Catalog authors describe the cotents of data set, how to load it, and optionally offer some customization of the returned data.  Each data source has several attributes:
+The majority of a catalog file is composed of data sources, which are named data sets that can be loaded for the user.
+Catalog authors describe the cotents of data set, how to load it, and optionally offer some customization of the
+returned data.  Each data source has several attributes:
 
-- ``name``: The canonical name of the source.  Best practice is to compose source names from valid Python identifiers separated by dots.  This allows Intake to support things like tab completion of data source names on catalog objects. For example, ``monthly_downloads``, ``ops.servers.cpu_status``, and ``region1.satellite.IR`` are all good source names.  Tools that display Intake catalogs should interpret the dot notation as describing a hierarchy.
-- ``description``: Human readable description of the source.  To help catalog browsing tools, the description should be Markdown.
-- ``driver``: Name of the Intake plugin to use with this source.  Must either already be installed in the current Python environment (i.e. with conda or pip) or loaded in the ``plugin`` section of the file.
+- ``name``: The canonical name of the source.  Best practice is to compose source names from valid Python identifiers.
+  This allows Intake to support things like tab completion of data source names on catalog objects.
+  For example, ``monthly_downloads`` is a good source
+  name.
+- ``description``: Human readable description of the source.  To help catalog browsing tools, the description should be
+  Markdown.
+
+- ``driver``: Name of the Intake plugin to use with this source.  Must either already be installed in the current
+  Python environment (i.e. with conda or pip) or loaded in the ``plugin`` section of the file.
+
 - ``args``: Keyword arguments to the ``open()`` method of the plugin.  Arguments may use template expansion.
-- ``metadata``: Any metadata keys that should be attached to the data source when opened.  These will be supplemented by additional metadata provided by the plugin.  Catalog authors can use whatever key names they would like, with the exception that keys starting with a leading underscore are reserved for future internal use by Intake.
-- ``direct_access``: Control whether the data is directly accessed by the client, or proxied through a catalog server.  See :ref:`remote-catalogs` for more details.
+
+- ``metadata``: Any metadata keys that should be attached to the data source when opened.  These will be supplemented
+  by additional metadata provided by the plugin.  Catalog authors can use whatever key names they would like, with the
+  exception that keys starting with a leading underscore are reserved for future internal use by Intake.
+
+- ``direct_access``: Control whether the data is directly accessed by the client, or proxied through a catalog server.
+  See :ref:`remote-catalogs` for more details.
+
 - ``parameters``: A dictionary of data source parameters.  See below for more details.
 
-Parameters allow the user to customize the data returned by a data source.  Most often, parameters are used to filter or reduce the data in specific ways defined by the catalog author.  The parameters defined for a given data source are available for use in template strings, which can be used to alter the arguments provided to the plugin.  For example, a data source might accept a "postal_code" argument which is used to alter a database query, or select a particular group within a file.  Users set parameters with keyword arguments to the ``get()`` method on the catalog object.
+Parameters allow the user to customize the data returned by a data source.  Most often, parameters are used to filter
+or reduce the data in specific ways defined by the catalog author.  The parameters defined for a given data source are
+available for use in template strings, which can be used to alter the arguments provided to the plugin.  For example,
+a data source might accept a "postal_code" argument which is used to alter a database query, or select a particular
+group within a file.  Users set parameters with keyword arguments to the ``get()`` method on the catalog object.
 
 Parameter Definition
 ^^^^^^^^^^^^^^^^^^^^
 
-To enable users to discover parameters on data sources, and to allow UIs to generate interfaces automatically, parameters have the following attributes in the catalog.
+To enable users to discover parameters on data sources, and to allow UIs to generate interfaces automatically,
+parameters have the following attributes in the catalog.
 
 - ``description``: Human-readable Markdown description of what the parameter means.
-- ``type``: The type of the parameter.  Currently, this may be ``bool``, ``str``, ``int``, ``float``, ``list[str]``, ``list[int]``, ``list[float]``, ``datetime``.
-- ``default``: The default value for this parameter.  Every parameter must have a default to ensure a catalog user can quickly see some sample data.
+- ``type``: The type of the parameter.  Currently, this may be ``bool``, ``str``, ``int``, ``float``, ``list[str]``,
+  ``list[int]``, ``list[float]``, ``datetime``.
+
+- ``default``: The default value for this parameter.  Every parameter must have a default to ensure a catalog user can
+  quickly see some sample data.
+
 - ``allowed`` (optional): A list of allowed values for this parameter
 - ``min`` (optional): Minimum value (inclusive) for the parameter
 - ``max`` (optional): Maximum value (inclusive) for the parameter
@@ -149,9 +189,9 @@ Local Catalogs
 
 A Catalog can be loaded from a YAML file on the local filesystem by creating a Catalog object::
 
-    from intake import Catalog
+    from intake import load_catalog
 
-    cat = Catalog('catalog.yaml')
+    cat = load_catalog('catalog.yaml')
 
 Then sources can be listed::
 
@@ -161,11 +201,14 @@ and data sources are loaded via their name:
 
     data = cat.entry_part1(part='1')
 
-Intake also supports loading all of the files ending in ``.yml`` and ``.yaml`` in a directory::
+Intake also supports loading all of the files ending in ``.yml`` and ``.yaml`` in a directory, or by using an
+explicit glob-string. Note that the URL provided may refer to a remote storage systems by passing a protocol
+specifyer such as ``s3://``, ``gcs://``.::
 
-    cat = Catalog('/research/my_project/catalog.d/')
+    cat = load_catalog('/research/my_project/catalog.d/')
 
-Intake Catalog objects will automatically detect changes or new additions to catalog files and directories on disk.  These changes will not affect already-opened data sources.
+Intake Catalog objects will automatically detect changes or new additions to catalog files and directories on disk.
+These changes will not affect already-opened data sources.
 
 .. _remote-catalogs:
 
@@ -173,26 +216,41 @@ Remote Catalogs
 ---------------
 
 Intake also includes a server which can share an Intake catalog over HTTP
-(or HTTPS with the help of a TLS-enabled reverse proxy).  From the user perspective, remote catalogs function identically to local catalogs::
+(or HTTPS with the help of a TLS-enabled reverse proxy).  From the user perspective, remote catalogs function
+identically to local catalogs::
 
-    cat = Catalog('intake://catalog1:5000')
-    cat.list()
+    cat = open_catalog('intake://catalog1:5000')
+    list(cat)
 
-The difference is that operations on the catalog translate to requests sent to the catalog server.  Catalog servers provide access to data sources in one of two modes:
+The difference is that operations on the catalog translate to requests sent to the catalog server.  Catalog servers
+provide access to data sources in one of two modes:
 
-* Direct access: In this mode, the catalog server tells the client how to load the data, but the client uses its local plugins to make the connection.  This requires the client has the required plugin already installed *and* has direct access to the files or data servers that the plugin will connect to.
+* Direct access: In this mode, the catalog server tells the client how to load the data, but the client uses its
+  local plugins to make the connection.  This requires the client has the required plugin already installed *and* has direct access to the files or data servers that the plugin will connect to.
 
-* Proxied access: In this mode, the catalog server uses its local plugins to open the data source and stream the data over the network to the client.  The client does not need *any* special plugins to read the data, and can read data from files and data servers that it cannot access, as long as the catalog server has the required access.
+* Proxied access: In this mode, the catalog server uses its local plugins to open the data source and stream the data
+  over the network to the client.  The client does not need *any* special plugins to read the data, and can read data
+  from files and data servers that it cannot access, as long as the catalog server has the required access.
 
 Whether a particular catalog entry supports direct or proxied access is determined by the ``direct_access`` option:
 
-- ``forbid`` (default): Force all clients to proxy data through the catalog server
-- ``allow``: If the client has the required plugin, access the source directly, otherwise proxy the data through the catalog server.
-- ``force``: Force all clients to access the data directly.  If they do not have the required plugin, an exception will be raised.
 
-Note that when the client is loading a data source via direct access, the catalog server will need to send the plugin arguments to the client.  Do not include sensitive credentials in a data source that allows direct access.
+- ``forbid`` (default): Force all clients to proxy data through the catalog server
+
+- ``allow``: If the client has the required plugin, access the source directly, otherwise proxy the data through the
+  catalog server.
+
+- ``force``: Force all clients to access the data directly.  If they do not have the required plugin, an exception will
+  be raised.
+
+Note that when the client is loading a data source via direct access, the catalog server will need to send the plugin
+arguments to the client.  Do not include sensitive credentials in a data source that allows direct access.
 
 Client Authorization Plugins
 ''''''''''''''''''''''''''''
 
-Intake servers can check if clients are authorized to access the catalog as a whole, or individual catalog entries.  Typically a matched pair of server-side plugin (called an "auth plugin") and a client-side plugin (called a "client auth plugin) need to be enabled for authorization checks to work.  This feature is still in early development, so please `open a Github issue <https://github.com/ContinuumIO/intake/issues/new>`_ to discuss your use case before creating a plugin.
+Intake servers can check if clients are authorized to access the catalog as a whole, or individual catalog entries.
+Typically a matched pair of server-side plugin (called an "auth plugin") and a client-side plugin (called a "client
+auth plugin) need to be enabled for authorization checks to work.  This feature is still in early development, so
+please `open a Github issue <https://github.com/ContinuumIO/intake/issues/new>`_ to discuss your use case before
+creating a plugin.

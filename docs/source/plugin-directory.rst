@@ -16,8 +16,9 @@ This is a list of known projects which install plugins for Intake:
 * `intake-pcap <https://github.com/ContinuumIO/intake-pcap>`_: PCAP network packet format
 * `intake-postgres <https://github.com/ContinuumIO/intake-postgres>`_: PostgreSQL database
 * `intake-solr <https://github.com/ContinuumIO/intake-solr>`_: Apache Solr search platform
+* `intake-sql <https://github.com/ContinuumIO/intake-solr>`_: Generic SQL queries via SQLAlchemy
 * `intake-splunk <https://github.com/ContinuumIO/intake-splunk>`_: Splunk machine data query
-* `intake-xarray <https://github.com/ContinuumIO/intake-xarray>`_: load netCDF and Zarr multi-dimensional data
+* `intake-xarray <https://github.com/ContinuumIO/intake-xarray>`_: load netCDF, Zarr and other multi-dimensional data
 
 Don't see your favorite format?  See :doc:`making-plugins` for how to create new plugins.
 

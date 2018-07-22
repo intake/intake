@@ -142,6 +142,9 @@ class DataSource(object):
         """Return a (offset_tuple, container) corresponding to i-th partition.
 
         Offset tuple is of same length as shape.
+
+        By default, assumes i should be an integer between zero and npartitions;
+        override for more complex indexing schemes.
         """
         self._load_metadata()
         if i < 0 or i >= self.npartitions:
