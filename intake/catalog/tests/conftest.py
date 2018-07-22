@@ -57,10 +57,6 @@ def intake_server(request):
     env['INTAKE_TEST'] = 'server'
     if server_conf is not None:
         env['INTAKE_CONF_FILE'] = server_conf
-    yield from make_server(catalog_path, env)
-
-
-def make_server(catalog_path, env=None):
     port = pick_port()
     cmd = [ex, '-m', 'intake.cli.server', '--sys-exit-on-sigterm',
            '--port', str(port)]
@@ -74,7 +70,7 @@ def make_server(catalog_path, env=None):
 
         # wait for server to finish initalizing, but let the exception through
         # on last retry
-        retries = 500
+        retries = 10
         while not ping_server(url, swallow_exception=(retries > 1)):
             time.sleep(0.1)
             retries -= 1

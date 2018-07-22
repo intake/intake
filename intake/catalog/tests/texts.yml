@@ -1,6 +1,0 @@
-sources:
-  text:
-    description: textfiles in this dir
-    driver: textfiles
-    args:
-      urlpath: "{{ CATALOG_DIR }}/*.yml"

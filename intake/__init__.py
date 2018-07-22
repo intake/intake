@@ -9,16 +9,12 @@ from .source.base import Schema, DataSource
 from .catalog.base import Catalog, RemoteCatalog
 from .catalog import local
 from .catalog.default import load_combo_catalog
-
-__all__ = ['registry', 'make_open_functions', 'cat', 'Catalog']
-
 from .source import registry
 from .source.discovery import autodiscover
 
 # Populate list of autodetected plugins
 registry.update(autodiscover())
 
-# FIXME: this plugin needs to eventually be retired
 from .source import csv, textfiles
 registry['csv'] = csv.CSVSource
 registry['textfiles'] = textfiles.TextFilesSource
@@ -42,7 +38,6 @@ def make_open_functions():
             func_name = re.sub('[-=~^&|@+]', '_', func_name)
         if isidentifier(func_name):
             globals()[func_name] = plugin
-            __all__.append(func_name)
         else:
             warnings.warn('Invalid Intake plugin name "%s" found.' %
                           plugin_name)
@@ -75,7 +70,33 @@ cat = load_combo_catalog()
 
 
 def open_catalog(uri=None, **kwargs):
-    """LONG EXPLANATION HERE"""
+    """Create a Catalog object
+
+    Can load YAML catalog files, connect to an intake server, or create any
+    arbitrary Catalog subclass instance. In the general case, the user should
+    supply ``driver=`` with a value from the plugins registry which has a
+    container type of catalog. File locations can generally be remote, if
+    specifying a URL protocol.
+
+    The default behaviour if not specifying the driver is as follows:
+
+    - if ``uri`` is a a single string ending in "yml" or "yaml", open it as a
+      catalog file
+    - if ``uri`` is a list of strings, a string containing a glob character
+      ("*") or a string not ending in "y(a)ml", open as a set of catalog
+      files. In the latter case, assume it is a directory.
+    - if ``uri`` beings with protocol ``"intake:"``, connect to a remote
+      Intake server
+    - otherwise, create a base Catalog object without entries.
+
+    Parameters
+    ----------
+    uri: str
+        Designator for the location of the catalog.
+    kwargs:
+        passed to subclass instance, see documentation of the individual
+        catalog classes.
+    """
     driver = kwargs.pop('driver', None)
     if driver is None:
         if uri:

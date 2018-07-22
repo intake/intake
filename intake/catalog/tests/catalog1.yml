@@ -58,3 +58,8 @@ sources:
         description: none
         type: str
         default: 'client_env(INTAKE_TEST)'
+  text:
+    description: textfiles in this dir
+    driver: textfiles
+    args:
+      urlpath: "{{ CATALOG_DIR }}/*.yml"

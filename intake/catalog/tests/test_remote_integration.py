@@ -6,7 +6,6 @@ import pandas as pd
 
 from ...source.tests.util import verify_datasource_interface
 from .util import assert_items_equal
-from .conftest import make_server
 from intake import Catalog
 
 TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
@@ -17,7 +16,7 @@ def test_info_describe(intake_server):
 
     assert_items_equal(list(catalog), ['use_example1', 'nested', 'entry1',
                                        'entry1_part', 'remote_env',
-                                       'local_env'])
+                                       'local_env', 'text'])
 
     info = catalog['entry1'].describe()
 
@@ -207,13 +206,10 @@ def test_remote_env(intake_server):
     assert 'INTAKE_TEST' in str(e.value)
 
 
-def test_remote_sequence():
+def test_remote_sequence(intake_server):
     import glob
     d = os.path.dirname(TEST_CATALOG_PATH)
-    path = os.path.join(d, 'texts.yml')
-    i = iter(make_server(path))
-    server = next(i)
-    catalog = Catalog(server)
+    catalog = Catalog(intake_server)
     assert 'text' in catalog
     s = catalog.text()
     s.discover()

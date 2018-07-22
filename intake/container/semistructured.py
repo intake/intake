@@ -33,9 +33,11 @@ class RemoteSequenceSource(RemoteSource):
         return self.parts[i].compute()
 
     def read(self):
+        self._load_metadata()
         return self.bag.compute()
 
     def to_dask(self):
+        self._load_metadata()
         return self.bag
 
     def _close(self):
