@@ -3,21 +3,17 @@ from .base import RemoteSource, get_partition
 
 
 class RemoteDataFrame(RemoteSource):
+    """Dataframe on an Intake server"""
 
     name = 'remote_dataframe'
     container = 'dataframe'
 
     def __init__(self, url, headers, **kwargs):
-        import pickle
         super(RemoteDataFrame, self).__init__(url, headers, **kwargs)
         self.npartitions = kwargs['npartitions']
         self.shape = tuple(kwargs['shape'])
         self.metadata = kwargs['metadata']
-        d = kwargs['dtype']
-        if isinstance(d, bytes):
-            self.dtype = pickle.loads(d)
-        else:
-            self.dtype = d
+        self.dtype = kwargs['dtype']
         self._schema = Schema(npartitions=self.npartitions,
                               extra_metadata=self.metadata,
                               dtype=self.dtype,

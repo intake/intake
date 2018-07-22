@@ -71,6 +71,7 @@ class UserParameter(object):
                             for item in self.allowed]
 
     def describe(self):
+        """Information about this parameter"""
         desc = {
             'name': self.name,
             'description': self.description,
@@ -92,6 +93,7 @@ class UserParameter(object):
             self._default, client, getenv, getshell))
 
     def validate(self, value):
+        """Does value meet parameter requirements?"""
         value = coerce(self.type, value)
 
         if self.min is not None and value < self.min:
@@ -108,8 +110,35 @@ class UserParameter(object):
 
 
 class LocalCatalogEntry(CatalogEntry):
+    """A catalog entry on the local system
+    """
     def __init__(self, name, description, driver, direct_access, args,
                  parameters, metadata, catalog_dir, getenv=True, getshell=True):
+        """
+
+        Parameters
+        ----------
+        name: str
+            How this entry is known, normally from its key in a YAML file
+        description: str
+            Brief text about the target source
+        driver: str
+            Name of the plugin that can load this
+        direct_access: bool
+            Is the client allowed to attempt to reach this data
+        args: list
+            Passed when instantiating the plugin DataSource
+        parameters: list
+            UserParameters that can be set
+        metadata: dict
+            Additional information about this data
+        catalog_dir: str
+            Location of the catalog, if known
+        getenv: bool
+            Can parameter default fields take values from the environment
+        getshell: bool
+            Can parameter default fields run shell commands
+        """
         self._name = name
         self._description = description
         self._driver = driver
@@ -127,6 +156,7 @@ class LocalCatalogEntry(CatalogEntry):
         return self._name
 
     def describe(self):
+        """Basic information about this entry"""
         return {
             'container': self._plugin.container,
             'description': self._description,
@@ -160,8 +190,11 @@ class LocalCatalogEntry(CatalogEntry):
         }
 
     def get(self, **user_parameters):
+        """Instantiate the DataSource for the given parameters"""
         open_args = self._create_open_args(user_parameters)
         data_source = self._plugin(**open_args)
+        data_source.name = self.name
+        data_source.description = self._description
 
         return data_source
 
@@ -191,6 +224,7 @@ yaml.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
 
 
 class CatalogParser(object):
+    """Loads entries from a YAML spec"""
     def __init__(self, data, getenv=True, getshell=True, context=None):
         self._context = context if context else {}
         self._errors = []
@@ -415,9 +449,10 @@ def register_plugin_dir(path):
 
 class YAMLFileCatalog(Catalog):
     """Catalog as described by a single YAML file"""
-    version = __version__,
-    container = 'catalog',
+    version = __version__
+    container = 'catalog'
     partition_access = None
+    name = 'yaml_files_cat'
 
     def __init__(self, path, **kwargs):
         """
@@ -488,6 +523,7 @@ class YAMLFilesCatalog(Catalog):
     version = __version__,
     container = 'catalog',
     partition_access = None
+    name = 'yaml_file_cat'
 
     def __init__(self, path, flatten=True, **kwargs):
         """

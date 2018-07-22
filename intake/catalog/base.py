@@ -4,35 +4,37 @@ import time
 import msgpack
 import requests
 from requests.compat import urljoin, urlparse
-from dask.bytes import open_files
 
 from ..auth.base import BaseClientAuth
 from .entry import CatalogEntry
 from .remote import RemoteCatalogEntry
-from .utils import clamp, flatten, reload_on_change
+from .utils import flatten, reload_on_change
+from ..source.base import DataSource
 logger = logging.getLogger('intake')
 
 
-class Catalog(object):
-    """Manages a hierarchy of data sources and plugins as a collective unit.
+class Catalog(DataSource):
+    """Manages a hierarchy of data sources as a collective unit.
 
-    A catalog is a set of available data sources and plugins for an individual
-    observed entity (remote server, local configuration file, or a local
-    directory of configuration files). This can be expanded to include a
+    A catalog is a set of available data sources for an individual
+    entity (remote server, local  file, or a local
+    directory of files). This can be expanded to include a
     collection of subcatalogs, which are then managed as a single unit.
 
     A catalog is created with a single URI or a collection of URIs. A URI can
     either be a URL or a file path.
 
     Each catalog in the hierarchy is responsible for caching the most recent
-    modification time of the respective observed entity to prevent overeager
-    queries.
+    refresh time to prevent overeager queries.
 
     Attributes
     ----------
     metadata : dict
-        Dictionary loaded from ``metadata`` section of catalog file.
+        Arbitrary information to carry along with the data source specs.
     """
+    # emulate a DataSource
+    container = 'catalog'
+    name = 'catalog'
 
     def __init__(self, *args, **kwargs):
         """
@@ -52,6 +54,7 @@ class Catalog(object):
             parameters to pass to remote backend file-system. Ignored for
             normal local files.
         """
+        super(Catalog, self).__init__()
         self.name = kwargs.get('name', None)
         self.ttl = kwargs.get('ttl', 1)
         self.getenv = kwargs.pop('getenv', True)
@@ -113,7 +116,7 @@ class Catalog(object):
         """
         out = sofar if sofar is not None else {}
         prefix = [] if prefix is None else prefix
-        for name, item in self._get_entries().items():
+        for name, item in self._entries.items():
             if item.container == 'catalog' and depth > 1:
                 # recurse with default open parameters
                 try:
@@ -144,7 +147,8 @@ class Catalog(object):
         return "<Intake catalog: %s>" % self.name
 
     def __getattr__(self, item):
-        return self._get_entry(item)
+        if not item.startswith('_'):
+            return self._get_entry(item)
 
     def __getitem__(self, key):
         """Return a catalog entry by name.
@@ -160,24 +164,52 @@ class Catalog(object):
             out = getattr(out, k)
         return out
 
+    def discover(self):
+        return {"container": 'catalog', 'shape': None,
+                'dtype': None, 'datashape': None, 'metadata': self.metadata}
+
+    def _close(self):
+        # TODO: maybe close all entries?
+        pass
+
 
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
 
-    def __init__(self, url, **kwargs):
-        self.http_args = kwargs.get('http_args', {})
+    def __init__(self, url, http_args={}, **kwargs):
+        """Connect to remote Intake Server as a catalog
+
+        Parameters
+        ----------
+        url: str
+            Address of the server, e.g., "intake://localhost:5000".
+        http_args: dict
+            Arguments to add to HTTP calls, including "ssl" (True/False) for
+            secure connections.
+        kwargs: may include catalog name, metadata, source ID (if known) and
+            auth instance.
+        """
+        self.http_args = http_args
         self.http_args.update(kwargs.get('storage_options', {}))
-        secure = self.http_args.pop('ssl', False)
-        scheme = 'https' if secure else 'http'
-        self.base_url = url.replace('intake', scheme) + '/'
-        self.name = urlparse(self.base_url).netloc.replace(
-            '.', '_').replace(':', '_')
-        self.info_url = urljoin(self.base_url, 'v1/info')
-        self.source_url = urljoin(self.base_url, 'v1/source')
+        self.http_args['headers'] = self.http_args.get('headers', {})
+        self._source_id = kwargs.get('source_id', None)
+        if self._source_id is None:
+            secure = http_args.pop('ssl', False)
+            scheme = 'https' if secure else 'http'
+            base_url = url.replace('intake', scheme) + '/'
+            self.info_url = urljoin(base_url, 'v1/info')
+            self.source_url = urljoin(base_url, 'v1/source')
+            self.name = urlparse(base_url).netloc.replace(
+                '.', '_').replace(':', '_')
+        else:
+            self.name = kwargs['name']
+            self.source_url = url
+            self.info_url = url.replace('v1/source', 'v1/info')
         self.auth = kwargs.get('auth', None)  # instance of BaseClientAuth
         super(RemoteCatalog, self).__init__(self, **kwargs)
 
     def _load(self):
+        """Fetch entries from remote"""
         # Add the auth headers to any other headers
         headers = self.http_args.get('headers', {})
         if self.auth is not None:
@@ -186,6 +218,8 @@ class RemoteCatalog(Catalog):
 
         # build new http args with these headers
         http_args = self.http_args.copy()
+        if self._source_id is not None:
+            headers['source_id'] = self._source_id
         http_args['headers'] = headers
         response = requests.get(self.info_url, **http_args)
         if response.status_code != 200:

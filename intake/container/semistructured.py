@@ -3,16 +3,17 @@ from intake.source.base import Schema
 
 
 class RemoteSequenceSource(RemoteSource):
+    """Sequence-of-things source on an Intake server"""
     name = 'remote_sequence'
     container = 'python'
 
     def __init__(self, url, headers, **kwargs):
         self.url = url
         self.npartitions = kwargs.get('npartition', 1)
-        self.partition_access = self.npartition > 1
+        self.partition_access = self.npartitions > 1
         self.headers = headers
         self.metadata = kwargs.get('metadata', {})
-        self._schema = Schema(npartitions=self.npartition,
+        self._schema = Schema(npartitions=self.npartitions,
                               extra_metadata=self.metadata)
         self.bag = None
         super(RemoteSequenceSource, self).__init__(url, headers, **kwargs)
@@ -28,7 +29,16 @@ class RemoteSequenceSource(RemoteSource):
             self.bag = db.from_delayed(self.parts)
         return self._schema
 
+    def _get_partition(self, i):
+        self._load_metadata()
+        return self.parts[i].compute()
+
+    def read(self):
+        self._load_metadata()
+        return self.bag.compute()
+
     def to_dask(self):
+        self._load_metadata()
         return self.bag
 
     def _close(self):

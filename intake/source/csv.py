@@ -32,8 +32,7 @@ class CSVSource(base.DataSource):
         self._csv_kwargs = csv_kwargs or {}
         self._dataframe = None
 
-        super(CSVSource, self).__init__(container='dataframe',
-                                        metadata=metadata)
+        super(CSVSource, self).__init__(metadata=metadata)
 
     def _get_schema(self):
         import dask.dataframe
@@ -43,10 +42,11 @@ class CSVSource(base.DataSource):
                 self._urlpath, storage_options=self._storage_options,
                 **self._csv_kwargs)
 
-        dtypes = self._dataframe._meta
+        dtypes = self._dataframe._meta.dtypes.to_dict()
+        dtypes = {n: str(t) for (n, t) in dtypes.items()}
         return base.Schema(datashape=None,
                            dtype=dtypes,
-                           shape=(None, len(dtypes.columns)),
+                           shape=(None, len(dtypes)),
                            npartitions=self._dataframe.npartitions,
                            extra_metadata={})
 

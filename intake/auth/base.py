@@ -3,6 +3,8 @@
 class BaseAuth(object):
     """Base class for authorization
 
+    Subclass this and override the methods to implement a new type of auth.
+
     This basic class allows all access.
     """
 
@@ -56,6 +58,6 @@ class BaseClientAuth(object):
         self.args = args
 
     def get_headers(self):
-        """Returns a dictionary of HTTP headers to add to the remote catalog request.
+        """Returns a dictionary of HTTP headers for the remote catalog request.
         """
         return {}

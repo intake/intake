@@ -2,14 +2,26 @@ import msgpack
 import requests
 import six
 
-from ..container import container_map
 from ..source import registry as plugin_registry
 from .entry import CatalogEntry
 from .utils import expand_defaults, coerce
 
 
 class RemoteCatalogEntry(CatalogEntry):
+    """An entry referring to a remote data definition"""
     def __init__(self, url, auth, *args, **kwargs):
+        """
+
+        Parameters
+        ----------
+        url: str
+            HTTP address of the Intake server this entry comes from
+        auth: Auth instance
+            If there are additional headers to add to calls, this instance will
+            provide them
+        kwargs: additional keys describing the entry, name, description,
+            container,
+        """
         self.url = url
         self.auth = auth
         self.args = args
@@ -23,7 +35,18 @@ class RemoteCatalogEntry(CatalogEntry):
                                                  getshell=getshell)
 
     def describe(self):
+        # likely not used
         return self.kwargs
+
+    def describe_open(self, **kwargs):
+        # likely not used
+        return {
+            'plugin': None,
+            'description': self._description,
+            'direct_access': False,
+            'metadata': self._metadata,
+            'args': (self.url, )
+        }
 
     def get(self, **user_parameters):
         for par in self.kwargs['user_parameters']:
@@ -47,6 +70,7 @@ class RemoteCatalogEntry(CatalogEntry):
 
 def open_remote(url, entry, container, user_parameters, description, http_args):
     """Create either local direct data source or remote streamed source"""
+    from intake.container import container_map
     if url.startswith('intake://'):
         url = url[len('intake://'):]
     payload = dict(action='open',

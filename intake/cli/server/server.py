@@ -18,6 +18,7 @@ logger = logging.getLogger('intake')
 
 
 class IntakeServer(object):
+    """Main intake-server tornado application"""
     def __init__(self, catalog):
         self._catalog = catalog
         self._cache = SourceCache()
@@ -30,7 +31,7 @@ class IntakeServer(object):
     def get_handlers(self):
         return [
             (r"/v1/info", ServerInfoHandler,
-             dict(catalog=self._catalog, auth=self._auth)),
+             dict(catalog=self._catalog, cache=self._cache, auth=self._auth)),
             (r"/v1/source", ServerSourceHandler,
              dict(catalog=self._catalog, cache=self._cache, auth=self._auth)),
         ]
@@ -75,16 +76,21 @@ class IntakeServer(object):
 
 
 class ServerInfoHandler(tornado.web.RequestHandler):
-    def initialize(self, catalog, auth):
+    """Basic info about the server"""
+    def initialize(self, cache, catalog, auth):
+        self.cache = cache
         self.catalog = catalog
         self.auth = auth
 
     def get(self):
         head = self.request.headers
         if self.auth.allow_connect(head):
+            if 'source_id' in head:
+                cat = self.cache.get(head['source_id'])
+            else:
+                cat = self.catalog
             sources = []
-            self.catalog.reload()
-            for name, source in self.catalog.walk().items():
+            for name, source in cat.walk(depth=1).items():
                 if self.auth.allow_access(head, source, self.catalog):
                     info = source.describe()
                     info['name'] = name
@@ -100,6 +106,7 @@ class ServerInfoHandler(tornado.web.RequestHandler):
 
 
 class SourceCache(object):
+    """Stores DataSources requested by some user"""
     def __init__(self):
         self._sources = {}
 
@@ -142,6 +149,12 @@ class SourceCache(object):
 
 
 class ServerSourceHandler(tornado.web.RequestHandler):
+    """Open or stream data source
+
+    The requests "action" field (open|read) specified what the request wants
+    to do. Open caches the source and created an ID for it, read uses that
+    ID to reference the source and read a partition.
+    """
     def initialize(self, catalog, cache, auth):
         self._catalog = catalog
         self._cache = cache
@@ -155,9 +168,13 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         logger.debug('Source POST: %s' % request)
 
         if action == 'open':
+            if 'source_id' in head:
+                cat = self._cache.get(head['source_id'])
+            else:
+                cat = self._catalog
             entry_name = request['name']
-            entry = self._catalog[entry_name]
-            if not self.auth.allow_access(head, entry, self._catalog):
+            entry = cat[entry_name]
+            if not self.auth.allow_access(head, entry, cat):
                 msg = 'Access forbidden'
                 raise tornado.web.HTTPError(status_code=403, log_message=msg,
                                             reason=msg)
@@ -181,10 +198,11 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                                                 log_message="Discover failed",
                                                 reason=str(e))
                 source_id = self._cache.add(source)
-                logger.debug('**** Container %s' % source.container)
+                logger.debug('Container: %s, ID: %s' % (source.container,
+                                                        source_id))
                 response = dict(
                     datashape=source.datashape,
-                    dtype=pickle.dumps(source.dtype, 2),
+                    dtype=source.dtype,
                     shape=source.shape, container=source.container,
                     metadata=source.metadata, npartitions=source.npartitions,
                     source_id=source_id)
@@ -258,7 +276,6 @@ class ServerSourceHandler(tornado.web.RequestHandler):
     def write_error(self, status_code, **kwargs):
         error_exception = kwargs.get('exc_info', None)
         if error_exception is not None:
-            print(error_exception)
             msg = dict(error=str(error_exception[1]))
         else:
             msg = dict(error='unknown error')

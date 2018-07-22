@@ -77,6 +77,7 @@ class CatalogEntry(object):
         return self._default_source
 
     def __getattr__(self, attr):
+        # TODO: only consider attr not starting with "_"?
         return getattr(self._get_default_source(), attr)
 
     def __repr__(self):

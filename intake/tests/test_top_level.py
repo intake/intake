@@ -42,3 +42,13 @@ def test_user_catalog(user_catalog):
     cat = intake.load_combo_catalog()
     time.sleep(2) # wait 2 seconds for catalog to refresh
     assert set(cat) >= set(['ex1', 'ex2'])
+
+
+def test_bad_open():
+    with pytest.raises(ValueError):
+        intake.open_catalog(None, driver='unknown')
+
+
+def test_output_notebook():
+    pytest.importorskip('hvplot')
+    intake.output_notebook()

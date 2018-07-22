@@ -52,6 +52,11 @@ def intake_server(request):
     server_conf = getattr(request.module, 'TEST_SERVER_CONF', None)
 
     # Start a catalog server on nonstandard port
+
+    env = dict(os.environ)
+    env['INTAKE_TEST'] = 'server'
+    if server_conf is not None:
+        env['INTAKE_CONF_FILE'] = server_conf
     port = pick_port()
     cmd = [ex, '-m', 'intake.cli.server', '--sys-exit-on-sigterm',
            '--port', str(port)]
@@ -59,19 +64,13 @@ def intake_server(request):
         cmd.extend(catalog_path)
     else:
         cmd.append(catalog_path)
-
-    env = dict(os.environ)
-    env['INTAKE_TEST'] = 'server'
-    if server_conf is not None:
-        env['INTAKE_CONF_FILE'] = server_conf
-
     try:
         p = subprocess.Popen(cmd, env=env)
         url = 'http://localhost:%d/v1/info' % (port,)
 
         # wait for server to finish initalizing, but let the exception through
         # on last retry
-        retries = 500
+        retries = 10
         while not ping_server(url, swallow_exception=(retries > 1)):
             time.sleep(0.1)
             retries -= 1

@@ -2,7 +2,6 @@ import os.path
 import pickle
 
 import pytest
-import numpy as np
 import pandas as pd
 
 from ...source.tests.util import verify_datasource_interface
@@ -17,7 +16,7 @@ def test_info_describe(intake_server):
 
     assert_items_equal(list(catalog), ['use_example1', 'nested', 'entry1',
                                        'entry1_part', 'remote_env',
-                                       'local_env'])
+                                       'local_env', 'text'])
 
     info = catalog['entry1'].describe()
 
@@ -83,7 +82,8 @@ def test_read(intake_server):
 
     info = d.discover()
     assert info['datashape'] is None
-    assert info['dtype'].equals(meta)
+    assert info['dtype'] == {k: str(v) for k, v
+                             in meta.dtypes.to_dict().items()}
     assert info['npartitions'] == 2
     assert info['shape'] == (None, 3)  # Do not know CSV size ahead of time
 
@@ -106,7 +106,8 @@ def test_read_direct(intake_server):
     info = d.discover()
 
     assert info['datashape'] is None
-    assert info['dtype'].equals(meta)
+    assert info['dtype'] == {k: str(v) for k, v
+                             in meta.dtypes.to_dict().items()}
     assert info['npartitions'] == 1
     assert info['shape'] == (None, 3)  # Do not know CSV size ahead of time
     assert info['metadata'] == {'bar': [2, 4, 6], 'foo': 'baz'}
@@ -205,3 +206,15 @@ def test_remote_env(intake_server):
     with pytest.raises(Exception) as e:
         catalog.local_env.get()
     assert 'INTAKE_TEST' in str(e.value)
+
+
+def test_remote_sequence(intake_server):
+    import glob
+    d = os.path.dirname(TEST_CATALOG_PATH)
+    catalog = Catalog(intake_server)
+    assert 'text' in catalog
+    s = catalog.text()
+    s.discover()
+    assert s.npartitions == len(glob.glob(os.path.join(d, '*.yml')))
+    assert s.read_partition(0)
+    assert s.read()

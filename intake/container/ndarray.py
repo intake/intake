@@ -1,7 +1,7 @@
-import msgpack
-import numpy as np
-import msgpack_numpy
+from .base import RemoteSource
 
 
-class NdArray():
-    pass
+class RemoteArray(RemoteSource):
+    # TODO
+    def __init__(self, *args, **kwargs):
+        raise NotImplementedError

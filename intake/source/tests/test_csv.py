@@ -45,8 +45,8 @@ def test_open(data_filenames):
 def test_discover(sample1_datasource):
     info = sample1_datasource.discover()
 
-    assert info['dtype'].dtypes.to_dict() == {'name': 'O', 'score': 'f8',
-                                              'rank': 'i8'}
+    assert info['dtype'] == {'name': 'object', 'score': 'float64',
+                             'rank': 'int64'}
     # Do not know length without parsing CSV
     assert info['shape'] == (None, 3)
     assert info['npartitions'] == 1
@@ -90,6 +90,14 @@ def test_to_dask(sample1_datasource, data_filenames):
     expected_df = pd.read_csv(data_filenames['sample1'])
 
     assert expected_df.equals(df)
+
+
+def test_plot(sample1_datasource):
+    pytest.importorskip('hvplot')
+    import holoviews
+
+    p = sample1_datasource.plot()
+    assert isinstance(sample1_datasource.plot(), holoviews.NdOverlay)
 
 
 def test_close(sample1_datasource, data_filenames):

@@ -5,22 +5,20 @@ from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
 from . import source
-from .catalog.default import load_combo_catalog
+from .source.base import Schema, DataSource
 from .catalog.base import Catalog, RemoteCatalog
 from .catalog import local
-
-__all__ = ['registry', 'make_open_functions', 'cat', 'Catalog']
-
+from .catalog.default import load_combo_catalog
 from .source import registry
 from .source.discovery import autodiscover
 
 # Populate list of autodetected plugins
 registry.update(autodiscover())
 
-# FIXME: this plugin needs to eventually be retired
-from .source import csv
+from .source import csv, textfiles
 registry['csv'] = csv.CSVSource
-registry['empty'] = Catalog
+registry['textfiles'] = textfiles.TextFilesSource
+registry['catalog'] = Catalog
 registry['intake_remote'] = RemoteCatalog
 
 
@@ -40,7 +38,6 @@ def make_open_functions():
             func_name = re.sub('[-=~^&|@+]', '_', func_name)
         if isidentifier(func_name):
             globals()[func_name] = plugin
-            __all__.append(func_name)
         else:
             warnings.warn('Invalid Intake plugin name "%s" found.' %
                           plugin_name)
@@ -58,32 +55,57 @@ def output_notebook(inline=True, logo=False):
         Whether to show the logo(s)
     """
     try:
-        import holoplot
-        import holoviews as hv
-    except:
-        raise ImportError("The intake plotting API requires holoplot."
-                          "holoplot may be installed with:\n\n"
-                          "`conda install -c pyviz holoplot` or "
-                          "`pip install holoplot`.")
-    hv.extension('bokeh', inline=inline, logo=logo)
+        import hvplot
+    except ImportError:
+        raise ImportError("The intake plotting API requires hvplot."
+                          "hvplot may be installed with:\n\n"
+                          "`conda install -c pyviz hvplot` or "
+                          "`pip install hvplot`.")
+    import holoviews as hv
+    return hv.extension('bokeh', inline=inline, logo=logo)
 
 
 make_open_functions()
 cat = load_combo_catalog()
 
 
-def open_catalog(*args, **kwargs):
-    """LONG EXPLANATION HERE"""
+def open_catalog(uri=None, **kwargs):
+    """Create a Catalog object
+
+    Can load YAML catalog files, connect to an intake server, or create any
+    arbitrary Catalog subclass instance. In the general case, the user should
+    supply ``driver=`` with a value from the plugins registry which has a
+    container type of catalog. File locations can generally be remote, if
+    specifying a URL protocol.
+
+    The default behaviour if not specifying the driver is as follows:
+
+    - if ``uri`` is a a single string ending in "yml" or "yaml", open it as a
+      catalog file
+    - if ``uri`` is a list of strings, a string containing a glob character
+      ("*") or a string not ending in "y(a)ml", open as a set of catalog
+      files. In the latter case, assume it is a directory.
+    - if ``uri`` beings with protocol ``"intake:"``, connect to a remote
+      Intake server
+    - otherwise, create a base Catalog object without entries.
+
+    Parameters
+    ----------
+    uri: str
+        Designator for the location of the catalog.
+    kwargs:
+        passed to subclass instance, see documentation of the individual
+        catalog classes.
+    """
     driver = kwargs.pop('driver', None)
     if driver is None:
-        if args:
-            uri = args[0]
+        if uri:
             if ((isinstance(uri, str) and "*" in uri)
                     or ((isinstance(uri, (list, tuple))) and len(uri) > 1)):
                 # glob string or list of files/globs
                 driver = 'yaml_files_cat'
             elif isinstance(uri, (list, tuple)) and len(uri) == 1:
-                args = (uri[0], ) + args[1:]
+                uri = uri[0]
                 if "*" in uri[0]:
                     # single glob string in a list
                     driver = 'yaml_files_cat'
@@ -99,14 +121,15 @@ def open_catalog(*args, **kwargs):
                     if uri.endswith(('.yml', '.yaml')):
                         driver = 'yaml_file_cat'
                     else:
-                        args = (uri + '/*', ) + args[1:]
+                        uri = uri + '/*'
+                        driver = 'yaml_files_cat'
         else:
-            # unknown - to error
-            driver = 'empty'
+            # empty cat
+            driver = 'catalog'
     if driver not in registry:
         raise ValueError('Unknown catalog driver, supply one of: %s'
                          % list(registry))
-    return registry[driver](*args, **kwargs)
+    return registry[driver](uri, **kwargs)
 
 
 Catalog = open_catalog
