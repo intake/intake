@@ -74,13 +74,13 @@ Once opened, a DataSource object can have arbitrary metadata associated with it.
 should be a dictionary that can be serialized as JSON.  This metadata comes from the following sources:
 
 1. A data catalog entry can associate fixed metadata with the data source.  This is helpful for data formats that do
-  not have any support for metadata within the file format.
+   not have any support for metadata within the file format.
 
 2. The plugin handling the data source may have some general metadata associated with the state of the system at the
-  time of access, available even before loading any data-specific information.
+   time of access, available even before loading any data-specific information.
 
 2. A plugin can add additional metadata when the schema is loaded for the data source.  This allows metadata embedded
-  in the data source to be exported.
+   in the data source to be exported.
 
 From the user perspective, all of the metadata should be loaded once the data source has loaded the rest of the
 schema (after ``discover()``, ``read()``, ``to_dask()``, etc have been called).
@@ -103,7 +103,7 @@ The class should have the following attributes to identify itself:
   be used in multiple ways (such as HDF5 files interpreted as dataframes or as ndarrays), two plugins must be created.
   These two plugins can be part of the same Python package.
 
--  ``partition_access``: Do the data sources returned by this plugin have multiple partitions?  This may help tools in
+- ``partition_access``: Do the data sources returned by this plugin have multiple partitions?  This may help tools in
   the future make more optimal decisions about how to present data.  If in doubt (or the answer depends on init
   arguments), ``True`` will always result in correct behavior, even if the data source has only one partition.
 
@@ -145,46 +145,46 @@ data-frame::
 Most of the work typically happens in the following methods:
 
 - ``__init__(self)``: Should be very lightweight and fast.  No files or network resources should be opened, and no
-signifcant memory should be allocated yet.  Data sources are often serialized immediately.  The default implementation
-of the pickle protocol in the base class will record all the arguments to ``__init__()`` and recreate the object with
-those arguments when unpickled, assuming the class has no side effects.
+  signifcant memory should be allocated yet.  Data sources are often serialized immediately.  The default implementation
+  of the pickle protocol in the base class will record all the arguments to ``__init__()`` and recreate the object with
+  those arguments when unpickled, assuming the class has no side effects.
 
 - ``_get_schema(self)``: May open files and network resources and return as much of the schema as possible in small
-amount of *approximately* constant  time.  The ``npartitions`` and ``extra_metadata`` attributes must be correct
-when ``_get_schema`` returns.  Further keys such as ``dtype``, ``shape``, etc., should reflect the container type of
-the data-source, and can be ``None`` if not easily knowable, or include ``None`` for some elements.
+  amount of *approximately* constant  time.  The ``npartitions`` and ``extra_metadata`` attributes must be correct
+  when ``_get_schema`` returns.  Further keys such as ``dtype``, ``shape``, etc., should reflect the container type of
+  the data-source, and can be ``None`` if not easily knowable, or include ``None`` for some elements.
 
 - ``_get_partition(self, i)``: Should return all of the data from partition id ``i``, where ``i`` is typically an
-integer, but may be something more complex.
-The base class will automatically verify that ``i`` is in the range ``[0, npartitions)``, so no range checking is
-required in the typical case.
+  integer, but may be something more complex.
+  The base class will automatically verify that ``i`` is in the range ``[0, npartitions)``, so no range checking is
+  required in the typical case.
 
 - ``_close(self)``: Close any network or file handles and deallocate any significant memory.  Note that these
-resources may be need to be reopened/reallocated if a read is called again later.
+  resources may be need to be reopened/reallocated if a read is called again later.
 
 The full set of methods of interest are as follows:
 
 - ``__init__(self)``: Same as above.  The standard object attributes (like ``dtype`` and ``shape``) should be set to
-default placeholder values (``None``) if they are not known yet.
+  default placeholder values (``None``) if they are not known yet.
 
 - ``discover(self)``: Read the source attributes, like ``npartitions``, etc.  As with ``_get_schema()`` above, this
-method is assumed to be fast, and make a best effort to set attributes.
+  method is assumed to be fast, and make a best effort to set attributes.
 
 - ``read(self)``: Return all the data in memory in one in-memory container.
 
 - ``read_chunked(self)``: Return an iterator that returns contiguous chunks of the data.  The chunking is generally
-assumed to be at the partition level, but could be finer grained if desired.
+  assumed to be at the partition level, but could be finer grained if desired.
 
 - ``read_partition(self, i)``: Returns the data for a given partition id.  It is assumed that reading a given
-partition does not require reading the data that precedes it.  If ``i`` is out of range, an ``IndexError`` should
-be raised.
+  partition does not require reading the data that precedes it.  If ``i`` is out of range, an ``IndexError`` should
+  be raised.
 
 - ``to_dask(self)``: Return a (lazy) Dask data structure corresponding to this data source.  It should be assumed
-that the data can be read from the Dask workers, so the loads can be done in future tasks.  For further information,
-see the `Dask documentation <https://dask.pydata.org/en/latest/>`_.
+  that the data can be read from the Dask workers, so the loads can be done in future tasks.  For further information,
+  see the `Dask documentation <https://dask.pydata.org/en/latest/>`_.
 
 - ``close(self)``: Close network or file handles and deallocate memory.  If other methods are called after ``close()``,
-the source is automatically reopened.
+  the source is automatically reopened.
 
 It is also important to note that source attributes should be set after ``read()``, ``read_chunked()``,
 ``read_partition()`` and ``to_dask()``, even if ``discover()`` was not called by the user.

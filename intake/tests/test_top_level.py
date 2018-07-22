@@ -6,6 +6,7 @@ import intake
 import appdirs
 import pytest
 
+
 def copy_test_file(filename, target_dir):
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)  # can't use exist_ok in Python 2.7
@@ -22,9 +23,11 @@ def copy_test_file(filename, target_dir):
 @pytest.fixture
 def user_catalog():
     target_catalog = copy_test_file('catalog1.yml',
-                                    appdirs.user_data_dir(appname='intake', appauthor='intake'))
+                                    appdirs.user_data_dir(appname='intake',
+                                                          appauthor='intake'))
     yield target_catalog
-    # Remove the file, but not the directory (because there might be other files already there)
+    # Remove the file, but not the directory (because there might be other
+    # files already there)
     os.remove(target_catalog)
 
 

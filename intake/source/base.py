@@ -130,7 +130,10 @@ class DataSource(object):
 
     def read(self):
         """Load entire dataset into a container and return it"""
-        pass
+        if not self.partition_access or self.npartitions == 1:
+            return self._get_partition(0)
+        else:
+            raise NotImplementedError
 
     def read_chunked(self):
         """Return iterator over container fragments of data source"""

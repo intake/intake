@@ -19,13 +19,14 @@ Defining a Package
 The steps involved in creating a data package are:
 
 1. Identifying a dataset, which can be accessed via a URL or included directly as one or more files in the package.
+
 2. Creating a package containing an intake catalog file, meta.yaml (description of the data, version, requirements,
-  etc.) and a script to copy the data.
+   etc.) and a script to copy the data.
 
 3. Building the package using the command conda build.
 
 4. Uploading the package to a package repository such as `Anaconda Cloud <https://anaconda.org>`_ or your own private
-  repository.
+   repository.
 
 Data packages are standard conda packages that install an Intake catalog file into the user's conda environment
 (``$CONDA_PREFIX/share/intake``).  A data package does not necessarily imply there are data files inside the package.

@@ -59,7 +59,7 @@ a substring like ``{{field}}`` will be replaced by the value of the user paramet
 that same name. Some additional values are always available:
 
 - ``CATALOG_DIR``: The full path to the directory containing the YAML catalog file.  This is especially useful
-for constructing paths relative to the catalog directory to locate data files and custom plugins.
+  for constructing paths relative to the catalog directory to locate data files and custom plugins.
 
 Metadata
 ''''''''
@@ -89,11 +89,11 @@ file:
 The following import methods are allow:
 
 - ``- module: my.module.path``: The Python module to import and search for plugin classes.  This uses the standard
-notation of the Python ``import`` command and will search the PYTHONPATH in the same way.
+  notation of the Python ``import`` command and will search the PYTHONPATH in the same way.
 - ``- dir: /my/module/directory``: All of the ``*.py`` files in this directory will be executed, and any plugin
-classes found will be added to the catalog's plugin registry.  It is common for the directory of Python files to be
-stored relative to the catalog file itself, so using the ``CATALOG_DIR`` variable will allow that relative path to be
-specified.
+  classes found will be added to the catalog's plugin registry.  It is common for the directory of Python files to be
+  stored relative to the catalog file itself, so using the ``CATALOG_DIR`` variable will allow that relative path to be
+  specified.
 
 Each of the above methods can be used multiple times, and in combination, to load as many extra plugins as are needed.
 Most plugins should be installed as Python packages (enabling autodiscovery), but sometimes catalog-specific plugins may
