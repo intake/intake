@@ -25,12 +25,14 @@ class EnvironmentPermissionDenied(PermissionDenied):
 
 
 class ValidationError(CatalogException):
+    """Something's wrong with the catalog spec"""
     def __init__(self, message, errors):
         super(ValidationError, self).__init__(message)
         self.errors = errors
 
 
 class DuplicateKeyError(ValidationError):
+    """Catalog contains key duplications"""
     def __init__(self, exception):
         line, column = exception.problem_mark.line, exception.problem_mark.column
         msg = "duplicate key found on line {}, column {}".format(line + 1, column + 1)

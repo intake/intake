@@ -42,10 +42,11 @@ class CSVSource(base.DataSource):
                 self._urlpath, storage_options=self._storage_options,
                 **self._csv_kwargs)
 
-        dtypes = self._dataframe._meta
+        dtypes = self._dataframe._meta.dtypes.to_dict()
+        dtypes = {n: str(t) for (n, t) in dtypes.items()}
         return base.Schema(datashape=None,
                            dtype=dtypes,
-                           shape=(None, len(dtypes.columns)),
+                           shape=(None, len(dtypes)),
                            npartitions=self._dataframe.npartitions,
                            extra_metadata={})
 

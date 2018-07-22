@@ -12,6 +12,7 @@ import six
 
 def flatten(iterable):
     """Flatten an arbitrarily deep list"""
+    # likely not used
     iterable = iter(iterable)
     while True:
         try:

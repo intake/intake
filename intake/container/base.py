@@ -6,9 +6,26 @@ from intake import __version__
 
 
 class RemoteSource(DataSource):
+    """Base class for all DataSources living on an Intake server"""
     version = __version__
 
     def __init__(self, url, headers, name, parameters, metadata=None, **kwargs):
+        """
+
+        Parameters
+        ----------
+        url: str
+            Address of the server
+        headers: dict
+            HTTP headers to sue in calls
+        name: str
+            handle to reference this data
+        parameters: dict
+            To pass to the server when it instantiates the data source
+        metadata: dict
+            Additional info
+        kwargs: ignored
+        """
         super(RemoteSource, self).__init__(self)
         self.url = url
         self.name = name
@@ -52,6 +69,21 @@ class RemoteSource(DataSource):
 
 
 def get_partition(url, headers, source_id, container, partition):
+    """Serializable function for fetching a data source partition
+
+    Parameters
+    ----------
+    url: str
+        Server address
+    headers: dict
+        HTTP header parameters
+    source_id: str
+        ID of the source in the server's cache (unique per user)
+    container: str
+        Type of data, like "dataframe" one of ``intake.container.container_map``
+    partition: serializable
+        Part of data to fetch, e.g., an integer for a dataframe.
+    """
     accepted_formats = list(serializer.format_registry.keys())
     accepted_compression = list(serializer.compression_registry.keys())
     payload = dict(action='read',

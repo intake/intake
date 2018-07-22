@@ -61,5 +61,6 @@ class TextFilesSource(base.DataSource):
 
 
 def get_file(f):
+    """Serializable function to take an OpenFile object and read lines"""
     with f as f:
         return list(f)

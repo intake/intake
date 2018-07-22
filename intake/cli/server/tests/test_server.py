@@ -94,8 +94,8 @@ class TestServerV1Source(TestServerV1Base):
 
         self.assertEqual(resp_msg['container'], 'dataframe')
         self.assertEqual(resp_msg['shape'], [None, 3])
-        expected_dtype = {'name': 'O', 'score': 'f8', 'rank': 'i8'}
-        actual_dtype = pickle.loads(resp_msg['dtype']).dtypes.to_dict()
+        expected_dtype = {'name': 'object', 'score': 'float64', 'rank': 'int64'}
+        actual_dtype = resp_msg['dtype']
         self.assertEqual(expected_dtype, actual_dtype)
         self.assertEqual(resp_msg['npartitions'], 2)
         self.assertEqual(resp_msg['metadata'], dict(foo='bar', bar=[1, 2, 3]))

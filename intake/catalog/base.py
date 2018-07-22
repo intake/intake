@@ -14,24 +14,23 @@ logger = logging.getLogger('intake')
 
 
 class Catalog(DataSource):
-    """Manages a hierarchy of data sources and plugins as a collective unit.
+    """Manages a hierarchy of data sources as a collective unit.
 
-    A catalog is a set of available data sources and plugins for an individual
-    observed entity (remote server, local configuration file, or a local
-    directory of configuration files). This can be expanded to include a
+    A catalog is a set of available data sources for an individual
+    entity (remote server, local  file, or a local
+    directory of files). This can be expanded to include a
     collection of subcatalogs, which are then managed as a single unit.
 
     A catalog is created with a single URI or a collection of URIs. A URI can
     either be a URL or a file path.
 
     Each catalog in the hierarchy is responsible for caching the most recent
-    modification time of the respective observed entity to prevent overeager
-    queries.
+    refresh time to prevent overeager queries.
 
     Attributes
     ----------
     metadata : dict
-        Dictionary loaded from ``metadata`` section of catalog file.
+        Arbitrary information to carry along with the data source specs.
     """
     # emulate a DataSource
     container = 'catalog'
@@ -178,6 +177,18 @@ class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
 
     def __init__(self, url, http_args={}, **kwargs):
+        """Connect to remote Intake Server as a catalog
+
+        Parameters
+        ----------
+        url: str
+            Address of the server, e.g., "intake://localhost:5000".
+        http_args: dict
+            Arguments to add to HTTP calls, including "ssl" (True/False) for
+            secure connections.
+        kwargs: may include catalog name, metadata, source ID (if known) and
+            auth instance.
+        """
         self.http_args = http_args
         self.http_args.update(kwargs.get('storage_options', {}))
         self.http_args['headers'] = self.http_args.get('headers', {})
@@ -198,6 +209,7 @@ class RemoteCatalog(Catalog):
         super(RemoteCatalog, self).__init__(self, **kwargs)
 
     def _load(self):
+        """Fetch entries from remote"""
         # Add the auth headers to any other headers
         headers = self.http_args.get('headers', {})
         if self.auth is not None:

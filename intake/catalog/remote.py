@@ -8,7 +8,20 @@ from .utils import expand_defaults, coerce
 
 
 class RemoteCatalogEntry(CatalogEntry):
+    """An entry referring to a remote data definition"""
     def __init__(self, url, auth, *args, **kwargs):
+        """
+
+        Parameters
+        ----------
+        url: str
+            HTTP address of the Intake server this entry comes from
+        auth: Auth instance
+            If there are additional headers to add to calls, this instance will
+            provide them
+        kwargs: additional keys describing the entry, name, description,
+            container,
+        """
         self.url = url
         self.auth = auth
         self.args = args
@@ -22,11 +35,11 @@ class RemoteCatalogEntry(CatalogEntry):
                                                  getshell=getshell)
 
     def describe(self):
+        # likely not used
         return self.kwargs
 
     def describe_open(self, **kwargs):
-        import pdb
-        pdb.set_trace()
+        # likely not used
         return {
             'plugin': None,
             'description': self._description,

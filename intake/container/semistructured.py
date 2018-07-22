@@ -3,6 +3,7 @@ from intake.source.base import Schema
 
 
 class RemoteSequenceSource(RemoteSource):
+    """Sequence-of-things source on an Intake server"""
     name = 'remote_sequence'
     container = 'python'
 

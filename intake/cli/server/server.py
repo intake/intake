@@ -18,6 +18,7 @@ logger = logging.getLogger('intake')
 
 
 class IntakeServer(object):
+    """Main intake-server tornado application"""
     def __init__(self, catalog):
         self._catalog = catalog
         self._cache = SourceCache()
@@ -75,6 +76,7 @@ class IntakeServer(object):
 
 
 class ServerInfoHandler(tornado.web.RequestHandler):
+    """Basic info about the server"""
     def initialize(self, cache, catalog, auth):
         self.cache = cache
         self.catalog = catalog
@@ -104,6 +106,7 @@ class ServerInfoHandler(tornado.web.RequestHandler):
 
 
 class SourceCache(object):
+    """Stores DataSources requested by some user"""
     def __init__(self):
         self._sources = {}
 
@@ -146,6 +149,12 @@ class SourceCache(object):
 
 
 class ServerSourceHandler(tornado.web.RequestHandler):
+    """Open or stream data source
+
+    The requests "action" field (open|read) specified what the request wants
+    to do. Open caches the source and created an ID for it, read uses that
+    ID to reference the source and read a partition.
+    """
     def initialize(self, catalog, cache, auth):
         self._catalog = catalog
         self._cache = cache
@@ -193,7 +202,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                                                         source_id))
                 response = dict(
                     datashape=source.datashape,
-                    dtype=pickle.dumps(source.dtype, 2),
+                    dtype=source.dtype,
                     shape=source.shape, container=source.container,
                     metadata=source.metadata, npartitions=source.npartitions,
                     source_id=source_id)

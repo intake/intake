@@ -82,7 +82,8 @@ def test_read(intake_server):
 
     info = d.discover()
     assert info['datashape'] is None
-    assert info['dtype'].equals(meta)
+    assert info['dtype'] == {k: str(v) for k, v
+                             in meta.dtypes.to_dict().items()}
     assert info['npartitions'] == 2
     assert info['shape'] == (None, 3)  # Do not know CSV size ahead of time
 
@@ -105,7 +106,8 @@ def test_read_direct(intake_server):
     info = d.discover()
 
     assert info['datashape'] is None
-    assert info['dtype'].equals(meta)
+    assert info['dtype'] == {k: str(v) for k, v
+                             in meta.dtypes.to_dict().items()}
     assert info['npartitions'] == 1
     assert info['shape'] == (None, 3)  # Do not know CSV size ahead of time
     assert info['metadata'] == {'bar': [2, 4, 6], 'foo': 'baz'}

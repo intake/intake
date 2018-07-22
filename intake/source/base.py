@@ -3,6 +3,7 @@
 
 class Schema(object):
     """Holds details of data description for any type of data-source"""
+    # TODO: this all looks like a simple dictionary, do we need it?
     def __init__(self, datashape=None, dtype=None, shape=None, npartitions=None,
                  extra_metadata=None):
         self.datashape = datashape
@@ -20,6 +21,14 @@ class Schema(object):
 
 
 class DataSource(object):
+    """An object which can produce data
+
+    This is the base class for all Intake plugins, including catalogs and
+    remote (server) data objects. To produce a new plugin commonly involves
+    subclassing this definition and overriding some or all of the methods.
+
+    This class is not useful in itself, most methods raise NotImplemented.
+    """
     name = None
     version = None
     container = None
@@ -28,6 +37,7 @@ class DataSource(object):
     description = None
 
     def __new__(cls, *args, **kwargs):
+        """Capture creation args when instantiating"""
         o = object.__new__(cls)
         # automatically capture __init__ arguments for pickling
         o._captured_init_args = args
@@ -51,6 +61,7 @@ class DataSource(object):
         self.__init__(*state['args'], **state['kwargs'])
 
     def __init__(self, metadata=None):
+        # default data
         self.metadata = metadata or {}
         self.datashape = None
         self.dtype = None
@@ -77,7 +88,7 @@ class DataSource(object):
     # to be overridden unless custom behavior is required
 
     def _load_metadata(self):
-        # load metadata only if needed
+        """load metadata only if needed"""
         if self._schema is None:
             self._schema = self._get_schema()
             self.datashape = self._schema.datashape
@@ -87,7 +98,11 @@ class DataSource(object):
             self.metadata.update(self._schema.extra_metadata)
 
     def yaml(self):
-        """Return YAML representation of this data-source"""
+        """Return YAML representation of this data-source
+
+        The output may be roughly appropriate for inclusion in a YAML
+        catalog. This is a best-effort implementation
+        """
         import ruamel_yaml
         import inspect
         kwargs = self._captured_init_kwargs.copy()
@@ -153,7 +168,10 @@ class DataSource(object):
     @property
     def plot(self):
         """
-        Returns a HoloPlot object to provide a high-level plotting API.
+        Returns a hvPlot object to provide a high-level plotting API.
+
+        To display in a notebook, be sure to run ``intake.output_notebook()``
+        first.
         """
         try:
             from hvplot import hvPlot
