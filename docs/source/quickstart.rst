@@ -45,7 +45,7 @@ To find out what kind of container a data source will produce, inspect the ``con
     >>> ds.container
     'dataframe'
 
-The result will be ``dataframe``, ``ndarray``, or ``python``.  (New container types may be added in the future.)
+The result will be ``dataframe``, ``ndarray``, or ``python``.  (New container types will be added in the future.)
 
 For data that fits in memory, you can ask Intake to load it directly::
 
@@ -57,6 +57,9 @@ For data that fits in memory, you can ask Intake to load it directly::
     2     Arizona     arizona   AZ  The Grand Canyon State
     3    Arkansas    arkansas   AR       The Natural State
     4  California  california   CA            Golden State
+
+Many data sources will also have quick-look plotting available. The attribute ``.plot`` will list a number of built-in
+plotting methods, such as ``.scatter()``.
 
 Intake data sources can have *partitions*.  A partition refers to a contiguous chunk of data that can be loaded independent of any other partition.  The partitioning scheme is entirely up to the plugin author.  In the case of the CSV plugin, each ``.csv`` file is a partition.
 
@@ -93,7 +96,7 @@ It is often useful to move the descriptions of data sources out of your code and
 .. code-block:: yaml
 
     sources:
-    - name: states
+      states
         description: US state information from [CivilServices](https://civil.services/)
         driver: csv
         args:
@@ -103,7 +106,7 @@ It is often useful to move the descriptions of data sources out of your code and
 
 To load a catalog from a catalog file::
 
-    >>> cat = intake.Catalog('us_states.yml')
+    >>> cat = intake.open_catalog('us_states.yml')
     >>> list(cat)
     ['states']
 
@@ -117,15 +120,22 @@ This catalog contains one data source, called ``states``.  It can be accessed by
     3    Arkansas    arkansas
     4  California  california
 
+Placing data source specifications into a catalog like this enables declaring data sets in a single canonical place,
+and not having to use boilerplate code in each notebook/script that makes use of the data. The catalogs can also
+reference one-another, be stored remotely, and include extra metadata such as a set of named quick-look plots that
+are appropriate for the particular data source.
+
 
 Installing Data Source Packages with Conda
 ------------------------------------------
 
-Intake makes it possible to create conda packages that install data sources into a global catalog.  For example, we can install a data package containing the same data we have been working with::
+Intake makes it possible to create conda packages that install data sources into a global catalog.  For example, we can
+install a data package containing the same data we have been working with::
 
     conda install -c intake data-us-states
 
-Conda installs the catalog file in this package to ``$CONDA_PREFIX/share/intake/us_states.yml``.  Now, when we import ``intake``, we will see the data from this package appear as part of a global catalog called ``intake.cat``::
+Conda installs the catalog file in this package to ``$CONDA_PREFIX/share/intake/us_states.yml``.  Now, when we import
+``intake``, we will see the data from this package appear as part of a global catalog called ``intake.cat``::
 
     >>> import intake
     >>> intake.cat.states.to_dask()[['state','slug']].head()
@@ -136,4 +146,5 @@ Conda installs the catalog file in this package to ``$CONDA_PREFIX/share/intake/
     3    Arkansas    arkansas
     4  California  california
 
-The global catalog is a union of all catalogs installed in the conda/virtualenv environment and also any catalogs installed in user-specific location.
+The global catalog is a union of all catalogs installed in the conda/virtualenv environment and also any catalogs
+installed in user-specific location.

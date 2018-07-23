@@ -130,7 +130,10 @@ class DataSource(object):
 
     def read(self):
         """Load entire dataset into a container and return it"""
-        pass
+        if not self.partition_access or self.npartitions == 1:
+            return self._get_partition(0)
+        else:
+            raise NotImplementedError
 
     def read_chunked(self):
         """Return iterator over container fragments of data source"""
@@ -142,6 +145,9 @@ class DataSource(object):
         """Return a (offset_tuple, container) corresponding to i-th partition.
 
         Offset tuple is of same length as shape.
+
+        By default, assumes i should be an integer between zero and npartitions;
+        override for more complex indexing schemes.
         """
         self._load_metadata()
         if i < 0 or i >= self.npartitions:

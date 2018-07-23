@@ -7,18 +7,8 @@ from . import base
 class CSVSource(base.DataSource):
     """Read CSV files into dataframes
 
-    Parameters
-    ----------
-    urlpath: str, location of data
-        May be a local path, or remote path if including a protocol specifier
-        such as ``'s3://'``. May include glob wildcards.
-    csv_kwargs: dict
-        Any further arguments to pass to Dask's read_csv (such as block size)
-        or to the `CSV parser <https://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_csv.html>`_
-        in pandas (such as which columns to use, encoding, data-types)
-    storage_options: dict
-        Any parameters that need to be passed to the remote data backend,
-        such as credentials.
+    Prototype of sources reading dataframe data
+
     """
     name = 'csv'
     version = '0.0.1'
@@ -27,6 +17,20 @@ class CSVSource(base.DataSource):
 
     def __init__(self, urlpath, csv_kwargs=None, metadata=None,
                  storage_options=None):
+        """
+        Parameters
+        ----------
+        urlpath: str, location of data
+            May be a local path, or remote path if including a protocol specifier
+            such as ``'s3://'``. May include glob wildcards.
+        csv_kwargs: dict
+            Any further arguments to pass to Dask's read_csv (such as block size)
+            or to the `CSV parser <https://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_csv.html>`_
+            in pandas (such as which columns to use, encoding, data-types)
+        storage_options: dict
+            Any parameters that need to be passed to the remote data backend,
+            such as credentials.
+        """
         self._urlpath = urlpath
         self._storage_options = storage_options
         self._csv_kwargs = csv_kwargs or {}

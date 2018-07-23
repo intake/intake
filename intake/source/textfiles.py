@@ -4,6 +4,8 @@ from . import base
 class TextFilesSource(base.DataSource):
     """Read textfiles as sequence of lines
 
+    Protype of sources reading sequential data.
+
     Takes a set of files, and returns an iterator over the text in each of them.
     The files can be local or remote. Extra parameters for encoding, etc.,
     go into ``storage_options``.

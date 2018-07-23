@@ -10,13 +10,18 @@ Intake helps you:
 * Describe data sets in catalog files for easy reuse and sharing between projects and with others.
 * Share catalog information (and data sets) over the network with the Intake server
 
+The philosophy os Intake is to be extremely pluggable, so that new plugins, new data service catalogs, new auth
+mechanisms, etc., are easy to implement. Thus, with community support, we can make a single catalog and data interface
+for the python data ecosystem and take the pain out of data access. Get involved!
+
 .. toctree::
     :maxdepth: 1
     :caption: Contents:
 
     quickstart.rst
     overview.rst
-    api.rst
+    api_base.rst
+    api_user.rst
     catalog.rst
     tools.rst
     making-plugins.rst
@@ -24,6 +29,7 @@ Intake helps you:
     data-packages.rst
     plotting.rst
     plugin-directory.rst
+    roadmap.rst
 
 
 Indices and tables
