@@ -3,7 +3,7 @@ import os
 import os.path
 import yaml
 
-from ruamel_yaml.constructor import DuplicateKeyError
+from ruamel.yaml.constructor import DuplicateKeyError
 
 from jinja2 import Template
 import six
@@ -14,7 +14,7 @@ from .base import Catalog
 from . import exceptions
 from .entry import CatalogEntry
 from ..source import registry as global_registry
-from ..source.discovery import autodiscover, load_plugins_from_module
+from ..source.discovery import load_plugins_from_module
 from .utils import expand_templates, expand_defaults, coerce, COERCION_RULES
 
 
@@ -430,8 +430,7 @@ class CatalogParser(object):
 
 def register_plugin_module(mod):
     """Find plugins in given module"""
-    for k, v in load_plugins_from_module(
-            mod).items():
+    for k, v in load_plugins_from_module(mod).items():
         if k:
             if isinstance(k, (list, tuple)):
                 k = k[0]
