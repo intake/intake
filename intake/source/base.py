@@ -129,7 +129,7 @@ class DataSource(object):
         if with_plugin:
             data['plugins'] = {
                 'source': [{'module': self.__module__}]}
-        return ruamel.yaml.dump(data, default_flow_style=False)
+        return dump(data, default_flow_style=False)
 
     def discover(self):
         """Open resource and populate the source attributes."""
