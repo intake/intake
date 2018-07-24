@@ -3,7 +3,10 @@ import os
 import os.path
 import yaml
 
-from ruamel.yaml.constructor import DuplicateKeyError
+try:
+    from ruamel.yaml.constructor import DuplicateKeyError
+except ImportError:
+    from ruamel_yaml.constructor import DuplicateKeyError
 
 from jinja2 import Template
 import six

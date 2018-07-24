@@ -110,7 +110,10 @@ class DataSource(object):
             is created with a plugin not expected to be in the global Intake
             registry.
         """
-        import ruamel.yaml
+        try:
+            from ruamel.yaml import dump
+        except:
+            from ruamel_yaml import dump
         import inspect
         kwargs = self._captured_init_kwargs.copy()
         meta = kwargs.pop('metadata', self.metadata) or {}
