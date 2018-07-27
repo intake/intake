@@ -65,10 +65,6 @@ def test_nested(catalog1):
     assert 'nested.nested' in catalog1.walk(depth=2)
 
 
-def test_cache_catalog(catalog1):
-    assert 'cache' in catalog1['simple_cache'].describe_open().keys()
-
-
 def test_source_plugin_config(catalog1):
     from intake import registry
     assert 'example1' in registry
@@ -243,7 +239,7 @@ def test_union_catalog():
     assert desc_open['args']['urlpath'].endswith('entry1_1.csv')
     del desc_open['args']['urlpath']  # Full path will be system dependent
     assert desc_open == {
-        'args': {'metadata': {'bar': [2, 4, 6], 'foo': 'baz'}},
+        'args': {'metadata': {'bar': [2, 4, 6], 'foo': 'baz'}, 'cache': []},
         'description': 'entry1 part',
         'direct_access': 'allow',
         'metadata': {'bar': [2, 4, 6], 'foo': 'baz'},

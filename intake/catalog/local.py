@@ -178,6 +178,7 @@ class LocalCatalogEntry(CatalogEntry):
 
         open_args = expand_templates(self._open_args, params)
         open_args['metadata'] = self._metadata
+        open_args['cache'] = self._cache
 
         return open_args
 

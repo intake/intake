@@ -16,7 +16,7 @@ class TextFilesSource(base.DataSource):
     partition_access = True
 
     def __init__(self, urlpath, metadata=None,
-                 storage_options=None):
+                 storage_options=None, **kwargs):
         """
 
         Parameters
@@ -34,7 +34,7 @@ class TextFilesSource(base.DataSource):
         self._dataframe = None
         self._files = None
 
-        super(TextFilesSource, self).__init__(metadata=metadata)
+        super(TextFilesSource, self).__init__(metadata=metadata, **kwargs)
 
     def _get_schema(self):
         from dask.bytes import open_files
