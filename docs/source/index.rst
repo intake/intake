@@ -10,7 +10,7 @@ Intake helps you:
 * Describe data sets in catalog files for easy reuse and sharing between projects and with others.
 * Share catalog information (and data sets) over the network with the Intake server
 
-The philosophy os Intake is to be extremely pluggable, so that new plugins, new data service catalogs, new auth
+The philosophy of Intake is to be extremely pluggable, so that new plugins, new data service catalogs, new auth
 mechanisms, etc., are easy to implement. Thus, with community support, we can make a single catalog and data interface
 for the python data ecosystem and take the pain out of data access. Get involved!
 
