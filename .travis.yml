@@ -21,7 +21,7 @@ install:
 - |
   echo "Configuring conda."
   source $HOME/miniconda3/bin/activate root
-  conda install -y conda-build anaconda-client anaconda-verify
+  conda install -y conda-build anaconda-client conda-verify
 script:
 - |
   if [ "$TRAVIS_OS_NAME" = "linux" ]; then

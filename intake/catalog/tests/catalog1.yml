@@ -63,3 +63,9 @@ sources:
     driver: textfiles
     args:
       urlpath: "{{ CATALOG_DIR }}/*.yml"
+  arr:
+    description: small array
+    driver: numpy
+    args:
+      path: "{{ CATALOG_DIR }}/small.npy"
+      chunks: 5
