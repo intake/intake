@@ -27,3 +27,6 @@ API Reference: User Methods
 
 .. autoclass:: intake.source.textfiles.TextFilesSource
    :members: __init__, discover, read_partition, read, to_dask
+
+.. autoclass:: intake.source.npy.NPySource
+   :members: __init__, discover, read_partition, read, to_dask

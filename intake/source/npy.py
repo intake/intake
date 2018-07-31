@@ -2,16 +2,43 @@ from .base import DataSource, Schema
 
 
 class NPySource(DataSource):
+    """Read numpy binary files into an array
+
+    Prototype source showing example of working with arrays
+
+    Each file becomes one or more partitions, but partitioning within a file
+    is only along the largest dimension, to ensure contiguous data.
+    """
     container = 'ndarray'
     name = 'numpy'
     version = '0.0.1'
     partition_access = True
 
     def __init__(self, path, dtype=None, shape=None, chunks=None,
-                 metadata=None):
+                 storage_options=None, metadata=None):
+        """
+        The parameters dtype and shape will be determined from the first
+        file, if not given.
+
+        Parameters
+        ----------
+        path: str of list of str
+            Location of data file(s), possibly including glob and protocol
+            information
+        dtype: str dtype spec
+            In known, the dtype (e.g., "int64" or "f4").
+        shape: tuple of int
+            If known, the length of each axis
+        chunks: int
+            Size of chunks within a file along biggest dimension - need not
+            be an exact factor of the length of that dimension
+        storage_options: dict
+            Passed to file-system backend.
+        """
         self.path = path
         self.shape = shape
         self.dtype = dtype
+        self.storage = storage_options or {}
         self._chunks = chunks if chunks is not None else -1
         self.chunks = None
         self._arrs = None
@@ -22,7 +49,8 @@ class NPySource(DataSource):
         from dask.bytes import open_files
         import dask.array as da
         if self._arr is None:
-            files = open_files(self.path, 'rb', compression=None)
+            files = open_files(self.path, 'rb', compression=None,
+                               **self.storage)
             if self.shape is None:
                 arr = NumpyAccess(files[0])
                 self.shape = arr.shape
