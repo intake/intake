@@ -200,12 +200,9 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 source_id = self._cache.add(source)
                 logger.debug('Container: %s, ID: %s' % (source.container,
                                                         source_id))
-                response = dict(
-                    datashape=source.datashape,
-                    dtype=source.dtype,
-                    shape=source.shape, container=source.container,
-                    metadata=source.metadata, npartitions=source.npartitions,
-                    source_id=source_id)
+                response = dict(source._schema)
+                response.update(dict(container=source.container,
+                                     source_id=source_id))
                 self.write(msgpack.packb(response, use_bin_type=True))
                 self.finish()
             elif direct_access == 'force' and not client_has_plugin:

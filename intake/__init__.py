@@ -15,11 +15,12 @@ from .source.discovery import autodiscover
 # Populate list of autodetected plugins
 registry.update(autodiscover())
 
-from .source import csv, textfiles
+from .source import csv, textfiles, npy
 registry['csv'] = csv.CSVSource
 registry['textfiles'] = textfiles.TextFilesSource
 registry['catalog'] = Catalog
 registry['intake_remote'] = RemoteCatalog
+registry['numpy'] = npy.NPySource
 
 
 def make_open_functions():

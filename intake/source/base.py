@@ -1,16 +1,15 @@
 # Base classes for Data Loader interface
 
 
-class Schema(object):
+class Schema(dict):
     """Holds details of data description for any type of data-source"""
-    # TODO: this all looks like a simple dictionary, do we need it?
-    def __init__(self, datashape=None, dtype=None, shape=None, npartitions=None,
-                 extra_metadata=None):
-        self.datashape = datashape
-        self.dtype = dtype
-        self.shape = shape
-        self.npartitions = npartitions
-        self.extra_metadata = extra_metadata
+
+    def __init__(self, **kwargs):
+        super(Schema, self).__init__(**kwargs)
+        for field in ['datashape', 'dtype', 'metadata', 'extra_metadata',
+                      'shape']:
+            if field not in self:
+                self[field] = None
 
     def __repr__(self):
         return ("<Schema instance>\n"
@@ -18,6 +17,9 @@ class Schema(object):
                 "shape: {}\n"
                 "metadata: {}"
                 "".format(self.dtype, self.shape, self.extra_metadata))
+
+    def __getattr__(self, item):
+        return self[item]
 
 
 class DataSource(object):

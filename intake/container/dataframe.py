@@ -23,7 +23,7 @@ class RemoteDataFrame(RemoteSource):
 
     def _load_metadata(self):
         import dask.dataframe as dd
-        import dask
+        import dask.delayed
         if self.dataframe is None:
             self.parts = [dask.delayed(get_partition)(
                 self.url, self.headers, self._source_id, self.container, i
