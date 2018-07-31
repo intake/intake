@@ -2,7 +2,6 @@ import os.path
 import pickle
 
 import pytest
-import numpy as np
 import pandas as pd
 
 from .. import csv

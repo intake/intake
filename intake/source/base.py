@@ -2,12 +2,17 @@
 
 
 class Schema(dict):
-    """Holds details of data description for any type of data-source"""
+    """Holds details of data description for any type of data-source
+
+    This should always be pickleable, so that it can be sent from a server
+    to a client, and contain all information needed to recreate a RemoteSource
+    on the client.
+    """
 
     def __init__(self, **kwargs):
         super(Schema, self).__init__(**kwargs)
-        for field in ['datashape', 'dtype', 'metadata', 'extra_metadata',
-                      'shape']:
+        for field in ['datashape', 'dtype', 'extra_metadata', 'shape']:
+            # maybe a default-dict
             if field not in self:
                 self[field] = None
 

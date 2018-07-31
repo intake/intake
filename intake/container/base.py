@@ -58,7 +58,7 @@ class RemoteSource(DataSource):
         self._schema = Schema(datashape=None, dtype=self.dtype,
                               shape=self.shape,
                               npartitions=self.npartitions,
-                              extra_metadata=self.metadata)
+                              metadata=self.metadata)
         self._source_id = response['source_id']
 
     def _get_partition(self, i):

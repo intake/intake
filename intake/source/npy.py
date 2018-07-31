@@ -7,12 +7,13 @@ class NPySource(DataSource):
     version = '0.0.1'
     partition_access = True
 
-    def __init__(self, path, shape=None, chunks=None, metadata=None):
+    def __init__(self, path, dtype=None, shape=None, chunks=None,
+                 metadata=None):
         self.path = path
         self.shape = shape
+        self.dtype = dtype
         self._chunks = chunks if chunks is not None else -1
         self.chunks = None
-        self.dtype = None
         self._arrs = None
         self._arr = None
         super(NPySource, self).__init__(metadata=metadata)
