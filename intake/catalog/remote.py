@@ -26,6 +26,8 @@ class RemoteCatalogEntry(CatalogEntry):
         self.auth = auth
         self.args = args
         self.kwargs = kwargs
+        self._description = self.kwargs.get('description', "")
+        self._metadata = self.kwargs.get('metatata', {})
         getenv = kwargs.pop('getenv', True)
         getshell = kwargs.pop('getshell', True)
         self.http_args = kwargs.pop('http_args', {}).copy()
@@ -35,11 +37,9 @@ class RemoteCatalogEntry(CatalogEntry):
                                                  getshell=getshell)
 
     def describe(self):
-        # likely not used
         return self.kwargs
 
     def describe_open(self, **kwargs):
-        # likely not used
         return {
             'plugin': None,
             'description': self._description,
