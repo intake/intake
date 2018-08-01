@@ -61,7 +61,7 @@ The actual implementation of a plugin is very short.  Here is a simplified versi
 The `header` argument is a dictionary of HTTP headers that were present in the client request.  In this case, the
 plugin is looking for a special ``intake-secret`` header which contains the shared secret token.  Because HTTP header
 names are not case sensitive, the ``BaseAuth`` class provides a helper method ``get_case_insensitive()``, which will
-match dictionary keys in a case-insentive way.
+match dictionary keys in a case-insensitive way.
 
 The ``allow_access`` method also takes two additional arguments.  The ``source`` argument is the instance of
 ``LocalCatalogEntry`` for the data source being checked.  Most commonly auth plugins will want to inspect the
