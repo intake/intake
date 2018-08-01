@@ -20,7 +20,7 @@ API Reference: User Methods
 .. attribute:: intake.open_
 
    Set of functions, one for each plugin, for direct opening of a data source. The names are derived from the names of
-   the plugins in the registry at impor time.
+   the plugins in the registry at import time.
 
 .. autoclass:: intake.source.csv.CSVSource
    :members: __init__, discover, read_partition, read, to_dask

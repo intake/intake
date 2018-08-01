@@ -6,7 +6,7 @@ Intake is a Python API for bulk loading of data.  It consists of three parts:
 1. A lightweight plugin system for adding data loaders for new file formats and servers
 (like databases and REST endpoints)
 2. A cataloging system for specifying these sources in simple YAML syntax, or with plugins that read source specs
-from some extenral data service
+from some external data service
 3. A server-client architecture that can share data catalog metadata over the network, or even stream the data directly
 to clients if needed
 
@@ -57,7 +57,7 @@ Intake is built out of four core concepts:
 * Data Source: An object that represents a reference to a data source.  Data source objects have methods for loading the
   data into standard containers, like Pandas DataFrames, but do not load any data until specifically requested.
 
-* Catalog: A collection of catalog entries.  Catalog objects can be created from local YAML defitions, by connecting
+* Catalog: A collection of catalog entries.  Catalog objects can be created from local YAML definitions, by connecting
   to remote servers, or by some plugins that know how to query an external data service.
 
 * Catalog Entry: A named data source. The catalog entry includes metadata about the source, as well as the name of the

@@ -73,7 +73,7 @@ Extra Plugins
 '''''''''''''
 
 In addition to using plugins already installed in the Python environment with conda or pip
-(see :ref:`plugin-discovery`), a catalog can also use additional plugins from aribtrary locations listed in the YAML
+(see :ref:`plugin-discovery`), a catalog can also use additional plugins from arbitrary locations listed in the YAML
 file:
 
 .. code-block:: yaml
@@ -105,7 +105,7 @@ Sources
 '''''''
 
 The majority of a catalog file is composed of data sources, which are named data sets that can be loaded for the user.
-Catalog authors describe the cotents of data set, how to load it, and optionally offer some customization of the
+Catalog authors describe the contents of data set, how to load it, and optionally offer some customization of the
 returned data.  Each data source has several attributes:
 
 - ``name``: The canonical name of the source.  Best practice is to compose source names from valid Python identifiers.
@@ -203,7 +203,7 @@ and data sources are loaded via their name:
 
 Intake also supports loading all of the files ending in ``.yml`` and ``.yaml`` in a directory, or by using an
 explicit glob-string. Note that the URL provided may refer to a remote storage systems by passing a protocol
-specifyer such as ``s3://``, ``gcs://``.::
+specifier such as ``s3://``, ``gcs://``.::
 
     cat = load_catalog('/research/my_project/catalog.d/')
 

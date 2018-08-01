@@ -56,8 +56,8 @@ for some plugins/data-types than others.
 Partitioning
 ''''''''''''
 
-Data sources are assumed to be *partitionable*.  A data partion is a randomly accessible fragment of the data.
-In the case of sequential and data-frame sources, artitions are numbered, starting from zero, and correspond to
+Data sources are assumed to be *partitionable*.  A data partition is a randomly accessible fragment of the data.
+In the case of sequential and data-frame sources, partitions are numbered, starting from zero, and correspond to
 contiguous chunks of data divided along the first
 dimension of the data structure. In general, any partitioning scheme is conceivable, such as a tuple-of-ints to
 index the chunks of a large numerical array.
@@ -145,7 +145,7 @@ data-frame::
 Most of the work typically happens in the following methods:
 
 - ``__init__(self)``: Should be very lightweight and fast.  No files or network resources should be opened, and no
-  signifcant memory should be allocated yet.  Data sources are often serialized immediately.  The default implementation
+  significant memory should be allocated yet.  Data sources are often serialized immediately.  The default implementation
   of the pickle protocol in the base class will record all the arguments to ``__init__()`` and recreate the object with
   those arguments when unpickled, assuming the class has no side effects.
 
