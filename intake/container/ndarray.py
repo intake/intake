@@ -26,7 +26,7 @@ class RemoteArray(RemoteSource):
     def _load_metadata(self):
         import dask.array as da
         if self.arr is None:
-            name = 'oi'
+            name = 'remote-array-' + self._source_id
             nparts = (range(len(n)) for n in self.chunks)
             dask = {
                 (name, ) + part: (get_partition, self.url, self.headers,

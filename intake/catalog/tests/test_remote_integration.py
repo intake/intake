@@ -225,6 +225,7 @@ def test_remote_arr(intake_server):
     assert 'arr' in catalog
     s = catalog.arr()
     s.discover()
+    assert 'remote-array' in s.to_dask().name
     assert s.npartitions == 2
     assert s.read_partition(0).ravel().tolist() == list(range(50))
     assert s.read().ravel().tolist() == list(range(100))
