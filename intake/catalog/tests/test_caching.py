@@ -14,4 +14,5 @@ def test_cache_catalog(catalog1):
 
 
 def test_open_catalog(catalog1):
-    ds = catalog1['simple_cache'].get()
+    ds = catalog1['http_cache'].get()
+    schema = ds._get_schema()

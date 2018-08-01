@@ -1,5 +1,5 @@
 # Base classes for Data Loader interface
-from .cache import parse_cache_spec
+from .cache import parse_cache_specs
 
 class Schema(object):
     """Holds details of data description for any type of data-source"""
@@ -63,7 +63,7 @@ class DataSource(object):
     def __init__(self, metadata=None, cache=None):
         # default data
         self.metadata = metadata or {}
-        self.cache = [] if cache is None else parse_cache_spec(cache)
+        self.cache = parse_cache_specs(cache)
         self.datashape = None
         self.dtype = None
         self.shape = None
