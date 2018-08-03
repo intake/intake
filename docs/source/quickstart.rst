@@ -17,7 +17,9 @@ If you are using virtualenv/pip, run the following commands (**does not work unt
 Creating Sample Data
 --------------------
 
-Let's begin by creating a sample data set and catalog.  At the command line, run the ``intake example`` command.  This will create an example data catalog and two CSV data files.  These files contains some basic facts about the 50 US states.
+Let's begin by creating a sample data set and catalog.  At the command line, run the ``intake example`` command.
+This will create an example data catalog and two CSV data files.  These files contains some basic facts about the 50
+US states.
 
 Loading a Data Source
 ---------------------
@@ -25,7 +27,7 @@ Loading a Data Source
 Data sources can be created directly with the ``open_*()`` methods in the ``intake`` module.  To read our example data::
 
     >>> import intake
-    >>> ds = intake.open_csv('civilservices/states_*.csv')
+    >>> ds = intake.open_csv('states_*.csv')
     >>> print(ds)
     <intake.source.csv.CSVSource object at 0x1163882e8>
 
@@ -51,7 +53,7 @@ For data that fits in memory, you can ask Intake to load it directly::
 
     >>> df = ds.read()
     >>> df.head()
-            state        slug code                nickname  \
+            state        slug code                nickname  ...
     0     Alabama     alabama   AL      Yellowhammer State
     1      Alaska      alaska   AK       The Last Frontier
     2     Arizona     arizona   AZ  The Grand Canyon State

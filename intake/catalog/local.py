@@ -479,7 +479,7 @@ class YAMLFileCatalog(Catalog):
             file_open = file_open[0]
         self.name = os.path.splitext(os.path.basename(
             self.path))[0].replace('.', '_')
-        self._dir = os.path.dirname(self.path)
+        self._dir = os.path.dirname(self.path) or os.getcwd()
         try:
             with file_open as f:
                 text = f.read().decode()
