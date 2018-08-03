@@ -10,7 +10,7 @@ import tornado.gen
 import tornado.ioloop
 import tornado.web
 
-from .config import conf
+from intake.config import conf
 from intake.container import serializer
 from intake.auth import get_auth_class
 from intake import __version__

@@ -3,7 +3,7 @@ import pytest
 import requests
 
 import intake
-from intake.cli.server import config
+from intake import config
 from intake.util_tests import temp_conf, server
 
 

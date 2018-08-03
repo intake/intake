@@ -16,7 +16,8 @@ def test_info_describe(intake_server):
 
     assert_items_equal(list(catalog), ['use_example1', 'nested', 'entry1',
                                        'entry1_part', 'remote_env',
-                                       'local_env', 'text', 'simple_cache'])
+                                       'local_env', 'text', 'simple_cache',
+                                       'http_cache'])
 
     info = catalog['entry1'].describe()
 

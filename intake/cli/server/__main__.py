@@ -10,7 +10,7 @@ import tornado.ioloop
 import tornado.web
 
 from .server import IntakeServer
-from .config import conf
+from intake.config import conf
 from intake import Catalog
 logger = logging.getLogger('intake')
 logging.basicConfig()

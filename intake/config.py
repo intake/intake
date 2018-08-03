@@ -1,14 +1,19 @@
 
+from pathlib import Path
+
 import os
 import yaml
 
 confdir = os.getenv('INTAKE_CONF_DIR',
-                    os.path.join(os.path.expanduser('~'), '.intake'))
+                    os.path.join(Path.home(), '.intake'))
 conffile = os.getenv('INTAKE_CONF_FILE', None)
 
 
-defaults = {'auth': {'class': 'intake.auth.base.BaseAuth'},
-            'port': 5000}
+defaults = {
+    'auth': {'class': 'intake.auth.base.BaseAuth'},
+    'port': 5000,
+    'cache_dir': os.path.join(Path.home(), '.intake/cache')
+    }
 conf = {}
 
 
