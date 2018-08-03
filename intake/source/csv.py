@@ -41,19 +41,10 @@ class CSVSource(base.DataSource):
         super(CSVSource, self).__init__(metadata=metadata,
                                         cache=cache)
 
-    def _get_cache(self):
-        if len(self.cache) == 0:
-            return None
-        return self.cache[0]
-
     def _get_schema(self):
         import dask.dataframe
 
-        cache = self._get_cache()
-        if cache is None:
-            urlpath = self._urlpath
-        else:
-            urlpath = cache.load(self._urlpath)
+        urlpath, *_ = self._get_cache(self._urlpath)
 
         if self._dataframe is None:
             self._dataframe = dask.dataframe.read_csv(

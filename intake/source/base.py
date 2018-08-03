@@ -63,12 +63,17 @@ class DataSource(object):
     def __init__(self, metadata=None, cache=None):
         # default data
         self.metadata = metadata or {}
-        self.cache = parse_cache_specs(cache)
+        self.cache = parse_cache_specs(self.name, cache)
         self.datashape = None
         self.dtype = None
         self.shape = None
         self.npartitions = 0
         self._schema = None
+
+    def _get_cache(self, urlpath):
+        if len(self.cache) == 0:
+            return [urlpath]
+        return [c.load(urlpath) for c in self.cache]
 
     def _get_schema(self):
         """Subclasses should return an instance of base.Schema"""

@@ -1,13 +1,17 @@
+from hashlib import md5
 from pathlib import Path
 
-def parse_cache_specs(cache_specs):
+import os.path
+
+def parse_cache_specs(driver, cache_specs):
     if cache_specs is None:
         return []
-    return [Cache(spec) for spec in cache_specs]
+    return [Cache(driver, spec) for spec in cache_specs]
 
 class Cache(object):
 
-    def __init__(self, spec):
+    def __init__(self, driver, spec):
+        self._driver = driver
         self._spec = spec
         #TODO: Need to allow override by env var and config file.
         self._cache_dir = "{}/.intake/cache".format(str(Path.home()))
@@ -19,17 +23,18 @@ class Cache(object):
             os.makedirs(self._cache_dir)
 
     def _path(self, urlpath):
-        #TODO: generate hash for cache file name based on driver and path.
         import re
-        return re.sub(
+        cache_path = re.sub(
             r"%s" % self._spec['regex'],
             self._cache_dir,
             urlpath
         )
+        filename = md5(str((os.path.basename(cache_path), self._driver)).encode()).hexdigest()
+        dirname = os.path.dirname(cache_path)
+        return os.path.join(dirname, filename)
 
     def load(self, urlpath):
         import urllib.request
-        import os.path
 
         cache_path = self._path(urlpath)
 
