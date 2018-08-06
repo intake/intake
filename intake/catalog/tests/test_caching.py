@@ -16,7 +16,7 @@ def test_cache_path(catalog1):
     cat = catalog1['http_cache']
     cache = cat.cache[0]
 
-    cache_path = cache._path(cat._urlpath)
+    _, cache_path = cache._path(cat._urlpath)
 
     assert cache._cache_dir in cache_path
 
