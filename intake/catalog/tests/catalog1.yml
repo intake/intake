@@ -63,21 +63,3 @@ sources:
     driver: textfiles
     args:
       urlpath: "{{ CATALOG_DIR }}/*.yml"
-  simple_cache:
-    description: simple example of caching
-    driver: csv
-    cache:
-      - argkey: urlpath
-        regex: 's3://bucket'
-        sub: '{{ CACHE_DIR }}'
-    args:
-      urlpath: 's3://bucket/example1_*.csv'
-  http_cache:
-    description: cache a random csv file on the internet
-    driver: csv
-    cache:
-      - argkey: urlpath
-        regex: 'https://data.cityofnewyork.us/api/views/kku6-nxdu'
-        sub: '{{ CACHE_DIR }}'
-    args:
-      urlpath: 'https://data.cityofnewyork.us/api/views/kku6-nxdu/rows.csv'

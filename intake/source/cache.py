@@ -3,6 +3,7 @@ from hashlib import md5
 from pathlib import Path
 
 import json
+import shutil
 import os
 
 from intake.config import conf
@@ -41,17 +42,27 @@ class Cache(object):
     def load(self, urlpath):
         import urllib.request
 
-        cache_name, cache_path = self._path(urlpath)
+        cache_id, cache_path = self._path(urlpath)
 
         if not os.path.isfile(cache_path):
             print("Caching file from {}".format(urlpath))
-            self._metadata[cache_name] = {
+            self._metadata[cache_id] = {
                 'created': datetime.now().isoformat(),
                 'urlpath': urlpath
             }
             urllib.request.urlretrieve(urlpath, cache_path)
 
         return cache_path
+    
+    def get_metadata(self, cache_id):
+        return self._metadata[cache_id]
+    
+    def clear_cache(self, cache_id):
+        self._metadata.pop(cache_id)
+        os.remove(os.path.join(self._cache_dir, cache_id))
+    
+    def clear_all(self):
+        shutil.rmtree(self._cache_dir)
 
 class CacheMetadata(object):
 
@@ -65,10 +76,17 @@ class CacheMetadata(object):
         else:
             self._metadata = {}
     
-    def __setitem__(self, key, item):
-        self._metadata[key] = item
+    def _save(self):
         with open(self._path, 'w') as f:
             json.dump(self._metadata, f)
+
+    def __setitem__(self, key, item):
+        self._metadata[key] = item
+        self._save()
     
     def __getitem__(self, key):
         return self._metadata[key]
+
+    def pop(self, key):
+        self._metadata.pop(key)
+        self._save()
