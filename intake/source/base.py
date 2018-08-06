@@ -1,16 +1,20 @@
 # Base classes for Data Loader interface
 from .cache import parse_cache_specs
 
-class Schema(object):
-    """Holds details of data description for any type of data-source"""
-    # TODO: this all looks like a simple dictionary, do we need it?
-    def __init__(self, datashape=None, dtype=None, shape=None, npartitions=None,
-                 extra_metadata=None):
-        self.datashape = datashape
-        self.dtype = dtype
-        self.shape = shape
-        self.npartitions = npartitions
-        self.extra_metadata = extra_metadata
+class Schema(dict):
+    """Holds details of data description for any type of data-source
+
+    This should always be pickleable, so that it can be sent from a server
+    to a client, and contain all information needed to recreate a RemoteSource
+    on the client.
+    """
+
+    def __init__(self, **kwargs):
+        super(Schema, self).__init__(**kwargs)
+        for field in ['datashape', 'dtype', 'extra_metadata', 'shape']:
+            # maybe a default-dict
+            if field not in self:
+                self[field] = None
 
     def __repr__(self):
         return ("<Schema instance>\n"
@@ -18,6 +22,9 @@ class Schema(object):
                 "shape: {}\n"
                 "metadata: {}"
                 "".format(self.dtype, self.shape, self.extra_metadata))
+
+    def __getattr__(self, item):
+        return self[item]
 
 
 class DataSource(object):
@@ -103,26 +110,39 @@ class DataSource(object):
             self.npartitions = self._schema.npartitions
             self.metadata.update(self._schema.extra_metadata)
 
-    def yaml(self):
+    def yaml(self, with_plugin=False):
         """Return YAML representation of this data-source
 
         The output may be roughly appropriate for inclusion in a YAML
         catalog. This is a best-effort implementation
+
+        Parameters
+        ----------
+        with_plugin: bool
+            If True, create a "plugins" section, for cases where this source
+            is created with a plugin not expected to be in the global Intake
+            registry.
         """
-        import ruamel_yaml
+        try:
+            from ruamel.yaml import dump
+        except:
+            from ruamel_yaml import dump
         import inspect
         kwargs = self._captured_init_kwargs.copy()
         meta = kwargs.pop('metadata', self.metadata) or {}
         # TODO: inspect.signature is py3 only
         kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
                       self._captured_init_args)))
-        data = {self.name: {
+        data = {'sources': {self.name: {
             'driver': self.__class__.name,
-            'description': self.description,
+            'description': self.description or "",
             'metadata': meta,
             'args': kwargs
-        }}
-        return ruamel_yaml.dump(data, default_flow_style=False)
+        }}}
+        if with_plugin:
+            data['plugins'] = {
+                'source': [{'module': self.__module__}]}
+        return dump(data, default_flow_style=False)
 
     def discover(self):
         """Open resource and populate the source attributes."""

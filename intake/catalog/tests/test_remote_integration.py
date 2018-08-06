@@ -16,7 +16,7 @@ def test_info_describe(intake_server):
 
     assert_items_equal(list(catalog), ['use_example1', 'nested', 'entry1',
                                        'entry1_part', 'remote_env',
-                                       'local_env', 'text'])
+                                       'local_env', 'text', 'arr'])
 
     info = catalog['entry1'].describe()
 
@@ -218,3 +218,14 @@ def test_remote_sequence(intake_server):
     assert s.npartitions == len(glob.glob(os.path.join(d, '*.yml')))
     assert s.read_partition(0)
     assert s.read()
+
+
+def test_remote_arr(intake_server):
+    catalog = Catalog(intake_server)
+    assert 'arr' in catalog
+    s = catalog.arr()
+    s.discover()
+    assert 'remote-array' in s.to_dask().name
+    assert s.npartitions == 2
+    assert s.read_partition(0).ravel().tolist() == list(range(50))
+    assert s.read().ravel().tolist() == list(range(100))

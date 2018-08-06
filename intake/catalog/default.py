@@ -68,7 +68,7 @@ def which(program):
 
 def global_data_dir():
     """Return the global Intake catalog dir for the current environment"""
-
+    prefix = False
     if VIRTUALENV_VAR in os.environ:
         prefix = os.environ[VIRTUALENV_VAR]
     elif CONDA_VAR in os.environ:

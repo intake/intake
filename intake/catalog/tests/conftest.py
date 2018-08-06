@@ -14,7 +14,7 @@ MAX_PORT = 7489
 PORT = MIN_PORT
 
 
-def ping_server(url, swallow_exception):
+def ping_server(url, swallow_exception, head=None):
     try:
         r = requests.get(url)
     except Exception as e:
@@ -66,18 +66,30 @@ def intake_server(request):
         cmd.append(catalog_path)
     try:
         p = subprocess.Popen(cmd, env=env)
-        url = 'http://localhost:%d/v1/info' % (port,)
+        url = 'http://localhost:%d/v1/info' % port
 
         # wait for server to finish initalizing, but let the exception through
         # on last retry
-        retries = 10
-        while not ping_server(url, swallow_exception=(retries > 1)):
-            time.sleep(0.1)
-            retries -= 1
+        retries = 30
+        try:
+            while not ping_server(url, swallow_exception=(retries > 1)):
+                time.sleep(0.1)
+                retries -= 1
+        except Exception:
+            print(p.communicate())
+            raise
 
         yield 'intake://localhost:%d' % port
     finally:
+        if server_conf:
+            try:
+                env.pop('INTAKE_CONF_FILE', None)
+                os.remove(server_conf)
+            except:
+                pass
         p.terminate()
+        p.wait()
+        p.kill()
         p.wait()
 
 

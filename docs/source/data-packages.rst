@@ -34,7 +34,7 @@ A data package could describe remote data sources (such as files in S3) and take
 
 These packages are considered ``noarch`` packages, so that one package can be installed on any platform, with any
 version of Python (or no Python at all).  The easiest way to create such a package is using a
-`conda build <https://conda.io/docs/commands/build/conda-build.html>`_ receipe.
+`conda build <https://conda.io/docs/commands/build/conda-build.html>`_ recipe.
 
 Conda-build recipes are stored in a directory that contains a files like:
 
