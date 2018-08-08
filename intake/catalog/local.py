@@ -20,6 +20,9 @@ from ..source import registry as global_registry
 from ..source.discovery import load_plugins_from_module
 from .utils import expand_templates, expand_defaults, coerce, COERCION_RULES
 
+from intake.config import conf
+cache_dir = os.getenv('INTAKE_CACHE_DIR', conf['cache_dir'])
+
 
 logger = logging.getLogger('intake')
 
@@ -116,7 +119,8 @@ class LocalCatalogEntry(CatalogEntry):
     """A catalog entry on the local system
     """
     def __init__(self, name, description, driver, direct_access, args, cache,
-                 parameters, metadata, catalog_dir, getenv=True, getshell=True):
+                 parameters, metadata, catalog_dir, cache_dir, getenv=True, 
+                 getshell=True):
         """
 
         Parameters
@@ -137,6 +141,8 @@ class LocalCatalogEntry(CatalogEntry):
             Additional information about this data
         catalog_dir: str
             Location of the catalog, if known
+        cache_dir: str
+            Location of the cache directory, if known
         getenv: bool
             Can parameter default fields take values from the environment
         getshell: bool
@@ -151,6 +157,7 @@ class LocalCatalogEntry(CatalogEntry):
         self._user_parameters = parameters
         self._metadata = metadata
         self._catalog_dir = catalog_dir
+        self._cache_dir = cache_dir
         self._plugin = global_registry[driver]
         super(LocalCatalogEntry, self).__init__(
             getenv=getenv, getshell=getshell)
@@ -169,7 +176,10 @@ class LocalCatalogEntry(CatalogEntry):
         }
 
     def _create_open_args(self, user_parameters):
-        params = {'CATALOG_DIR': self._catalog_dir}
+        params = {
+            'CATALOG_DIR': self._catalog_dir,
+            'CACHE_DIR': self._cache_dir
+        }
         for parameter in self._user_parameters:
             if parameter.name in user_parameters:
                 params[parameter.name] = parameter.validate(
@@ -179,9 +189,9 @@ class LocalCatalogEntry(CatalogEntry):
                                           getshell=self.getshell)
                 params[parameter.name] = parameter.default
 
+        self._open_args['cache'] = self._cache
         open_args = expand_templates(self._open_args, params)
         open_args['metadata'] = self._metadata
-        open_args['cache'] = self._cache
 
         return open_args
 
@@ -388,6 +398,7 @@ class CatalogParser(object):
                     ds['parameters'].append(obj)
 
         return LocalCatalogEntry(catalog_dir=self._context['root'],
+                                 cache_dir=cache_dir,
                                  getenv=self.getenv, getshell=self.getshell,
                                  **ds)
 
@@ -577,7 +588,8 @@ class YAMLFilesCatalog(Catalog):
             if f.path not in self._cats:
                 entry = LocalCatalogEntry(name, "YAML file: %s" % name,
                                           'yaml_file_cat', True,
-                                          kwargs, [], {}, self.metadata, d)
+                                          kwargs, [], {}, self.metadata, 
+                                          d, cache_dir)
                 if self._flatten:
                     # store a concrete Catalog
                     self._cats[f.path] = entry()
