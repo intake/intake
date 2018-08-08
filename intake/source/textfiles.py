@@ -39,7 +39,10 @@ class TextFilesSource(base.DataSource):
     def _get_schema(self):
         from dask.bytes import open_files
         if self._files is None:
-            self._files = open_files(self._urlpath, mode='rt',
+
+            urlpath, *_ = self._get_cache(self._urlpath)
+
+            self._files = open_files(urlpath, mode='rt',
                                      **self._storage_options)
             self.npartitions = len(self._files)
         return base.Schema(datashape=None,

@@ -14,3 +14,22 @@ sources:
         sub: '{{ CACHE_DIR }}'
     args:
       urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
+  text_cache:
+    description: textfiles in this dir
+    driver: textfiles
+    cache:
+      - argkey: urlpath
+        regex: '{{ CATALOG_DIR }}'
+        sub: '{{ CACHE_DIR }}'
+    args:
+      urlpath: "{{ CATALOG_DIR }}/*.yml"
+  arr_cache:
+    description: small array
+    driver: numpy
+    cache:
+      - argkey: path
+        regex: '{{ CATALOG_DIR }}'
+        sub: '{{ CACHE_DIR }}'
+    args:
+      path: "{{ CATALOG_DIR }}/small.npy"
+      chunks: 5

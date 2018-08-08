@@ -22,6 +22,34 @@ def test_load(catalog_cache):
     # Checking for md5 hash
     assert all(c in string.hexdigits for c in cache_id)
 
+def test_load_textfile(catalog_cache):
+    cat = catalog_cache['text_cache']
+    cache = cat.cache[0]
+
+    cache_paths = cache.load(cat._urlpath)
+    cache_path = cache_paths[-1]
+    
+    assert cache._cache_dir in cache_path
+
+    cache_id = os.path.basename(cache_path)
+    import string
+    # Checking for md5 hash
+    assert all(c in string.hexdigits for c in cache_id)
+
+def test_load_arr(catalog_cache):
+    cat = catalog_cache['arr_cache']
+    cache = cat.cache[0]
+
+    cache_paths = cache.load(cat.path)
+    cache_path = cache_paths[-1]
+    
+    assert cache._cache_dir in cache_path
+
+    cache_id = os.path.basename(cache_path)
+    import string
+    # Checking for md5 hash
+    assert all(c in string.hexdigits for c in cache_id)
+
 def test_get_metadata(catalog_cache):
     cat = catalog_cache['test_cache']
     cache = cat.cache[0]
