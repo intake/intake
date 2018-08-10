@@ -8,14 +8,35 @@ import os
 
 from intake.config import conf
 
-def parse_cache_specs(driver, cache_specs):
-    if cache_specs is None:
+def make_caches(driver, specs):
+    """
+    Creates Cache objects from the cache_specs provided in the catalog yaml file.
+    
+    Parameters:
+    -----------
+    driver: str
+        Name of the plugin that can load catalog entry
+    specs: list
+        Specification for caching the data source.
+    """
+    if specs is None:
         return []
-    return [Cache(driver, spec) for spec in cache_specs]
+    return [Cache(driver, spec) for spec in specs]
 
 class Cache(object):
+    """
+    Provides utilities for managing cached data files.
+    """
 
     def __init__(self, driver, spec):
+        """
+        Parameters:
+        -----------
+        driver: str
+            Name of the plugin that can load catalog entry
+        spec: list
+            Specification for caching the data source.
+        """
         self._driver = driver
         self._spec = spec
         self._cache_dir = os.getenv('INTAKE_CACHE_DIR',
@@ -52,6 +73,20 @@ class Cache(object):
         self._metadata.update(urlpath, metadata)
 
     def load(self, urlpath):
+        """
+        Downloads data from a given url, generates a hashed filename, 
+        logs metadata, and caches it locally.
+
+        Parameters:
+        ----------
+        urlpath: str, location of data
+            May be a local path, or remote path if including a protocol specifier
+            such as ``'s3://'``. May include glob wildcards.
+
+        Returns
+        -------
+        List of local cache_paths to be opened instead of the remote file(s).
+        """
         BLOCKSIZE = 5000000
         from dask.bytes import open_files
 
@@ -76,17 +111,43 @@ class Cache(object):
         return cache_paths
 
     def get_metadata(self, urlpath):
+        """
+        Parameters:
+        ----------
+        urlpath: str, location of data
+            May be a local path, or remote path if including a protocol specifier
+            such as ``'s3://'``. May include glob wildcards.
+
+        Returns
+        -------
+        Metadata about a given urlpath.
+        """
         return self._metadata[urlpath]
     
     def clear_cache(self, urlpath):
+        """
+        Clears cache and metadata for a given urlpath.
+
+        Parameters:
+        ----------
+        urlpath: str, location of data
+            May be a local path, or remote path if including a protocol specifier
+            such as ``'s3://'``. May include glob wildcards.
+        """
         cache_entries = self._metadata.pop(urlpath)
         for cache_entry in cache_entries:
             os.remove(cache_entry['cache_path'])
     
     def clear_all(self):
+        """
+        Clears all cache and metadata.
+        """
         shutil.rmtree(self._cache_dir)
 
 class CacheMetadata(object):
+    """
+    Utility class for managing persistent metadata stored in the cache_dir.
+    """
 
     def __init__(self, cache_dir):
         self._cache_dir = cache_dir
