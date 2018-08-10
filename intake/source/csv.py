@@ -16,7 +16,7 @@ class CSVSource(base.DataSource):
     partition_access = True
 
     def __init__(self, urlpath, csv_kwargs=None, metadata=None,
-                 cache=None, storage_options=None):
+                 storage_options=None):
         """
         Parameters
         ----------
@@ -27,8 +27,6 @@ class CSVSource(base.DataSource):
             Any further arguments to pass to Dask's read_csv (such as block size)
             or to the `CSV parser <https://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_csv.html>`_
             in pandas (such as which columns to use, encoding, data-types)
-        cache: list
-            Specification for caching the data source.
         storage_options: dict
             Any parameters that need to be passed to the remote data backend,
             such as credentials.
@@ -38,8 +36,7 @@ class CSVSource(base.DataSource):
         self._csv_kwargs = csv_kwargs or {}
         self._dataframe = None
 
-        super(CSVSource, self).__init__(metadata=metadata,
-                                        cache=cache)
+        super(CSVSource, self).__init__(metadata=metadata)
 
     def _get_schema(self):
         import dask.dataframe

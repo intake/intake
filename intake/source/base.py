@@ -67,10 +67,11 @@ class DataSource(object):
     def __setstate__(self, state):
         self.__init__(*state['args'], **state['kwargs'])
 
-    def __init__(self, metadata=None, cache=None):
+    def __init__(self, metadata=None):
         # default data
         self.metadata = metadata or {}
-        self.cache = make_caches(self.name, cache)
+        if isinstance(self.metadata, dict):
+            self.cache = make_caches(self.name, self.metadata.get('cache'))
         self.datashape = None
         self.dtype = None
         self.shape = None

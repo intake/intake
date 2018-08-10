@@ -87,7 +87,7 @@ def test_read(intake_server):
     assert info['npartitions'] == 2
     assert info['shape'] == (None, 3)  # Do not know CSV size ahead of time
 
-    assert d.metadata == dict(foo='bar', bar=[1, 2, 3])
+    assert d.metadata == dict(foo='bar', bar=[1, 2, 3], cache=[])
 
     df = d.read()
 
@@ -110,9 +110,9 @@ def test_read_direct(intake_server):
                              in meta.dtypes.to_dict().items()}
     assert info['npartitions'] == 1
     assert info['shape'] == (None, 3)  # Do not know CSV size ahead of time
-    assert info['metadata'] == {'bar': [2, 4, 6], 'foo': 'baz'}
+    assert info['metadata'] == {'bar': [2, 4, 6], 'foo': 'baz', 'cache': []}
 
-    assert d.metadata == dict(foo='baz', bar=[2, 4, 6])
+    assert d.metadata == dict(foo='baz', bar=[2, 4, 6], cache=[])
     assert d.description == 'entry1 part'
     df = d.read()
 

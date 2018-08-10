@@ -182,6 +182,8 @@ class LocalCatalogEntry(CatalogEntry):
 
         self._open_args['cache'] = self._cache
         open_args = expand_templates(self._open_args, params)
+        if self._metadata is not None:
+            self._metadata['cache'] = open_args.pop('cache')
         open_args['metadata'] = self._metadata
 
         return open_args
@@ -192,8 +194,7 @@ class LocalCatalogEntry(CatalogEntry):
             'description': self._description,
             'direct_access': self._direct_access,
             'metadata': self._metadata,
-            'args': self._create_open_args(user_parameters),
-            'cache': self._cache
+            'args': self._create_open_args(user_parameters)
         }
 
     def get(self, **user_parameters):

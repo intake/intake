@@ -49,7 +49,7 @@ def test_local_catalog(catalog1):
         'direct_access': 'allow'
     }
     assert catalog1['entry1'].get().container == 'dataframe'
-    assert catalog1['entry1'].get().metadata == dict(foo='bar', bar=[1, 2, 3])
+    assert catalog1['entry1'].get().metadata == dict(foo='bar', bar=[1, 2, 3], cache=[])
 
     # Use default parameters
     assert catalog1['entry1_part'].get().container == 'dataframe'
@@ -239,17 +239,16 @@ def test_union_catalog():
     assert desc_open['args']['urlpath'].endswith('entry1_1.csv')
     del desc_open['args']['urlpath']  # Full path will be system dependent
     assert desc_open == {
-        'args': {'metadata': {'bar': [2, 4, 6], 'foo': 'baz'}, 'cache': []},
+        'args': {'metadata': {'bar': [2, 4, 6], 'cache': [], 'foo': 'baz'}},
         'description': 'entry1 part',
         'direct_access': 'allow',
-        'metadata': {'bar': [2, 4, 6], 'foo': 'baz'},
-        'plugin': 'csv',
-        'cache': []
+        'metadata': {'bar': [2, 4, 6], 'cache': [], 'foo': 'baz'},
+        'plugin': 'csv'
     }
 
     # Implied creation of data source
     assert union_cat.entry1.container == 'dataframe'
-    assert union_cat.entry1.metadata == dict(foo='bar', bar=[1, 2, 3])
+    assert union_cat.entry1.metadata == dict(foo='bar', bar=[1, 2, 3], cache=[])
 
     # Use default parameters in explict creation of data source
     assert union_cat.entry1_part().container == 'dataframe'

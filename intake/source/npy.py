@@ -15,7 +15,7 @@ class NPySource(DataSource):
     partition_access = True
 
     def __init__(self, path, dtype=None, shape=None, chunks=None,
-                 storage_options=None, metadata=None, **kwargs):
+                 storage_options=None, metadata=None):
         """
         The parameters dtype and shape will be determined from the first
         file, if not given.
@@ -43,7 +43,7 @@ class NPySource(DataSource):
         self.chunks = None
         self._arrs = None
         self._arr = None
-        super(NPySource, self).__init__(metadata=metadata, **kwargs)
+        super(NPySource, self).__init__(metadata=metadata)
 
     def _get_schema(self):
         from dask.bytes import open_files
