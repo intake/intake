@@ -82,7 +82,7 @@ class DataSource(object):
         if len(self.cache) == 0:
             return [urlpath]
         return [c.load(urlpath) for c in self.cache]
-
+    
     def _get_schema(self):
         """Subclasses should return an instance of base.Schema"""
         raise Exception('Subclass should implement _get_schema()')

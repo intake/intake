@@ -183,7 +183,7 @@ class LocalCatalogEntry(CatalogEntry):
         self._open_args['cache'] = self._cache
         open_args = expand_templates(self._open_args, params)
         if self._metadata is not None:
-            self._metadata['cache'] = open_args.pop('cache')
+            self._metadata['cache'] = open_args.pop('cache', [])
         open_args['metadata'] = self._metadata
 
         return open_args
@@ -455,6 +455,12 @@ def register_plugin_dir(path):
                 global_registry[k[0]] = v
 
 
+def get_dir(path):
+    if '://' in path or not os.path.dirname(path):
+        return os.getcwd()
+    return os.path.join(os.getcwd(), os.path.dirname(path))
+
+
 class YAMLFileCatalog(Catalog):
     """Catalog as described by a single YAML file"""
     version = __version__
@@ -485,10 +491,8 @@ class YAMLFileCatalog(Catalog):
             file_open = file_open[0]
         self.name = os.path.splitext(os.path.basename(
             self.path))[0].replace('.', '_')
-        if '://' in self.path:
-            self._dir = os.path.dirname(self.path) or os.getcwd()
-        else:
-            self._dir = os.path.join(os.getcwd(), os.path.dirname(self.path))
+        self._dir = get_dir(self.path)
+
         try:
             with file_open as f:
                 text = f.read().decode()

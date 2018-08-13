@@ -11,7 +11,7 @@ import pandas
 from .util import assert_items_equal
 from intake import Catalog
 from intake.catalog import exceptions, local
-from intake.catalog.local import UserParameter
+from intake.catalog.local import get_dir, UserParameter
 
 
 def abspath(filename):
@@ -78,6 +78,17 @@ def test_metadata(catalog1):
 
 def test_use_source_plugin_from_config(catalog1):
     catalog1['use_example1'].get()
+
+
+def test_get_dir():
+    assert get_dir('s3://catalog.yml') == os.getcwd()
+    assert get_dir('https://example.com/catalog.yml') == os.getcwd()
+    path = 'example/catalog.yml'
+    assert get_dir(path) == os.path.join(os.getcwd(), os.path.dirname(path))
+    path = '/example/catalog.yml'
+    assert get_dir(path) == os.path.dirname(path)
+    path = 'example'
+    assert get_dir(path) == os.getcwd()
 
 
 @pytest.mark.parametrize("dtype,expected", [

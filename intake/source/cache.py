@@ -30,6 +30,7 @@ class Cache(object):
     """
     Provides utilities for managing cached data files.
     """
+    blocksize = 5000000
 
     def __init__(self, driver, spec):
         """
@@ -100,7 +101,6 @@ class Cache(object):
         -------
         List of local cache_paths to be opened instead of the remote file(s).
         """
-        BLOCKSIZE = 5000000
         from dask.bytes import open_files
 
         subdir = self._hash(urlpath)
@@ -120,7 +120,7 @@ class Cache(object):
                         data = True
                         while data:
                             #TODO: print out progress
-                            data = f1.read(BLOCKSIZE)
+                            data = f1.read(self.blocksize)
                             f2.write(data)
         return cache_paths
 
@@ -134,7 +134,7 @@ class Cache(object):
 
         Returns
         -------
-        Metadata about a given urlpath.
+        Metadata (dict) about a given urlpath.
         """
         return self._metadata[urlpath]
     
