@@ -3,10 +3,13 @@ from hashlib import md5
 from pathlib import Path
 
 import json
-import shutil
+import logging
 import os
+import shutil
 
 from intake.config import conf
+
+logger = logging.getLogger('intake')
 
 def make_caches(driver, specs):
     """
@@ -49,20 +52,30 @@ class Cache(object):
         if not os.path.exists(self._cache_dir):
             os.makedirs(self._cache_dir)
 
-    def _munge_path(self, urlpath):
+    def _munge_path(self, cache_subdir, urlpath):
         import re
         cache_path = re.sub(
             r"%s" % self._spec['regex'],
-            self._cache_dir,
+            os.path.join(self._cache_dir, cache_subdir),
             urlpath
         )
         return cache_path
 
-    def _path(self, urlpath):
-        cache_path = self._munge_path(urlpath)
-        filename = md5(str((os.path.basename(cache_path), self._driver)).encode()).hexdigest()
+    def _hash(self, urlpath):
+        return md5(
+                str((os.path.basename(urlpath), 
+                     self._driver)).encode()
+            ).hexdigest()
+
+    def _path(self, urlpath, subdir=None):
+        if subdir is None:
+            subdir = self._hash(urlpath)
+        cache_path = self._munge_path(subdir, urlpath)
         dirname = os.path.dirname(cache_path)
-        return os.path.join(dirname, filename)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+
+        return cache_path
 
     def _log_metadata(self, urlpath, original_path, cache_path):
         metadata = {
@@ -90,15 +103,16 @@ class Cache(object):
         BLOCKSIZE = 5000000
         from dask.bytes import open_files
 
+        subdir = self._hash(urlpath)
         cache_paths = []
         files_in = open_files(urlpath, 'rb')
-        files_out = open_files([self._path(f.path) for f in files_in], 'wb')
+        files_out = open_files([self._path(f.path, subdir) for f in files_in], 'wb')
         for file_in, file_out in zip(files_in, files_out):
             cache_path = file_out.path
             cache_paths.append(cache_path)
 
             if not os.path.isfile(cache_path):
-                print("Caching file from {}".format(urlpath))
+                logger.info("Caching file {} from urlpath {}".format(file_in.path, urlpath))
                 self._log_metadata(urlpath, file_in.path, cache_path)
 
                 with file_in as f1:

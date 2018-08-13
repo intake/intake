@@ -8,7 +8,7 @@ def catalog_cache():
     path = os.path.dirname(__file__)
     return Catalog(os.path.join(path, 'catalog_caching.yml'))
 
-def test_load(catalog_cache):
+def test_load_csv(catalog_cache):
     cat = catalog_cache['test_cache']
     cache = cat.cache[0]
 
@@ -17,7 +17,7 @@ def test_load(catalog_cache):
     
     assert cache._cache_dir in cache_path
 
-    cache_id = os.path.basename(cache_path)
+    cache_id = os.path.basename(os.path.dirname(cache_path))
     import string
     # Checking for md5 hash
     assert all(c in string.hexdigits for c in cache_id)
@@ -31,7 +31,7 @@ def test_load_textfile(catalog_cache):
     
     assert cache._cache_dir in cache_path
 
-    cache_id = os.path.basename(cache_path)
+    cache_id = os.path.basename(os.path.dirname(cache_path))
     import string
     # Checking for md5 hash
     assert all(c in string.hexdigits for c in cache_id)
@@ -45,7 +45,7 @@ def test_load_arr(catalog_cache):
     
     assert cache._cache_dir in cache_path
 
-    cache_id = os.path.basename(cache_path)
+    cache_id = os.path.basename(os.path.dirname(cache_path))
     import string
     # Checking for md5 hash
     assert all(c in string.hexdigits for c in cache_id)
