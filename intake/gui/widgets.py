@@ -1,7 +1,17 @@
 from collections import OrderedDict
+from contextlib import contextmanager
 import ipywidgets as widgets
 import os
 import intake
+
+
+@contextmanager
+def ignore(ob):
+    try:
+        ob.ignore = True
+        yield
+    finally:
+        ob.ignore = False
 
 
 class DataBrowser(object):
@@ -31,6 +41,9 @@ class DataBrowser(object):
         self.cat_list = widgets.Select()
         self.update_cat_list()
         self.fs = None
+        self.item = None
+        self.ignore = False
+        self.exception = None
         self.item_list = widgets.Select()
         self.detail = widgets.Textarea(disabled=True,
                                        placeholder='Item Description')
@@ -55,44 +68,63 @@ class DataBrowser(object):
         self.cat_selected({'new': list(self.cats)[0]})
         self.cat_list.observe(self.cat_selected, 'value')
         self.item_list.observe(self.item_selected, 'value')
-        self.item = None
 
     def update_cat_list(self):
-        self.cat_list.options = list(self.cats)
+        with ignore(self):
+            # only list cats with entries
+            self.cat_list.options = [c for c in list(self.cats)
+                                     if list(self.cats[c])]
 
     def cat_selected(self, ev):
         name = ev['new']
-        if name is None:
+        if self.ignore or name is None:
             return
-        names = [n + '  ->' if self.cats[name][n].container == 'catalog'
-                 else n for n in self.cats[name]]
-        self.item_list.options = names
-        self.item_selected({'new': names[0]}, first=True)
+        with ignore(self):
+            names = [n + '  ->' if self.cats[name][n].container == 'catalog'
+                     else n for n in self.cats[name]]
+            self.item_list.options = names
+            self.item_selected({'new': names[0]}, first=True)
 
     def item_selected(self, ev, first=False):
         name = ev['new']
-        if name is None:
+        if (self.ignore and not first) or name is None:
             return
-        if name.endswith('  ->') and not first:
-            cat = self.cats[self.cat_list.value][name[:-4]]
-            self.cats[self.cat_list.value + '.' + cat.name] = cat()
-            self.update_cat_list()
-        else:
-            self.item = self.cats[self.cat_list.value][name]
-            self.detail.value = str(self.item.describe())
+        with ignore(self):
+            if name.endswith('  ->'):
+                if not first:
+                    cat = self.cats[self.cat_list.value][name[:-4]]
+                    self.cats[self.cat_list.value + '.' + cat.name] = cat()
+                    self.update_cat_list()
+            else:
+                self.item = self.cats[self.cat_list.value][name]
+                self.detail.value = str(self.item.describe())
 
-    def add_cat(self, ev):
-        fn = self.url.value
-        try:
-            cat = intake.open_catalog(fn)
-            self.cats[cat.name] = cat
-            self.update_cat_list()
-        except Exception as e:
-            print(fn, e)
+    def add_cat(self, ev=None):
+        """Add catalog instance to the browser
+
+        Also called, without a catalog instance, when the (+) button is
+        pressed, which will attempt to read a catalog and, if successful,
+        add it to the browser.
+        """
+        if isinstance(ev, intake.catalog.Catalog):
+            cat = ev
+        else:
+            fn = self.url.value
+            try:
+                cat = intake.open_catalog(fn)
+                list(cat)  # fails if parse is bad
+            except Exception as e:
+                self.exception = e
+                return
+        self.cats[cat.name] = cat
+        self.update_cat_list()
+
+    def _ipython_display_(self):
+        return self.widget._ipython_display_()
 
     def openfs(self, ev):
-        self.fs = FileSelector(self.file_chosen)
-        self.widget.children = [self.mid, self.bottom, self.fs.selector]
+            self.fs = FileSelector(self.file_chosen)
+            self.widget.children = [self.mid, self.bottom, self.fs.selector]
 
     def file_chosen(self, fn, ok=True):
         if ok:
@@ -153,12 +185,13 @@ class FileSelector(object):
     def changed(self, ev):
         if self.ignore:
             return
-        fn = ev['new']
-        if fn.endswith('/'):
-            self.path = self.path + fn
-            self.make_options()
-        else:
-            self.label2.value = self.path + fn
+        with ignore(self):
+            fn = ev['new']
+            if fn.endswith('/'):
+                self.path = self.path + fn
+                self.make_options()
+            else:
+                self.label2.value = self.path + fn
 
     def stop(self, ev):
         self.widget.unobserve_all()
