@@ -150,3 +150,10 @@ Conda installs the catalog file in this package to ``$CONDA_PREFIX/share/intake/
 
 The global catalog is a union of all catalogs installed in the conda/virtualenv environment and also any catalogs
 installed in user-specific location.
+
+Using the GUI
+-------------
+
+A graphical data browser is available in the Jupyter notebook environment. It will show the
+contents of any installed catalogs, plus allows for selecting local and remote catalogs,
+to browse and select entries from these. See :ref:`gui`
