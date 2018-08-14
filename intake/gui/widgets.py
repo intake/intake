@@ -83,7 +83,9 @@ class DataBrowser(object):
             names = [n + '  ->' if self.cats[name][n].container == 'catalog'
                      else n for n in self.cats[name]]
             self.item_list.options = names
-            self.item_selected({'new': names[0]}, first=True)
+            if names:
+                # avoid error if cat contains no entries
+                self.item_selected({'new': names[0]}, first=True)
 
     def item_selected(self, ev, first=False):
         name = ev['new']
