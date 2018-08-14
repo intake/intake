@@ -11,28 +11,14 @@ from intake.config import conf
 
 logger = logging.getLogger('intake')
 
-def make_caches(driver, specs):
-    """
-    Creates Cache objects from the cache_specs provided in the catalog yaml file.
-    
-    Parameters:
-    -----------
-    driver: str
-        Name of the plugin that can load catalog entry
-    specs: list
-        Specification for caching the data source.
-    """
-    if specs is None:
-        return []
-    return [Cache(driver, spec) for spec in specs]
 
-class Cache(object):
+class FileCache(object):
     """
     Provides utilities for managing cached data files.
     """
     blocksize = 5000000
 
-    def __init__(self, driver, spec):
+    def __init__(self, driver, spec, cache_dir=None):
         """
         Parameters:
         -----------
@@ -43,15 +29,17 @@ class Cache(object):
         """
         self._driver = driver
         self._spec = spec
-        self._cache_dir = os.getenv('INTAKE_CACHE_DIR',
-                                    conf['cache_dir'])
+        print(spec)
+        self._cache_dir = cache_dir or os.getenv('INTAKE_CACHE_DIR',
+                                                 conf['cache_dir'])
                              
-        self._ensure_cache_dir()
         self._metadata = CacheMetadata(self._cache_dir)
     
     def _ensure_cache_dir(self):
         if not os.path.exists(self._cache_dir):
             os.makedirs(self._cache_dir)
+        if os.path.isfile(self._cache_dir):
+            raise Exception("Path for cache directory exists as a file: {}".format(self._cache_dir))
 
     def _munge_path(self, cache_subdir, urlpath):
         import re
@@ -103,6 +91,7 @@ class Cache(object):
         """
         from dask.bytes import open_files
 
+        self._ensure_cache_dir()
         subdir = self._hash(urlpath)
         cache_paths = []
         files_in = open_files(urlpath, 'rb')
@@ -194,3 +183,22 @@ class CacheMetadata(object):
         item = self._metadata.pop(key)
         self._save()
         return item
+
+registry = {
+    'file': FileCache
+}
+
+def make_caches(driver, specs):
+    """
+    Creates Cache objects from the cache_specs provided in the catalog yaml file.
+    
+    Parameters:
+    -----------
+    driver: str
+        Name of the plugin that can load catalog entry
+    specs: list
+        Specification for caching the data source.
+    """
+    if specs is None:
+        return []
+    return [registry[spec['type']](driver, spec) for spec in specs]

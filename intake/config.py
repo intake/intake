@@ -1,18 +1,18 @@
 
-from pathlib import Path
+from os.path import expanduser
 
 import os
 import yaml
 
 confdir = os.getenv('INTAKE_CONF_DIR',
-                    os.path.join(Path.home(), '.intake'))
+                    os.path.join(expanduser('~'), '.intake'))
 conffile = os.getenv('INTAKE_CONF_FILE', None)
 
 
 defaults = {
     'auth': {'class': 'intake.auth.base.BaseAuth'},
     'port': 5000,
-    'cache_dir': os.path.join(Path.home(), '.intake/cache')
+    'cache_dir': os.path.join(expanduser('~'), '.intake/cache')
     }
 conf = {}
 

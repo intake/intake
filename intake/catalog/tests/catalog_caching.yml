@@ -11,7 +11,7 @@ sources:
     cache:
       - argkey: urlpath
         regex: '{{ CATALOG_DIR }}/cache_data'
-        sub: '{{ CACHE_DIR }}'
+        type: file
     args:
       urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
   text_cache:
@@ -20,7 +20,7 @@ sources:
     cache:
       - argkey: urlpath
         regex: '{{ CATALOG_DIR }}'
-        sub: '{{ CACHE_DIR }}'
+        type: file
     args:
       urlpath: "{{ CATALOG_DIR }}/*.yml"
   arr_cache:
@@ -29,7 +29,7 @@ sources:
     cache:
       - argkey: path
         regex: '{{ CATALOG_DIR }}'
-        sub: '{{ CACHE_DIR }}'
+        type: file
     args:
       path: "{{ CATALOG_DIR }}/small.npy"
       chunks: 5
