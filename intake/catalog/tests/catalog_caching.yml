@@ -14,6 +14,18 @@ sources:
         type: file
     args:
       urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
+  test_multiple_cache:
+    description: testing what happens when there are multiple cache specs
+    driver: csv
+    cache:
+      - argkey: urlpath
+        regex: '{{ CATALOG_DIR }}/cache_data'
+        type: file
+      - argkey: urlpath
+        regex: '{{ CATALOG_DIR }}'
+        type: file
+    args:
+      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
   text_cache:
     description: textfiles in this dir
     driver: textfiles

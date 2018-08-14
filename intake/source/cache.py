@@ -12,6 +12,9 @@ from intake.config import conf
 logger = logging.getLogger('intake')
 
 
+def disable_caching(state):
+    os.environ['INTAKE_DISABLE_CACHING'] = '1' if state else '0'
+
 class FileCache(object):
     """
     Provides utilities for managing cached data files.
@@ -29,7 +32,6 @@ class FileCache(object):
         """
         self._driver = driver
         self._spec = spec
-        print(spec)
         self._cache_dir = cache_dir or os.getenv('INTAKE_CACHE_DIR',
                                                  conf['cache_dir'])
                              
@@ -44,7 +46,7 @@ class FileCache(object):
     def _munge_path(self, cache_subdir, urlpath):
         import re
         cache_path = re.sub(
-            r"%s" % self._spec['regex'],
+            r"%s" % os.path.normpath(self._spec['regex']),
             os.path.join(self._cache_dir, cache_subdir),
             urlpath
         )
@@ -53,6 +55,7 @@ class FileCache(object):
     def _hash(self, urlpath):
         return md5(
                 str((os.path.basename(urlpath), 
+                     self._spec.get('regex', ''),
                      self._driver)).encode()
             ).hexdigest()
 
@@ -87,8 +90,12 @@ class FileCache(object):
 
         Returns
         -------
-        List of local cache_paths to be opened instead of the remote file(s).
+        List of local cache_paths to be opened instead of the remote file(s). If
+        caching is disable, the urlpath is returned.
         """
+        if os.getenv('INTAKE_DISABLE_CACHING') == '1':
+            return [urlpath]
+
         from dask.bytes import open_files
 
         self._ensure_cache_dir()
