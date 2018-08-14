@@ -123,7 +123,7 @@ class DataBrowser(object):
         return self.widget._ipython_display_()
 
     def openfs(self, ev):
-            self.fs = FileSelector(self.file_chosen)
+            self.fs = FileSelector(self.file_chosen, filters=['.yaml', '.yml'])
             self.widget.children = [self.mid, self.bottom, self.fs.selector]
 
     def file_chosen(self, fn, ok=True):
@@ -133,8 +133,27 @@ class DataBrowser(object):
 
 
 class FileSelector(object):
-    def __init__(self, done_callback=None):
+    """
+    ipywidgets interface for picking files
+
+    The current path is stored in .path anf the current selection is stored in
+    .label2.value.
+    """
+    def __init__(self, done_callback=None, filters=None):
+        """
+
+        Parameters
+        ----------
+        done_callback: function
+            Called when the tick or cross buttons are clicked. Expects
+            signature func(path, ok=True|False).
+        filters: list of str or None
+            Only show files ending in one of these strings. Normally used for
+            picking file extensions. None is an alias for [''], passes all
+            files.
+        """
         self.done = done_callback
+        self.filters = [''] if filters is None else filters
         self.path = os.getcwd() + '/'
         self.widget = widgets.Select(rows=15)
         self.button = widgets.Button(
@@ -170,9 +189,13 @@ class FileSelector(object):
     def make_options(self):
         self.ignore = True
         self.label.value = self.path
-        out = [(f + '/') if os.path.isdir(self.path + f) else f
-               for f in sorted(os.listdir(self.path))
-               if not f.startswith('.')]
+        out = []
+        for f in sorted(os.listdir(self.path)):
+            if os.path.isdir(self.path + f):
+                out.append(f + '/')
+            elif (not f.startswith('.') and any(f.endswith(ext)
+                                                for ext in self.filters)):
+                out.append(f)
         self.widget.value = None
         self.widget.options = out
         self.ignore = False
