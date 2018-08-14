@@ -7,6 +7,7 @@ API Reference: User Methods
    intake.open_
    intake.source.csv.CSVSource
    intake.source.textfiles.TextFilesSource
+   intake.gui.DataBrowser
 
 .. autofunction::
    intake.open_catalog
@@ -30,3 +31,6 @@ API Reference: User Methods
 
 .. autoclass:: intake.source.npy.NPySource
    :members: __init__, discover, read_partition, read, to_dask
+
+.. autoclass:: intake.gui.DataBrowser
+   :members:

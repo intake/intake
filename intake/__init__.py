@@ -11,6 +11,7 @@ from .catalog import local
 from .catalog.default import load_combo_catalog
 from .source import registry
 from .source.discovery import autodiscover
+from .gui import DataBrowser
 
 # Populate list of autodetected plugins
 registry.update(autodiscover())
@@ -21,7 +22,6 @@ registry['textfiles'] = textfiles.TextFilesSource
 registry['catalog'] = Catalog
 registry['intake_remote'] = RemoteCatalog
 registry['numpy'] = npy.NPySource
-
 
 def make_open_functions():
     """From the current state of ``registry``, create open_* functions"""
@@ -134,3 +134,4 @@ def open_catalog(uri=None, **kwargs):
 
 
 Catalog = open_catalog
+gui = DataBrowser()

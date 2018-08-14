@@ -20,6 +20,7 @@ for the python data ecosystem and take the pain out of data access. Get involved
 
     quickstart.rst
     overview.rst
+    gui.rst
     api_base.rst
     api_user.rst
     catalog.rst
