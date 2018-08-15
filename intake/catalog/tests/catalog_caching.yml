@@ -26,6 +26,15 @@ sources:
         type: file
     args:
       urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
+  test_bad_type_cache_spec:
+    description: cache a csv file from the local filesystem
+    driver: csv
+    cache:
+      - argkey: urlpath
+        regex: '{{ CATALOG_DIR }}/cache_data'
+        type: noidea
+    args:
+      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
   text_cache:
     description: textfiles in this dir
     driver: textfiles

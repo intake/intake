@@ -208,4 +208,4 @@ def make_caches(driver, specs):
     """
     if specs is None:
         return []
-    return [registry[spec['type']](driver, spec) for spec in specs]
+    return [registry.get(spec['type'], FileCache)(driver, spec) for spec in specs]
