@@ -184,6 +184,39 @@ elsewhere). Note that in the case of a remote catalog, the client cannot see the
 will be evaluated on the server side, the evaluation only happens if the user did not override
 the value when accessing the data.
 
+Caching Source Files Locally
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To enable caching on the first read of remote data source files, ``cache`` specifications have the following attributes
+in the catalog.
+
+- ``argkey``: Attribute to cache on in the args section of the catalog data source entry.
+- ``regex``: Regular expression to be replaced by the local cache directory.
+- ``type``: Type of caching strategy to be used (file caching is natively supported).
+
+Example:
+
+.. code-block:: yaml
+
+  test_cache:
+    description: cache a csv file from the local filesystem
+    driver: csv
+    cache:
+      - argkey: urlpath
+        regex: '{{ CATALOG_DIR }}/cache_data'
+        type: file
+    args:
+      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
+
+The ``cache_dir`` defaults to ``~/.intake/cache``, and can be specified in the intake configuration file or ``INTAKE_CACHE_DIR`` 
+environment variable. Explicit glob-strings may be used if the remote the file system supports it; such as ``s3://``, ``gcs://``.
+
+Caching can be disabled at runtime for all sources regardless of the catalog specificiation::
+
+    from intake import disable_caching
+
+    disable_caching(True)
+
 Local Catalogs
 --------------
 

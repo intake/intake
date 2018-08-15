@@ -16,15 +16,6 @@ To develop a panel plug-in for jupyter-lab, which displays the built-in datasets
 load catalog files. Each entry in the display would give a little information about itself, and a button would allow
 for a line of code to load data-set to be injected in the currently-active notebook.
 
-Local Caching
--------------
-
-Some data-files are rather large. Whereas it can be very convenient to refer to data in cloud-based storage systems,
-having to download on every use can be very painful. Thus, data source entries will be able to define a caching
-policy, such as "download on first access", and the location of such cached files will be configurable.
-
-Further commands to clear or refresh the local file cache will be provided
-
 Integration with Apache Spark
 -----------------------------
 
