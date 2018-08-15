@@ -1,5 +1,6 @@
 import os
 import pytest
+import time
 
 import intake
 from intake.source.cache import disable_caching
@@ -117,6 +118,7 @@ def test_second_load_timestamp(catalog_cache):
 
     cache.clear_cache(cat._urlpath)
     assert not os.path.isfile(cache_path)
+    time.sleep(0.5)
 
     cache.load(cat._urlpath)
     assert os.path.isfile(cache_path)
