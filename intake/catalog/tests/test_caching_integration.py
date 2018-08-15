@@ -1,9 +1,10 @@
 import os
 import pytest
+import shutil
 import time
 
 import intake
-from intake.source.cache import disable_caching
+from intake import disable_caching
 
 @pytest.fixture
 def catalog_cache():
@@ -102,11 +103,14 @@ def test_clear_cache(catalog_cache):
 def test_clear_all(catalog_cache):
     cat = catalog_cache['test_cache']
     cache = cat.cache[0]
-    cache.load(cat._urlpath)
+    cache_paths = cache.load(cat._urlpath)
 
     cache.clear_all()
 
-    assert not os.path.exists(cache._cache_dir)
+    for cache_path in cache_paths:
+        assert not os.path.exists(cache_path)
+    
+    cache.clear_all()
 
 def test_second_load(catalog_cache):
     cat = catalog_cache['test_cache']
@@ -190,8 +194,6 @@ def test_disable_caching(catalog_cache):
 
     assert cache_path == cat._urlpath
 
-    assert not os.path.exists(cache._cache_dir)
-
     disable_caching(False)
 
     cache_paths = cache.load(cat._urlpath)
@@ -205,3 +207,27 @@ def test_disable_caching(catalog_cache):
     # Checking for md5 hash
     assert all(c in string.hexdigits for c in cache_id)
     cache.clear_all()
+
+def test_ds_set_cache_dir(catalog_cache):
+    cat = catalog_cache['test_cache']
+    defaults = cat.cache_dirs
+
+    new_cache_dir = os.path.join(os.getcwd(), 'test_cache_dir')
+    cat.set_cache_dir(new_cache_dir)
+
+    cache = cat.cache[0]
+
+    cache_paths = cache.load(cat._urlpath)
+    cache_path = cache_paths[-1]
+    
+    assert new_cache_dir in cache_path
+    assert defaults[0] not in cache_path
+    assert os.path.isfile(cache_path)
+
+    cache_id = os.path.basename(os.path.dirname(cache_path))
+    import string
+    # Checking for md5 hash
+    assert all(c in string.hexdigits for c in cache_id)
+    cache.clear_all()
+
+    shutil.rmtree(new_cache_dir)

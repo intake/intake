@@ -146,13 +146,26 @@ class FileCache(object):
         """
         cache_entries = self._metadata.pop(urlpath)
         for cache_entry in cache_entries:
-            os.remove(cache_entry['cache_path'])
+            try:
+                os.remove(cache_entry['cache_path'])
+            except FileNotFoundError:
+                pass
+        os.rmdir(os.path.dirname(cache_entry['cache_path']))
     
     def clear_all(self):
         """
         Clears all cache and metadata.
         """
-        shutil.rmtree(self._cache_dir)
+        for urlpath in self._metadata.keys():
+            self.clear_cache(urlpath)
+        
+        # Safely clean up anything else.
+        try:
+            for subdir in os.listdir(self._cache_dir):
+                shutil.rmtree(os.path.join(self._cache_dir, subdir))
+        except FileNotFoundError:
+            pass
+
 
 class CacheMetadata(object):
     """
@@ -160,8 +173,9 @@ class CacheMetadata(object):
     """
 
     def __init__(self, cache_dir):
-        self._cache_dir = cache_dir
-        self._path = os.path.join(self._cache_dir, 'metadata.json')
+        from intake import config
+
+        self._path = os.path.join(config.confdir, 'cache_metadata.json')
 
         if os.path.isfile(self._path):
             with open(self._path) as f:
@@ -190,6 +204,9 @@ class CacheMetadata(object):
         item = self._metadata.pop(key)
         self._save()
         return item
+    
+    def keys(self):
+        return list(self._metadata.keys())
 
 registry = {
     'file': FileCache

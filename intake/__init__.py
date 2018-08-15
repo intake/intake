@@ -10,6 +10,7 @@ from .catalog.base import Catalog, RemoteCatalog
 from .catalog import local
 from .catalog.default import load_combo_catalog
 from .source import registry
+from .source.cache import disable_caching
 from .source.discovery import autodiscover
 
 # Populate list of autodetected plugins

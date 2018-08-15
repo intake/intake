@@ -1,5 +1,6 @@
 import os
 import pytest
+import shutil
 
 from intake.source.cache import FileCache
 
@@ -13,6 +14,7 @@ def test_ensure_cache_dir(file_cache):
     assert os.path.exists(file_cache._cache_dir)
 
     file_cache.clear_all()
+    shutil.rmtree(file_cache._cache_dir)
 
     with open(file_cache._cache_dir, 'w') as f:
         f.write('')
@@ -21,6 +23,8 @@ def test_ensure_cache_dir(file_cache):
         file_cache._ensure_cache_dir()
 
     os.remove(file_cache._cache_dir)
+    
+    file_cache.clear_all()
 
 def test_munge_path(file_cache):
     subdir = 'subdir'
@@ -54,6 +58,7 @@ def test_path(file_cache):
 
     assert file_cache._cache_dir in cache_path
     assert '//' not in cache_path[1:]
+    file_cache.clear_all()
 
 def test_path_no_match(file_cache):
     "No match should be a noop."

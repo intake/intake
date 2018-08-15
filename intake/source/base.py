@@ -43,6 +43,14 @@ class DataSource(object):
     datashape = None
     description = None
 
+    @property
+    def cache_dirs(self):
+        return [c._cache_dir for c in self.cache]
+    
+    def set_cache_dir(self, cache_dir):
+        for c in self.cache:
+            c._cache_dir = cache_dir
+
     def __new__(cls, *args, **kwargs):
         """Capture creation args when instantiating"""
         o = object.__new__(cls)
