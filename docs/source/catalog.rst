@@ -190,9 +190,9 @@ Caching Source Files Locally
 To enable caching on the first read of remote data source files, ``cache`` specifications have the following attributes
 in the catalog.
 
-- ``argkey``: Attribute to cache on in the args section of the catalog data source entry.
-- ``regex``: Regular expression to be replaced by the local cache directory.
-- ``type``: Type of caching strategy to be used (file caching is natively supported).
+- ``argkey``: Of the keys in the args section in this same data source, which contains the URL(s) of the data to be cached.
+- ``regex``: A regular expression to match against the URL path, where the matching portion will be replaced by a path in the local cache directory.
+- ``type``: One of the keys in the cache registry [`intake.source.cache.registry`], referring to an implementation of caching behaviour. The default if "file" for the caching of one or more specific remote files.
 
 Example:
 
@@ -209,13 +209,13 @@ Example:
       urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
 
 The ``cache_dir`` defaults to ``~/.intake/cache``, and can be specified in the intake configuration file or ``INTAKE_CACHE_DIR`` 
-environment variable. Explicit glob-strings may be used if the remote the file system supports it; such as ``s3://``, ``gcs://``.
+environment variable. Explicit glob-strings may be used for the urlpath argument.
 
 Caching can be disabled at runtime for all sources regardless of the catalog specificiation::
 
-    from intake import disable_caching
+    from intake.config import conf
 
-    disable_caching(True)
+    conf['cache_disabled'] = True
 
 Local Catalogs
 --------------

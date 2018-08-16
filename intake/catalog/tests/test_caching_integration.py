@@ -4,7 +4,7 @@ import shutil
 import time
 
 import intake
-from intake import disable_caching
+from intake.config import conf
 
 @pytest.fixture
 def catalog_cache():
@@ -184,7 +184,7 @@ def test_multiple_cache(catalog_cache):
         cache.clear_all()
 
 def test_disable_caching(catalog_cache):
-    disable_caching(True)
+    conf['cache_disabled'] = True
 
     cat = catalog_cache['test_cache']
     cache = cat.cache[0]
@@ -194,7 +194,7 @@ def test_disable_caching(catalog_cache):
 
     assert cache_path == cat._urlpath
 
-    disable_caching(False)
+    conf['cache_disabled'] = False
 
     cache_paths = cache.load(cat._urlpath)
     cache_path = cache_paths[-1]

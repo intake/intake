@@ -157,7 +157,7 @@ Most of the work typically happens in the following methods:
 
     urlpath, *_ = self._get_cache(self._urlpath)
   
-  Will return the locationg of the cached urlpath for the first cache specified in the catalog source.
+  Will return the location of the cached urlpath for the first matching cache specified in the catalog source.
 
 - ``_get_partition(self, i)``: Should return all of the data from partition id ``i``, where ``i`` is typically an
   integer, but may be something more complex.

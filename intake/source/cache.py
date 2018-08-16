@@ -12,13 +12,11 @@ from intake.config import conf
 logger = logging.getLogger('intake')
 
 
-def disable_caching(state):
-    os.environ['INTAKE_DISABLE_CACHING'] = '1' if state else '0'
-
 class FileCache(object):
     """
     Provides utilities for managing cached data files.
     """
+    # download block size in bytes
     blocksize = 5000000
 
     def __init__(self, driver, spec, cache_dir=None):
@@ -93,7 +91,7 @@ class FileCache(object):
         List of local cache_paths to be opened instead of the remote file(s). If
         caching is disable, the urlpath is returned.
         """
-        if os.getenv('INTAKE_DISABLE_CACHING') == '1':
+        if conf.get('cache_disabled', False):
             return [urlpath]
 
         from dask.bytes import open_files
