@@ -115,8 +115,9 @@ class UserParameter(object):
 class LocalCatalogEntry(CatalogEntry):
     """A catalog entry on the local system
     """
-    def __init__(self, name, description, driver, direct_access, args,
-                 parameters, metadata, catalog_dir, getenv=True, getshell=True):
+    def __init__(self, name, description, driver, direct_access, args, cache,
+                 parameters, metadata, catalog_dir, getenv=True, 
+                 getshell=True):
         """
 
         Parameters
@@ -147,6 +148,7 @@ class LocalCatalogEntry(CatalogEntry):
         self._driver = driver
         self._direct_access = direct_access
         self._open_args = args
+        self._cache = cache
         self._user_parameters = parameters
         self._metadata = metadata
         self._catalog_dir = catalog_dir
@@ -178,7 +180,10 @@ class LocalCatalogEntry(CatalogEntry):
                                           getshell=self.getshell)
                 params[parameter.name] = parameter.default
 
+        self._open_args['cache'] = self._cache
         open_args = expand_templates(self._open_args, params)
+        if self._metadata is not None:
+            self._metadata['cache'] = open_args.pop('cache', [])
         open_args['metadata'] = self._metadata
 
         return open_args
@@ -351,6 +356,7 @@ class CatalogParser(object):
                 data, 'direct_access', str, required=False, default='forbid',
                 choices=['forbid', 'allow', 'force']),
             'args': self._getitem(data, 'args', dict, required=False),
+            'cache': self._getitem(data, 'cache', list, required=False),
             'metadata': self._getitem(data, 'metadata', dict, required=False)
         }
 
@@ -449,6 +455,12 @@ def register_plugin_dir(path):
                 global_registry[k[0]] = v
 
 
+def get_dir(path):
+    if '://' in path:
+        return os.path.dirname(path)
+    return os.path.join(os.getcwd(), os.path.dirname(path))
+
+
 class YAMLFileCatalog(Catalog):
     """Catalog as described by a single YAML file"""
     version = __version__
@@ -479,7 +491,8 @@ class YAMLFileCatalog(Catalog):
             file_open = file_open[0]
         self.name = os.path.splitext(os.path.basename(
             self.path))[0].replace('.', '_')
-        self._dir = os.path.dirname(self.path) or os.getcwd()
+        self._dir = get_dir(self.path)
+
         try:
             with file_open as f:
                 text = f.read().decode()
@@ -573,7 +586,7 @@ class YAMLFilesCatalog(Catalog):
             if f.path not in self._cats:
                 entry = LocalCatalogEntry(name, "YAML file: %s" % name,
                                           'yaml_file_cat', True,
-                                          kwargs, {}, self.metadata, d)
+                                          kwargs, [], {}, self.metadata, d)
                 if self._flatten:
                     # store a concrete Catalog
                     self._cats[f.path] = entry()

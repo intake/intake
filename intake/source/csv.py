@@ -41,9 +41,11 @@ class CSVSource(base.DataSource):
     def _get_schema(self):
         import dask.dataframe
 
+        urlpath, *_ = self._get_cache(self._urlpath)
+
         if self._dataframe is None:
             self._dataframe = dask.dataframe.read_csv(
-                self._urlpath, storage_options=self._storage_options,
+                urlpath, storage_options=self._storage_options,
                 **self._csv_kwargs)
 
         dtypes = self._dataframe._meta.dtypes.to_dict()

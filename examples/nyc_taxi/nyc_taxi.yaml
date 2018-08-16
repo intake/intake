@@ -5,3 +5,14 @@ sources:
     args:
       urlpath: 's3://datashader-data/nyc_taxi_wide.parq'
       storage_options: {'anon': True}
+
+  nyc_taxi_cache:
+    description: NYC Taxi dataset with caching
+    driver: csv
+    cache:
+      - argkey: urlpath
+        regex: 'datashader-data'
+        sub: '{{ CACHE_DIR }}'
+    args:
+      urlpath: 's3://datashader-data/nyc_taxi.csv'
+      storage_options: {'anon': True}

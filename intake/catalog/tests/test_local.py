@@ -11,7 +11,7 @@ import pandas
 from .util import assert_items_equal
 from intake import Catalog
 from intake.catalog import exceptions, local
-from intake.catalog.local import UserParameter
+from intake.catalog.local import get_dir, UserParameter
 
 
 def abspath(filename):
@@ -49,7 +49,7 @@ def test_local_catalog(catalog1):
         'direct_access': 'allow'
     }
     assert catalog1['entry1'].get().container == 'dataframe'
-    assert catalog1['entry1'].get().metadata == dict(foo='bar', bar=[1, 2, 3])
+    assert catalog1['entry1'].get().metadata == dict(foo='bar', bar=[1, 2, 3], cache=[])
 
     # Use default parameters
     assert catalog1['entry1_part'].get().container == 'dataframe'
@@ -78,6 +78,17 @@ def test_metadata(catalog1):
 
 def test_use_source_plugin_from_config(catalog1):
     catalog1['use_example1'].get()
+
+
+def test_get_dir():
+    assert get_dir('s3://path/catalog.yml') == 's3://path'
+    assert get_dir('https://example.com/catalog.yml') == 'https://example.com'
+    path = 'example/catalog.yml'
+    assert get_dir(path) == os.path.join(os.getcwd(), os.path.dirname(path))
+    path = '/example/catalog.yml'
+    assert get_dir(path) == os.path.dirname(path)
+    path = 'example'
+    assert get_dir(path) == os.path.join(os.getcwd(), '')
 
 
 @pytest.mark.parametrize("dtype,expected", [
@@ -239,16 +250,16 @@ def test_union_catalog():
     assert desc_open['args']['urlpath'].endswith('entry1_1.csv')
     del desc_open['args']['urlpath']  # Full path will be system dependent
     assert desc_open == {
-        'args': {'metadata': {'bar': [2, 4, 6], 'foo': 'baz'}},
+        'args': {'metadata': {'bar': [2, 4, 6], 'cache': [], 'foo': 'baz'}},
         'description': 'entry1 part',
         'direct_access': 'allow',
-        'metadata': {'bar': [2, 4, 6], 'foo': 'baz'},
+        'metadata': {'bar': [2, 4, 6], 'cache': [], 'foo': 'baz'},
         'plugin': 'csv'
     }
 
     # Implied creation of data source
     assert union_cat.entry1.container == 'dataframe'
-    assert union_cat.entry1.metadata == dict(foo='bar', bar=[1, 2, 3])
+    assert union_cat.entry1.metadata == dict(foo='bar', bar=[1, 2, 3], cache=[])
 
     # Use default parameters in explict creation of data source
     assert union_cat.entry1_part().container == 'dataframe'

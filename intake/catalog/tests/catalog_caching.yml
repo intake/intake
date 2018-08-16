@@ -1,0 +1,56 @@
+metadata:
+  test: true
+plugins:
+  source:
+    - module: intake.catalog.tests.example1_source
+    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
+sources:
+  test_cache:
+    description: cache a csv file from the local filesystem
+    driver: csv
+    cache:
+      - argkey: urlpath
+        regex: '{{ CATALOG_DIR }}/cache_data'
+        type: file
+    args:
+      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
+  test_multiple_cache:
+    description: testing what happens when there are multiple cache specs
+    driver: csv
+    cache:
+      - argkey: urlpath
+        regex: '{{ CATALOG_DIR }}/cache_data'
+        type: file
+      - argkey: urlpath
+        regex: '{{ CATALOG_DIR }}'
+        type: file
+    args:
+      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
+  test_bad_type_cache_spec:
+    description: cache a csv file from the local filesystem
+    driver: csv
+    cache:
+      - argkey: urlpath
+        regex: '{{ CATALOG_DIR }}/cache_data'
+        type: noidea
+    args:
+      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
+  text_cache:
+    description: textfiles in this dir
+    driver: textfiles
+    cache:
+      - argkey: urlpath
+        regex: '{{ CATALOG_DIR }}'
+        type: file
+    args:
+      urlpath: "{{ CATALOG_DIR }}/*.yml"
+  arr_cache:
+    description: small array
+    driver: numpy
+    cache:
+      - argkey: path
+        regex: '{{ CATALOG_DIR }}'
+        type: file
+    args:
+      path: "{{ CATALOG_DIR }}/small.npy"
+      chunks: 5

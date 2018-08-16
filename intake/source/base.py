@@ -1,5 +1,5 @@
 # Base classes for Data Loader interface
-
+from .cache import make_caches
 
 class Schema(dict):
     """Holds details of data description for any type of data-source
@@ -43,6 +43,14 @@ class DataSource(object):
     datashape = None
     description = None
 
+    @property
+    def cache_dirs(self):
+        return [c._cache_dir for c in self.cache]
+    
+    def set_cache_dir(self, cache_dir):
+        for c in self.cache:
+            c._cache_dir = cache_dir
+
     def __new__(cls, *args, **kwargs):
         """Capture creation args when instantiating"""
         o = object.__new__(cls)
@@ -70,12 +78,19 @@ class DataSource(object):
     def __init__(self, metadata=None):
         # default data
         self.metadata = metadata or {}
+        if isinstance(self.metadata, dict):
+            self.cache = make_caches(self.name, self.metadata.get('cache'))
         self.datashape = None
         self.dtype = None
         self.shape = None
         self.npartitions = 0
         self._schema = None
 
+    def _get_cache(self, urlpath):
+        if len(self.cache) == 0:
+            return [urlpath]
+        return [c.load(urlpath) for c in self.cache]
+    
     def _get_schema(self):
         """Subclasses should return an instance of base.Schema"""
         raise Exception('Subclass should implement _get_schema()')

@@ -10,8 +10,6 @@ import tornado.ioloop
 import tornado.web
 
 from .server import IntakeServer
-from .config import conf
-from intake import Catalog
 logger = logging.getLogger('intake')
 logging.basicConfig()
 if os.environ.get('INTAKE_DEBUG'):
@@ -23,6 +21,9 @@ def call_exit_on_sigterm(signal, frame):
 
 
 def main(argv=None):
+    from intake.config import conf
+    from intake import Catalog
+
     if argv is None:
         argv = sys.argv
 

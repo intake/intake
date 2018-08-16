@@ -98,7 +98,7 @@ class TestServerV1Source(TestServerV1Base):
         actual_dtype = resp_msg['dtype']
         self.assertEqual(expected_dtype, actual_dtype)
         self.assertEqual(resp_msg['npartitions'], 2)
-        self.assertEqual(resp_msg['metadata'], dict(foo='bar', bar=[1, 2, 3]))
+        self.assertEqual(resp_msg['metadata'], dict(foo='bar', bar=[1, 2, 3], cache=[]))
 
         self.assert_(isinstance(resp_msg['source_id'], str))
 
@@ -111,7 +111,7 @@ class TestServerV1Source(TestServerV1Base):
         args = resp_msg['args']
         self.assertEquals(set(args.keys()), set(['urlpath', 'metadata']))
         self.assert_(args['urlpath'].endswith('/entry1_2.csv'))
-        self.assertEquals(args['metadata'], dict(foo='baz', bar=[2, 4, 6]))
+        self.assertEquals(args['metadata'], dict(foo='baz', bar=[2, 4, 6], cache=[]))
         self.assertEqual(resp_msg['description'], 'entry1 part')
 
     def test_read_part_compressed(self):
