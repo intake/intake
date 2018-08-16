@@ -2,6 +2,7 @@ from datetime import datetime
 from hashlib import md5
 from pathlib import Path
 
+import collections
 import json
 import logging
 import os
@@ -33,7 +34,7 @@ class FileCache(object):
         self._cache_dir = cache_dir or os.getenv('INTAKE_CACHE_DIR',
                                                  conf['cache_dir'])
                              
-        self._metadata = CacheMetadata(self._cache_dir)
+        self._metadata = CacheMetadata()
     
     def _ensure_cache_dir(self):
         if not os.path.exists(self._cache_dir):
@@ -165,12 +166,11 @@ class FileCache(object):
             pass
 
 
-class CacheMetadata(object):
+class CacheMetadata(collections.MutableMapping):
     """
     Utility class for managing persistent metadata stored in the Intake config directory.
     """
-
-    def __init__(self, cache_dir):
+    def __init__(self, *args, **kwargs):
         from intake import config
 
         self._path = os.path.join(config.confdir, 'cache_metadata.json')
@@ -180,7 +180,27 @@ class CacheMetadata(object):
                 self._metadata = json.load(f)
         else:
             self._metadata = {}
-    
+
+    def __getitem__(self, key):
+        return self._metadata[self.__keytransform__(key)]
+
+    def __setitem__(self, key, value):
+        self._metadata[self.__keytransform__(key)] = value
+        self._save()
+
+    def __delitem__(self, key):
+        del self._metadata[self.__keytransform__(key)]
+        self._save()
+
+    def __iter__(self):
+        return iter(self._metadata)
+
+    def __len__(self):
+        return len(self._metadata)
+
+    def __keytransform__(self, key):
+        return key
+
     def update(self, key, cache_entry):
         entries = self._metadata.get(key, [])
         entries.append(cache_entry)
@@ -191,13 +211,6 @@ class CacheMetadata(object):
         with open(self._path, 'w') as f:
             json.dump(self._metadata, f)
 
-    def __setitem__(self, key, item):
-        self._metadata[key] = item
-        self._save()
-    
-    def __getitem__(self, key):
-        return self._metadata[key]
-
     def pop(self, key):
         item = self._metadata.pop(key)
         self._save()
@@ -205,6 +218,7 @@ class CacheMetadata(object):
     
     def keys(self):
         return list(self._metadata.keys())
+
 
 registry = {
     'file': FileCache
