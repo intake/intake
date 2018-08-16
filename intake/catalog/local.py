@@ -456,8 +456,8 @@ def register_plugin_dir(path):
 
 
 def get_dir(path):
-    if '://' in path or not os.path.dirname(path):
-        return os.getcwd()
+    if '://' in path:
+        return os.path.dirname(path)
     return os.path.join(os.getcwd(), os.path.dirname(path))
 
 

@@ -96,7 +96,7 @@ def test_clear_cache(catalog_cache):
 
     cache.clear_cache(cat._urlpath)
 
-    assert cat._urlpath not in cache._metadata._metadata.keys()
+    assert cat._urlpath not in cache._metadata.keys()
     for cache_path in cache_paths:
         assert os.path.basename(cache_path) not in os.listdir(cache._cache_dir)
 

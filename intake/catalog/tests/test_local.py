@@ -81,14 +81,14 @@ def test_use_source_plugin_from_config(catalog1):
 
 
 def test_get_dir():
-    assert get_dir('s3://catalog.yml') == os.getcwd()
-    assert get_dir('https://example.com/catalog.yml') == os.getcwd()
+    assert get_dir('s3://path/catalog.yml') == 's3://path'
+    assert get_dir('https://example.com/catalog.yml') == 'https://example.com'
     path = 'example/catalog.yml'
     assert get_dir(path) == os.path.join(os.getcwd(), os.path.dirname(path))
     path = '/example/catalog.yml'
     assert get_dir(path) == os.path.dirname(path)
     path = 'example'
-    assert get_dir(path) == os.getcwd()
+    assert get_dir(path) == os.path.join(os.getcwd(), '')
 
 
 @pytest.mark.parametrize("dtype,expected", [

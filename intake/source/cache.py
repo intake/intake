@@ -167,7 +167,7 @@ class FileCache(object):
 
 class CacheMetadata(object):
     """
-    Utility class for managing persistent metadata stored in the cache_dir.
+    Utility class for managing persistent metadata stored in the Intake config directory.
     """
 
     def __init__(self, cache_dir):
