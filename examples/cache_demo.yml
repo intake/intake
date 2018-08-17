@@ -1,0 +1,20 @@
+
+sources:
+  demographic_stats:
+    description: Demographic Stats by zip code
+    driver: csv
+    cache:
+      - argkey: urlpath
+        regex: 'https://s3.amazonaws.com/earth-data'
+        type: file
+    args:
+      urlpath: 'https://s3.amazonaws.com/earth-data/Demographic_Statistics_By_Zip_Code.csv'
+  text_cache:
+    description: textfiles in this dir
+    driver: textfiles
+    cache:
+      - argkey: urlpath
+        regex: '{{ CATALOG_DIR }}'
+        type: file
+    args:
+      urlpath: "{{ CATALOG_DIR }}/*.yml"

@@ -30,6 +30,22 @@ These are the defaults, and any parameters not specified will take the values ab
   always allows access). For further information on securing
   the Intake Server, see the :ref:`authplugins`.
 
+Log Level
+---------
+
+The logging level is configurable using Python's built-in logging module.
+
+Set the log level with an environment variable::
+
+  INTAKE_DEBUG='true'
+
+Or in code::
+
+  import logging
+  logger = logging.getLogger('intake')
+  logging.basicConfig()
+  logger.setLevel(logging.DEBUG)
+
 Intake Server
 -------------
 

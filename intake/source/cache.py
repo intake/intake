@@ -14,12 +14,20 @@ from intake.config import conf
 logger = logging.getLogger('intake')
 
 
-def strip_http(path):
+def sanitize_path(path):
+    "Utility for cleaning up paths."
+
     storage_option = infer_storage_options(path)
 
     protocol = storage_option['protocol']
     if protocol in ('http', 'https'):
-        return path.replace("{}://".format(protocol), '')
+        # Most FSs remove the protocol but not HTTPFS. We need to strip
+        # it to match properly.
+        return os.path.normpath(path.replace("{}://".format(protocol), ''))
+    elif protocol == 'file':
+        # Just removing trailing slashes from file paths.
+        return os.path.normpath(path)
+    # Otherwise we leave the path alone
     return path
 
 
@@ -55,8 +63,8 @@ class FileCache(object):
     def _munge_path(self, cache_subdir, urlpath):
         import re
 
-        regex = os.path.normpath(strip_http(self._spec['regex']))
-        path = os.path.normpath(strip_http(urlpath))
+        regex = sanitize_path(self._spec['regex'])
+        path = sanitize_path(urlpath)
 
         cache_path = re.sub(
             r"%s" % regex,
@@ -126,9 +134,9 @@ class FileCache(object):
                 continue
 
             if not os.path.isfile(cache_path):
-                logger.info("Caching file: {}".format(file_in.path))
-                logger.info("Original path: {}".format(urlpath))
-                logger.info("Cached at: {}".format(cache_path))
+                logger.debug("Caching file: {}".format(file_in.path))
+                logger.debug("Original path: {}".format(urlpath))
+                logger.debug("Cached at: {}".format(cache_path))
                 self._log_metadata(urlpath, file_in.path, cache_path)
 
                 with file_in as f1:
