@@ -32,6 +32,13 @@ def test_munge_path(file_cache):
     assert subdir in cache_path
     assert 'test/path' not in cache_path
 
+    file_cache._spec['regex'] = 'https://example.com'
+    cache_path = file_cache._munge_path(subdir, 'https://example.com/catalog.yml')
+    assert subdir in cache_path
+    assert file_cache._cache_dir in cache_path
+    assert 'http' not in cache_path
+
+
 def test_hash(file_cache):
     subdir = file_cache._hash('foo/bar.csv')
 

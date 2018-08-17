@@ -8,9 +8,19 @@ import logging
 import os
 import shutil
 
+from dask.bytes.utils import infer_storage_options
 from intake.config import conf
 
 logger = logging.getLogger('intake')
+
+
+def strip_http(path):
+    storage_option = infer_storage_options(path)
+
+    protocol = storage_option['protocol']
+    if protocol in ('http', 'https'):
+        return path.replace("{}://".format(protocol), '')
+    return path
 
 
 class FileCache(object):
@@ -44,12 +54,17 @@ class FileCache(object):
 
     def _munge_path(self, cache_subdir, urlpath):
         import re
+
+        regex = os.path.normpath(strip_http(self._spec['regex']))
+        path = os.path.normpath(strip_http(urlpath))
+
         cache_path = re.sub(
-            r"%s" % os.path.normpath(self._spec['regex']),
+            r"%s" % regex,
             os.path.join(self._cache_dir, cache_subdir),
-            urlpath
+            path
         )
-        return cache_path
+
+        return urlpath if path == cache_path else cache_path
 
     def _hash(self, urlpath):
         return md5(
@@ -106,8 +121,14 @@ class FileCache(object):
             cache_path = file_out.path
             cache_paths.append(cache_path)
 
+            # If `_munge_path` did not find a match we want to avoid writing to the urlpath.
+            if cache_path == urlpath:
+                continue
+
             if not os.path.isfile(cache_path):
-                logger.info("Caching file {} from urlpath {}".format(file_in.path, urlpath))
+                logger.info("Caching file: {}".format(file_in.path))
+                logger.info("Original path: {}".format(urlpath))
+                logger.info("Cached at: {}".format(cache_path))
                 self._log_metadata(urlpath, file_in.path, cache_path)
 
                 with file_in as f1:
@@ -131,7 +152,7 @@ class FileCache(object):
         -------
         Metadata (dict) about a given urlpath.
         """
-        return self._metadata[urlpath]
+        return self._metadata.get(urlpath)
     
     def clear_cache(self, urlpath):
         """
