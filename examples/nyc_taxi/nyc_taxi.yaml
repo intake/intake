@@ -12,7 +12,7 @@ sources:
     cache:
       - argkey: urlpath
         regex: 'datashader-data'
-        sub: '{{ CACHE_DIR }}'
+        type: file
     args:
       urlpath: 's3://datashader-data/nyc_taxi.csv'
       storage_options: {'anon': True}

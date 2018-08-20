@@ -8,9 +8,27 @@ import logging
 import os
 import shutil
 
+from dask.bytes.utils import infer_storage_options
 from intake.config import conf
 
 logger = logging.getLogger('intake')
+
+
+def sanitize_path(path):
+    "Utility for cleaning up paths."
+
+    storage_option = infer_storage_options(path)
+
+    protocol = storage_option['protocol']
+    if protocol in ('http', 'https'):
+        # Most FSs remove the protocol but not HTTPFS. We need to strip
+        # it to match properly.
+        return os.path.normpath(path.replace("{}://".format(protocol), ''))
+    elif protocol == 'file':
+        # Just removing trailing slashes from file paths.
+        return os.path.normpath(path)
+    # Otherwise we leave the path alone
+    return path
 
 
 class FileCache(object):
@@ -44,12 +62,17 @@ class FileCache(object):
 
     def _munge_path(self, cache_subdir, urlpath):
         import re
+
+        regex = sanitize_path(self._spec['regex'])
+        path = sanitize_path(urlpath)
+
         cache_path = re.sub(
-            r"%s" % os.path.normpath(self._spec['regex']),
+            r"%s" % regex,
             os.path.join(self._cache_dir, cache_subdir),
-            urlpath
+            path
         )
-        return cache_path
+
+        return urlpath if path == cache_path else cache_path
 
     def _hash(self, urlpath):
         return md5(
@@ -106,8 +129,14 @@ class FileCache(object):
             cache_path = file_out.path
             cache_paths.append(cache_path)
 
+            # If `_munge_path` did not find a match we want to avoid writing to the urlpath.
+            if cache_path == urlpath:
+                continue
+
             if not os.path.isfile(cache_path):
-                logger.info("Caching file {} from urlpath {}".format(file_in.path, urlpath))
+                logger.debug("Caching file: {}".format(file_in.path))
+                logger.debug("Original path: {}".format(urlpath))
+                logger.debug("Cached at: {}".format(cache_path))
                 self._log_metadata(urlpath, file_in.path, cache_path)
 
                 with file_in as f1:
@@ -131,7 +160,7 @@ class FileCache(object):
         -------
         Metadata (dict) about a given urlpath.
         """
-        return self._metadata[urlpath]
+        return self._metadata.get(urlpath)
     
     def clear_cache(self, urlpath):
         """
