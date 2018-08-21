@@ -140,18 +140,24 @@ class FileCache(object):
                 logger.debug("Cached at: {}".format(cache_path))
                 self._log_metadata(urlpath, file_in.path, cache_path)
 
-                file_size = file_in.fs.size(file_in.path)
-                percent_per_block = 100 * self.blocksize / file_size
+                try:
+                    file_size = file_in.fs.size(file_in.path)
+                    progress_block = 100 * self.blocksize / file_size
+                    pbar_disabled = False
+                except ValueError as err:
+                    logger.debug("File system error requesting size: {}".format(err))
+                    progress_block = 0
+                    pbar_disabled = True
+
                 print("Caching {}".format(file_in.path))
-                with tqdm_notebook(total=100, leave=False) as pbar:
+                with tqdm_notebook(total=100, leave=False, disable=pbar_disabled) as pbar:
                     with file_in as f1:
                         with file_out as f2:
                             data = True
                             while data:
                                 data = f1.read(self.blocksize)
                                 f2.write(data)
-                                pbar.update(int(percent_per_block))
-
+                                pbar.update(int(progress_block))
 
         return cache_paths
 
