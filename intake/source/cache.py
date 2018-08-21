@@ -31,6 +31,9 @@ def sanitize_path(path):
     return path
 
 
+display = {}
+
+
 class FileCache(object):
     """
     Provides utilities for managing cached data files.
@@ -197,6 +200,7 @@ class FileCache(object):
 
 def _download(file_in, file_out, blocksize):
     from tqdm.autonotebook import tqdm
+    blocksize = 2**20
 
     try:
         file_size = file_in.fs.size(file_in.path)
@@ -206,17 +210,26 @@ def _download(file_in, file_out, blocksize):
         logger.debug("File system error requesting size: {}".format(err))
         progress_block = 0
         pbar_disabled = True
+    for i in range(100):
+        if i not in display:
+            display[i] = True
+            out = i
+            break
 
     logger.debug("Caching {}".format(file_in.path))
-    pbar = tqdm(total=100, leave=False, disable=pbar_disabled)
+    pbar = tqdm(total=file_size // 2**20, leave=False, disable=pbar_disabled,
+                position=out, desc=os.path.basename(file_out.path),
+                mininterval=0.1,
+                bar_format=r'{n}/|/{l_bar}')
     with file_in as f1:
         with file_out as f2:
             data = True
             while data:
                 data = f1.read(blocksize)
                 f2.write(data)
-                pbar.update(int(progress_block))
+                pbar.update(len(data) // 2**20)
     pbar.close()
+    del display[out]
 
 
 class CacheMetadata(collections.MutableMapping):
