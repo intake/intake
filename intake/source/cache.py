@@ -225,6 +225,7 @@ def _download(file_in, file_out, blocksize):
                 data = f1.read(blocksize)
                 f2.write(data)
                 pbar.update(len(data) // 2**20)
+    pbar.update(pbar.total - pbar.n)  # force to full
     pbar.close()
     del display[out]
 
