@@ -147,7 +147,7 @@ class FileCache(object):
                 self._log_metadata(urlpath, file_in.path, cache_path)
                 ddown = dask.delayed(_download)
                 out.append(ddown(file_in, file_out, self.blocksize))
-        dask.compute(*out, scheduler='threads')
+        dask.compute(*out)
 
         return cache_paths
 
@@ -200,15 +200,12 @@ class FileCache(object):
 
 def _download(file_in, file_out, blocksize):
     from tqdm.autonotebook import tqdm
-    blocksize = 2**20
 
     try:
         file_size = file_in.fs.size(file_in.path)
-        progress_block = 100 * blocksize / file_size
         pbar_disabled = False
     except ValueError as err:
         logger.debug("File system error requesting size: {}".format(err))
-        progress_block = 0
         pbar_disabled = True
     for i in range(100):
         if i not in display:
