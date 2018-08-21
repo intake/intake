@@ -119,6 +119,8 @@ class FileCache(object):
             return [urlpath]
 
         from dask.bytes import open_files
+        from tqdm import tqdm_notebook
+        from IPython.display import clear_output
 
         self._ensure_cache_dir()
         subdir = self._hash(urlpath)
@@ -139,13 +141,20 @@ class FileCache(object):
                 logger.debug("Cached at: {}".format(cache_path))
                 self._log_metadata(urlpath, file_in.path, cache_path)
 
-                with file_in as f1:
-                    with file_out as f2:
-                        data = True
-                        while data:
-                            #TODO: print out progress
-                            data = f1.read(self.blocksize)
-                            f2.write(data)
+                file_size = file_in.fs.size(file_in.path)
+                percent_per_block = 100 * self.blocksize / file_size
+                print("Caching {}".format(file_in.path))
+                with tqdm_notebook(total=100) as pbar:
+                    with file_in as f1:
+                        with file_out as f2:
+                            data = True
+                            while data:
+                                data = f1.read(self.blocksize)
+                                f2.write(data)
+                                pbar.update(int(percent_per_block))
+                clear_output()
+
+
         return cache_paths
 
     def get_metadata(self, urlpath):
