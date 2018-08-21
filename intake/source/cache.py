@@ -119,18 +119,21 @@ class FileCache(object):
             return [urlpath]
 
         from dask.bytes import open_files
-        from tqdm.autonotebook import tqdm
+        import dask
 
         self._ensure_cache_dir()
         subdir = self._hash(urlpath)
         cache_paths = []
         files_in = open_files(urlpath, 'rb')
-        files_out = open_files([self._path(f.path, subdir) for f in files_in], 'wb')
+        files_out = [open_files([self._path(f.path, subdir)], 'wb')[0]
+                     for f in files_in]
+        out = []
         for file_in, file_out in zip(files_in, files_out):
             cache_path = file_out.path
             cache_paths.append(cache_path)
 
-            # If `_munge_path` did not find a match we want to avoid writing to the urlpath.
+            # If `_munge_path` did not find a match we want to avoid
+            # writing to the urlpath.
             if cache_path == urlpath:
                 continue
 
@@ -139,25 +142,9 @@ class FileCache(object):
                 logger.debug("Original path: {}".format(urlpath))
                 logger.debug("Cached at: {}".format(cache_path))
                 self._log_metadata(urlpath, file_in.path, cache_path)
-
-                try:
-                    file_size = file_in.fs.size(file_in.path)
-                    progress_block = 100 * self.blocksize / file_size
-                    pbar_disabled = False
-                except ValueError as err:
-                    logger.debug("File system error requesting size: {}".format(err))
-                    progress_block = 0
-                    pbar_disabled = True
-
-                print("Caching {}".format(file_in.path))
-                with tqdm(total=100, leave=False, disable=pbar_disabled) as pbar:
-                    with file_in as f1:
-                        with file_out as f2:
-                            data = True
-                            while data:
-                                data = f1.read(self.blocksize)
-                                f2.write(data)
-                                pbar.update(int(progress_block))
+                ddown = dask.delayed(_download)
+                out.append(ddown(file_in, file_out, self.blocksize))
+        dask.compute(*out, scheduler='threads')
 
         return cache_paths
 
@@ -206,6 +193,30 @@ class FileCache(object):
                 shutil.rmtree(os.path.join(self._cache_dir, subdir))
         except FileNotFoundError:
             pass
+
+
+def _download(file_in, file_out, blocksize):
+    from tqdm.autonotebook import tqdm
+
+    try:
+        file_size = file_in.fs.size(file_in.path)
+        progress_block = 100 * blocksize / file_size
+        pbar_disabled = False
+    except ValueError as err:
+        logger.debug("File system error requesting size: {}".format(err))
+        progress_block = 0
+        pbar_disabled = True
+
+    logger.debug("Caching {}".format(file_in.path))
+    pbar = tqdm(total=100, leave=False, disable=pbar_disabled)
+    with file_in as f1:
+        with file_out as f2:
+            data = True
+            while data:
+                data = f1.read(blocksize)
+                f2.write(data)
+                pbar.update(int(progress_block))
+    pbar.close()
 
 
 class CacheMetadata(collections.MutableMapping):
