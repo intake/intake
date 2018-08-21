@@ -119,6 +119,7 @@ class FileCache(object):
             return [urlpath]
 
         from dask.bytes import open_files
+        from tqdm.autonotebook import tqdm
 
         self._ensure_cache_dir()
         subdir = self._hash(urlpath)
@@ -139,13 +140,25 @@ class FileCache(object):
                 logger.debug("Cached at: {}".format(cache_path))
                 self._log_metadata(urlpath, file_in.path, cache_path)
 
-                with file_in as f1:
-                    with file_out as f2:
-                        data = True
-                        while data:
-                            #TODO: print out progress
-                            data = f1.read(self.blocksize)
-                            f2.write(data)
+                try:
+                    file_size = file_in.fs.size(file_in.path)
+                    progress_block = 100 * self.blocksize / file_size
+                    pbar_disabled = False
+                except ValueError as err:
+                    logger.debug("File system error requesting size: {}".format(err))
+                    progress_block = 0
+                    pbar_disabled = True
+
+                print("Caching {}".format(file_in.path))
+                with tqdm(total=100, leave=False, disable=pbar_disabled) as pbar:
+                    with file_in as f1:
+                        with file_out as f2:
+                            data = True
+                            while data:
+                                data = f1.read(self.blocksize)
+                                f2.write(data)
+                                pbar.update(int(progress_block))
+
         return cache_paths
 
     def get_metadata(self, urlpath):
