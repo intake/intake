@@ -119,7 +119,7 @@ class FileCache(object):
             return [urlpath]
 
         from dask.bytes import open_files
-        from tqdm import tqdm_notebook
+        from tqdm.autonotebook import tqdm
 
         self._ensure_cache_dir()
         subdir = self._hash(urlpath)
@@ -150,7 +150,7 @@ class FileCache(object):
                     pbar_disabled = True
 
                 print("Caching {}".format(file_in.path))
-                with tqdm_notebook(total=100, leave=False, disable=pbar_disabled) as pbar:
+                with tqdm(total=100, leave=False, disable=pbar_disabled) as pbar:
                     with file_in as f1:
                         with file_out as f2:
                             data = True
