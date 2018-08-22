@@ -34,7 +34,7 @@ def sanitize_path(path):
 display = set()
 
 
-class FileCache(object):
+class BaseCache(object):
     """
     Provides utilities for managing cached data files.
     """
@@ -102,9 +102,9 @@ class FileCache(object):
             }
         self._metadata.update(urlpath, metadata)
 
-    def load(self, urlpath, output=None):
+    def load(self, urlpath, output=None, **kwargs):
         """
-        Downloads data from a given url, generates a hashed filename, 
+        Downloads data from a given url, generates a hashed filename,
         logs metadata, and caches it locally.
 
         Parameters:
@@ -125,15 +125,15 @@ class FileCache(object):
         output = output if output is not None else conf.get(
             'cache_download_progress', True)
 
-        from dask.bytes import open_files
-        import dask
-
-        self._ensure_cache_dir()
-        subdir = self._hash(urlpath)
         cache_paths = []
-        files_in = open_files(urlpath, 'rb')
-        files_out = [open_files([self._path(f.path, subdir)], 'wb')[0]
-                     for f in files_in]
+        files_in, files_out = self._make_files(urlpath)
+        self._load(files_in, files_out, cache_paths, urlpath, output)
+
+        return cache_paths
+
+    def _load(self, files_in, files_out, cache_paths, urlpath, output):
+        """Download a set of files"""
+        import dask
         out = []
         for file_in, file_out in zip(files_in, files_out):
             cache_path = file_out.path
@@ -153,7 +153,9 @@ class FileCache(object):
                 out.append(ddown(file_in, file_out, self.blocksize, output))
         dask.compute(*out)
 
-        return cache_paths
+    def _make_files(self, urlpath):
+        """Make OpenFiles for all input/outputs"""
+        raise NotImplementedError
 
     def get_metadata(self, urlpath):
         """
@@ -203,6 +205,7 @@ class FileCache(object):
 
 
 def _download(file_in, file_out, blocksize, output=False):
+    """Read from input and write to output file in blocks"""
     if output:
         from tqdm.autonotebook import tqdm
 
@@ -236,6 +239,57 @@ def _download(file_in, file_out, blocksize, output=False):
         pbar.update(pbar.total - pbar.n)  # force to full
         pbar.close()
         display.remove(out)
+
+
+class FileCache(BaseCache):
+    def _make_files(self, urlpath):
+        from dask.bytes import open_files
+
+        self._ensure_cache_dir()
+        subdir = self._hash(urlpath)
+        files_in = open_files(urlpath, 'rb')
+        files_out = [open_files([self._path(f.path, subdir)], 'wb')[0]
+                     for f in files_in]
+        return files_in, files_out
+
+
+class DirCache(BaseCache):
+    def _make_files(self, urlpath, **kwargs):
+        from dask.bytes import open_files
+
+        self._ensure_cache_dir()
+        subdir = self._hash(urlpath)
+        depth = self._spec['depth']
+        files_in = []
+        for i in range(1, depth + 1):
+            files_in.extend(open_files('/'.join([urlpath] + ['*']*i)))
+        files_out = [open_files([self._path(f.path, subdir)], 'wb')[0]
+                     for f in files_in]
+        files_in2, files_out2 = [], []
+        paths = set(os.path.dirname(f.path) for f in files_in)
+        print(paths)
+        for fin, fout in zip(files_in, files_out):
+            print(fin, fout)
+            if fin.path in paths:
+                try:
+                    print('mkdir', fout.path)
+                    os.makedirs(fout.path)
+                except Exception:
+                    pass
+            else:
+                files_in2.append(fin)
+                files_out2.append(fout)
+        import pdb
+        pdb.set_trace()
+        return files_in2, files_out2
+
+
+class CompressedCache(BaseCache):
+    def _make_files(self, urlpath, **kwargs):
+        import dask.bytes.compression
+        import tempfile
+        ext = os.path.splitext(urlpath)[1]
+        comp = kwargs.get('compression', ext)
 
 
 class CacheMetadata(collections.MutableMapping):
@@ -293,8 +347,11 @@ class CacheMetadata(collections.MutableMapping):
 
 
 registry = {
-    'file': FileCache
+    'file': FileCache,
+    'dir': DirCache,
+    'copmressed': CompressedCache
 }
+
 
 def make_caches(driver, specs):
     """
