@@ -279,8 +279,6 @@ class DirCache(BaseCache):
             else:
                 files_in2.append(fin)
                 files_out2.append(fout)
-        import pdb
-        pdb.set_trace()
         return files_in2, files_out2
 
 
