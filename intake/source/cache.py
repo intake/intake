@@ -31,7 +31,7 @@ def sanitize_path(path):
     return path
 
 
-display = {}
+display = set()
 
 
 class FileCache(object):
@@ -212,7 +212,7 @@ def _download(file_in, file_out, blocksize, output=False):
             pbar_disabled = True
         for i in range(100):
             if i not in display:
-                display[i] = True
+                display.add(i)
                 out = i
                 break
         pbar = tqdm(total=file_size // 2 ** 20, leave=False,
@@ -233,7 +233,7 @@ def _download(file_in, file_out, blocksize, output=False):
     if output:
         pbar.update(pbar.total - pbar.n)  # force to full
         pbar.close()
-        del display[out]
+        display.remove(out)
 
 
 class CacheMetadata(collections.MutableMapping):
