@@ -102,7 +102,7 @@ class FileCache(object):
             }
         self._metadata.update(urlpath, metadata)
 
-    def load(self, urlpath):
+    def load(self, urlpath, output=True):
         """
         Downloads data from a given url, generates a hashed filename, 
         logs metadata, and caches it locally.
@@ -112,6 +112,8 @@ class FileCache(object):
         urlpath: str, location of data
             May be a local path, or remote path if including a protocol specifier
             such as ``'s3://'``. May include glob wildcards.
+        output: bool
+            Whether to show progress bars; turn off for testing
 
         Returns
         -------
@@ -146,7 +148,7 @@ class FileCache(object):
                 logger.debug("Cached at: {}".format(cache_path))
                 self._log_metadata(urlpath, file_in.path, cache_path)
                 ddown = dask.delayed(_download)
-                out.append(ddown(file_in, file_out, self.blocksize))
+                out.append(ddown(file_in, file_out, self.blocksize, output))
         dask.compute(*out)
 
         return cache_paths
@@ -198,26 +200,28 @@ class FileCache(object):
             pass
 
 
-def _download(file_in, file_out, blocksize):
-    from tqdm.autonotebook import tqdm
+def _download(file_in, file_out, blocksize, output=False):
+    if output:
+        from tqdm.autonotebook import tqdm
 
-    try:
-        file_size = file_in.fs.size(file_in.path)
-        pbar_disabled = False
-    except ValueError as err:
-        logger.debug("File system error requesting size: {}".format(err))
-        pbar_disabled = True
-    for i in range(100):
-        if i not in display:
-            display[i] = True
-            out = i
-            break
+        try:
+            file_size = file_in.fs.size(file_in.path)
+            pbar_disabled = False
+        except ValueError as err:
+            logger.debug("File system error requesting size: {}".format(err))
+            pbar_disabled = True
+        for i in range(100):
+            if i not in display:
+                display[i] = True
+                out = i
+                break
+        pbar = tqdm(total=file_size // 2 ** 20, leave=False,
+                    disable=pbar_disabled,
+                    position=out, desc=os.path.basename(file_out.path),
+                    mininterval=0.1,
+                    bar_format=r'{n}/|/{l_bar}')
 
     logger.debug("Caching {}".format(file_in.path))
-    pbar = tqdm(total=file_size // 2**20, leave=False, disable=pbar_disabled,
-                position=out, desc=os.path.basename(file_out.path),
-                mininterval=0.1,
-                bar_format=r'{n}/|/{l_bar}')
     with file_in as f1:
         with file_out as f2:
             data = True
@@ -225,9 +229,10 @@ def _download(file_in, file_out, blocksize):
                 data = f1.read(blocksize)
                 f2.write(data)
                 pbar.update(len(data) // 2**20)
-    pbar.update(pbar.total - pbar.n)  # force to full
-    pbar.close()
-    del display[out]
+    if output:
+        pbar.update(pbar.total - pbar.n)  # force to full
+        pbar.close()
+        del display[out]
 
 
 class CacheMetadata(collections.MutableMapping):
