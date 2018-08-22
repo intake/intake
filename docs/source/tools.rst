@@ -30,6 +30,8 @@ These are the defaults, and any parameters not specified will take the values ab
   always allows access). For further information on securing
   the Intake Server, see the :ref:`authplugins`.
 
+See ``intake.config.defaults`` for a full list of keys and their default values.
+
 Log Level
 ---------
 
