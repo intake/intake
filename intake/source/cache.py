@@ -122,16 +122,16 @@ class BaseCache(object):
         """
         if conf.get('cache_disabled', False):
             return [urlpath]
-        output = output if output is not None else conf.get(
+        self.output = output if output is not None else conf.get(
             'cache_download_progress', True)
 
         cache_paths = []
         files_in, files_out = self._make_files(urlpath)
-        self._load(files_in, files_out, cache_paths, urlpath, output)
+        self._load(files_in, files_out, cache_paths, urlpath)
 
         return cache_paths
 
-    def _load(self, files_in, files_out, cache_paths, urlpath, output):
+    def _load(self, files_in, files_out, cache_paths, urlpath):
         """Download a set of files"""
         import dask
         out = []
@@ -150,7 +150,8 @@ class BaseCache(object):
                 logger.debug("Cached at: {}".format(cache_path))
                 self._log_metadata(urlpath, file_in.path, cache_path)
                 ddown = dask.delayed(_download)
-                out.append(ddown(file_in, file_out, self.blocksize, output))
+                out.append(ddown(file_in, file_out, self.blocksize,
+                                 self.output))
         dask.compute(*out)
 
     def _make_files(self, urlpath):
@@ -267,12 +268,9 @@ class DirCache(BaseCache):
                      for f in files_in]
         files_in2, files_out2 = [], []
         paths = set(os.path.dirname(f.path) for f in files_in)
-        print(paths)
         for fin, fout in zip(files_in, files_out):
-            print(fin, fout)
             if fin.path in paths:
                 try:
-                    print('mkdir', fout.path)
                     os.makedirs(fout.path)
                 except Exception:
                     pass
@@ -284,10 +282,76 @@ class DirCache(BaseCache):
 
 class CompressedCache(BaseCache):
     def _make_files(self, urlpath, **kwargs):
-        import dask.bytes.compression
         import tempfile
-        ext = os.path.splitext(urlpath)[1]
-        comp = kwargs.get('compression', ext)
+        d = tempfile.mkdtemp()
+        from dask.bytes import open_files
+
+        self._ensure_cache_dir()
+        files_in = open_files(urlpath, 'rb')
+        files_out = [open_files(
+            [os.path.join(d, os.path.basename(f.path))], 'wb')[0]
+             for f in files_in]
+        out = []
+        super(CompressedCache, self)._load(files_in, files_out, out, urlpath)
+        files_in = [f.path for f in files_out]
+        subdir = self._hash(urlpath)
+        return files_in, os.path.join(self._cache_dir, subdir)
+
+    def _load(self, files_in, outpath, out, urlpath):
+        try:
+            os.makedirs(outpath)
+        except:
+            pass
+        for f in files_in:
+            if f.endswith('.zip'):
+                import zipfile
+                z = zipfile.ZipFile(f, 'r')
+                z.extractall(outpath)
+                out.extend([os.path.join(outpath, fn.filename)
+                            for fn in z.filelist])
+                z.close()
+            elif f.endswith(".tar.gz") or f.endswith('.tgz'):
+                import tarfile
+                tar = tarfile.open(f, "r:gz")
+                out.extend([os.path.join(outpath, fn)
+                            for fn in tar.getmembers()])
+                tar.extractall(outpath)
+                tar.close()
+            elif f.endswith(".tar.bz2") or f.endswith('.tbz'):
+                import tarfile
+                tar = tarfile.open(f, "r:bz2")
+                out.extend([os.path.join(outpath, fn)
+                            for fn in tar.getmembers()])
+                tar.extractall(outpath)
+                tar.close()
+            elif f.endswith(".tar"):
+                import tarfile
+                tar = tarfile.open(f, "r:")
+                out.extend([os.path.join(outpath, fn)
+                            for fn in tar.getmembers()])
+                tar.extractall(outpath)
+                tar.close()
+            elif f.endswith('.gz'):
+                import gzip
+                z = gzip.open(f)
+                fn = os.path.basename(f)[:-3]
+                with open(os.path.join(outpath, fn), 'wb') as fout:
+                    data = True
+                    while data:
+                        data = z.read(2**15)
+                        fout.write(data)
+                out.append(fn)
+            elif f.endswith('.bz2'):
+                import bz2
+                z = bz2.open(f)
+                fn = os.path.basename(f)[:-3]
+                with open(os.path.join(outpath, fn), 'wb') as fout:
+                    data = True
+                    while data:
+                        data = z.read(2 ** 15)
+                        fout.write(data)
+                out.append(fn)
+        return out
 
 
 class CacheMetadata(collections.MutableMapping):
@@ -347,7 +411,7 @@ class CacheMetadata(collections.MutableMapping):
 registry = {
     'file': FileCache,
     'dir': DirCache,
-    'copmressed': CompressedCache
+    'compressed': CompressedCache
 }
 
 

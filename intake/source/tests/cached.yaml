@@ -1,0 +1,9 @@
+sources:
+  calvert:
+    driver: csv
+    args:
+      urlpath: '{{ CATALOG_DIR }}/calvert_uk.zip'
+    cache:
+      - type: compressed
+        argkey: urlpath
+        regex: '{{ CATALOG_DIR }}'
