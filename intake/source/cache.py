@@ -102,7 +102,7 @@ class FileCache(object):
             }
         self._metadata.update(urlpath, metadata)
 
-    def load(self, urlpath, output=True):
+    def load(self, urlpath, output=None):
         """
         Downloads data from a given url, generates a hashed filename, 
         logs metadata, and caches it locally.
@@ -122,6 +122,8 @@ class FileCache(object):
         """
         if conf.get('cache_disabled', False):
             return [urlpath]
+        output = output if output is not None else conf.get(
+            'cache_download_progress', True)
 
         from dask.bytes import open_files
         import dask

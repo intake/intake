@@ -13,7 +13,8 @@ defaults = {
     'auth': {'class': 'intake.auth.base.BaseAuth'},
     'port': 5000,
     'cache_dir': os.path.join(expanduser('~'), '.intake/cache'),
-    'cache_disabled': os.environ.get('INTAKE_DISABLE_CACHING', False)
+    'cache_disabled': os.environ.get('INTAKE_DISABLE_CACHING', False),
+    'cache_download_progress': os.environ.get('INTAKE_CACHE_PROGRESS', True)
     }
 conf = {}
 
