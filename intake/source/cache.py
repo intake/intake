@@ -228,7 +228,8 @@ def _download(file_in, file_out, blocksize, output=False):
             while data:
                 data = f1.read(blocksize)
                 f2.write(data)
-                pbar.update(len(data) // 2**20)
+                if output:
+                    pbar.update(len(data) // 2**20)
     if output:
         pbar.update(pbar.total - pbar.n)  # force to full
         pbar.close()
