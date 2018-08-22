@@ -41,7 +41,7 @@ class FileCache(object):
     # download block size in bytes
     blocksize = 5000000
 
-    def __init__(self, driver, spec, cache_dir=None):
+    def __init__(self, driver, spec, cache_dir=None, storage_options={}):
         """
         Parameters:
         -----------
@@ -55,6 +55,7 @@ class FileCache(object):
         self._cache_dir = cache_dir or os.getenv('INTAKE_CACHE_DIR',
                                                  conf['cache_dir'])
                              
+        self._storage_options = storage_options
         self._metadata = CacheMetadata()
     
     def _ensure_cache_dir(self):
@@ -131,7 +132,7 @@ class FileCache(object):
         self._ensure_cache_dir()
         subdir = self._hash(urlpath)
         cache_paths = []
-        files_in = open_files(urlpath, 'rb')
+        files_in = open_files(urlpath, 'rb', **self._storage_options)
         files_out = [open_files([self._path(f.path, subdir)], 'wb')[0]
                      for f in files_in]
         out = []
@@ -296,7 +297,7 @@ registry = {
     'file': FileCache
 }
 
-def make_caches(driver, specs):
+def make_caches(driver, specs, storage_options):
     """
     Creates Cache objects from the cache_specs provided in the catalog yaml file.
     
@@ -309,4 +310,8 @@ def make_caches(driver, specs):
     """
     if specs is None:
         return []
-    return [registry.get(spec['type'], FileCache)(driver, spec) for spec in specs]
+    return [
+        registry.get(spec['type'], FileCache)(driver, 
+                                              spec, 
+                                              storage_options=storage_options) 
+            for spec in specs]
