@@ -423,12 +423,8 @@ registry = {
     'compressed': CompressedCache
 }
 
-<<<<<<< HEAD
 
-def make_caches(driver, specs):
-=======
 def make_caches(driver, specs, storage_options):
->>>>>>> master
     """
     Creates Cache objects from the cache_specs provided in the catalog yaml file.
     
