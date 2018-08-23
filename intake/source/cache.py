@@ -437,8 +437,6 @@ def make_caches(driver, specs, storage_options):
     """
     if specs is None:
         return []
-    return [
-        registry.get(spec['type'], FileCache)(driver, 
-                                              spec, 
-                                              storage_options=storage_options) 
+    return [registry.get(spec['type'], FileCache)(
+                driver, spec, storage_options=storage_options)
             for spec in specs]

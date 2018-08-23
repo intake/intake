@@ -7,3 +7,12 @@ sources:
       - type: compressed
         argkey: urlpath
         regex: '{{ CATALOG_DIR }}'
+  dirs:
+    driver: textfiles
+    args:
+      urlpath: '{{ CATALOG_DIR }}/main'
+    cache:
+      - type: dir
+        regex: '{{ CATALOG_DIR }}'
+        argkey: urlpath
+        depth: 2
