@@ -94,8 +94,16 @@ def test_dir_cache(tmpdir):
     try:
         cat = intake.open_catalog(fn)
         s = cat.dirs()
-        out = s.cache[0].load(s._urlpath)
+        out = s.cache[0].load(s._urlpath, output=False)
         assert out[0] == os.path.join(tmpdir, s.cache[0]._path(s._urlpath))
         assert open(os.path.join(out[0], 'afile')).read() == 'main/afile'
     finally:
         shutil.rmtree(tmpdir)
+
+
+def test_compressed_cache():
+    cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
+    s = cat.calvert()
+    intake.config.conf['cache_download_progress'] = False
+    df = s.read()
+    assert len(df)
