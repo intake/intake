@@ -104,6 +104,10 @@ def test_dir_cache(tmpdir):
 def test_compressed_cache():
     cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
     s = cat.calvert()
-    intake.config.conf['cache_download_progress'] = False
-    df = s.read()
-    assert len(df)
+    old = intake.config.conf['cache_download_progress']
+    try:
+        intake.config.conf['cache_download_progress'] = False
+        df = s.read()
+        assert len(df)
+    finally:
+        intake.config.conf['cache_download_progress'] = old
