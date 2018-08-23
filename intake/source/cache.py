@@ -41,7 +41,7 @@ class BaseCache(object):
     # download block size in bytes
     blocksize = 5000000
 
-    def __init__(self, driver, spec, cache_dir=None):
+    def __init__(self, driver, spec, cache_dir=None, storage_options={}):
         """
         Parameters:
         -----------
@@ -55,6 +55,7 @@ class BaseCache(object):
         self._cache_dir = cache_dir or os.getenv('INTAKE_CACHE_DIR',
                                                  conf['cache_dir'])
                              
+        self._storage_options = storage_options
         self._metadata = CacheMetadata()
     
     def _ensure_cache_dir(self):
@@ -249,7 +250,8 @@ class FileCache(BaseCache):
         self._ensure_cache_dir()
         subdir = self._hash(urlpath)
         files_in = open_files(urlpath, 'rb')
-        files_out = [open_files([self._path(f.path, subdir)], 'wb')[0]
+        files_out = [open_files([self._path(f.path, subdir)], 'wb',
+                                **self._storage_options)[0]
                      for f in files_in]
         return files_in, files_out
 
@@ -264,7 +266,8 @@ class DirCache(BaseCache):
         files_in = []
         for i in range(1, depth + 1):
             files_in.extend(open_files('/'.join([urlpath] + ['*']*i)))
-        files_out = [open_files([self._path(f.path, subdir)], 'wb')[0]
+        files_out = [open_files([self._path(f.path, subdir)], 'wb',
+                                **self._storage_options)[0]
                      for f in files_in]
         files_in2, files_out2 = [], []
         paths = set(os.path.dirname(f.path) for f in files_in)
@@ -294,7 +297,8 @@ class CompressedCache(BaseCache):
         self._ensure_cache_dir()
         files_in = open_files(urlpath, 'rb')
         files_out = [open_files(
-            [os.path.join(d, os.path.basename(f.path))], 'wb')[0]
+            [os.path.join(d, os.path.basename(f.path))], 'wb',
+                                **self._storage_options)[0]
              for f in files_in]
         out = []
         super(CompressedCache, self)._load(files_in, files_out, out, urlpath)
@@ -419,8 +423,12 @@ registry = {
     'compressed': CompressedCache
 }
 
+<<<<<<< HEAD
 
 def make_caches(driver, specs):
+=======
+def make_caches(driver, specs, storage_options):
+>>>>>>> master
     """
     Creates Cache objects from the cache_specs provided in the catalog yaml file.
     
@@ -433,4 +441,8 @@ def make_caches(driver, specs):
     """
     if specs is None:
         return []
-    return [registry.get(spec['type'], FileCache)(driver, spec) for spec in specs]
+    return [
+        registry.get(spec['type'], FileCache)(driver, 
+                                              spec, 
+                                              storage_options=storage_options) 
+            for spec in specs]

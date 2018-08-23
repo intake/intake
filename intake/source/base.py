@@ -79,7 +79,8 @@ class DataSource(object):
         # default data
         self.metadata = metadata or {}
         if isinstance(self.metadata, dict):
-            self.cache = make_caches(self.name, self.metadata.get('cache'))
+            storage_options = self._captured_init_kwargs.get('storage_options', {})
+            self.cache = make_caches(self.name, self.metadata.get('cache'), storage_options)
         self.datashape = None
         self.dtype = None
         self.shape = None
