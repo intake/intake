@@ -279,6 +279,11 @@ class DirCache(BaseCache):
                 files_out2.append(fout)
         return files_in2, files_out2
 
+    def _load(self, files_in, outpath, out, urlpath):
+        super(DirCache, self)._load(files_in, outpath, out, urlpath)
+        del out[:]
+        out.append(self._path(urlpath))
+
 
 class CompressedCache(BaseCache):
     def _make_files(self, urlpath, **kwargs):
