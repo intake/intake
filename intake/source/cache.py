@@ -250,6 +250,12 @@ def _download(file_in, file_out, blocksize, output=False):
 
 
 class FileCache(BaseCache):
+    """Cache specific set of files
+
+    Input is a single file URL, URL with glob characters or list of URLs. Output
+    is a specific set of local files.
+    """
+
     def _make_files(self, urlpath, **kwargs):
         from dask.bytes import open_files
 
@@ -263,6 +269,13 @@ class FileCache(BaseCache):
 
 
 class DirCache(BaseCache):
+    """Cache a complete directory tree
+
+    Input is a directory root URL, plus a ``depth`` parameter for how many
+    levels of subdirectories to search. All regular files will be copied. Output
+    is the resultant local directory tree.
+    """
+
     def _make_files(self, urlpath, **kwargs):
         from dask.bytes import open_files
 
@@ -294,6 +307,16 @@ class DirCache(BaseCache):
 
 
 class CompressedCache(BaseCache):
+    """Download and decompress cacher
+
+    For one or more remote compressed files, downloads to local temporary and
+    extracts all contained files to local cache. Input is URL(s) (including
+    globs) pointing to remote compressed files, plus optional ``decomp``,
+    which is "infer" by default (guess from file extension) or one of the
+    key strings in ``intake.source.decompress.decomp``. Output is the list
+    of extracted files.
+    """
+
     def _make_files(self, urlpath, **kwargs):
         import tempfile
         d = tempfile.mkdtemp()
