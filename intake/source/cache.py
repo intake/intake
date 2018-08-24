@@ -37,6 +37,10 @@ display = set()
 class BaseCache(object):
     """
     Provides utilities for managing cached data files.
+
+    Providers of caching functionality should derive from this, and appear
+    as entries in ``registry``. The principle methods to override are
+    ``_make_files()`` and ``_load()``.
     """
     # download block size in bytes
     blocksize = 5000000
