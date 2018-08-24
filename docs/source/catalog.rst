@@ -226,7 +226,7 @@ or, equivalently, the environment parameter ``INTAKE_CACHE_PROGRESS``.
 
 
 The "types" of caching are that supported are listed in ``intake.source.cache.registry``, see
-the doctrings of each for specific parameters that should appear in the cache block.
+the docstrings of each for specific parameters that should appear in the cache block.
 
 
 Local Catalogs
