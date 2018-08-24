@@ -217,6 +217,18 @@ Caching can be disabled at runtime for all sources regardless of the catalog spe
 
     conf['cache_disabled'] = True
 
+By default, progress bars are shown during downloads, but this can be disabled (e.g., for
+consoles that don't support complex text) with
+
+    conf['cache_download_progress'] = False
+
+or, equivalently, the environment parameter ``INTAKE_CACHE_PROGRESS``.
+
+
+The "types" of caching are that supported are listed in ``intake.source.cache.registry``, see
+the docstrings of each for specific parameters that should appear in the cache block.
+
+
 Local Catalogs
 --------------
 

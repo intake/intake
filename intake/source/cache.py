@@ -34,9 +34,13 @@ def sanitize_path(path):
 display = set()
 
 
-class FileCache(object):
+class BaseCache(object):
     """
     Provides utilities for managing cached data files.
+
+    Providers of caching functionality should derive from this, and appear
+    as entries in ``registry``. The principle methods to override are
+    ``_make_files()`` and ``_load()``.
     """
     # download block size in bytes
     blocksize = 5000000
@@ -103,9 +107,9 @@ class FileCache(object):
             }
         self._metadata.update(urlpath, metadata)
 
-    def load(self, urlpath, output=None):
+    def load(self, urlpath, output=None, **kwargs):
         """
-        Downloads data from a given url, generates a hashed filename, 
+        Downloads data from a given url, generates a hashed filename,
         logs metadata, and caches it locally.
 
         Parameters:
@@ -123,22 +127,22 @@ class FileCache(object):
         """
         if conf.get('cache_disabled', False):
             return [urlpath]
-        output = output if output is not None else conf.get(
+        self.output = output if output is not None else conf.get(
             'cache_download_progress', True)
 
-        from dask.bytes import open_files
-        import dask
+        files_in, files_out = self._make_files(urlpath)
+        cache_paths = self._load(files_in, files_out, urlpath)
 
-        self._ensure_cache_dir()
-        subdir = self._hash(urlpath)
-        cache_paths = []
-        files_in = open_files(urlpath, 'rb', **self._storage_options)
-        files_out = [open_files([self._path(f.path, subdir)], 'wb')[0]
-                     for f in files_in]
+        return cache_paths
+
+    def _load(self, files_in, files_out, urlpath):
+        """Download a set of files"""
+        import dask
         out = []
+        outnames = []
         for file_in, file_out in zip(files_in, files_out):
             cache_path = file_out.path
-            cache_paths.append(cache_path)
+            outnames.append(cache_path)
 
             # If `_munge_path` did not find a match we want to avoid
             # writing to the urlpath.
@@ -151,10 +155,14 @@ class FileCache(object):
                 logger.debug("Cached at: {}".format(cache_path))
                 self._log_metadata(urlpath, file_in.path, cache_path)
                 ddown = dask.delayed(_download)
-                out.append(ddown(file_in, file_out, self.blocksize, output))
+                out.append(ddown(file_in, file_out, self.blocksize,
+                                 self.output))
         dask.compute(*out)
+        return outnames
 
-        return cache_paths
+    def _make_files(self, urlpath, **kwargs):
+        """Make OpenFiles for all input/outputs"""
+        raise NotImplementedError
 
     def get_metadata(self, urlpath):
         """
@@ -204,6 +212,7 @@ class FileCache(object):
 
 
 def _download(file_in, file_out, blocksize, output=False):
+    """Read from input and write to output file in blocks"""
     if output:
         from tqdm.autonotebook import tqdm
 
@@ -238,6 +247,119 @@ def _download(file_in, file_out, blocksize, output=False):
         pbar.update(pbar.total - pbar.n)  # force to full
         pbar.close()
         display.remove(out)
+
+
+class FileCache(BaseCache):
+    """Cache specific set of files
+
+    Input is a single file URL, URL with glob characters or list of URLs. Output
+    is a specific set of local files.
+    """
+
+    def _make_files(self, urlpath, **kwargs):
+        from dask.bytes import open_files
+
+        self._ensure_cache_dir()
+        subdir = self._hash(urlpath)
+        files_in = open_files(urlpath, 'rb')
+        files_out = [open_files([self._path(f.path, subdir)], 'wb',
+                                **self._storage_options)[0]
+                     for f in files_in]
+        return files_in, files_out
+
+
+class DirCache(BaseCache):
+    """Cache a complete directory tree
+
+    Input is a directory root URL, plus a ``depth`` parameter for how many
+    levels of subdirectories to search. All regular files will be copied. Output
+    is the resultant local directory tree.
+    """
+
+    def _make_files(self, urlpath, **kwargs):
+        from dask.bytes import open_files
+
+        self._ensure_cache_dir()
+        subdir = self._hash(urlpath)
+        depth = self._spec['depth']
+        files_in = []
+        for i in range(1, depth + 1):
+            files_in.extend(open_files('/'.join([urlpath] + ['*']*i)))
+        files_out = [open_files([self._path(f.path, subdir)], 'wb',
+                                **self._storage_options)[0]
+                     for f in files_in]
+        files_in2, files_out2 = [], []
+        paths = set(os.path.dirname(f.path) for f in files_in)
+        for fin, fout in zip(files_in, files_out):
+            if fin.path in paths:
+                try:
+                    os.makedirs(fout.path)
+                except Exception:
+                    pass
+            else:
+                files_in2.append(fin)
+                files_out2.append(fout)
+        return files_in2, files_out2
+
+    def _load(self, files_in, files_out, urlpath):
+        super(DirCache, self)._load(files_in, files_out, urlpath)
+        return [self._path(urlpath)]
+
+
+class CompressedCache(BaseCache):
+    """Download and decompress cacher
+
+    For one or more remote compressed files, downloads to local temporary and
+    extracts all contained files to local cache. Input is URL(s) (including
+    globs) pointing to remote compressed files, plus optional ``decomp``,
+    which is "infer" by default (guess from file extension) or one of the
+    key strings in ``intake.source.decompress.decomp``. Output is the list
+    of extracted files.
+    """
+
+    def _make_files(self, urlpath, **kwargs):
+        import tempfile
+        d = tempfile.mkdtemp()
+        from dask.bytes import open_files
+
+        self._ensure_cache_dir()
+        files_in = open_files(urlpath, 'rb')
+        files_out = [open_files(
+            [os.path.join(d, os.path.basename(f.path))], 'wb',
+                                **self._storage_options)[0]
+             for f in files_in]
+        super(CompressedCache, self)._load(files_in, files_out, urlpath)
+        files_in = [f.path for f in files_out]
+        subdir = self._hash(urlpath)
+        return files_in, os.path.join(self._cache_dir, subdir)
+
+    def _load(self, files_in, files_out, out):
+        from .decompress import decomp
+        try:
+            os.makedirs(files_out)
+        except (OSError, IOError):
+            pass
+        out = []
+        for f in files_in:
+            # TODO: add snappy, brotli, lzo, lz4, xz... ?
+            if 'decomp' in self._spec and self._spec['decomp'] != 'infer':
+                d = self._spec['decomp']
+            elif f.endswith('.zip'):
+                d = 'zip'
+            elif f.endswith(".tar.gz") or f.endswith('.tgz'):
+                d = 'tgz'
+            elif f.endswith(".tar.bz2") or f.endswith('.tbz'):
+                d = 'tbz'
+            elif f.endswith(".tar"):
+                d = 'tar'
+            elif f.endswith('.gz'):
+                d = 'gz'
+            elif f.endswith('.bz2'):
+                d = 'bz'
+            if d not in decomp:
+                raise ValueError('Unknown compression for "%s"' % f)
+            out.extend(decomp[d](f, files_out))
+        return out
 
 
 class CacheMetadata(collections.MutableMapping):
@@ -295,8 +417,11 @@ class CacheMetadata(collections.MutableMapping):
 
 
 registry = {
-    'file': FileCache
+    'file': FileCache,
+    'dir': DirCache,
+    'compressed': CompressedCache
 }
+
 
 def make_caches(driver, specs, storage_options):
     """
@@ -311,8 +436,6 @@ def make_caches(driver, specs, storage_options):
     """
     if specs is None:
         return []
-    return [
-        registry.get(spec['type'], FileCache)(driver, 
-                                              spec, 
-                                              storage_options=storage_options) 
+    return [registry.get(spec['type'], FileCache)(
+                driver, spec, storage_options=storage_options)
             for spec in specs]

@@ -8,6 +8,7 @@ API Reference: Base Classes
    intake.container.base.RemoteSource
    intake.catalog.local.UserParameter
    intake.auth.base.BaseAuth
+   intake.source.cache.BaseCache
 
 .. autoclass:: intake.source.base.DataSource
    :members:
@@ -29,4 +30,7 @@ API Reference: Base Classes
    :members:
 
 .. autoclass:: intake.auth.base.BaseAuth
+   :members:
+
+.. autoclass:: intake.source.cache.BaseCache
    :members:
