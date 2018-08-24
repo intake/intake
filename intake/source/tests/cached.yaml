@@ -7,6 +7,24 @@ sources:
       - type: compressed
         argkey: urlpath
         regex: '{{ CATALOG_DIR }}'
+  calvert_infer:
+    driver: csv
+    args:
+      urlpath: '{{ CATALOG_DIR }}/calvert_uk.zip'
+    cache:
+      - type: compressed
+        argkey: urlpath
+        regex: '{{ CATALOG_DIR }}'
+        decomp: infer
+  calvert_badkey:
+    driver: csv
+    args:
+      urlpath: '{{ CATALOG_DIR }}/calvert_uk.zip'
+    cache:
+      - type: compressed
+        argkey: urlpath
+        regex: '{{ CATALOG_DIR }}'
+        decomp: unknown
   dirs:
     driver: textfiles
     args:

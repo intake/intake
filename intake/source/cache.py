@@ -126,19 +126,19 @@ class BaseCache(object):
         self.output = output if output is not None else conf.get(
             'cache_download_progress', True)
 
-        cache_paths = []
         files_in, files_out = self._make_files(urlpath)
-        self._load(files_in, files_out, cache_paths, urlpath)
+        cache_paths = self._load(files_in, files_out, urlpath)
 
         return cache_paths
 
-    def _load(self, files_in, files_out, cache_paths, urlpath):
+    def _load(self, files_in, files_out, urlpath):
         """Download a set of files"""
         import dask
         out = []
+        outnames = []
         for file_in, file_out in zip(files_in, files_out):
             cache_path = file_out.path
-            cache_paths.append(cache_path)
+            outnames.append(cache_path)
 
             # If `_munge_path` did not find a match we want to avoid
             # writing to the urlpath.
@@ -154,8 +154,9 @@ class BaseCache(object):
                 out.append(ddown(file_in, file_out, self.blocksize,
                                  self.output))
         dask.compute(*out)
+        return outnames
 
-    def _make_files(self, urlpath):
+    def _make_files(self, urlpath, **kwargs):
         """Make OpenFiles for all input/outputs"""
         raise NotImplementedError
 
@@ -244,7 +245,7 @@ def _download(file_in, file_out, blocksize, output=False):
 
 
 class FileCache(BaseCache):
-    def _make_files(self, urlpath):
+    def _make_files(self, urlpath, **kwargs):
         from dask.bytes import open_files
 
         self._ensure_cache_dir()
@@ -282,10 +283,9 @@ class DirCache(BaseCache):
                 files_out2.append(fout)
         return files_in2, files_out2
 
-    def _load(self, files_in, outpath, out, urlpath):
-        super(DirCache, self)._load(files_in, outpath, out, urlpath)
-        del out[:]
-        out.append(self._path(urlpath))
+    def _load(self, files_in, files_out, urlpath):
+        super(DirCache, self)._load(files_in, files_out, urlpath)
+        return [self._path(urlpath)]
 
 
 class CompressedCache(BaseCache):
@@ -300,66 +300,37 @@ class CompressedCache(BaseCache):
             [os.path.join(d, os.path.basename(f.path))], 'wb',
                                 **self._storage_options)[0]
              for f in files_in]
-        out = []
-        super(CompressedCache, self)._load(files_in, files_out, out, urlpath)
+        super(CompressedCache, self)._load(files_in, files_out, urlpath)
         files_in = [f.path for f in files_out]
         subdir = self._hash(urlpath)
         return files_in, os.path.join(self._cache_dir, subdir)
 
-    def _load(self, files_in, outpath, out, urlpath):
+    def _load(self, files_in, files_out, out):
+        from .decompress import decomp
         try:
-            os.makedirs(outpath)
-        except:
+            os.makedirs(files_out)
+        except (OSError, IOError):
             pass
+        out = []
         for f in files_in:
-            if f.endswith('.zip'):
-                import zipfile
-                z = zipfile.ZipFile(f, 'r')
-                z.extractall(outpath)
-                out.extend([os.path.join(outpath, fn.filename)
-                            for fn in z.filelist])
-                z.close()
+            # TODO: add snappy, brotli, lzo, lz4, xz... ?
+            if 'decomp' in self._spec and self._spec['decomp'] != 'infer':
+                d = self._spec['decomp']
+            elif f.endswith('.zip'):
+                d = 'zip'
             elif f.endswith(".tar.gz") or f.endswith('.tgz'):
-                import tarfile
-                tar = tarfile.open(f, "r:gz")
-                out.extend([os.path.join(outpath, fn)
-                            for fn in tar.getmembers()])
-                tar.extractall(outpath)
-                tar.close()
+                d = 'tgz'
             elif f.endswith(".tar.bz2") or f.endswith('.tbz'):
-                import tarfile
-                tar = tarfile.open(f, "r:bz2")
-                out.extend([os.path.join(outpath, fn)
-                            for fn in tar.getmembers()])
-                tar.extractall(outpath)
-                tar.close()
+                d = 'tbz'
             elif f.endswith(".tar"):
-                import tarfile
-                tar = tarfile.open(f, "r:")
-                out.extend([os.path.join(outpath, fn)
-                            for fn in tar.getmembers()])
-                tar.extractall(outpath)
-                tar.close()
+                d = 'tar'
             elif f.endswith('.gz'):
-                import gzip
-                z = gzip.open(f)
-                fn = os.path.basename(f)[:-3]
-                with open(os.path.join(outpath, fn), 'wb') as fout:
-                    data = True
-                    while data:
-                        data = z.read(2**15)
-                        fout.write(data)
-                out.append(fn)
+                d = 'gz'
             elif f.endswith('.bz2'):
-                import bz2
-                z = bz2.open(f)
-                fn = os.path.basename(f)[:-3]
-                with open(os.path.join(outpath, fn), 'wb') as fout:
-                    data = True
-                    while data:
-                        data = z.read(2 ** 15)
-                        fout.write(data)
-                out.append(fn)
+                d = 'bz'
+            if d not in decomp:
+                raise ValueError('Unknown compression for "%s"' % f)
+            out.extend(decomp[d](f, files_out))
         return out
 
 

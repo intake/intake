@@ -111,3 +111,27 @@ def test_compressed_cache():
         assert len(df)
     finally:
         intake.config.conf['cache_download_progress'] = old
+
+
+def test_compressed_cache_infer():
+    cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
+    s = cat.calvert_infer()
+    old = intake.config.conf['cache_download_progress']
+    try:
+        intake.config.conf['cache_download_progress'] = False
+        df = s.read()
+        assert len(df)
+    finally:
+        intake.config.conf['cache_download_progress'] = old
+
+
+def test_compressed_cache_bad():
+    cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
+    s = cat.calvert_badkey()
+    old = intake.config.conf['cache_download_progress']
+    try:
+        intake.config.conf['cache_download_progress'] = False
+        with pytest.raises(ValueError):
+            s.read()
+    finally:
+        intake.config.conf['cache_download_progress'] = old
