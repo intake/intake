@@ -212,6 +212,7 @@ def _download(file_in, file_out, blocksize, output=False):
             pbar_disabled = False
         except ValueError as err:
             logger.debug("File system error requesting size: {}".format(err))
+            file_size = 0
             pbar_disabled = True
         for i in range(100):
             if i not in display:
