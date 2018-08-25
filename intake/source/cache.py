@@ -66,7 +66,8 @@ class BaseCache(object):
         if not os.path.exists(self._cache_dir):
             os.makedirs(self._cache_dir)
         if os.path.isfile(self._cache_dir):
-            raise Exception("Path for cache directory exists as a file: {}".format(self._cache_dir))
+            raise Exception("Path for cache directory exists as a file: {}"
+                            "".format(self._cache_dir))
 
     def _munge_path(self, cache_subdir, urlpath):
         import re
@@ -370,6 +371,9 @@ class CacheMetadata(collections.MutableMapping):
         from intake import config
 
         self._path = os.path.join(config.confdir, 'cache_metadata.json')
+        d = os.path.dirname(self._path)
+        if not os.path.exists(d):
+            os.makedirs(d)
 
         if os.path.isfile(self._path):
             with open(self._path) as f:
