@@ -147,6 +147,7 @@ def main(argv=None):
     conf_get = conf_sub.add_parser('get')
     conf_get.add_argument('key', type=str, help='Key in config dictionary',
                           nargs='?')
+    conf_get.set_defaults(func=conf_get_key)
 
     if not argv[1:]:
         parser.print_usage()
