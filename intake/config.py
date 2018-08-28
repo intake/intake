@@ -27,6 +27,27 @@ def reset_conf():
     conf.update(defaults)
 
 
+def cfile():
+    return os.getenv('INTAKE_CONF_FILE', None) or os.path.join(
+        confdir, 'conf.yaml')
+
+
+def save_conf(fn=None):
+    """Save current configuration to file as YAML
+
+    If not given, uses current config directory, ``confdir``, which can be
+    set by INTAKE_CONF_DIR.
+    """
+    if fn is None:
+        fn = cfile()
+    try:
+        os.makedirs(os.path.dirname(fn))
+    except (OSError, IOError):
+        pass
+    with open(fn, 'w') as f:
+        yaml.dump(conf, f)
+
+
 def load_conf(fn=None):
     """Update global config from YAML file
 
@@ -34,7 +55,7 @@ def load_conf(fn=None):
     by the INTAKE_CONF_DIR env-var or is ~/.intake/ .
     """
     if fn is None:
-        fn = os.path.join(confdir, 'conf.yaml')
+        fn = cfile()
     if os.path.isfile(fn):
         with open(fn) as f:
             conf.update(yaml.load(f))

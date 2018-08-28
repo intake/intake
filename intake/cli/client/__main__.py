@@ -4,6 +4,7 @@ import sys
 import os
 import argparse
 import shutil
+import yaml
 
 from intake import Catalog
 
@@ -71,6 +72,35 @@ def example(args):
 ''' % files[0])
 
 
+def conf_def(args):
+    from intake.config import defaults
+    print(yaml.dump(defaults, default_flow_style=False))
+
+
+def conf_reset_save(args):
+    from intake.config import reset_conf, save_conf
+    reset_conf()
+    save_conf()
+
+
+def conf_get_key(args):
+    from intake.config import conf
+    if args.key:
+        print(conf[args.key])
+    else:
+        print(yaml.dump(conf, default_flow_style=False))
+
+
+def conf_show_info(args):
+    from intake.config import cfile
+    if 'INTAKE_CONF_DIR' in os.environ:
+        print('INTAKE_CONF_DIR: ', os.environ['INTAKE_CONF_DIR'])
+    if 'INTAKE_CONF_FILE' in os.environ:
+        print('INTAKE_CONF_FILE: ', os.environ['INTAKE_CONF_FILE'])
+    ex = "" if os.path.isfile(cfile()) else "(does not exist)"
+    print('Using: ', cfile(), ex)
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv
@@ -105,6 +135,22 @@ def main(argv=None):
 
     example_parser = subparsers.add_parser('example', help='create example catalog')
     example_parser.set_defaults(func=example)
+
+    conf_parser = subparsers.add_parser('config', help='configuration functions')
+    conf_sub = conf_parser.add_subparsers()
+    conf_list = conf_sub.add_parser('list-defaults')
+    conf_list.set_defaults(func=conf_def)
+    conf_reset = conf_sub.add_parser('reset')
+    conf_reset.set_defaults(func=conf_reset_save)
+    conf_info = conf_sub.add_parser('info')
+    conf_info.set_defaults(func=conf_show_info)
+    conf_get = conf_sub.add_parser('get')
+    conf_get.add_argument('key', type=str, help='Key in config dictionary',
+                          nargs='?')
+    conf_set = conf_sub.add_parser('set')
+    conf_set.add_argument('key', type=str, help='Key in config dictionary')
+    conf_set.add_argument('value', type=str, help='Value to store')
+    conf_get.set_defaults(func=conf_get_key)
 
     if not argv[1:]:
         parser.print_usage()
