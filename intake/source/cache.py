@@ -56,8 +56,7 @@ class BaseCache(object):
         """
         self._driver = driver
         self._spec = spec
-        self._cache_dir = cache_dir or os.getenv('INTAKE_CACHE_DIR',
-                                                 conf['cache_dir'])
+        self._cache_dir = cache_dir or conf['cache_dir']
                              
         self._storage_options = storage_options
         self._metadata = CacheMetadata()
@@ -136,7 +135,7 @@ class BaseCache(object):
 
         return cache_paths
 
-    def _load(self, files_in, files_out, urlpath):
+    def _load(self, files_in, files_out, urlpath, meta=True):
         """Download a set of files"""
         import dask
         out = []
@@ -154,7 +153,8 @@ class BaseCache(object):
                 logger.debug("Caching file: {}".format(file_in.path))
                 logger.debug("Original path: {}".format(urlpath))
                 logger.debug("Cached at: {}".format(cache_path))
-                self._log_metadata(urlpath, file_in.path, cache_path)
+                if meta:
+                    self._log_metadata(urlpath, file_in.path, cache_path)
                 ddown = dask.delayed(_download)
                 out.append(ddown(file_in, file_out, self.blocksize,
                                  self.output))
@@ -324,12 +324,14 @@ class CompressedCache(BaseCache):
         from dask.bytes import open_files
 
         self._ensure_cache_dir()
+        self._urlpath = urlpath
         files_in = open_files(urlpath, 'rb')
         files_out = [open_files(
             [os.path.join(d, os.path.basename(f.path))], 'wb',
                                 **self._storage_options)[0]
              for f in files_in]
-        super(CompressedCache, self)._load(files_in, files_out, urlpath)
+        super(CompressedCache, self)._load(files_in, files_out, urlpath,
+                                           meta=False)
         files_in = [f.path for f in files_out]
         subdir = self._hash(urlpath)
         return files_in, os.path.join(self._cache_dir, subdir)
@@ -360,6 +362,11 @@ class CompressedCache(BaseCache):
             if d not in decomp:
                 raise ValueError('Unknown compression for "%s"' % f)
             out.extend(decomp[d](f, files_out))
+        for fn in out:
+            logger.debug("Caching file: {}".format(f))
+            logger.debug("Original path: {}".format(out))
+            logger.debug("Cached at: {}".format(fn))
+            self._log_metadata(self.urlpath, f, fn)
         return out
 
 

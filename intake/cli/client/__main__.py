@@ -101,6 +101,35 @@ def conf_show_info(args):
     print('Using: ', cfile(), ex)
 
 
+def cache_clear(args):
+    from intake.source.cache import BaseCache
+    c = BaseCache()
+    if args.key is None:
+        c.clear_all()
+    else:
+        c.clear_cache(args.key)
+
+
+def cache_usage(args):
+    from intake.config import conf
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(conf['cache_dir']):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += os.path.getsize(fp)
+    print("%s: %iMB" % (conf['cache_dir'], total_size / 2**20))
+
+
+def cache_list_files(args):
+    from intake.source.cache import BaseCache
+    c = BaseCache()
+    print(list(c._metadata))
+
+
+def cache_list_keys(args):
+    pass
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv
@@ -138,16 +167,31 @@ def main(argv=None):
 
     conf_parser = subparsers.add_parser('config', help='configuration functions')
     conf_sub = conf_parser.add_subparsers()
-    conf_list = conf_sub.add_parser('list-defaults')
+    conf_list = conf_sub.add_parser('list-defaults', help='Show all builtin defaults')
     conf_list.set_defaults(func=conf_def)
-    conf_reset = conf_sub.add_parser('reset')
+    conf_reset = conf_sub.add_parser('reset', help='Set config file to defaults')
     conf_reset.set_defaults(func=conf_reset_save)
-    conf_info = conf_sub.add_parser('info')
+    conf_info = conf_sub.add_parser('info', help='Show config settings')
     conf_info.set_defaults(func=conf_show_info)
-    conf_get = conf_sub.add_parser('get')
+    conf_get = conf_sub.add_parser('get', help='Get current config, specific key or all')
     conf_get.add_argument('key', type=str, help='Key in config dictionary',
                           nargs='?')
     conf_get.set_defaults(func=conf_get_key)
+
+    cache_parser = subparsers.add_parser('cache', help='Locally cached files')
+    cache_sub = cache_parser.add_subparsers()
+    cache_list = cache_sub.add_parser('list-keys', help='List keys currently stored')
+    cache_list.set_defaults(func=cache_list_keys)
+    cache_files = cache_sub.add_parser('list-files', help='List files for a give key')
+    cache_files.add_argument('key', type=str, help='Key to list files for')
+    cache_files.set_defaults(func=cache_list_files)
+    cache_rm = cache_sub.add_parser('clear')
+    cache_rm.add_argument('key', type=str, help='Key to remove (all, if omitted)',
+                          nargs='?')
+    cache_rm.set_defaults(func=cache_clear)
+    cache_du = cache_sub.add_parser('usage')
+    cache_du.set_defaults(func=cache_usage)
+
 
     if not argv[1:]:
         parser.print_usage()

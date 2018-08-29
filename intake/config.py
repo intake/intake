@@ -13,10 +13,9 @@ defaults = {
     'auth': {'class': 'intake.auth.base.BaseAuth'},
     'port': 5000,
     'cache_dir': os.path.join(expanduser('~'), '.intake/cache'),
-    'cache_disabled': os.environ.get(
-        'INTAKE_DISABLE_CACHING', 'False').lower() != 'false',
-    'cache_download_progress': os.environ.get(
-        'INTAKE_CACHE_PROGRESS', 'True').lower() == 'true'
+    'cache_disabled': 'false',
+    'cache_download_progress': 'true',
+    'logging': 'INFO'
     }
 conf = {}
 
@@ -63,3 +62,15 @@ def load_conf(fn=None):
 
 reset_conf()
 load_conf(conffile)
+# environment variables take precedence over conf file
+if 'INTAKE_CACHE_DIR' in os.environ:
+    conf['cache_dir'] = os.environ['INTAKE_CACHE_DIR']
+if 'INTAKE_DISABLE_CACHING' in os.environ:
+    conf['cache_disabled'] = os.environ.get(
+        'INTAKE_DISABLE_CACHING', 'False').lower() != 'false'
+if 'INTAKE_CACHE_PROGRESS' in os.environ:
+    conf['cache_download_progress'] = os.environ.get(
+        'INTAKE_CACHE_PROGRESS', 'True').lower() == 'true'
+if 'INTAKE_LOG_LEVEL' in os.environ:
+    # TODO: apply this to logger
+    conf['logging'] = os.environ['INTAKE_LOG_LEVEL']
