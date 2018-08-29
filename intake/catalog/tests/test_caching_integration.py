@@ -122,7 +122,6 @@ def test_clear_all(catalog_cache):
 
 
 def test_second_load(catalog_cache):
-    import stat
     cat = catalog_cache['test_cache']
     cache = cat.cache[0]
 

@@ -117,17 +117,26 @@ def cache_usage(args):
         for f in filenames:
             fp = os.path.join(dirpath, f)
             total_size += os.path.getsize(fp)
-    print("%s: %iMB" % (conf['cache_dir'], total_size / 2**20))
+    for unit in ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z']:
+        # "human"
+        # https://gist.github.com/cbwar/d2dfbc19b140bd599daccbe0fe925597
+        if abs(total_size) < 1024.0:
+            s = "%3.1f %s" % (total_size, unit)
+            break
+        total_size /= 1024.0
+    print("%s: %s" % (conf['cache_dir'], s))
 
 
 def cache_list_files(args):
-    from intake.source.cache import BaseCache
-    c = BaseCache()
-    print(list(c._metadata))
+    from intake.source.cache import CacheMetadata
+    md = CacheMetadata()
+    print(yaml.dump(md[args.key], default_flow_style=False))
 
 
 def cache_list_keys(args):
-    pass
+    from intake.source.cache import CacheMetadata
+    md = CacheMetadata()
+    print(yaml.dump(list(md), default_flow_style=False))
 
 
 def main(argv=None):
@@ -192,12 +201,14 @@ def main(argv=None):
     cache_du = cache_sub.add_parser('usage')
     cache_du.set_defaults(func=cache_usage)
 
-
     if not argv[1:]:
         parser.print_usage()
         sys.exit(1)
 
     args = parser.parse_args()
+    if not hasattr(args, 'func') and '-h' not in argv:
+        argv.append('-h')
+        args = parser.parse_args()
     retcode = args.func(args)
     if retcode is None:
         retcode = 0

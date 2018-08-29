@@ -39,7 +39,7 @@ class BaseCache(object):
 
     Providers of caching functionality should derive from this, and appear
     as entries in ``registry``. The principle methods to override are
-    ``_make_files()`` and ``_load()``.
+    ``_make_files()`` and ``_load()`` and ``_from_metadata()``.
     """
     # download block size in bytes
     blocksize = 5000000
@@ -347,7 +347,7 @@ class CompressedCache(BaseCache):
 
     def _load(self, files_in, files_out, urlpath, meta=True):
         from .decompress import decomp
-        subdir = self._hash(urlpath)
+        subdir = self._path(urlpath)
         try:
             os.makedirs(subdir)
         except (OSError, IOError):
