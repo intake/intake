@@ -139,6 +139,14 @@ def cache_list_keys(args):
     print(yaml.dump(list(md), default_flow_style=False))
 
 
+def cache_clear_all(args):
+    from intake.source.cache import BaseCache
+    if args.key is None:
+        BaseCache(None, None).clear_all()
+    else:
+        BaseCache(None, None).clear_cache(args.key)
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv
@@ -197,7 +205,7 @@ def main(argv=None):
     cache_rm = cache_sub.add_parser('clear')
     cache_rm.add_argument('key', type=str, help='Key to remove (all, if omitted)',
                           nargs='?')
-    cache_rm.set_defaults(func=cache_clear)
+    cache_rm.set_defaults(func=cache_clear_all)
     cache_du = cache_sub.add_parser('usage')
     cache_du.set_defaults(func=cache_usage)
 

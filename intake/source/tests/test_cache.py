@@ -5,6 +5,7 @@ import shutil
 from intake.source.cache import FileCache, CacheMetadata
 import intake
 import intake.config
+from intake.source.tests.util import temp_cache
 here = os.path.dirname(os.path.abspath(__file__))
 import logging
 logger = logging.getLogger('intake')
@@ -15,21 +16,6 @@ logging.basicConfig()
 def file_cache():
     return FileCache('csv', 
                      {'argkey': 'urlpath', 'regex': 'test/path', 'type': 'file'})
-
-
-@pytest.fixture
-def temp_cache(tmpdir):
-    old = intake.config.conf.copy()
-    olddir = intake.config.confdir
-    intake.config.confdir = str(tmpdir)
-    intake.config.conf.update({'cache_dir': str(tmpdir),
-                               'cache_download_progress': False,
-                               'cache_disabled': False})
-    try:
-        yield
-    finally:
-        intake.config.confdir = olddir
-        intake.config.conf.update(old)
 
 
 def test_ensure_cache_dir(file_cache):
