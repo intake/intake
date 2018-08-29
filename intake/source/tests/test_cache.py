@@ -2,15 +2,34 @@ import os
 import pytest
 import shutil
 
-from intake.source.cache import FileCache
+from intake.source.cache import FileCache, CacheMetadata
 import intake
+import intake.config
 here = os.path.dirname(os.path.abspath(__file__))
+import logging
+logger = logging.getLogger('intake')
+logging.basicConfig()
 
 
 @pytest.fixture
 def file_cache():
     return FileCache('csv', 
                      {'argkey': 'urlpath', 'regex': 'test/path', 'type': 'file'})
+
+
+@pytest.fixture
+def temp_cache(tmpdir):
+    old = intake.config.conf.copy()
+    olddir = intake.config.confdir
+    intake.config.confdir = str(tmpdir)
+    intake.config.conf.update({'cache_dir': str(tmpdir),
+                               'cache_download_progress': False,
+                               'cache_disabled': False})
+    try:
+        yield
+    finally:
+        intake.config.confdir = olddir
+        intake.config.conf.update(old)
 
 
 def test_ensure_cache_dir(file_cache):
@@ -81,7 +100,7 @@ def test_path_no_match(file_cache):
     assert urlpath == cache_path
 
 
-def test_dir_cache(tmpdir):
+def test_dir_cache(tmpdir, temp_cache):
     [os.makedirs(os.path.join(tmpdir, d)) for d in [
         'main', 'main/sub1', 'main/sub2']]
     for f in ['main/afile', 'main/sub1/subfile', 'main/sub2/subfile1',
@@ -91,17 +110,23 @@ def test_dir_cache(tmpdir):
             fo.write(f)
     fn = os.path.join(tmpdir, 'cached.yaml')
     shutil.copy2(os.path.join(here, 'cached.yaml'), fn)
-    try:
-        cat = intake.open_catalog(fn)
-        s = cat.dirs()
-        out = s.cache[0].load(s._urlpath, output=False)
-        assert out[0] == os.path.join(tmpdir, s.cache[0]._path(s._urlpath))
-        assert open(os.path.join(out[0], 'afile')).read() == 'main/afile'
-    finally:
-        shutil.rmtree(tmpdir)
+    cat = intake.open_catalog(fn)
+    s = cat.dirs()
+    out = s.cache[0].load(s._urlpath, output=False)
+    assert out[0] == os.path.join(tmpdir, s.cache[0]._path(s._urlpath))
+    assert open(os.path.join(out[0], 'afile')).read() == 'main/afile'
+    md = CacheMetadata()
+    got = md[s._urlpath]
+
+    # Avoid re-copy
+    s = cat.dirs()
+    s.cache[0].load(s._urlpath, output=False)
+    md2 = CacheMetadata()
+    got2 = md2[s._urlpath]
+    assert got == got2
 
 
-def test_compressed_cache():
+def test_compressed_cache(temp_cache):
     cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
     s = cat.calvert()
     old = intake.config.conf['cache_download_progress']
@@ -109,11 +134,18 @@ def test_compressed_cache():
         intake.config.conf['cache_download_progress'] = False
         df = s.read()
         assert len(df)
+        md = CacheMetadata()
+        assert len(md[s._urlpath]) == 1  # we gained exactly one CSV
+        intake.config.conf['cache_download_progress'] = False
+        df = s.read()
+        assert len(df)
+        md = CacheMetadata()
+        assert len(md[s._urlpath]) == 1  # we still have exactly one CSV
     finally:
         intake.config.conf['cache_download_progress'] = old
 
 
-def test_compressed_cache_infer():
+def test_compressed_cache_infer(temp_cache):
     cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
     s = cat.calvert_infer()
     old = intake.config.conf['cache_download_progress']
@@ -125,7 +157,7 @@ def test_compressed_cache_infer():
         intake.config.conf['cache_download_progress'] = old
 
 
-def test_compressed_cache_bad():
+def test_compressed_cache_bad(temp_cache):
     cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
     s = cat.calvert_badkey()
     old = intake.config.conf['cache_download_progress']

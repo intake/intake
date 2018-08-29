@@ -122,6 +122,7 @@ def test_clear_all(catalog_cache):
 
 
 def test_second_load(catalog_cache):
+    import stat
     cat = catalog_cache['test_cache']
     cache = cat.cache[0]
 
@@ -129,10 +130,12 @@ def test_second_load(catalog_cache):
     cache_path = cache_paths[-1]
 
     assert os.path.isfile(cache_path)
-    os.remove(cache_path)
+    t1 = os.path.getmtime(cache_path)
 
     cache.load(cat._urlpath, output=False)
     assert os.path.isfile(cache_path)
+    t2 = os.path.getmtime(cache_path)
+    assert t1 == t2
 
     cache.clear_all()
 

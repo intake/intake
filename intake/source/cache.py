@@ -129,10 +129,19 @@ class BaseCache(object):
         self.output = output if output is not None else conf.get(
             'cache_download_progress', True)
 
-        files_in, files_out = self._make_files(urlpath)
-        cache_paths = self._load(files_in, files_out, urlpath)
-
+        cache_paths = self._from_metadata(urlpath)
+        if cache_paths is None:
+            files_in, files_out = self._make_files(urlpath)
+            self._load(files_in, files_out, urlpath)
+            md = self.get_metadata(urlpath)  # rescan
+        cache_paths = self._from_metadata(urlpath)
         return cache_paths
+
+    def _from_metadata(self, urlpath):
+        """Return set of local URLs if files already exist"""
+        md = self.get_metadata(urlpath)
+        if md is not None:
+            return [e['cache_path'] for e in md]
 
     def _load(self, files_in, files_out, urlpath, meta=True):
         """Download a set of files"""
@@ -301,9 +310,11 @@ class DirCache(BaseCache):
                 files_out2.append(fout)
         return files_in2, files_out2
 
-    def _load(self, files_in, files_out, urlpath):
-        super(DirCache, self)._load(files_in, files_out, urlpath)
-        return [self._path(urlpath)]
+    def _from_metadata(self, urlpath):
+        """Return set of local URLs if files already exist"""
+        md = self.get_metadata(urlpath)
+        if md is not None:
+            return [self._path(urlpath)]
 
 
 class CompressedCache(BaseCache):
@@ -331,18 +342,19 @@ class CompressedCache(BaseCache):
              for f in files_in]
         super(CompressedCache, self)._load(files_in, files_out, urlpath,
                                            meta=False)
-        files_in = [f.path for f in files_out]
-        subdir = self._hash(urlpath)
-        return files_in, os.path.join(self._cache_dir, subdir)
+        # files_in = [f.path for f in files_out]
+        return files_in, files_out
 
-    def _load(self, files_in, files_out, out):
+    def _load(self, files_in, files_out, urlpath, meta=True):
         from .decompress import decomp
+        subdir = self._hash(urlpath)
         try:
-            os.makedirs(files_out)
+            os.makedirs(subdir)
         except (OSError, IOError):
             pass
+        files = [f.path for f in files_in]
         out = []
-        for f in files_in:
+        for f, orig in zip(files, files_in):
             # TODO: add snappy, brotli, lzo, lz4, xz... ?
             if 'decomp' in self._spec and self._spec['decomp'] != 'infer':
                 d = self._spec['decomp']
@@ -360,12 +372,14 @@ class CompressedCache(BaseCache):
                 d = 'bz'
             if d not in decomp:
                 raise ValueError('Unknown compression for "%s"' % f)
-            out.extend(decomp[d](f, files_out))
-        for fn in out:
-            logger.debug("Caching file: {}".format(f))
-            logger.debug("Original path: {}".format(out))
-            logger.debug("Cached at: {}".format(fn))
-            self._log_metadata(self.urlpath, f, fn)
+            out2 = decomp[d](f, subdir)
+            for fn in out2:
+                logger.debug("Caching file: {}".format(f))
+                logger.debug("Original path: {}".format(orig.path))
+                logger.debug("Cached at: {}".format(fn))
+                if meta:
+                    self._log_metadata(self._urlpath, orig.path, fn)
+                out.append(fn)
         return out
 
 
