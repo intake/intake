@@ -11,9 +11,6 @@ import tornado.web
 
 from .server import IntakeServer
 logger = logging.getLogger('intake')
-logging.basicConfig()
-if os.environ.get('INTAKE_DEBUG'):
-    logger.setLevel(logging.DEBUG)
 
 
 def call_exit_on_sigterm(signal, frame):
