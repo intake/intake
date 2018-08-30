@@ -89,9 +89,8 @@ def intake_server(request):
             except:
                 pass
         p.terminate()
-        p.wait()
+        time.sleep(1)
         p.kill()
-        p.wait()
 
 
 @pytest.fixture(scope='module')
