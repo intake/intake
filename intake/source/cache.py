@@ -342,7 +342,6 @@ class CompressedCache(BaseCache):
              for f in files_in]
         super(CompressedCache, self)._load(files_in, files_out, urlpath,
                                            meta=False)
-        # files_in = [f.path for f in files_out]
         return files_in, files_out
 
     def _load(self, files_in, files_out, urlpath, meta=True):
