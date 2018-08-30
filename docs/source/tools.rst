@@ -37,16 +37,17 @@ Log Level
 
 The logging level is configurable using Python's built-in logging module.
 
-Set the log level with an environment variable::
+The config option ``'logging'`` holds the current level for the intake logger, and
+can take values such as ``'INFO'`` or ``'DEBUG'``. This can be set in the ``conf.yaml``
+file of the config directory (e.g., ``~/.intake/``), or overriden by the environment
+variable ``INTAKE_LOG_LEVEL``.
 
-  INTAKE_DEBUG='true'
-
-Or in code::
+Furthermore, the level and settings of the logger can be changed programmatically in code::
 
   import logging
   logger = logging.getLogger('intake')
-  logging.basicConfig()
   logger.setLevel(logging.DEBUG)
+  logget.addHandler(..)
 
 Intake Server
 -------------
@@ -258,3 +259,11 @@ source to standard output.
   5      Bob2   50.3     2
   6  Charlie2   25.0     3
   7      Eve2   25.0     3
+
+
+Config and Cache
+''''''''''''''''
+
+CLI functions starting with ``intake cache`` and ``intake config`` are available to
+provide information about the system: the locations and value of configuration
+parameters, and the state of cached files.

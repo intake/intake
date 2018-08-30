@@ -70,7 +70,7 @@ def intake_server(request):
 
         # wait for server to finish initalizing, but let the exception through
         # on last retry
-        retries = 30
+        retries = 300
         try:
             while not ping_server(url, swallow_exception=(retries > 1)):
                 time.sleep(0.1)
@@ -78,6 +78,7 @@ def intake_server(request):
         except Exception:
             print(p.communicate())
             raise
+        assert retries > 0, "Server never appeared"
 
         yield 'intake://localhost:%d' % port
     finally:
@@ -88,9 +89,8 @@ def intake_server(request):
             except:
                 pass
         p.terminate()
-        p.wait()
+        time.sleep(1)
         p.kill()
-        p.wait()
 
 
 @pytest.fixture(scope='module')

@@ -39,7 +39,7 @@ class BaseCache(object):
 
     Providers of caching functionality should derive from this, and appear
     as entries in ``registry``. The principle methods to override are
-    ``_make_files()`` and ``_load()``.
+    ``_make_files()`` and ``_load()`` and ``_from_metadata()``.
     """
     # download block size in bytes
     blocksize = 5000000
@@ -55,8 +55,7 @@ class BaseCache(object):
         """
         self._driver = driver
         self._spec = spec
-        self._cache_dir = cache_dir or os.getenv('INTAKE_CACHE_DIR',
-                                                 conf['cache_dir'])
+        self._cache_dir = cache_dir or conf['cache_dir']
                              
         self._storage_options = storage_options
         self._metadata = CacheMetadata()
@@ -130,12 +129,21 @@ class BaseCache(object):
         self.output = output if output is not None else conf.get(
             'cache_download_progress', True)
 
-        files_in, files_out = self._make_files(urlpath)
-        cache_paths = self._load(files_in, files_out, urlpath)
-
+        cache_paths = self._from_metadata(urlpath)
+        if cache_paths is None:
+            files_in, files_out = self._make_files(urlpath)
+            self._load(files_in, files_out, urlpath)
+            md = self.get_metadata(urlpath)  # rescan
+        cache_paths = self._from_metadata(urlpath)
         return cache_paths
 
-    def _load(self, files_in, files_out, urlpath):
+    def _from_metadata(self, urlpath):
+        """Return set of local URLs if files already exist"""
+        md = self.get_metadata(urlpath)
+        if md is not None:
+            return [e['cache_path'] for e in md]
+
+    def _load(self, files_in, files_out, urlpath, meta=True):
         """Download a set of files"""
         import dask
         out = []
@@ -153,7 +161,8 @@ class BaseCache(object):
                 logger.debug("Caching file: {}".format(file_in.path))
                 logger.debug("Original path: {}".format(urlpath))
                 logger.debug("Cached at: {}".format(cache_path))
-                self._log_metadata(urlpath, file_in.path, cache_path)
+                if meta:
+                    self._log_metadata(urlpath, file_in.path, cache_path)
                 ddown = dask.delayed(_download)
                 out.append(ddown(file_in, file_out, self.blocksize,
                                  self.output))
@@ -301,9 +310,11 @@ class DirCache(BaseCache):
                 files_out2.append(fout)
         return files_in2, files_out2
 
-    def _load(self, files_in, files_out, urlpath):
-        super(DirCache, self)._load(files_in, files_out, urlpath)
-        return [self._path(urlpath)]
+    def _from_metadata(self, urlpath):
+        """Return set of local URLs if files already exist"""
+        md = self.get_metadata(urlpath)
+        if md is not None:
+            return [self._path(urlpath)]
 
 
 class CompressedCache(BaseCache):
@@ -323,24 +334,26 @@ class CompressedCache(BaseCache):
         from dask.bytes import open_files
 
         self._ensure_cache_dir()
+        self._urlpath = urlpath
         files_in = open_files(urlpath, 'rb')
         files_out = [open_files(
             [os.path.join(d, os.path.basename(f.path))], 'wb',
                                 **self._storage_options)[0]
              for f in files_in]
-        super(CompressedCache, self)._load(files_in, files_out, urlpath)
-        files_in = [f.path for f in files_out]
-        subdir = self._hash(urlpath)
-        return files_in, os.path.join(self._cache_dir, subdir)
+        super(CompressedCache, self)._load(files_in, files_out, urlpath,
+                                           meta=False)
+        return files_in, files_out
 
-    def _load(self, files_in, files_out, out):
+    def _load(self, files_in, files_out, urlpath, meta=True):
         from .decompress import decomp
+        subdir = self._path(urlpath)
         try:
-            os.makedirs(files_out)
+            os.makedirs(subdir)
         except (OSError, IOError):
             pass
+        files = [f.path for f in files_in]
         out = []
-        for f in files_in:
+        for f, orig in zip(files, files_in):
             # TODO: add snappy, brotli, lzo, lz4, xz... ?
             if 'decomp' in self._spec and self._spec['decomp'] != 'infer':
                 d = self._spec['decomp']
@@ -358,7 +371,14 @@ class CompressedCache(BaseCache):
                 d = 'bz'
             if d not in decomp:
                 raise ValueError('Unknown compression for "%s"' % f)
-            out.extend(decomp[d](f, files_out))
+            out2 = decomp[d](f, subdir)
+            for fn in out2:
+                logger.debug("Caching file: {}".format(f))
+                logger.debug("Original path: {}".format(orig.path))
+                logger.debug("Cached at: {}".format(fn))
+                if meta:
+                    self._log_metadata(self._urlpath, orig.path, fn)
+                out.append(fn)
         return out
 
 
