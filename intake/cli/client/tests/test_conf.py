@@ -43,3 +43,9 @@ def test_get(tmpdir):
     out = subprocess.check_output('INTAKE_CONF_DIR=%s intake config get port' %
                                   tmpdir, shell=True).decode()
     assert out == '5001\n'
+
+
+def test_log_level():
+    out = subprocess.check_output('INTAKE_LOG_LEVEL=DEBUG intake config info',
+                                  shell=True, stderr=subprocess.STDOUT).decode()
+    assert "logger set to debug" in out

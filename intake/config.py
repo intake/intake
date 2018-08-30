@@ -1,8 +1,9 @@
 
 from os.path import expanduser
-
+import logging
 import os
 import yaml
+logger = logging.getLogger('intake')
 
 confdir = os.getenv('INTAKE_CONF_DIR',
                     os.path.join(expanduser('~'), '.intake'))
@@ -70,5 +71,10 @@ conf['cache_disabled'] = os.environ.get(
 conf['cache_download_progress'] = os.environ.get(
     'INTAKE_CACHE_PROGRESS', 'True').lower() == 'true'
 if 'INTAKE_LOG_LEVEL' in os.environ:
-    # TODO: apply this to logger
     conf['logging'] = os.environ['INTAKE_LOG_LEVEL']
+logger.setLevel(conf['logging'])
+ch = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s %(name)s:%(levelname)s, %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.debug('Intake logger set to debug')
