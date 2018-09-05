@@ -108,6 +108,22 @@ def test_clear_cache(catalog_cache):
         assert os.path.basename(cache_path) not in os.listdir(cache._cache_dir)
 
 
+def test_clear_cache_bad_metadata(catalog_cache):
+    cat = catalog_cache['test_cache']
+    cache = cat.cache[0]
+    cache_paths = cache.load(cat._urlpath, output=False)
+
+    subdir = os.path.dirname(cache_paths[0])
+
+    shutil.rmtree(subdir)
+
+    cache.clear_cache(cat._urlpath)
+
+    assert cat._urlpath not in cache._metadata.keys()
+    for cache_path in cache_paths:
+        assert os.path.basename(cache_path) not in os.listdir(cache._cache_dir)
+
+
 def test_clear_all(catalog_cache):
     cat = catalog_cache['test_cache']
     cache = cat.cache[0]

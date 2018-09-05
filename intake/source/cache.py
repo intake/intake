@@ -197,13 +197,17 @@ class BaseCache(object):
             May be a local path, or remote path if including a protocol specifier
             such as ``'s3://'``. May include glob wildcards.
         """
-        cache_entries = self._metadata.pop(urlpath)
+        cache_entries = self._metadata.pop(urlpath, [])  # ignore if missing
         for cache_entry in cache_entries:
             try:
                 os.remove(cache_entry['cache_path'])
             except FileNotFoundError:
                 pass
-        os.rmdir(os.path.dirname(cache_entry['cache_path']))
+        try:
+            fn = os.path.dirname(cache_entry['cache_path'])
+            os.rmdir(fn)
+        except (OSError, IOError):
+            logger.debug("Failed to remove cache directory: %s" % fn)
     
     def clear_all(self):
         """
@@ -430,8 +434,8 @@ class CacheMetadata(collections.MutableMapping):
         with open(self._path, 'w') as f:
             json.dump(self._metadata, f)
 
-    def pop(self, key):
-        item = self._metadata.pop(key)
+    def pop(self, key, default=None):
+        item = self._metadata.pop(key, default)
         self._save()
         return item
     
