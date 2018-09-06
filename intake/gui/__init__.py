@@ -5,6 +5,6 @@ try:
 except ImportError:
 
     class DataBrowser(object):
-        def __getattribute__(self, item):
+        def __repr__(self):
             raise RuntimeError("Please install ipywidgets to use the Data "
                                "Browser")

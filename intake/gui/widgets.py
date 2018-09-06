@@ -65,6 +65,7 @@ class DataBrowser(object):
         self.bottom = widgets.HBox(children=[self.lurl, self.url, self.files,
                                              self.add])
         self.widget = widgets.VBox(children=[self.mid, self.bottom])
+        self.widget.__repr__ = self.__repr__
         self.cat_selected({'new': list(self.cats)[0]})
         self.cat_list.observe(self.cat_selected, 'value')
         self.item_list.observe(self.item_selected, 'value')
@@ -121,8 +122,30 @@ class DataBrowser(object):
         self.cats[cat.name] = cat
         self.update_cat_list()
 
-    def _ipython_display_(self):
-        return self.widget._ipython_display_()
+    def __repr__(self):
+        return ("Intake GUI instance: to get widget to display, you must "
+                "install ipy/jupyter-widgets, run in a notebook and, in "
+                "the case of jupyter-lab, install the jlab extension.")
+
+    def _ipython_display_(self, **kwargs):
+        from IPython.core.interactiveshell import InteractiveShell
+        import IPython
+
+        # from IPython.Widget._ipython_display_
+        if InteractiveShell.initialized():
+            if self.widget._view_name is not None:
+
+                plaintext = repr(self)
+                data = {
+                    'text/plain': plaintext,
+                    'application/vnd.jupyter.widget-view+json': {
+                        'version_major': 2,
+                        'version_minor': 0,
+                        'model_id': self.widget._model_id
+                    }
+                }
+                IPython.display.display(data, raw=True)
+                self.widget._handle_displayed(**kwargs)
 
     def openfs(self, ev):
             self.fs = FileSelector(self.file_chosen, filters=['.yaml', '.yml'])
