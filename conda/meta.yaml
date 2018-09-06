@@ -30,7 +30,6 @@ requirements:
     - dask >=0.17.0
     - python-snappy
     - appdirs
-    - tqdm
 
 test:
   requires:

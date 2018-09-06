@@ -227,8 +227,13 @@ class BaseCache(object):
 def _download(file_in, file_out, blocksize, output=False):
     """Read from input and write to output file in blocks"""
     if output:
-        from tqdm.autonotebook import tqdm
-
+        try:
+            from tqdm.autonotebook import tqdm
+        except ImportError:
+            logger.warn("Cache progress bar requires tqdm to be installed:"
+                        " conda/pip install tqdm")
+            output = False
+    if output:
         try:
             file_size = file_in.fs.size(file_in.path)
             pbar_disabled = False

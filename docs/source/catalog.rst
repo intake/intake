@@ -217,7 +217,8 @@ Caching can be disabled at runtime for all sources regardless of the catalog spe
 
     conf['cache_disabled'] = True
 
-By default, progress bars are shown during downloads, but this can be disabled (e.g., for
+By default, progress bars are shown during downloads if the package ``tqdm`` is
+available, but this can be disabled (e.g., for
 consoles that don't support complex text) with
 
     conf['cache_download_progress'] = False
