@@ -270,7 +270,7 @@ class FileCache(BaseCache):
 
         self._ensure_cache_dir()
         subdir = self._hash(urlpath)
-        files_in = open_files(urlpath, 'rb')
+        files_in = open_files(urlpath, 'rb', **self._storage_options)
         files_out = [open_files([self._path(f.path, subdir)], 'wb',
                                 **self._storage_options)[0]
                      for f in files_in]
