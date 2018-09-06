@@ -23,6 +23,7 @@ registry['catalog'] = Catalog
 registry['intake_remote'] = RemoteCatalog
 registry['numpy'] = npy.NPySource
 
+
 def make_open_functions():
     """From the current state of ``registry``, create open_* functions"""
     # Create shortcut open methods
