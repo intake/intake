@@ -14,7 +14,8 @@ def data_filenames():
     return dict(sample1=os.path.join(basedir, 'sample1.csv'),
                 sample2_1=os.path.join(basedir, 'sample2_1.csv'),
                 sample2_2=os.path.join(basedir, 'sample2_2.csv'),
-                sample2_all=os.path.join(basedir, 'sample2_*.csv'))
+                sample2_all=os.path.join(basedir, 'sample2_*.csv'),
+                sample2_pattern=os.path.join(basedir, 'sample2_{num:d}.csv'))
 
 
 @pytest.fixture
@@ -25,6 +26,11 @@ def sample1_datasource(data_filenames):
 @pytest.fixture
 def sample2_datasource(data_filenames):
     return csv.CSVSource(data_filenames['sample2_all'])
+
+
+@pytest.fixture
+def sample2_pattern_datasource(data_filenames):
+    return csv.CSVSource(data_filenames['sample2_pattern'])
 
 
 def test_csv_plugin():
@@ -65,6 +71,14 @@ def test_read_chunked(sample1_datasource, data_filenames):
     df = pd.concat(parts)
 
     assert expected_df.equals(df)
+
+
+def test_read_pattern(sample2_pattern_datasource):
+    df = sample2_pattern_datasource.read()
+    assert 'num' in df
+    assert all(df.num[:4] == 1)
+    assert all(df.num[4:] == 2)
+    assert len(df.columns) == 4
 
 
 def test_read_partition(sample2_datasource, data_filenames):

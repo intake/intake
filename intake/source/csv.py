@@ -1,4 +1,5 @@
 from . import base
+from .utils import reverse_format, pattern_to_glob, unique_string
 
 
 # For brevity, this implementation just wraps the Dask dataframe
@@ -31,12 +32,14 @@ class CSVSource(base.DataSource):
             Any parameters that need to be passed to the remote data backend,
             such as credentials.
         """
-        self._urlpath = urlpath
+        self._urlpath = pattern_to_glob(urlpath)
+        self._pattern = urlpath
         self._storage_options = storage_options
         self._csv_kwargs = csv_kwargs or {}
         self._dataframe = None
 
         super(CSVSource, self).__init__(metadata=metadata)
+
 
     def _get_schema(self):
         import dask.dataframe
@@ -44,9 +47,30 @@ class CSVSource(base.DataSource):
         urlpath, *_ = self._get_cache(self._urlpath)
 
         if self._dataframe is None:
+            include_path_column = unique_string() if (self._urlpath != self._pattern) else False
+
             self._dataframe = dask.dataframe.read_csv(
                 urlpath, storage_options=self._storage_options,
+                include_path_column=include_path_column,
                 **self._csv_kwargs)
+
+            if include_path_column:
+                col = include_path_column
+                args = []
+
+                for f in self._dataframe[col].cat.categories:
+                    args.append(reverse_format(self._pattern, f))
+
+                # initialize dict:
+                arg_dict = {k: [v] for k, v in args[0].items()}
+                for arg in args[1:]:
+                    for k, v in arg.items():
+                        arg_dict[k].append(v)
+
+                for k, v in arg_dict.items():
+                    self._dataframe = self._dataframe.assign(
+                        **{k: self._dataframe[col].cat.rename_categories(v)})
+                self._dataframe = self._dataframe.drop([col], axis=1)
 
         dtypes = self._dataframe._meta.dtypes.to_dict()
         dtypes = {n: str(t) for (n, t) in dtypes.items()}
