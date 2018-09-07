@@ -1,22 +1,7 @@
-def reverse_format(format_string, resolved_string):
-    from string import Formatter
-    from datetime import datetime
-
-    fmt = Formatter()
-    args = {}
+def _get_parts_of_format_string(resolved_string, literal_texts, format_specs):
     _text = resolved_string
-
-    # split the string into bits
-    literal_texts, field_names, format_specs, conversions = zip(*fmt.parse(format_string))
-    if not any(field_names):
-        return {}
-
-    for i, conversion in enumerate(conversions):
-        if conversion:
-            raise ValueError('Conversion not allowed. Found on {}.'.format(field_names[i]))
-
-    # get a list of the parts that matter
     bits = []
+
     for i, literal_text in enumerate(literal_texts):
         if literal_text != '':
             bit, _text = _text.split(literal_text, 1)
@@ -25,17 +10,40 @@ def reverse_format(format_string, resolved_string):
         elif i == 0:
             continue
         else:
-            fs = format_specs[i-1]
-            if not fs:
-                raise ValueError('Format specifier must be set if no separator between fields.')
-            if fs[-1].isalpha():
-                fs = fs[:-1]
-            if not fs.isdigit():
+            format_spec = format_specs[i-1]
+            if not format_spec:
+                raise ValueError(('Format specifier must be set if '
+                                  'no separator between fields.'))
+            if format_spec[-1].isalpha():
+                format_spec = format_spec[:-1]
+            if not format_spec.isdigit():
                 raise ValueError('Format specifier must have a set width')
-            bits.append(_text[0:int(fs)])
-            _text = _text[int(fs):]
+            bits.append(_text[0:int(format_spec)])
+            _text = _text[int(format_spec):]
     if _text:
         bits.append(_text)
+    return bits
+
+
+def reverse_format(format_string, resolved_string):
+    from string import Formatter
+    from datetime import datetime
+
+    fmt = Formatter()
+    args = {}
+
+    # split the string into bits
+    literal_texts, field_names, format_specs, conversions = zip(*fmt.parse(format_string))
+    if not any(field_names):
+        return {}
+
+    for i, conversion in enumerate(conversions):
+        if conversion:
+            raise ValueError(('Conversion not allowed. Found on {}.'
+                              .format(field_names[i])))
+
+    # get a list of the parts that matter
+    bits = _get_parts_of_format_string(resolved_string, literal_texts, format_specs)
 
     for i, (field_name, format_spec) in enumerate(zip(field_names, format_specs)):
         if field_name is not None:

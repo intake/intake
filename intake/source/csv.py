@@ -40,6 +40,19 @@ class CSVSource(base.DataSource):
 
         super(CSVSource, self).__init__(metadata=metadata)
 
+    def _get_filname_args(self, include_path_column):
+        col = include_path_column
+
+        args = []
+        for f in self._dataframe[col].cat.categories:
+            args.append(reverse_format(self._pattern, f))
+
+        arg_dict = {}
+        for k in args[0]:
+            v = [arg[k] for arg in args]
+            arg_dict[k] = self._dataframe[col].cat.rename_categories(v)
+
+        return arg_dict
 
     def _get_schema(self):
         import dask.dataframe
@@ -55,22 +68,9 @@ class CSVSource(base.DataSource):
                 **self._csv_kwargs)
 
             if include_path_column:
-                col = include_path_column
-                args = []
-
-                for f in self._dataframe[col].cat.categories:
-                    args.append(reverse_format(self._pattern, f))
-
-                # initialize dict:
-                arg_dict = {k: [v] for k, v in args[0].items()}
-                for arg in args[1:]:
-                    for k, v in arg.items():
-                        arg_dict[k].append(v)
-
-                for k, v in arg_dict.items():
-                    self._dataframe = self._dataframe.assign(
-                        **{k: self._dataframe[col].cat.rename_categories(v)})
-                self._dataframe = self._dataframe.drop([col], axis=1)
+                self._dataframe = self._dataframe.assign(
+                    **self._get_filname_args(include_path_column))
+                self._dataframe = self._dataframe.drop([include_path_column], axis=1)
 
         dtypes = self._dataframe._meta.dtypes.to_dict()
         dtypes = {n: str(t) for (n, t) in dtypes.items()}
