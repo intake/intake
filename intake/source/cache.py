@@ -60,12 +60,12 @@ class BaseCache(object):
         """
         self._driver = driver
         self._spec = spec
-        cd = cache_dir or spec.get('cache_dir', conf['cache_dir'])
+        cd = cache_dir or conf['cache_dir']
         if cd == 'catdir':
             if catdir is None:
                 raise TypeError('cache_dir="catdir" only allowed when loaded'
                                 'from a catalog file.')
-            cd = catdir
+            cd = os.path.join(catdir, 'intake_cache')
         self._cache_dir = cd
 
         self._storage_options = storage_options
