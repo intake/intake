@@ -80,7 +80,9 @@ class DataSource(object):
         self.metadata = metadata or {}
         if isinstance(self.metadata, dict):
             storage_options = self._captured_init_kwargs.get('storage_options', {})
-            self.cache = make_caches(self.name, self.metadata.get('cache'), storage_options)
+            self.cache = make_caches(self.name, self.metadata.get('cache'),
+                                     catdir=self.metadata.get('catalog_dir', None),
+                                     storage_options=storage_options)
         self.datashape = None
         self.dtype = None
         self.shape = None

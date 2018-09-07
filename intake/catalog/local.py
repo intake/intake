@@ -182,9 +182,10 @@ class LocalCatalogEntry(CatalogEntry):
 
         self._open_args['cache'] = self._cache
         open_args = expand_templates(self._open_args, params)
-        if self._metadata is not None:
-            self._metadata['cache'] = open_args.pop('cache', [])
-        open_args['metadata'] = self._metadata
+        md = self._metadata.copy() if self._metadata is not None else {}
+        md['cache'] = open_args.pop('cache', [])
+        md['catalog_dir'] = self._catalog_dir
+        open_args['metadata'] = md
 
         return open_args
 
