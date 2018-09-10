@@ -131,6 +131,35 @@ def test_compressed_cache(temp_cache):
         intake.config.conf['cache_download_progress'] = old
 
 
+def test_cache_to_cat(tmpdir):
+    old = intake.config.conf.copy()
+    olddir = intake.config.confdir
+    intake.config.confdir = str(tmpdir)
+    intake.config.conf.update({'cache_dir': 'catdir',
+                               'cache_download_progress': False,
+                               'cache_disabled': False})
+    try:
+        fn0 = os.path.join(here, 'calvert_uk.zip')
+        fn1 = os.path.join(tmpdir, 'calvert_uk.zip')
+        shutil.copy2(fn0, fn1)
+        fn0 = os.path.join(here, 'cached.yaml')
+        fn1 = os.path.join(tmpdir, 'cached.yaml')
+        shutil.copy2(fn0, fn1)
+        cat = intake.open_catalog(fn1)
+        s = cat.calvert()
+        df = s.read()
+        assert len(df)
+        md = CacheMetadata()
+        f = md[s._urlpath][0]
+        assert f['cache_path'].startswith(str(tmpdir))
+        assert 'intake_cache' in os.listdir(tmpdir)
+        assert os.listdir(os.path.join(tmpdir, 'intake_cache'))
+    finally:
+        intake.config.confdir = olddir
+        intake.config.conf.update(old)
+
+
+
 def test_compressed_cache_infer(temp_cache):
     cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
     s = cat.calvert_infer()

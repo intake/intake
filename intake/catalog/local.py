@@ -150,7 +150,7 @@ class LocalCatalogEntry(CatalogEntry):
         self._open_args = args
         self._cache = cache
         self._user_parameters = parameters
-        self._metadata = metadata
+        self._metadata = metadata or {}
         self._catalog_dir = catalog_dir
         self._plugin = global_registry[driver]
         super(LocalCatalogEntry, self).__init__(
@@ -182,9 +182,10 @@ class LocalCatalogEntry(CatalogEntry):
 
         self._open_args['cache'] = self._cache
         open_args = expand_templates(self._open_args, params)
-        if self._metadata is not None:
-            self._metadata['cache'] = open_args.pop('cache', [])
-        open_args['metadata'] = self._metadata
+        self._metadata['cache'] = open_args.pop('cache', [])
+        md = self._metadata.copy() if self._metadata is not None else {}
+        md['catalog_dir'] = self._catalog_dir
+        open_args['metadata'] = md
 
         return open_args
 

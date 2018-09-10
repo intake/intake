@@ -44,7 +44,8 @@ class BaseCache(object):
     # download block size in bytes
     blocksize = 5000000
 
-    def __init__(self, driver, spec, cache_dir=None, storage_options={}):
+    def __init__(self, driver, spec, catdir=None, cache_dir=None,
+                 storage_options={}):
         """
         Parameters:
         -----------
@@ -52,11 +53,21 @@ class BaseCache(object):
             Name of the plugin that can load catalog entry
         spec: list
             Specification for caching the data source.
+        cache_dir: str or None
+            Explicit location of cache root directory
+        catdir: str or None
+            Directory containing the catalog from which this spec was made
         """
         self._driver = driver
         self._spec = spec
-        self._cache_dir = cache_dir or conf['cache_dir']
-                             
+        cd = cache_dir or conf['cache_dir']
+        if cd == 'catdir':
+            if catdir is None:
+                raise TypeError('cache_dir="catdir" only allowed when loaded'
+                                'from a catalog file.')
+            cd = os.path.join(catdir, 'intake_cache')
+        self._cache_dir = cd
+
         self._storage_options = storage_options
         self._metadata = CacheMetadata()
     
@@ -455,7 +466,7 @@ registry = {
 }
 
 
-def make_caches(driver, specs, storage_options):
+def make_caches(driver, specs, catdir=None, cache_dir=None, storage_options={}):
     """
     Creates Cache objects from the cache_specs provided in the catalog yaml file.
     
@@ -469,5 +480,6 @@ def make_caches(driver, specs, storage_options):
     if specs is None:
         return []
     return [registry.get(spec['type'], FileCache)(
-                driver, spec, storage_options=storage_options)
-            for spec in specs]
+        driver, spec, catdir=catdir, cache_dir=cache_dir,
+        storage_options=storage_options)
+        for spec in specs]

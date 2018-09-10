@@ -208,8 +208,12 @@ Example:
     args:
       urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
 
-The ``cache_dir`` defaults to ``~/.intake/cache``, and can be specified in the intake configuration file or ``INTAKE_CACHE_DIR`` 
-environment variable. Explicit glob-strings may be used for the urlpath argument.
+The ``cache_dir`` defaults to ``~/.intake/cache``, and can be specified in the intake configuration
+file or ``INTAKE_CACHE_DIR``
+environment variable, or at runtime using the ``"cache_dir"`` key of the configuration.
+The special value ``"catdir"`` implies that cached files will appear in the same directory as the
+catalog file in which the data source is defined, within a directory named "intake_cache". These will
+not appear in the cache usage reported by the CLI.
 
 Caching can be disabled at runtime for all sources regardless of the catalog specificiation::
 
