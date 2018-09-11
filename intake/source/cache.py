@@ -231,7 +231,7 @@ class BaseCache(object):
             try:
                 fn = os.path.join(self._cache_dir, subdir)
                 if os.path.isdir(fn):
-                    shutil.rmtree()
+                    shutil.rmtree(fn)
                 if os.path.isfile(fn):
                     os.remove(fn)
             except (OSError, IOError) as e:
