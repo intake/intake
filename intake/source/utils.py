@@ -22,6 +22,8 @@ def _get_parts_of_format_string(resolved_string, literal_texts, format_specs):
             _text = _text[int(format_spec):]
     if _text:
         bits.append(_text)
+    if len(bits) > len([fs for fs in format_specs if fs is not None]):
+        bits = bits[1:]
     return bits
 
 

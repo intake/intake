@@ -23,6 +23,9 @@ def test_pattern_to_glob(pattern, expected):
     {'year': 2016, 'month': 2, 'day': 1}),
     ('{year:.4}/{month:.2}/{day:.2}.csv', '2016/2/01.csv',
     {'year': '2016', 'month': '2', 'day': '01'}),
+    ('SRLCCTabularDat/Ecoregions_{emissions}_Precip_{model}.csv',
+     '/user/examples/SRLCCTabularDat/Ecoregions_a1b_Precip_ECHAM5-MPI.csv',
+     {'emissions':'a1b', 'model': 'ECHAM5-MPI'}),
 ])
 def test_reverse_format(pattern, resolved, expected):
     assert reverse_format(pattern, resolved) == expected

@@ -42,15 +42,16 @@ class CSVSource(base.DataSource):
 
     def _get_filname_args(self, include_path_column):
         col = include_path_column
-
         args = []
         for f in self._dataframe[col].cat.categories:
             args.append(reverse_format(self._pattern, f))
 
+        codes = self._dataframe[col].cat.codes
+
         arg_dict = {}
         for k in args[0]:
-            v = [arg[k] for arg in args]
-            arg_dict[k] = self._dataframe[col].cat.rename_categories(v)
+            values = [arg[k] for arg in args]
+            arg_dict[k] = codes.map(dict(enumerate(values))).astype("category")
 
         return arg_dict
 

@@ -15,7 +15,7 @@ def data_filenames():
                 sample2_1=os.path.join(basedir, 'sample2_1.csv'),
                 sample2_2=os.path.join(basedir, 'sample2_2.csv'),
                 sample2_all=os.path.join(basedir, 'sample2_*.csv'),
-                sample2_pattern=os.path.join(basedir, 'sample2_{num:d}.csv'))
+                sample_pattern=os.path.join(basedir, 'sample{num:d}_{dup:d}.csv'))
 
 
 @pytest.fixture
@@ -29,8 +29,8 @@ def sample2_datasource(data_filenames):
 
 
 @pytest.fixture
-def sample2_pattern_datasource(data_filenames):
-    return csv.CSVSource(data_filenames['sample2_pattern'])
+def sample_pattern_datasource(data_filenames):
+    return csv.CSVSource(data_filenames['sample_pattern'])
 
 
 def test_csv_plugin():
@@ -73,12 +73,27 @@ def test_read_chunked(sample1_datasource, data_filenames):
     assert expected_df.equals(df)
 
 
-def test_read_pattern(sample2_pattern_datasource):
-    df = sample2_pattern_datasource.read()
+def test_read_pattern(sample_pattern_datasource):
+    df = sample_pattern_datasource.read()
+    assert len(df.columns) == 5
     assert 'num' in df
-    assert all(df.num[:4] == 1)
-    assert all(df.num[4:] == 2)
-    assert len(df.columns) == 4
+    assert 'dup' in df
+    assert df.num.dtype == 'category'
+    assert df.dup.dtype == 'category'
+
+    names = ['Alice', 'Bob', 'Charlie', 'Eve']
+
+    file_1 = df[df['name'].isin(['{}1'.format(name) for name in names])]
+    assert all(file_1.num == 2)
+    assert all(file_1.dup == 1)
+
+    file_2 = df[df['name'].isin(['{}2'.format(name) for name in names])]
+    assert all(file_2.num == 2)
+    assert all(file_2.dup == 2)
+
+    file_3 = df[df['name'].isin(['{}3'.format(name) for name in names])]
+    assert all(file_3.num == 3)
+    assert all(file_3.dup == 2)
 
 
 def test_read_partition(sample2_datasource, data_filenames):
