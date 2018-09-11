@@ -68,8 +68,9 @@ if 'INTAKE_CACHE_DIR' in os.environ:
     conf['cache_dir'] = os.environ['INTAKE_CACHE_DIR']
 conf['cache_disabled'] = os.environ.get(
     'INTAKE_DISABLE_CACHING', 'False').lower() != 'false'
-conf['cache_download_progress'] = os.environ.get(
-    'INTAKE_CACHE_PROGRESS', 'True').lower() == 'true'
+if 'INTAKE_CACHE_PROGRESS' in os.environ:
+    conf['cache_download_progress'] = os.environ['INTAKE_CACHE_PROGRESS'
+                                      ].lower() == 'true'
 if 'INTAKE_LOG_LEVEL' in os.environ:
     conf['logging'] = os.environ['INTAKE_LOG_LEVEL']
 logger.setLevel(conf['logging'])

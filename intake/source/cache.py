@@ -144,7 +144,6 @@ class BaseCache(object):
         if cache_paths is None:
             files_in, files_out = self._make_files(urlpath)
             self._load(files_in, files_out, urlpath)
-            md = self.get_metadata(urlpath)  # rescan
         cache_paths = self._from_metadata(urlpath)
         return cache_paths
 
@@ -273,9 +272,13 @@ def _download(file_in, file_out, blocksize, output=False):
                 if output:
                     pbar.update(len(data) // 2**20)
     if output:
-        pbar.update(pbar.total - pbar.n)  # force to full
-        pbar.close()
-        display.remove(out)
+        try:
+            pbar.update(pbar.total - pbar.n)  # force to full
+            pbar.close()
+        except Exception as e:
+            logger.debug('tqdm exception: %s' % e)
+        finally:
+            display.remove(out)
 
 
 class FileCache(BaseCache):
