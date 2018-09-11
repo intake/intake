@@ -33,6 +33,23 @@ def test_list_keys(temp_cache):
     assert 'states.csv' in out
 
 
+def test_precache(temp_cache):
+    tmpdir = intake.config.confdir
+    out = subprocess.check_output('INTAKE_CONF_DIR=%s intake cache list-keys'
+                                  '' % tmpdir,
+                                  shell=True).decode()
+    assert out == "[]\n\n"
+    out = subprocess.check_output('INTAKE_CONF_DIR=%s INTAKE_CACHE_DIR=%s '
+                                  'intake precache %s ' %
+                                  (tmpdir, tmpdir, cpath), shell=True).decode()
+    assert out.count('Caching for entry') > 1
+    out = subprocess.check_output('INTAKE_CONF_DIR=%s intake cache list-keys'
+                                  '' % tmpdir,
+                                  shell=True).decode()
+    assert 'states.csv' in out
+    assert 'small.npy' in out
+
+
 def test_clear_all(temp_cache):
     tmpdir = intake.config.confdir
     cat = intake.open_catalog(cpath)
@@ -65,6 +82,9 @@ def test_clear_one(temp_cache):
 
 def test_usage(temp_cache):
     tmpdir = intake.config.confdir
-    out = subprocess.check_output('INTAKE_CONF_DIR=%s intake cache usage'
-                                  '' % tmpdir, shell=True).decode()
+    from intake.source.cache import BaseCache
+    BaseCache(None, None).clear_all()
+    out = subprocess.check_output('INTAKE_CONF_DIR=%s INTAKE_CACHE_DIR=%s'
+                                  ' intake cache usage' % (tmpdir, tmpdir),
+                                  shell=True).decode()
     assert '0.0' in out  # empty!

@@ -24,6 +24,15 @@ def listing(args):
             print(entry)
 
 
+def precache(args):
+    catalog = Catalog(args.uri)
+    for entry in list(catalog):
+        s = catalog[entry]()
+        if s.cache:
+            print("Caching for entry %s" % entry)
+            s.read()
+
+
 def describe(args):
     catalog = Catalog(args.uri)
     print_entry_info(catalog, args.name)
@@ -103,7 +112,7 @@ def conf_show_info(args):
 
 def cache_clear(args):
     from intake.source.cache import BaseCache
-    c = BaseCache()
+    c = BaseCache(None, None)
     if args.key is None:
         c.clear_all()
     else:
@@ -168,6 +177,11 @@ def main(argv=None):
     exists_parser.add_argument('uri', metavar='URI', type=str, help='Catalog URI')
     exists_parser.add_argument('name', metavar='NAME', type=str, help='Catalog name')
     exists_parser.set_defaults(func=exists)
+
+    precache_parser = subparsers.add_parser('precache', help='For each entry in a catalog which defined caching,'
+                                                             ' populate the caching.')
+    precache_parser.add_argument('uri', metavar='URI', type=str, help='Catalog URI')
+    precache_parser.set_defaults(func=precache)
 
     get_parser = subparsers.add_parser('get', help='get catalog entry')
     get_parser.add_argument('uri', metavar='URI', type=str, help='Catalog URI')

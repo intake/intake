@@ -1,6 +1,7 @@
 # Base classes for Data Loader interface
 from .cache import make_caches
 
+
 class Schema(dict):
     """Holds details of data description for any type of data-source
 

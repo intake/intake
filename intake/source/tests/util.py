@@ -26,6 +26,7 @@ def temp_cache(tmpdir):
     intake.config.conf.update({'cache_dir': str(tmpdir),
                                'cache_download_progress': False,
                                'cache_disabled': False})
+    intake.config.save_conf()
     try:
         yield
     finally:
