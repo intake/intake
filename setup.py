@@ -3,8 +3,19 @@
 from setuptools import setup, find_packages
 import versioneer
 
+core_requires = ['ruamel.yaml >= 0.15.0', 'jinja2', 'appdirs', 'six', 
+                 'numpy', 'pandas',
+                 'dask[array,bag,dataframe,delayed] >= 0.17.0']
 
-requires = open('requirements.txt').read().strip().split('\n')
+extra_requires = {
+    'plotting': ['holoviews'],
+    'client': ['requests', 'python-snappy',
+               'msgpack-python', 'msgpack-numpy'],
+}
+extra_requires['server'] = extra_requires['client'] + ['tornado >= 4.5.1']
+extra_requires['complete'] = sorted(set(sum(extra_requires.values(), [])))
+
+test_requires = ['pytest']
 
 setup(
     name='intake',
@@ -17,7 +28,9 @@ setup(
     license='BSD',
     package_data={'': ['*.csv', '*.yml', '*.html']},
     include_package_data=True,
-    install_requires=requires,
+    install_requires=core_requires,
+    extra_requires=extra_requires,
+    tests_requires=test_requires,
     packages=find_packages(),
     entry_points={
         'console_scripts': [
