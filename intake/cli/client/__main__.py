@@ -112,7 +112,7 @@ def conf_show_info(args):
 
 def cache_clear(args):
     from intake.source.cache import BaseCache
-    c = BaseCache()
+    c = BaseCache(None, None)
     if args.key is None:
         c.clear_all()
     else:

@@ -227,11 +227,15 @@ class BaseCache(object):
             self.clear_cache(urlpath)
         
         # Safely clean up anything else.
-        try:
-            for subdir in os.listdir(self._cache_dir):
-                shutil.rmtree(os.path.join(self._cache_dir, subdir))
-        except FileNotFoundError:
-            pass
+        for subdir in os.listdir(self._cache_dir):
+            try:
+                fn = os.path.join(self._cache_dir, subdir)
+                if os.path.isdir(fn):
+                    shutil.rmtree()
+                if os.path.isfile(fn):
+                    os.remove(fn)
+            except (OSError, IOError) as e:
+                logger.warning(str(e))
 
 
 def _download(file_in, file_out, blocksize, output=False):

@@ -66,8 +66,9 @@ load_conf(conffile)
 # environment variables take precedence over conf file
 if 'INTAKE_CACHE_DIR' in os.environ:
     conf['cache_dir'] = os.environ['INTAKE_CACHE_DIR']
-conf['cache_disabled'] = os.environ.get(
-    'INTAKE_DISABLE_CACHING', 'False').lower() != 'false'
+if 'INTAKE_DISABLE_CACHING' in os.environ:
+    conf['cache_disabled'] = os.environ['INTAKE_DISABLE_CACHING'
+                                        ].lower() == 'true'
 if 'INTAKE_CACHE_PROGRESS' in os.environ:
     conf['cache_download_progress'] = os.environ['INTAKE_CACHE_PROGRESS'
                                       ].lower() == 'true'

@@ -82,6 +82,9 @@ def test_clear_one(temp_cache):
 
 def test_usage(temp_cache):
     tmpdir = intake.config.confdir
-    out = subprocess.check_output('INTAKE_CONF_DIR=%s intake cache usage'
-                                  '' % tmpdir, shell=True).decode()
+    from intake.source.cache import BaseCache
+    BaseCache(None, None).clear_all()
+    out = subprocess.check_output('INTAKE_CONF_DIR=%s INTAKE_CACHE_DIR=%s'
+                                  ' intake cache usage' % (tmpdir, tmpdir),
+                                  shell=True).decode()
     assert '0.0' in out  # empty!
