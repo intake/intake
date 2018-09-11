@@ -227,6 +227,8 @@ class BaseCache(object):
             self.clear_cache(urlpath)
         
         # Safely clean up anything else.
+        if not os.path.isdir(self._cache_dir):
+            return
         for subdir in os.listdir(self._cache_dir):
             try:
                 fn = os.path.join(self._cache_dir, subdir)
