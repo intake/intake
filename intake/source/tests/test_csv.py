@@ -33,6 +33,14 @@ def sample_pattern_datasource(data_filenames):
     return csv.CSVSource(data_filenames['sample_pattern'])
 
 
+@pytest.fixture
+def sample_pattern_datasource_with_cache(data_filenames):
+    metadata = {'cache': [{'argkey': 'urlpath',
+                           'regex': os.path.dirname(__file__),
+                           'type': 'file'}]}
+    return csv.CSVSource(data_filenames['sample_pattern'], metadata=metadata)
+
+
 def test_csv_plugin():
     p = csv.CSVSource
     assert isinstance(p.version, str)
@@ -73,8 +81,8 @@ def test_read_chunked(sample1_datasource, data_filenames):
     assert expected_df.equals(df)
 
 
-def test_read_pattern(sample_pattern_datasource):
-    df = sample_pattern_datasource.read()
+def check_read_pattern_output(source):
+    df = source.read()
     assert len(df.columns) == 5
     assert 'num' in df
     assert 'dup' in df
@@ -94,6 +102,14 @@ def test_read_pattern(sample_pattern_datasource):
     file_3 = df[df['name'].isin(['{}3'.format(name) for name in names])]
     assert all(file_3.num == 3)
     assert all(file_3.dup == 2)
+
+
+def test_read_pattern(sample_pattern_datasource):
+    check_read_pattern_output(sample_pattern_datasource)
+
+
+def test_read_pattern_with_cache(sample_pattern_datasource_with_cache):
+    check_read_pattern_output(sample_pattern_datasource_with_cache)
 
 
 def test_read_partition(sample2_datasource, data_filenames):

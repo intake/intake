@@ -1,6 +1,6 @@
 import pytest
-from datetime import datetime
-from intake.source.utils import pattern_to_glob, reverse_format
+import datetime
+from intake.source.utils import path_to_glob, path_to_pattern, reverse_format
 
 
 @pytest.mark.parametrize('pattern,expected', [
@@ -12,8 +12,8 @@ from intake.source.utils import pattern_to_glob, reverse_format
     ('data/**/*.csv', 'data/**/*.csv'),
     ('data/{year:4}{month:02}{day:02}.csv', 'data/*.csv'),
 ])
-def test_pattern_to_glob(pattern, expected):
-    assert pattern_to_glob(pattern) == expected
+def test_path_to_glob(pattern, expected):
+    assert path_to_glob(pattern) == expected
 
 
 @pytest.mark.parametrize('pattern,resolved,expected', [
@@ -26,13 +26,15 @@ def test_pattern_to_glob(pattern, expected):
     ('SRLCCTabularDat/Ecoregions_{emissions}_Precip_{model}.csv',
      '/user/examples/SRLCCTabularDat/Ecoregions_a1b_Precip_ECHAM5-MPI.csv',
      {'emissions':'a1b', 'model': 'ECHAM5-MPI'}),
+    ('data_{date:%Y_%m_%d}.csv', 'data_2016_10_01.csv',
+     {'date': datetime.datetime(2016, 10, 1, 0, 0)}),
 ])
 def test_reverse_format(pattern, resolved, expected):
     assert reverse_format(pattern, resolved) == expected
 
 
 @pytest.mark.parametrize('pattern,expected', [
-    ('{date:%Y%m%d}', {'date': datetime(2016, 10, 1)}),
+    ('{date:%Y%m%d}', {'date': datetime.datetime(2016, 10, 1)}),
     ('{num: .2f}', {'num': 0.23}),
     ('{percentage:.2%}', {'percentage': 0.23}),
     ('data/{year:4d}{month:02d}{day:02d}.csv',
@@ -59,3 +61,23 @@ def test_reverse_format_errors():
     resolved = '1'
     with pytest.raises(ValueError, message="Conversion not allowed. Found on band"):
         reverse_format(pattern, resolved)
+
+    pattern = 'data_{band}'
+    resolved = '1'
+    with pytest.raises(ValueError, message=("Resolved string must match "
+                                            "pattern. 'data_' not found.")):
+
+        reverse_format(pattern, resolved)
+
+
+@pytest.mark.parametrize('path,metadata,expected', [
+    ('s3://data/band{band:1d}.tif',
+     {'cache': [{'argkey': 'urlpath', 'regex': 'data'}]},
+     '/band{band:1d}.tif'),
+    ('data/band{band:1d}.tif', {},
+     'data/band{band:1d}.tif'),
+    ('data/band{band:1d}.tif', None,
+     'data/band{band:1d}.tif')
+])
+def test_path_to_pattern(path, metadata, expected):
+    assert path_to_pattern(path, metadata) == expected
