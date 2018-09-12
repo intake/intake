@@ -467,7 +467,7 @@ class YAMLFileCatalog(Catalog):
     version = __version__
     container = 'catalog'
     partition_access = None
-    name = 'yaml_files_cat'
+    name = 'yaml_file_cat'
 
     def __init__(self, path, **kwargs):
         """
@@ -539,7 +539,7 @@ class YAMLFilesCatalog(Catalog):
     version = __version__,
     container = 'catalog',
     partition_access = None
-    name = 'yaml_file_cat'
+    name = 'yaml_files_cat'
 
     def __init__(self, path, flatten=True, **kwargs):
         """
