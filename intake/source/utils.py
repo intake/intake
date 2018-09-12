@@ -47,7 +47,7 @@ def reverse_format(format_string, resolved_string):
     Reverse the string method format.
 
     Given format_string and resolved_string, find arguments that would
-    give `format_string.format(**arguments) == resolved_string`
+    give ``format_string.format(**arguments) == resolved_string``
 
     Parameters
     ----------
@@ -61,7 +61,7 @@ def reverse_format(format_string, resolved_string):
     -------
     args : dict
         Dict of the form {field_name: value} such that
-        `format_string.(**args) == resolved_string`
+        ``format_string.(**args) == resolved_string``
 
     Examples
     --------

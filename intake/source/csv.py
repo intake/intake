@@ -28,11 +28,11 @@ class CSVSource(base.DataSource):
             such as ``'s3://'``. May include glob wildcards or format pattern strings.
             Some examples:
 
-            - '{{ CATALOG_DIR }}data/precipitation.csv'
-            - 's3://data/*.csv'
-            - 's3://data/precipitation_{state}_{zip}.csv'
-            - 's3://data/{year}/{month}/{day}/precipitation.csv'
-            - '{{ CATALOG_DIR }}data/precipitation_{date:%Y-%m-%d}.csv'
+            - ``{{ CATALOG_DIR }}data/precipitation.csv``
+            - ``s3://data/*.csv``
+            - ``s3://data/precipitation_{state}_{zip}.csv``
+            - ``s3://data/{year}/{month}/{day}/precipitation.csv``
+            - ``{{ CATALOG_DIR }}data/precipitation_{date:%Y-%m-%d}.csv``
         csv_kwargs : dict
             Any further arguments to pass to Dask's read_csv (such as block size)
             or to the `CSV parser <https://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_csv.html>`_
@@ -113,7 +113,6 @@ class CSVSource(base.DataSource):
         # add the new column values to the dataframe
         self._dataframe = self._dataframe.assign(
             **self._get_column_values_by_field(path_column))
-
         if drop_path_column:
             self._dataframe = self._dataframe.drop([path_column], axis=1)
 
