@@ -277,6 +277,11 @@ def test_empty_catalog():
     assert list(cat) == []
 
 
+def test_nonexistent_error():
+    with pytest.raises(IOError):
+        local.YAMLFileCatalog('nonexistent')
+
+
 def test_duplicate_data_sources():
     path = os.path.dirname(__file__)
     uri = os.path.join(path, 'catalog_dup_sources.yml')

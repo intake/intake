@@ -494,11 +494,8 @@ class YAMLFileCatalog(Catalog):
             self.path))[0].replace('.', '_')
         self._dir = get_dir(self.path)
 
-        try:
-            with file_open as f:
-                text = f.read().decode()
-        except (IOError, OSError):
-            return
+        with file_open as f:
+            text = f.read().decode()
         if "!template " in text:
             logger.warning("Use of '!template' deprecated - fixing")
             text = text.replace('!template ', '')
@@ -570,7 +567,7 @@ class YAMLFilesCatalog(Catalog):
             files = sum([open_files(p, mode='rb', **options)
                          for p in self.path], [])
         else:
-            if len(self.path) == 1 and '*' not in self.path:
+            if isinstance(self.path, str) and '*' not in self.path:
                 self.path = self.path + '/*'
             files = open_files(self.path, mode='rb', **options)
         if not set(f.path for f in files) == set(
@@ -579,6 +576,9 @@ class YAMLFilesCatalog(Catalog):
             self._cat_files = files
             self._cats.clear()
         for f in files:
+            if os.path.isdir(f.path):
+                # don't attempt to descend into directories
+                continue
             name = os.path.split(f.path)[-1].replace(
                 '.yaml', '').replace('.yml', '')
             kwargs = self.kwargs.copy()
