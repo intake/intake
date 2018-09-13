@@ -1,6 +1,6 @@
 from . import base
 from .utils import (
-    DASK_VERSION, path_to_glob, path_to_pattern, reverse_format,
+    DASK_VERSION, path_to_glob, path_to_pattern, reverse_formats,
     unique_string)
 
 
@@ -56,21 +56,17 @@ class CSVSource(base.DataSource):
 
         super(CSVSource, self).__init__(metadata=metadata)
 
-    def _get_column_values_by_field(self, path_column):
+    def _set_pattern_columns(self, path_column):
         """Get a column of values for each field in pattern
         """
-        values_per_path = []
-        for path in self._dataframe[path_column].cat.categories:
-            values_per_path.append(reverse_format(self._pattern, path))
+        col = self._dataframe[path_column]
+        paths = col.cat.categories
 
-        codes = self._dataframe[path_column].cat.codes
-
-        values_by_field = {}
-        for field in values_per_path[0]:
-            values = [value[field] for value in values_per_path]
-            values_by_field[field] = codes.map(dict(enumerate(values))).astype("category")
-
-        return values_by_field
+        column_by_field = {field: 
+            col.cat.codes.map(dict(enumerate(values))).astype("category") for 
+            field, values in reverse_formats(self._pattern, paths).items()
+        }
+        self._dataframe = self._dataframe.assign(**column_by_field)
 
     def _path_column(self):
         """Set ``include_path_column`` in csv_kwargs and returns path column name
@@ -110,9 +106,9 @@ class CSVSource(base.DataSource):
         self._dataframe = dask.dataframe.read_csv(
             urlpath, storage_options=self._storage_options, **self._csv_kwargs)
 
-        # add the new column values to the dataframe
-        self._dataframe = self._dataframe.assign(
-            **self._get_column_values_by_field(path_column))
+        # add the new columns to the dataframe
+        self._set_pattern_columns(path_column)
+
         if drop_path_column:
             self._dataframe = self._dataframe.drop([path_column], axis=1)
 

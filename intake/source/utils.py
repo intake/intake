@@ -42,6 +42,71 @@ def _get_parts_of_format_string(resolved_string, literal_texts, format_specs):
     return bits
 
 
+def reverse_formats(format_string, resolved_strings):
+    """
+    Reverse the string method format for a list of strings.
+
+    Given format_string and resolved_strings, for each resolved string
+    find arguments that would give 
+    ``format_string.format(**arguments) == resolved_string``. 
+    
+    Each item in the output corresponds to a new column with the key setting
+    the name and the values representing a mapping from list of resolved_strings
+    to the related value.
+
+    Parameters
+    ----------
+    format_strings : str
+        Format template string as used with str.format method
+    resolved_strings : list
+        List of strings with same pattern as format_string but with fields
+        filled out.
+
+    Returns
+    -------
+    args : dict
+        Dict of the form ``{field: [value_0, ..., value_n], ...}`` where values are in 
+        the same order as resolved_strings, so:
+        ``format_sting.format(**{f: v[0] for f, v in args.items()}) == resolved_strings[0]``
+
+    Examples
+    --------
+
+    >>> paths = ['data_2014_01_03.csv', 'data_2014_02_03.csv', 'data_2015_12_03.csv']
+    >>> reverse_formats('data_{year}_{month}_{day}.csv', paths)
+    {'year':  ['2014', '2014', '2015'],
+     'month': ['01', '02', '12'],
+     'day':   ['03', '03', '03']}
+    >>> reverse_formats('data_{year:d}_{month:d}_{day:d}.csv', paths)
+    {'year': [2014, 2014, 2015], 'month': [1, 2, 12], 'day': [3, 3, 3]}
+    >>> reverse_formats('data_{date:%Y_%m_%d}.csv', paths)
+    {'date': [datetime.datetime(2014, 1, 3, 0, 0),
+              datetime.datetime(2014, 2, 3, 0, 0),
+              datetime.datetime(2015, 12, 3, 0, 0)]}
+    >>> reverse_formats('{state:2}{zip:5}', ['PA19104', 'PA19143', 'MA02534'])
+    {'state': ['PA', 'PA', 'MA'], 'zip': ['19104', '19143', '02534']}
+
+    See also
+    --------
+    str.format : method that this reverses
+    reverse_format : method for reversing just one string using a pattern
+    """
+    from string import Formatter
+
+    fmt = Formatter()
+
+    # get the fields from the format_string
+    field_names = [i[1] for i in fmt.parse(format_string) if i[1] is not None]
+
+    # itialize the args dict with an empty dict for each field
+    args = {field_name: [] for field_name in field_names}
+    for resolved_string in resolved_strings:
+        for field, value in reverse_format(format_string, resolved_string).items():
+            args[field].append(value)
+
+    return args
+
+
 def reverse_format(format_string, resolved_string):
     """
     Reverse the string method format.
@@ -78,6 +143,7 @@ def reverse_format(format_string, resolved_string):
     See also
     --------
     str.format : method that this reverses
+    reverse_formats : method for reversing a list of strings using one pattern
     """
     from string import Formatter
     from datetime import datetime

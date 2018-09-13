@@ -1,6 +1,7 @@
 import pytest
 import datetime
-from intake.source.utils import path_to_glob, path_to_pattern, reverse_format
+from intake.source.utils import (
+    path_to_glob, path_to_pattern, reverse_format, reverse_formats)
 
 
 @pytest.mark.parametrize('pattern,expected', [
@@ -45,6 +46,7 @@ def test_roundtripping_reverse_format(pattern, expected):
     actual = reverse_format(pattern, resolved)
     assert actual == expected
 
+
 def test_reverse_format_errors():
     pattern = '{month}{day}{year}'
     resolved = '20012001'
@@ -68,6 +70,19 @@ def test_reverse_format_errors():
                                             "pattern. 'data_' not found.")):
 
         reverse_format(pattern, resolved)
+
+
+paths = ['data_2014_01_03.csv', 'data_2014_02_03.csv', 'data_2015_12_03.csv']
+@pytest.mark.parametrize('pattern', [
+    'data_{year}_{month}_{day}.csv',
+    'data_{year:d}_{month:02d}_{day:02d}.csv',
+    'data_{date:%Y_%m_%d}.csv'
+])
+def test_roundtrip_reverse_formats(pattern):
+    args = reverse_formats(pattern, paths)
+    for i, path  in enumerate(paths):
+        assert pattern.format(
+            **{field: values[i] for field, values in  args.items()}) == path
 
 
 @pytest.mark.parametrize('path,metadata,expected', [
