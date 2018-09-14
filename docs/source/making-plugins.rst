@@ -152,11 +152,11 @@ Most of the work typically happens in the following methods:
 - ``_get_schema(self)``: May open files and network resources and return as much of the schema as possible in small
   amount of *approximately* constant  time.  The ``npartitions`` and ``extra_metadata`` attributes must be correct
   when ``_get_schema`` returns.  Further keys such as ``dtype``, ``shape``, etc., should reflect the container type of
-  the data-source, and can be ``None`` if not easily knowable, or include ``None`` for some elements. This method should 
+  the data-source, and can be ``None`` if not easily knowable, or include ``None`` for some elements. This method should
   call the ``_get_cache`` method, if caching on first time read is supported by the plugin. For example::
 
     urlpath, *_ = self._get_cache(self._urlpath)
-  
+
   Will return the location of the cached urlpath for the first matching cache specified in the catalog source.
 
 - ``_get_partition(self, i)``: Should return all of the data from partition id ``i``, where ``i`` is typically an
@@ -233,7 +233,7 @@ by convention, be supplied by a plugin argument named ``storage_options`` (a dic
 To use an ``OpenFile`` object, make it concrete by using a context:
 
 
-.. code-block::python
+.. code-block:: python
 
     # at setup, to discover the number of files/partitions
     set_of_open_files = dask.bytes.open_files(urlpath, mode='rb', **storage_options)
@@ -246,3 +246,64 @@ To use an ``OpenFile`` object, make it concrete by using a context:
             f.seek(); f.read()
 
 The ``textfiles`` builtin plugins implements this mechanism, as an example.
+
+
+Structured File Paths
+---------------------
+
+The CSV plugin sets up an example of how to gather data which is encoded in file paths 
+like (``'data_{site}_.csv'``) and return that data in the output.
+Other plugins could also follow the same structure where data is being loaded from a 
+set of filenames. Typically this would apply to data-frame output.
+This is possible as long as the plugin has access to each of the file paths at some 
+point in ``_get_schema``. Once the file paths are known, the plugin developer can use the helper 
+functions defined in ``intake.source.utils`` to get the values for each field in the pattern
+for each file in the list. These values should then be added to the data, a process which 
+normally would happen within the _get_schema method.
+
+The implementation might look something like this::
+
+    from intake.source.utils import reverse_formats, path_to_glob, path_to_pattern
+
+    class FooSource(intake.source.base.DataSource):
+        def __init__(self, a, b, path, metadata=None):
+            # Do init here with a and b
+            self.path = path_to_glob(path)
+            self.pattern = path_to_pattern(path, metadata)
+            super(FooSource, self).__init__(
+                container='dataframe',
+                metadata=metadata
+            )
+        def _get_schema(self):
+            # read in the data
+            values_by_field = reverse_formats(pattern, file_paths)
+            # add these fields and map values to the data
+            return data
+        
+
+Since dask already has a specific method for including the file paths in the output dataframe, 
+in the CSV plugin we set ``include_path_column=True``, to get a dataframe where one of the 
+columns contains all the file paths. In this case, `add these fields and values to data` 
+is a mapping between the categorical file paths column and the ``values_by_field``.  
+
+In other plugins where each file is read in independently (such as the intake-xarray plugin),
+the plugin developer can set the new fields on the data from each file before concattenating.
+This pattern looks more like::
+
+    from intake.source.utils import reverse_format, path_to_glob, path_to_pattern
+
+    class FooSource(intake.source.base.DataSource):
+        ...
+
+        def _get_schema(self):
+            # get list of file paths
+            for path in file_paths:
+                # read in the file
+                values_by_field = reverse_format(self.pattern, path)
+                # add these fields and values to the data
+            # concatenate the datasets
+            return data
+        
+
+To toggle on and off this path as pattern behavior, the CSV and intake-xarray plugins 
+uses the bool ``path_as_pattern`` keyword argument.

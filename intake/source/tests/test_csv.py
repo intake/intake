@@ -14,7 +14,8 @@ def data_filenames():
     return dict(sample1=os.path.join(basedir, 'sample1.csv'),
                 sample2_1=os.path.join(basedir, 'sample2_1.csv'),
                 sample2_2=os.path.join(basedir, 'sample2_2.csv'),
-                sample2_all=os.path.join(basedir, 'sample2_*.csv'))
+                sample2_all=os.path.join(basedir, 'sample2_*.csv'),
+                sample_pattern=os.path.join(basedir, 'sample{num:d}_{dup:d}.csv'))
 
 
 @pytest.fixture
@@ -25,6 +26,19 @@ def sample1_datasource(data_filenames):
 @pytest.fixture
 def sample2_datasource(data_filenames):
     return csv.CSVSource(data_filenames['sample2_all'])
+
+
+@pytest.fixture
+def sample_pattern_datasource(data_filenames):
+    return csv.CSVSource(data_filenames['sample_pattern'])
+
+
+@pytest.fixture
+def sample_pattern_datasource_with_cache(data_filenames):
+    metadata = {'cache': [{'argkey': 'urlpath',
+                           'regex': os.path.dirname(__file__),
+                           'type': 'file'}]}
+    return csv.CSVSource(data_filenames['sample_pattern'], metadata=metadata)
 
 
 def test_csv_plugin():
@@ -65,6 +79,37 @@ def test_read_chunked(sample1_datasource, data_filenames):
     df = pd.concat(parts)
 
     assert expected_df.equals(df)
+
+
+def check_read_pattern_output(source):
+    df = source.read()
+    assert len(df.columns) == 5
+    assert 'num' in df
+    assert 'dup' in df
+    assert df.num.dtype == 'category'
+    assert df.dup.dtype == 'category'
+
+    names = ['Alice', 'Bob', 'Charlie', 'Eve']
+
+    file_1 = df[df['name'].isin(['{}1'.format(name) for name in names])]
+    assert all(file_1.num == 2)
+    assert all(file_1.dup == 1)
+
+    file_2 = df[df['name'].isin(['{}2'.format(name) for name in names])]
+    assert all(file_2.num == 2)
+    assert all(file_2.dup == 2)
+
+    file_3 = df[df['name'].isin(['{}3'.format(name) for name in names])]
+    assert all(file_3.num == 3)
+    assert all(file_3.dup == 2)
+
+
+def test_read_pattern(sample_pattern_datasource):
+    check_read_pattern_output(sample_pattern_datasource)
+
+
+def test_read_pattern_with_cache(sample_pattern_datasource_with_cache):
+    check_read_pattern_output(sample_pattern_datasource_with_cache)
 
 
 def test_read_partition(sample2_datasource, data_filenames):
