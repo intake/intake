@@ -5,10 +5,12 @@ Plugin Directory
 
 This is a list of known projects which install plugins for Intake:
 
+* `intake-astro <https://github.com/ContinuumIO/intake-astro>`_ Table and array loading of FITS astronomical data
 * `intake-accumulo <https://github.com/ContinuumIO/intake-accumulo>`_ Apache Accumulo clustered data storage
 * `intake-avro <https://github.com/ContinuumIO/intake-avro>`_: Apache Avro data serialization format
 * `intake-elasticsearch <https://github.com/ContinuumIO/intake-elasticsearch>`_: Elasticsearch search and analytics engine
 * `intake-hbase <https://github.com/ContinuumIO/intake-hbase>`_: Apache HBase database
+* `intake-iris <https://github.com/informatics-lab/intake-iris>`_ load netCDF and GRIB files with IRIS
 * `intake-mongo <https://github.com/ContinuumIO/intake-mongo>`_: MongoDB noSQL query
 * `intake-netflow <https://github.com/ContinuumIO/intake-netflow>`_: Netflow packet format
 * `intake-odbc <https://github.com/ContinuumIO/intake-odbc>`_: ODBC database
