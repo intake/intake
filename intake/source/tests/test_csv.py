@@ -32,6 +32,9 @@ def sample2_datasource(data_filenames):
 def sample_pattern_datasource(data_filenames):
     return csv.CSVSource(data_filenames['sample_pattern'])
 
+@pytest.fixture
+def sample_list_datasource(data_filenames):
+    return csv.CSVSource([data_filenames['sample2_1'], data_filenames['sample2_2']])
 
 @pytest.fixture
 def sample_pattern_datasource_with_cache(data_filenames):
@@ -71,6 +74,13 @@ def test_read(sample1_datasource, data_filenames):
 
     assert expected_df.equals(df)
 
+def test_read_list(sample_list_datasource,  data_filenames):
+    df_1 = pd.read_csv(data_filenames['sample2_1'])
+    df_2 = pd.read_csv(data_filenames['sample2_2'])
+    expected_df = pd.concat([df_1, df_2])
+    df = sample_list_datasource.read()
+
+    assert expected_df.equals(df)
 
 def test_read_chunked(sample1_datasource, data_filenames):
     expected_df = pd.read_csv(data_filenames['sample1'])
