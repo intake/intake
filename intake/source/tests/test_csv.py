@@ -37,6 +37,12 @@ def sample_list_datasource(data_filenames):
     return csv.CSVSource([data_filenames['sample2_1'], data_filenames['sample2_2']])
 
 @pytest.fixture
+def sample_list_datasource_with_path_as_pattern_str(data_filenames):
+    return csv.CSVSource(
+        [data_filenames['sample2_1'], data_filenames['sample2_2']],
+        path_as_pattern='sample{num:d}_{dup:d}.csv')
+
+@pytest.fixture
 def sample_pattern_datasource_with_cache(data_filenames):
     metadata = {'cache': [{'argkey': 'urlpath',
                            'regex': os.path.dirname(__file__),
@@ -120,6 +126,10 @@ def test_read_pattern(sample_pattern_datasource):
 
 def test_read_pattern_with_cache(sample_pattern_datasource_with_cache):
     check_read_pattern_output(sample_pattern_datasource_with_cache)
+
+
+def test_read_pattern_with_path_as_pattern_str(sample_list_datasource_with_path_as_pattern_str):
+    check_read_pattern_output(sample_list_datasource_with_path_as_pattern_str)
 
 
 def test_read_partition(sample2_datasource, data_filenames):
