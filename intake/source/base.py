@@ -47,7 +47,7 @@ class DataSource(object):
     @property
     def cache_dirs(self):
         return [c._cache_dir for c in self.cache]
-    
+
     def set_cache_dir(self, cache_dir):
         for c in self.cache:
             c._cache_dir = cache_dir
@@ -94,7 +94,7 @@ class DataSource(object):
         if len(self.cache) == 0:
             return [urlpath]
         return [c.load(urlpath) for c in self.cache]
-    
+
     def _get_schema(self):
         """Subclasses should return an instance of base.Schema"""
         raise Exception('Subclass should implement _get_schema()')
@@ -240,3 +240,48 @@ class DataSource(object):
         Returns a hvPlot object to provide a high-level plotting API.
         """
         return self.plot
+
+
+class PatternMixin(object):
+    @property
+    def path_as_pattern(self):
+        if hasattr(self, '_path_as_pattern'):
+            return self._path_as_pattern
+        raise KeyError('Plugin needs to set `path_as_pattern` before setting urlpath')
+
+    @path_as_pattern.setter
+    def path_as_pattern(self, path_as_pattern):
+        self._path_as_pattern = path_as_pattern
+
+    @property
+    def urlpath(self):
+        return self._urlpath
+
+    @urlpath.setter
+    def urlpath(self, urlpath):
+        from .utils import path_to_glob
+
+        if hasattr(self, '_original_urlpath'):
+            self._urlpath = urlpath
+            return
+
+        self._original_urlpath = urlpath
+
+        if self.path_as_pattern:
+            self._urlpath = path_to_glob(urlpath)
+        else:
+            self._urlpath = urlpath
+
+        if isinstance(self.path_as_pattern, bool):
+            if isinstance(urlpath, str) and self._urlpath == urlpath:
+                self.path_as_pattern = False
+
+    @property
+    def pattern(self):
+        from .utils import path_to_pattern
+
+        if isinstance(self.path_as_pattern, str):
+            return self.path_as_pattern
+        elif self.path_as_pattern:
+            return path_to_pattern(self._original_urlpath, self.metadata)
+        return

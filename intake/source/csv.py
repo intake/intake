@@ -1,13 +1,11 @@
 from . import base
-from .utils import (
-    DASK_VERSION, path_to_glob, path_to_pattern, reverse_formats,
-    unique_string)
+from .utils import DASK_VERSION, reverse_formats, unique_string
 
 
 # For brevity, this implementation just wraps the Dask dataframe
 # implementation. Generally, plugins should not use Dask directly, as the
 # base class provides the implementation for to_dask().
-class CSVSource(base.DataSource):
+class CSVSource(base.DataSource, base.PatternMixin):
     """Read CSV files into dataframes
 
     Prototype of sources reading dataframe data
@@ -23,7 +21,7 @@ class CSVSource(base.DataSource):
         """
         Parameters
         ----------
-        urlpath : str, location of data
+        urlpath : str or iterable, location of data
             May be a local path, or remote path if including a protocol specifier
             such as ``'s3://'``. May include glob wildcards or format pattern strings.
             Some examples:
@@ -40,16 +38,13 @@ class CSVSource(base.DataSource):
         storage_options : dict
             Any parameters that need to be passed to the remote data backend,
             such as credentials.
-        path_as_pattern : bool, optional
+        path_as_pattern : bool or str, optional
             Whether to treat the path as a pattern (ie. ``data_{field}.csv``)
             and create new columns in the output corresponding to pattern
-            fields. Default is True.
+            fields. If str, is treated as pattern to match on. Default is True.
         """
-        self._urlpath = path_to_glob(urlpath) if path_as_pattern else urlpath
-        if path_as_pattern and self._urlpath != urlpath:
-            self._pattern = path_to_pattern(urlpath, metadata)
-        else:
-            self._pattern = None
+        self.path_as_pattern = path_as_pattern
+        self.urlpath = urlpath
         self._storage_options = storage_options
         self._csv_kwargs = csv_kwargs or {}
         self._dataframe = None
@@ -62,9 +57,9 @@ class CSVSource(base.DataSource):
         col = self._dataframe[path_column]
         paths = col.cat.categories
 
-        column_by_field = {field: 
-            col.cat.codes.map(dict(enumerate(values))).astype("category") for 
-            field, values in reverse_formats(self._pattern, paths).items()
+        column_by_field = {field:
+            col.cat.codes.map(dict(enumerate(values))).astype("category") for
+            field, values in reverse_formats(self.pattern, paths).items()
         }
         self._dataframe = self._dataframe.assign(**column_by_field)
 
@@ -88,7 +83,7 @@ class CSVSource(base.DataSource):
         """
         import dask.dataframe
 
-        if self._pattern is None:
+        if self.pattern is None:
             self._dataframe = dask.dataframe.read_csv(
                 urlpath, storage_options=self._storage_options,
                 **self._csv_kwargs)

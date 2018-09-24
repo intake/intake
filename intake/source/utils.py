@@ -47,9 +47,9 @@ def reverse_formats(format_string, resolved_strings):
     Reverse the string method format for a list of strings.
 
     Given format_string and resolved_strings, for each resolved string
-    find arguments that would give 
-    ``format_string.format(**arguments) == resolved_string``. 
-    
+    find arguments that would give
+    ``format_string.format(**arguments) == resolved_string``.
+
     Each item in the output corresponds to a new column with the key setting
     the name and the values representing a mapping from list of resolved_strings
     to the related value.
@@ -65,7 +65,7 @@ def reverse_formats(format_string, resolved_strings):
     Returns
     -------
     args : dict
-        Dict of the form ``{field: [value_0, ..., value_n], ...}`` where values are in 
+        Dict of the form ``{field: [value_0, ..., value_n], ...}`` where values are in
         the same order as resolved_strings, so:
         ``format_sting.format(**{f: v[0] for f, v in args.items()}) == resolved_strings[0]``
 
@@ -96,7 +96,7 @@ def reverse_formats(format_string, resolved_strings):
     fmt = Formatter()
 
     # get the fields from the format_string
-    field_names = [i[1] for i in fmt.parse(format_string) if i[1] is not None]
+    field_names = [i[1] for i in fmt.parse(format_string) if i[1]]
 
     # itialize the args dict with an empty dict for each field
     args = {field_name: [] for field_name in field_names}
@@ -165,7 +165,7 @@ def reverse_format(format_string, resolved_string):
     bits = _get_parts_of_format_string(resolved_string, literal_texts, format_specs)
 
     for i, (field_name, format_spec) in enumerate(zip(field_names, format_specs)):
-        if field_name is not None:
+        if field_name:
             try:
                 if format_spec.startswith('%'):
                     args[field_name] = datetime.strptime(bits[i], format_spec)
@@ -185,6 +185,8 @@ def reverse_format(format_string, resolved_string):
 def path_to_glob(path):
     """
     Convert pattern style paths to glob style paths
+
+    Returns path if path is not str
 
     Parameters
     ----------
@@ -210,6 +212,9 @@ def path_to_glob(path):
 
     fmt = Formatter()
 
+    if not isinstance(path, str):
+        return path
+
     # Get just the real bits of the urlpath
     literal_texts = [i[0] for i in fmt.parse(path)]
 
@@ -224,6 +229,8 @@ def path_to_pattern(path, metadata=None):
     """
     Remove source information from path when using chaching
 
+    Returns None if path is not str
+
     Parameters
     ----------
     path : str
@@ -236,6 +243,9 @@ def path_to_pattern(path, metadata=None):
     pattern : str
         Pattern style path stripped of everything to the left of cache regex.
     """
+    if not isinstance(path, str):
+        return
+
     pattern = path
     if metadata:
         cache = metadata.get('cache')

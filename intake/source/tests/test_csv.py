@@ -32,6 +32,15 @@ def sample2_datasource(data_filenames):
 def sample_pattern_datasource(data_filenames):
     return csv.CSVSource(data_filenames['sample_pattern'])
 
+@pytest.fixture
+def sample_list_datasource(data_filenames):
+    return csv.CSVSource([data_filenames['sample2_1'], data_filenames['sample2_2']])
+
+@pytest.fixture
+def sample_list_datasource_with_path_as_pattern_str(data_filenames):
+    return csv.CSVSource(
+        [data_filenames['sample2_1'], data_filenames['sample2_2']],
+        path_as_pattern='sample{num:d}_{dup:d}.csv')
 
 @pytest.fixture
 def sample_pattern_datasource_with_cache(data_filenames):
@@ -71,6 +80,13 @@ def test_read(sample1_datasource, data_filenames):
 
     assert expected_df.equals(df)
 
+def test_read_list(sample_list_datasource,  data_filenames):
+    df_1 = pd.read_csv(data_filenames['sample2_1'])
+    df_2 = pd.read_csv(data_filenames['sample2_2'])
+    expected_df = pd.concat([df_1, df_2])
+    df = sample_list_datasource.read()
+
+    assert expected_df.equals(df)
 
 def test_read_chunked(sample1_datasource, data_filenames):
     expected_df = pd.read_csv(data_filenames['sample1'])
@@ -110,6 +126,10 @@ def test_read_pattern(sample_pattern_datasource):
 
 def test_read_pattern_with_cache(sample_pattern_datasource_with_cache):
     check_read_pattern_output(sample_pattern_datasource_with_cache)
+
+
+def test_read_pattern_with_path_as_pattern_str(sample_list_datasource_with_path_as_pattern_str):
+    check_read_pattern_output(sample_list_datasource_with_path_as_pattern_str)
 
 
 def test_read_partition(sample2_datasource, data_filenames):
