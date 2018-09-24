@@ -12,7 +12,7 @@ def get_plugin_class(name):
     if name in registry:
         return registry[name]
     if '.' not in name:
-        logger.warning('Plugin name "%s" not known' % name)
+        logger.debug('Plugin name "%s" not known' % name)
         return None
     if name not in classes:
         import importlib
