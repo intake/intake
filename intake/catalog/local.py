@@ -213,7 +213,7 @@ class LocalCatalogEntry(CatalogEntry):
 
     def describe_open(self, **user_parameters):
         return {
-            'plugins': self._plugin,
+            'plugin': self._driver,
             'description': self._description,
             'direct_access': self._direct_access,
             'metadata': self._metadata,

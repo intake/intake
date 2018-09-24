@@ -252,12 +252,12 @@ def test_union_catalog():
     assert desc_open['args']['urlpath'].endswith('entry1_1.csv')
     del desc_open['args']['urlpath']  # Full path will be system dependent
     desc_open['args']['metadata'].pop('catalog_dir')
+    assert 'csv' in str(desc_open.pop('plugin'))
     assert desc_open == {
         'args': {'metadata': {'bar': [2, 4, 6], 'cache': [], 'foo': 'baz'}},
         'description': 'entry1 part',
         'direct_access': 'allow',
         'metadata': {'bar': [2, 4, 6], 'cache': [], 'foo': 'baz'},
-        'plugin': 'csv'
     }
 
     # Implied creation of data source
