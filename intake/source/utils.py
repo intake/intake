@@ -96,7 +96,7 @@ def reverse_formats(format_string, resolved_strings):
     fmt = Formatter()
 
     # get the fields from the format_string
-    field_names = [i[1] for i in fmt.parse(format_string) if i[1] is not None]
+    field_names = [i[1] for i in fmt.parse(format_string) if i[1]]
 
     # itialize the args dict with an empty dict for each field
     args = {field_name: [] for field_name in field_names}
@@ -165,7 +165,7 @@ def reverse_format(format_string, resolved_string):
     bits = _get_parts_of_format_string(resolved_string, literal_texts, format_specs)
 
     for i, (field_name, format_spec) in enumerate(zip(field_names, format_specs)):
-        if field_name is not None:
+        if field_name:
             try:
                 if format_spec.startswith('%'):
                     args[field_name] = datetime.strptime(bits[i], format_spec)

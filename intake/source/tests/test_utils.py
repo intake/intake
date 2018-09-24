@@ -19,6 +19,8 @@ def test_path_to_glob(pattern, expected):
 
 @pytest.mark.parametrize('pattern,resolved,expected', [
     ('*.csv', 'apple.csv', {}),
+    ('{}.csv', 'apple.csv', {}),
+    ('{fruit}.{}', 'apple.csv', {'fruit': 'apple'}),
     ('{num:d}.csv', 'k.csv', {'num': 'k'}),
     ('{year:d}/{month:d}/{day:d}.csv', '2016/2/01.csv',
     {'year': 2016, 'month': 2, 'day': 1}),
