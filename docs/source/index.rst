@@ -1,8 +1,6 @@
-.. image:: _static/images/logo.png
-   :width: 30 %
-   :scale: 70 %
-   :alt: Intake logo
-   :align: left
+.. raw:: html
+
+   <img src="_static/images/logo.png" alt="Intake Logo" style="float:right;width:80px;height:70px;">
 
 Intake: A general interface for loading data
 ============================================
