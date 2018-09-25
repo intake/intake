@@ -1,0 +1,11 @@
+sources:
+  tables6:
+    args:
+        urlpath: "{{ CATALOG_DIR }}/files*"
+    description: "incompatible plugins"
+    driver:
+      myplug:
+          class: csv
+      myplug2:
+          class: numpy
+    metadata: {}
