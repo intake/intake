@@ -1,0 +1,55 @@
+sources:
+  tables0:
+    args:
+        urlpath: "{{ CATALOG_DIR }}/files*"
+    description: "short form"
+    driver: 
+      - csv
+    metadata: {}
+  tables1:
+    args:
+        urlpath: "{{ CATALOG_DIR }}/files*"
+    description: "long form"
+    driver: 
+      - intake.source.csv.CSVSource
+    metadata: {}
+  tables2:
+    args:
+        urlpath: "{{ CATALOG_DIR }}/files*"
+    description: "same plugin twice"
+    driver: 
+      - csv
+      - intake.source.csv.CSVSource
+    metadata: {}
+  tables3:
+    args:
+        urlpath: "{{ CATALOG_DIR }}/files*"
+    description: "user's choice with extra param"
+    driver: 
+      myplug:
+          class: intake.source.csv.CSVSource
+      myplug2:
+          class: intake.source.csv.CSVSource
+          args:
+              csv_kwargs: true
+    metadata: {}
+  tables4:
+    args:
+        urlpath: "{{ CATALOG_DIR }}/files*"
+    description: "neither plugins exist"
+    driver: 
+      myplug:
+          class: doesnotexist
+      myplug2:
+          class: also.none.Class
+    metadata: {}
+  tables5:
+    args:
+        urlpath: "{{ CATALOG_DIR }}/files*"
+    description: "only second plugin exists"
+    driver: 
+      myplug:
+          class: doesnotexist
+      myplug2:
+          class: csv
+    metadata: {}

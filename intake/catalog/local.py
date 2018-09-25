@@ -167,12 +167,14 @@ class LocalCatalogEntry(CatalogEntry):
                             if v is not None}
             containers = set(p.container for p in self._plugin.values())
         if len(containers) > 1:
-            # this is an error, because cat is poorly specified
+            # this is an error, because cat is poorly specified, even if other
+            # plugins are OK
             raise ValueError('Plugins for a data source must have only one '
                              'container.')
         if len(containers) == 0:
-            # this is a warning, this single entry won't work, but cat is OK.
-            logger.warning('No plugins for entry: %s' % self.name)
+            # this is only debug, this single entry won't work, but cat is OK.
+            # you get an error if you try to actually use this entry
+            logger.debug('No plugins for entry: %s' % self.name)
             containers = [None]
         self._container = list(containers)[0]
         super(LocalCatalogEntry, self).__init__(
@@ -231,12 +233,16 @@ class LocalCatalogEntry(CatalogEntry):
             plugin = self._plugin[0]
         else:
             # dict
-            if len(self._plugin) == 1 or plugin is None:
+            if plugin is None:
                 # default selection for dict
-                plugin = list(self._driver)[0]
+                plugin = list(self._plugin)[0]
             spec = self._driver[plugin]
             open_args.update(spec.get('args', {}))
-            plugin = self._plugin[plugin]
+            try:
+                plugin = self._plugin[plugin]
+            except KeyError:
+                raise ValueError('Attempt to select not available plugin %s, '
+                                 'perhaps import of plugin failed' % plugin)
 
         data_source = plugin(**open_args)
         data_source.name = self.name

@@ -9,7 +9,7 @@ import pytest
 import pandas
 
 from .util import assert_items_equal
-from intake import Catalog
+from intake import Catalog, open_catalog
 from intake.catalog import exceptions, local
 from intake.catalog.local import get_dir, UserParameter
 
@@ -370,3 +370,46 @@ def test_remote_cat(http_server):
     cat = Catalog(url)
     assert 'entry1' in cat
     assert cat.entry1.describe()
+
+
+def test_multi_plugins():
+    from intake.source.csv import CSVSource
+    fn = abspath('multi_plugins.yaml')
+    cat = open_catalog(fn)
+    s = cat.tables0()
+    assert isinstance(s, CSVSource)
+
+    s = cat.tables1()
+    assert isinstance(s, CSVSource)
+
+    s = cat.tables2()
+    assert isinstance(s, CSVSource)
+
+    s = cat.tables3()
+    assert isinstance(s, CSVSource)
+    assert s._csv_kwargs == {}
+
+    s = cat.tables3(plugin='myplug')
+    assert isinstance(s, CSVSource)
+    assert s._csv_kwargs == {}
+
+    s = cat.tables3(plugin='myplug2')
+    assert isinstance(s, CSVSource)
+    assert s._csv_kwargs is True
+
+    with pytest.raises(ValueError):
+        cat.tables4()
+    with pytest.raises(ValueError):
+        cat.tables4(plugin='myplug')
+    with pytest.raises(ValueError):
+        cat.tables4(plugin='myplug2')
+
+    s = cat.tables5()
+    assert isinstance(s, CSVSource)
+
+    with pytest.raises(ValueError):
+        cat.tables5(plugin='myplug')
+
+    fn = abspath('multi_plugins2.yaml')
+    with pytest.raises(ValueError):
+        open_catalog(fn)
