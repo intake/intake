@@ -1,7 +1,14 @@
+.. image:: _static/images/logo.png
+   :width: 60 %
+   :scale: 40 %
+   :alt: Intake logo
+   :align: left
+
 Intake: A general interface for loading data
 ============================================
 
 Intake is a lightweight set of tools for loading and sharing data in data science projects.
+
 Intake helps you:
 
 * Load data from a variety of formats (see :ref:`plugin-directory`) into containers you already use, like Pandas dataframes, Python lists, NumPy arrays, and more.

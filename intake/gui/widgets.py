@@ -5,6 +5,12 @@ import os
 import intake
 
 
+here = os.path.abspath(os.path.dirname(__file__))
+logo_file = os.path.join(here, 'logo.png')
+logo = widgets.Box([widgets.Image.from_file(logo_file)],
+                   layout=widgets.Layout(width='80px', height='80px'))
+
+
 @contextmanager
 def ignore(ob):
     try:
@@ -38,13 +44,13 @@ class DataBrowser(object):
         else:
             cats = [cats]
         self.cats = OrderedDict([(cat.name, cat) for cat in cats])
-        self.cat_list = widgets.Select()
+        self.cat_list = widgets.Select(rows=9)
         self.update_cat_list()
         self.fs = None
         self.item = None
         self.ignore = False
         self.exception = None
-        self.item_list = widgets.Select()
+        self.item_list = widgets.Select(rows=9)
         self.detail = widgets.Textarea(disabled=True,
                                        placeholder='Item Description')
         self.add = widgets.Button(
@@ -60,7 +66,7 @@ class DataBrowser(object):
             tooltip='Open File Selector',
             layout=widgets.Layout(flex='1 1 auto', width='auto'))
         self.files.on_click(self.openfs)
-        self.mid = widgets.HBox(children=[self.cat_list,
+        self.mid = widgets.HBox(children=[logo, self.cat_list,
                                           self.item_list, self.detail])
         self.bottom = widgets.HBox(children=[self.lurl, self.url, self.files,
                                              self.add])

@@ -1,4 +1,7 @@
 # Intake: A general interface for loading data
+
+![Logo](intake/gui/logo.png =250x100)
+
 [![Build Status](https://travis-ci.org/ContinuumIO/intake.svg?branch=master)](https://travis-ci.org/ContinuumIO/intake)  [![Documentation Status](https://readthedocs.org/projects/intake/badge/?version=latest)](http://intake.readthedocs.io/en/latest/?badge=latest)
 
 Intake is a lightweight set of tools for loading and sharing data in data science projects.  
