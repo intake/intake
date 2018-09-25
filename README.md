@@ -1,6 +1,6 @@
 # Intake: A general interface for loading data
 
-![Logo](https://github.com/ContinuumIO/intake/raw/master/docs/source/_static/images/logo.png)
+![Logo](https://github.com/ContinuumIO/intake/raw/master/logo-small.png)
 
 [![Build Status](https://travis-ci.org/ContinuumIO/intake.svg?branch=master)](https://travis-ci.org/ContinuumIO/intake)  [![Documentation Status](https://readthedocs.org/projects/intake/badge/?version=latest)](http://intake.readthedocs.io/en/latest/?badge=latest)
 

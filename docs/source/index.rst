@@ -1,6 +1,6 @@
 .. image:: _static/images/logo.png
-   :width: 60 %
-   :scale: 40 %
+   :width: 30 %
+   :scale: 70 %
    :alt: Intake logo
    :align: left
 

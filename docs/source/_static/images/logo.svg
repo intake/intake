@@ -2,30 +2,21 @@
 <!-- Generator: Adobe Illustrator 21.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 792 612" style="enable-background:new 0 0 792 612;" xml:space="preserve">
-<style type="text/css">
-	.st0{fill:url(#SVGID_1_);}
-	.st1{fill:#203C59;}
-</style>
 <g>
 	<g>
 		<g>
-			<linearGradient id="SVGID_1_" gradientUnits="userSpaceOnUse" x1="396" y1="362.6162" x2="396" y2="61.3754">
-				<stop  offset="0" style="stop-color:#203C59"/>
-				<stop  offset="1" style="stop-color:#951C53"/>
-			</linearGradient>
-			<path class="st0" d="M538.2,132.9h-76.3V61.4H330.1v71.5h-76.3L396,275.1L538.2,132.9z M521.5,157.3l-23.2,23.2l16.7,16.7
-				l-119,119l-119-119l16.7-16.7l-23.2-23.2l-39.9,39.9L396,362.6l165.4-165.4L521.5,157.3z"/>
+			<path d="M525.8,152.2l-24,24l17.3,17.3L396,316.6L272.9,193.5l17.3-17.3l-24-24L225,193.5l171,171l171-171L525.8,152.2z
+				 M543.1,127h-78.9V53H327.8v74h-78.9L396,274L543.1,127z"/>
 		</g>
 	</g>
 	<g>
-		<path class="st1" d="M36.5,415.8h29.7v134.8H36.5V415.8z"/>
-		<path class="st1" d="M99.8,415.8h27.3l63.2,83v-83h29.3v134.8h-25.2l-65.3-85.7v85.7H99.8V415.8z"/>
-		<path class="st1" d="M283.3,443.2h-41v-27.3H354v27.3h-41v107.5h-29.7V443.2z"/>
-		<path class="st1" d="M410.7,414.8H438l57.8,135.8h-31l-12.3-30.2h-57l-12.3,30.2h-30.2L410.7,414.8z M441.9,494.2L424,450.5
-			l-17.9,43.7H441.9z"/>
-		<path class="st1" d="M512.5,415.8h29.7v58.9l54.7-58.9h35.8L577.8,473l57.4,77.6h-35.6l-41.8-57.4l-15.6,16.2v41.2h-29.7V415.8z"
-			/>
-		<path class="st1" d="M653.1,415.8h101.5v26.4h-72.2v27.3h63.6v26.4h-63.6v28.3h73.2v26.4H653.1V415.8z"/>
+		<path d="M24.1,419.6h30.7V559H24.1V419.6z"/>
+		<path d="M89.7,419.6h28.3l65.3,85.9v-85.9h30.3V559h-26.1l-67.5-88.6V559H89.7V419.6z"/>
+		<path d="M279.5,447.9h-42.4v-28.3h115.5v28.3h-42.4V559h-30.7V447.9z"/>
+		<path d="M411.2,418.6h28.3L499.2,559h-32.1l-12.7-31.3h-59L382.7,559h-31.3L411.2,418.6z M443.5,500.7l-18.5-45.2l-18.5,45.2
+			H443.5z"/>
+		<path d="M516.5,419.6h30.7v61l56.6-61h37L584,478.7l59.4,80.3h-36.8l-43.2-59.4l-16.1,16.7V559h-30.7V419.6z"/>
+		<path d="M661.9,419.6h105v27.3h-74.7v28.3h65.7v27.3h-65.7v29.3h75.7V559h-106V419.6z"/>
 	</g>
 </g>
 </svg>
