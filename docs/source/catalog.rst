@@ -135,6 +135,67 @@ available for use in template strings, which can be used to alter the arguments 
 a data source might accept a "postal_code" argument which is used to alter a database query, or select a particular
 group within a file.  Users set parameters with keyword arguments to the ``get()`` method on the catalog object.
 
+Driver Selection
+''''''''''''''''
+
+In some cases, it may be possible that multiple backends are capable of loading from the same data
+format or service. Sometimes, this may mean two plugins with unique names, or a single plugin
+with a parameter to choose between the different backends.
+
+However, it is possible that multiple plugins for reading a particular type of data
+also share the same plugin name: for example, both the
+intake-iris and the intake-xarray packages contain plugins with the name ``"netcdf"``, which
+are capable of reading the same files, but with different backends. Here we will describe the
+various possibilities of coping with this situation.
+
+It may be
+acceptable to use any plugin which claims to handle that data type, or to give the option of
+which plugin to use to the user, or it may be necessary to specify which precise plugin(s) are
+appropriate for that particular data. Intake allows all of these possibilities, even if the
+backend plugins require extra arguments.
+
+Specifying a single plugin explicitly, rather than using a generic name, would look like this:
+
+.. code-block:: yaml
+
+    sources:
+      example:
+        description: test
+        driver: package.module.PluginClass
+        args: {}
+
+It is also possible to describe a list of plugins with the same syntax. The first one
+found will be the one used. Note that the class imports will only happen at data source
+instantiation.
+
+.. code-block:: yaml
+
+    sources:
+      example:
+        description: test
+        driver:
+          - package.module.PluginClass
+          - another_package.PluginClass2
+        args: {}
+
+These alternative plugins can also be given data-source specific names, allowing the
+user to choose at load time with `driver=` as a parameter. Additional arguments may also
+be required for each option (which, as usual, may include user parameters); however, the
+same global arguments will be passed to all of the drivers listed.
+
+    sources:
+      example:
+        description: test
+        driver:
+          first:
+            class: package.module.PluginClass
+            args:
+              specific_thing: 9
+          second:
+            class: another_package.PluginClass2
+        args: {}
+
+
 Parameter Definition
 ^^^^^^^^^^^^^^^^^^^^
 

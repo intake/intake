@@ -17,6 +17,7 @@ from .base import Catalog
 from . import exceptions
 from .entry import CatalogEntry
 from ..source import registry as global_registry
+from ..source import get_plugin_class
 from ..source.discovery import load_plugins_from_module
 from .utils import expand_templates, expand_defaults, coerce, COERCION_RULES
 
@@ -152,7 +153,30 @@ class LocalCatalogEntry(CatalogEntry):
         self._user_parameters = parameters
         self._metadata = metadata or {}
         self._catalog_dir = catalog_dir
-        self._plugin = global_registry[driver]
+        if isinstance(driver, str):
+            self._plugin = [get_plugin_class(driver)]
+            containers = set([self._plugin[0].container])
+        elif isinstance(driver, list):
+            self._plugin = [get_plugin_class(d) for d in driver]
+            self._plugin = [p for p in self._plugin if p is not None]
+            containers = set(p.container for p in self._plugin)
+        elif isinstance(driver, dict):
+            self._plugin = {d: get_plugin_class(driver[d]['class'])
+                            for d in driver}
+            self._plugin = {k: v for k, v in self._plugin.items()
+                            if v is not None}
+            containers = set(p.container for p in self._plugin.values())
+        if len(containers) > 1:
+            # this is an error, because cat is poorly specified, even if other
+            # plugins are OK
+            raise ValueError('Plugins for a data source must have only one '
+                             'container.')
+        if len(containers) == 0:
+            # this is only debug, this single entry won't work, but cat is OK.
+            # you get an error if you try to actually use this entry
+            logger.debug('No plugins for entry: %s' % self.name)
+            containers = [None]
+        self._container = list(containers)[0]
         super(LocalCatalogEntry, self).__init__(
             getenv=getenv, getshell=getshell)
 
@@ -163,7 +187,7 @@ class LocalCatalogEntry(CatalogEntry):
     def describe(self):
         """Basic information about this entry"""
         return {
-            'container': self._plugin.container,
+            'container': self._container,
             'description': self._description,
             'direct_access': self._direct_access,
             'user_parameters': [u.describe() for u in self._user_parameters]
@@ -191,7 +215,7 @@ class LocalCatalogEntry(CatalogEntry):
 
     def describe_open(self, **user_parameters):
         return {
-            'plugin': self._plugin.name,
+            'plugin': self._driver,
             'description': self._description,
             'direct_access': self._direct_access,
             'metadata': self._metadata,
@@ -201,7 +225,26 @@ class LocalCatalogEntry(CatalogEntry):
     def get(self, **user_parameters):
         """Instantiate the DataSource for the given parameters"""
         open_args = self._create_open_args(user_parameters)
-        data_source = self._plugin(**open_args)
+        plugin = user_parameters.get('plugin', None)
+        if len(self._plugin) == 0:
+            raise ValueError('No plugins loaded for this entry: %s'
+                             % self._driver)
+        elif isinstance(self._plugin, list):
+            plugin = self._plugin[0]
+        else:
+            # dict
+            if plugin is None:
+                # default selection for dict
+                plugin = list(self._plugin)[0]
+            spec = self._driver[plugin]
+            open_args.update(spec.get('args', {}))
+            try:
+                plugin = self._plugin[plugin]
+            except KeyError:
+                raise ValueError('Attempt to select not available plugin %s, '
+                                 'perhaps import of plugin failed' % plugin)
+
+        data_source = plugin(**open_args)
         data_source.name = self.name
         data_source.description = self._description
 
@@ -352,7 +395,7 @@ class CatalogParser(object):
             'name': name,
             'description': self._getitem(data, 'description', str,
                                          required=False),
-            'driver': self._getitem(data, 'driver', str),
+            'driver': self._getitem(data, 'driver', object),
             'direct_access': self._getitem(
                 data, 'direct_access', str, required=False, default='forbid',
                 choices=['forbid', 'allow', 'force']),
@@ -513,11 +556,9 @@ class YAMLFileCatalog(Catalog):
         result = CatalogParser(data, context=context, getenv=self.getenv,
                                getshell=self.getshell)
         if result.errors:
-            errors = ["line {}, column {}: {}".format(*error)
-                      for error in result.errors]
             raise exceptions.ValidationError(
                 "Catalog '{}' has validation errors:\n\n{}"
-                "".format(self.path, "\n".join(errors)), result.errors)
+                "".format(self.path, "\n".join(result.errors)), result.errors)
 
         cfg = result.data
 

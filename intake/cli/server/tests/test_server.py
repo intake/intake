@@ -109,7 +109,7 @@ class TestServerV1Source(TestServerV1Base):
                    available_plugins=['csv'])
         resp_msg, = self.make_post_request(msg)
 
-        self.assertEqual(resp_msg['plugin'], 'csv')
+        self.assert_('csv' in resp_msg['plugin'])
         args = resp_msg['args']
         self.assertEquals(set(args.keys()), set(['urlpath', 'metadata']))
         self.assert_(args['urlpath'].endswith('/entry1_2.csv'))

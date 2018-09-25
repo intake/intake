@@ -28,7 +28,7 @@ In the future, other distributed computing systems could use Intake to create si
 Why Intake?
 -----------
 
-Intake tries to solve a related set of problems:
+Intake solves a related set of problems:
 
 * Python API standards for loading data (such as DB-API 2.0) are optimized for transactional databases and query results
   that are processed one row at a time.
@@ -42,8 +42,9 @@ Intake tries to solve a related set of problems:
 * Abstractions often focus on just one data model (tabular, n-dimensional array, or semi-structured), when many projects
   need to work with multiple kinds of data.
 
-This effort has some similarity to Blaze, but with the explicit goal of **not** defining a computational expression
-system.  Intake plugins load the data into containers that provide their data processing features.  As a result, it is
+Intake has the explicit goal of **not** defining a computational expression
+system.  Intake plugins load the data into containers (e.g., arrays or data-frames) that
+provide their data processing features.  As a result, it is
 very easy to make a new Intake plugin with a relatively small amount of Python.
 
 Concepts
@@ -64,6 +65,8 @@ Intake is built out of four core concepts:
   plugin and arguments. Arguments can be parameterized, allowing one entry to return
   different subsets of data depending on the user request.
 
+The business of a plugin is to go from some data format (bunch of files or some remote service)
+to a "container" of the data (e.g., data-frame), a thing on which you can perform further analysis.
 Plugins can be used directly by the user, or indirectly through data catalogs.  Data sources can be pickled, sent over
 the network to other hosts, and reopened (assuming the remote system has access to the required files or servers).
 
