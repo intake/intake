@@ -87,7 +87,11 @@ def global_data_dir():
 
 def intake_path_dirs():
     """Return a list of directories from the intake path."""
-    return os.environ.get(INTAKE_PATH_VAR, '').split(':')
+    if os.name == 'nt':
+        separator = ';'
+    else:
+        separator = ':'
+    return os.environ.get(INTAKE_PATH_VAR, '').split(separator)
 
 
 def load_combo_catalog():
