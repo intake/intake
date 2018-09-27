@@ -74,6 +74,8 @@ if 'INTAKE_CACHE_PROGRESS' in os.environ:
                                       ].lower() == 'true'
 if 'INTAKE_LOG_LEVEL' in os.environ:
     conf['logging'] = os.environ['INTAKE_LOG_LEVEL']
+if 'INTAKE_PATH' in os.environ:
+    conf['catalog_path'] = os.environ['INTAKE_PATH']
 logger.setLevel(conf['logging'])
 ch = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s %(name)s:%(levelname)s, %(message)s')

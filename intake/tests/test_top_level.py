@@ -57,7 +57,7 @@ def test_user_catalog(user_catalog):
 
 
 def test_path_catalog(tmp_path_catalog):
-    os.environ['INTAKE_PATH'] = os.path.join(tempfile.gettempdir(), 'intake')
+    intake.config.conf['catalog_path'] = os.path.join(tempfile.gettempdir(), 'intake')
     cat = intake.load_combo_catalog()
     time.sleep(2) # wait 2 seconds for catalog to refresh
     assert set(cat) >= set(['ex1', 'ex2'])

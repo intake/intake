@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 
+from intake.config import conf
 from .local import YAMLFilesCatalog, Catalog
 
 
@@ -32,7 +33,6 @@ def load_global_catalog():
 
 CONDA_VAR = 'CONDA_PREFIX'
 VIRTUALENV_VAR = 'VIRTUAL_ENV'
-INTAKE_PATH_VAR = 'INTAKE_PATH'
 
 
 def conda_prefix():
@@ -88,7 +88,7 @@ def global_data_dir():
 def intake_path_dirs():
     """Return a list of directories from the intake path."""
     separator = ';' if os.name == 'nt' else ':'
-    return os.environ.get(INTAKE_PATH_VAR, '').split(separator)
+    return conf.get('catalog_path', '').split(separator)
 
 
 def load_combo_catalog():
