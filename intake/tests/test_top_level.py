@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+import tempfile
 
 import intake
 import appdirs
@@ -17,7 +18,7 @@ def copy_test_file(filename, target_dir):
     target_catalog = os.path.join(target_dir, '__unit_test_'+filename)
 
     shutil.copyfile(test_catalog, target_catalog)
-    return target_catalog    
+    return target_catalog
 
 
 @pytest.fixture
@@ -30,6 +31,14 @@ def user_catalog():
     # files already there)
     os.remove(target_catalog)
 
+@pytest.fixture
+def tmp_path_catalog():
+    target_catalog = copy_test_file('catalog1.yml',
+                                    os.path.join(tempfile.gettempdir(), 'intake'))
+    yield target_catalog
+    # Remove the file, but not the directory (because there might be other
+    # files already there)
+    os.remove(target_catalog)
 
 def test_autoregister_open():
     assert hasattr(intake, 'open_csv')
@@ -42,6 +51,13 @@ def test_default_catalogs():
 
 
 def test_user_catalog(user_catalog):
+    cat = intake.load_combo_catalog()
+    time.sleep(2) # wait 2 seconds for catalog to refresh
+    assert set(cat) >= set(['ex1', 'ex2'])
+
+
+def test_path_catalog(tmp_path_catalog):
+    os.environ['INTAKE_PATH'] = os.path.join(tempfile.gettempdir(), 'intake')
     cat = intake.load_combo_catalog()
     time.sleep(2) # wait 2 seconds for catalog to refresh
     assert set(cat) >= set(['ex1', 'ex2'])

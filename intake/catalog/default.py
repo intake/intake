@@ -32,6 +32,7 @@ def load_global_catalog():
 
 CONDA_VAR = 'CONDA_PREFIX'
 VIRTUALENV_VAR = 'VIRTUAL_ENV'
+INTAKE_PATH_VAR = 'INTAKE_PATH'
 
 
 def conda_prefix():
@@ -76,12 +77,17 @@ def global_data_dir():
     elif which('conda'):
         # conda exists but is not activated
         prefix = conda_prefix()
-    
+
     if prefix:
         # conda and virtualenv use Linux-style directory pattern
         return os.path.join(prefix, 'share', 'intake')
     else:
         return appdirs.site_data_dir(appname='intake', appauthor='intake')
+
+
+def intake_path_dirs():
+    """Return a list of directories from the intake path."""
+    return os.environ.get(INTAKE_PATH_VAR, '').split(':')
 
 
 def load_combo_catalog():
@@ -96,5 +102,9 @@ def load_combo_catalog():
     if os.path.isdir(global_dir):
         cat_dirs.append(global_dir + '/*.yaml')
         cat_dirs.append(global_dir + '/*.yml')
+    for path_dir in intake_path_dirs():
+        if os.path.isdir(path_dir):
+            cat_dirs.append(path_dir + '/*.yaml')
+            cat_dirs.append(path_dir + '/*.yml')
 
     return YAMLFilesCatalog(cat_dirs, name='builtin')
