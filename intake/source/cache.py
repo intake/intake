@@ -380,7 +380,7 @@ class CompressedCache(BaseCache):
             os.makedirs(subdir)
         except (OSError, IOError):
             pass
-        files = [f.path for f in files_in]
+        files = [f.path for f in files_out]
         out = []
         for f, orig in zip(files, files_in):
             # TODO: add snappy, brotli, lzo, lz4, xz... ?

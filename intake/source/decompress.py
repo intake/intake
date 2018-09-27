@@ -50,7 +50,7 @@ def ungzip(f, outpath):
         while data:
             data = z.read(2**15)
             fout.write(data)
-    return [fn]
+    return [os.path.join(outpath, fn)]
 
 
 def unbzip(f, outpath):
@@ -62,7 +62,7 @@ def unbzip(f, outpath):
         while data:
             data = z.read(2 ** 15)
             fout.write(data)
-    return [fn]
+    return [os.path.join(outpath, fn)]
 
 
 decomp = {'zip': unzip,

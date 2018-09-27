@@ -7,6 +7,7 @@ API Reference: User Methods
    intake.open_
    intake.source.csv.CSVSource
    intake.source.textfiles.TextFilesSource
+   intake.source.npy.NPySource
    intake.gui.DataBrowser
 
 .. autofunction::
