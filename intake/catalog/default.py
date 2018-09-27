@@ -87,10 +87,7 @@ def global_data_dir():
 
 def intake_path_dirs():
     """Return a list of directories from the intake path."""
-    if os.name == 'nt':
-        separator = ';'
-    else:
-        separator = ':'
+    separator = ';' if os.name == 'nt' else ':'
     return os.environ.get(INTAKE_PATH_VAR, '').split(separator)
 
 
