@@ -65,6 +65,7 @@ def test_path_catalog(tmp_path_catalog):
     cat = intake.load_combo_catalog()
     time.sleep(2) # wait 2 seconds for catalog to refresh
     assert set(cat) >= set(['ex1', 'ex2'])
+    del intake.config.conf['catalog_path']
 
 
 def test_bad_open():
