@@ -154,8 +154,8 @@ installed in user-specific location.
 
 Adding Data Source Packages using the Intake path
 -------------------------------------------------
-Intake checks the environment variable `INTAKE_PATH` for a colon separated list of paths (semicolon on windows) to search for catalog files.
-When you import ``intake`` we will see data from catalog files in the path appear as part of a global catalog
+Intake checks the Intake config file for `catalog_path` or the environment variable `INTAKE_PATH` for a colon separated list of paths (semicolon on windows) to search for catalog files.
+When you import ``intake`` we will see all entries from all of the catalogues referenced as part of a global catalog
 called ``intake.cat``.
 
 
