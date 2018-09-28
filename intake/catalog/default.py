@@ -102,6 +102,4 @@ def load_combo_catalog():
             cat_dirs.append(path_dir + '/*.yaml')
             cat_dirs.append(path_dir + '/*.yml')
 
-    print(cat_dirs)
-
     return YAMLFilesCatalog(cat_dirs, name='builtin')
