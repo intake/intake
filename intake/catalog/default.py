@@ -85,12 +85,6 @@ def global_data_dir():
         return appdirs.site_data_dir(appname='intake', appauthor='intake')
 
 
-def intake_path_dirs():
-    """Return a list of directories from the intake path."""
-    separator = ';' if os.name == 'nt' else ':'
-    return conf.get('catalog_path', '').split(separator)
-
-
 def load_combo_catalog():
     """Load a union of the user and global catalogs for convenience"""
     user_dir = user_data_dir()
@@ -103,7 +97,7 @@ def load_combo_catalog():
     if os.path.isdir(global_dir):
         cat_dirs.append(global_dir + '/*.yaml')
         cat_dirs.append(global_dir + '/*.yml')
-    for path_dir in intake_path_dirs():
+    for path_dir in conf.get('catalog_path', []):
         if os.path.isdir(path_dir):
             cat_dirs.append(path_dir + '/*.yaml')
             cat_dirs.append(path_dir + '/*.yml')

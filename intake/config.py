@@ -61,6 +61,12 @@ def load_conf(fn=None):
             conf.update(yaml.load(f))
 
 
+def intake_path_dirs(path):
+    """Return a list of directories from the intake path."""
+    separator = ';' if os.name == 'nt' else ':'
+    return path.split(separator)
+
+
 reset_conf()
 load_conf(conffile)
 # environment variables take precedence over conf file
@@ -75,7 +81,7 @@ if 'INTAKE_CACHE_PROGRESS' in os.environ:
 if 'INTAKE_LOG_LEVEL' in os.environ:
     conf['logging'] = os.environ['INTAKE_LOG_LEVEL']
 if 'INTAKE_PATH' in os.environ:
-    conf['catalog_path'] = os.environ['INTAKE_PATH']
+    conf['catalog_path'] = intake_path_dirs(os.environ['INTAKE_PATH'])
 logger.setLevel(conf['logging'])
 ch = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s %(name)s:%(levelname)s, %(message)s')
