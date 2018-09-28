@@ -33,8 +33,12 @@ def user_catalog():
 
 @pytest.fixture
 def tmp_path_catalog():
-    target_catalog = copy_test_file('catalog1.yml',
-                                    os.path.join(tempfile.gettempdir(), 'intake'))
+    tmp_path = os.path.join(tempfile.gettempdir(), 'intake')
+    try:
+        os.makedirs(tmp_path)
+    except:
+        pass
+    target_catalog = copy_test_file('catalog1.yml', tmp_path)
     yield target_catalog
     # Remove the file, but not the directory (because there might be other
     # files already there)
@@ -57,7 +61,7 @@ def test_user_catalog(user_catalog):
 
 
 def test_path_catalog(tmp_path_catalog):
-    intake.config.conf['catalog_path'] = os.path.join(tempfile.gettempdir(), 'intake')
+    intake.config.conf['catalog_path'] = [os.path.join(tempfile.gettempdir(), 'intake')]
     cat = intake.load_combo_catalog()
     time.sleep(2) # wait 2 seconds for catalog to refresh
     assert set(cat) >= set(['ex1', 'ex2'])
