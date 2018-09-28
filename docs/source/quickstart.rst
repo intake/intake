@@ -151,6 +151,14 @@ Conda installs the catalog file in this package to ``$CONDA_PREFIX/share/intake/
 The global catalog is a union of all catalogs installed in the conda/virtualenv environment and also any catalogs
 installed in user-specific location.
 
+
+Adding Data Source Packages using the Intake path
+-------------------------------------------------
+Intake checks the Intake config file for `catalog_path` or the environment variable `INTAKE_PATH` for a colon separated list of paths (semicolon on windows) to search for catalog files.
+When you import ``intake`` we will see all entries from all of the catalogues referenced as part of a global catalog
+called ``intake.cat``.
+
+
 Using the GUI
 -------------
 

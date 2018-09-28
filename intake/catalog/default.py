@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 
+from intake.config import conf
 from .local import YAMLFilesCatalog, Catalog
 
 
@@ -76,7 +77,7 @@ def global_data_dir():
     elif which('conda'):
         # conda exists but is not activated
         prefix = conda_prefix()
-    
+
     if prefix:
         # conda and virtualenv use Linux-style directory pattern
         return os.path.join(prefix, 'share', 'intake')
@@ -96,5 +97,9 @@ def load_combo_catalog():
     if os.path.isdir(global_dir):
         cat_dirs.append(global_dir + '/*.yaml')
         cat_dirs.append(global_dir + '/*.yml')
+    for path_dir in conf.get('catalog_path', []):
+        if os.path.isdir(path_dir) and path_dir != '':
+            cat_dirs.append(path_dir + '/*.yaml')
+            cat_dirs.append(path_dir + '/*.yml')
 
     return YAMLFilesCatalog(cat_dirs, name='builtin')
