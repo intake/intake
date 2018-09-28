@@ -34,7 +34,7 @@ script:
   if [ -n "$TRAVIS_TAG" ]; then
       # If tagged git version, upload package to main channel
       anaconda -t ${ANACONDA_TOKEN} upload -u intake --force `conda build --output ./conda`
-  else
+  elif ! [ -n "$TRAVIS_PULL_REQUEST" ]; then
       # Otherwise upload package to dev channel
       anaconda -t ${ANACONDA_TOKEN} upload -u intake --label dev --force `conda build --output ./conda`
   fi
