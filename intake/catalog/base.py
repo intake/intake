@@ -95,6 +95,20 @@ class Catalog(DataSource):
         # default version for pre-v1 files
         return self.metadata.get('version', 1)
 
+    def search(self, text, depth=2):
+        words = text.split()
+        cat = Catalog(name=self.name + "_search",
+                      getenv=self.getenv,
+                      getshell=self.getshell,
+                      auth=self.auth,
+                      metadata=(self.metadata or {}).copy(),
+                      storage_options=self.storage_options)
+        cat.metadata['search_text'] = text
+        cat._entries = {k: v for k, v in self.walk(depth=depth).items()
+                        if any(word in str(v.describe().values())
+                               for word in words)}
+        return cat
+
     @reload_on_change
     def walk(self, sofar=None, prefix=None, depth=2):
         """Get all entries in this catalog and sub-catalogs
