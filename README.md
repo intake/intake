@@ -2,7 +2,7 @@
 
 ![Logo](https://github.com/ContinuumIO/intake/raw/master/logo-small.png)
 
-[![Build Status](https://travis-ci.org/ContinuumIO/intake.svg?branch=master)](https://travis-ci.org/ContinuumIO/intake)  [![Documentation Status](https://readthedocs.org/projects/intake/badge/?version=latest)](http://intake.readthedocs.io/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.org/ContinuumIO/intake.svg?branch=master)](https://travis-ci.org/ContinuumIO/intake)  [![Documentation Status](https://readthedocs.org/projects/intake/badge/?version=latest)](http://intake.readthedocs.io/en/latest/?badge=latest) [![Join the chat at https://gitter.im/ContinuumIO/intake](https://badges.gitter.im/ContinuumIO/intake.svg)](https://gitter.im/ContinuumIO/intake?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Intake is a lightweight set of tools for loading and sharing data in data science projects.  
 Intake helps you:
