@@ -8,7 +8,9 @@ import intake
 here = os.path.abspath(os.path.dirname(__file__))
 logo_file = os.path.join(here, 'logo.png')
 logo = widgets.Box([widgets.Image.from_file(logo_file)],
-                   layout=widgets.Layout(width='80px', height='80px'))
+                   layout=widgets.Layout(width='46px', height='35px',
+                                         overflow_y='visible',
+                                         overflow_x='visible'))
 
 
 @contextmanager
@@ -51,7 +53,7 @@ class DataBrowser(object):
         self.ignore = False
         self.exception = None
         self.item_list = widgets.Select(rows=9)
-        self.detail = widgets.Textarea(disabled=True,
+        self.detail = widgets.Textarea(disabled=True, rows=7,
                                        placeholder='Item Description')
         self.add = widgets.Button(
             icon='plus-square',
@@ -66,9 +68,25 @@ class DataBrowser(object):
             tooltip='Open File Selector',
             layout=widgets.Layout(flex='1 1 auto', width='auto'))
         self.files.on_click(self.openfs)
-        self.mid = widgets.HBox(children=[logo, self.cat_list,
+        self.search = widgets.Button(
+            icon='search',
+            tooltip='Search entries',
+            layout=widgets.Layout(width='auto', height='auto',
+                                  overflow_y='visible', overflow_x='visible'))
+        self.search.on_click(self.opensearch)
+        self.remove = widgets.Button(
+            icon='minus-square',
+            tooltip='Remove cat',
+            layout=widgets.Layout(width='auto', height='auto',
+                                  overflow_y='visible', overflow_x='visible'))
+        self.logobox = widgets.VBox(children=[logo, self.search, self.remove],
+                                    layout=widgets.Layout(width='auto',
+                                                          height='auto',
+                                                          overflow_y='visible',
+                                                          overflow_x='visible'))
+        self.mid = widgets.HBox(children=[self.logobox, self.cat_list,
                                           self.item_list, self.detail])
-        self.bottom = widgets.HBox(children=[self.lurl, self.url, self.files,
+        self.bottom = widgets.HBox(children=[self.files, self.lurl, self.url,
                                              self.add])
         self.widget = widgets.VBox(children=[self.mid, self.bottom])
         self.widget.__repr__ = self.__repr__
@@ -154,8 +172,11 @@ class DataBrowser(object):
                 self.widget._handle_displayed(**kwargs)
 
     def openfs(self, ev):
-            self.fs = FileSelector(self.file_chosen, filters=['.yaml', '.yml'])
-            self.widget.children = [self.mid, self.bottom, self.fs.selector]
+        self.fs = FileSelector(self.file_chosen, filters=['.yaml', '.yml'])
+        self.widget.children = [self.mid, self.bottom, self.fs.selector]
+
+    def opensearch(self, ev):
+        pass
 
     def file_chosen(self, fn, ok=True):
         if ok:

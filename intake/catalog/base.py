@@ -103,7 +103,7 @@ class Catalog(DataSource):
                       auth=self.auth,
                       metadata=(self.metadata or {}).copy(),
                       storage_options=self.storage_options)
-        cat.metadata['search_text'] = text
+        cat.metadata['search'] = {'text': text, 'upstream': self.name}
         cat._entries = {k: v for k, v in self.walk(depth=depth).items()
                         if any(word in str(v.describe().values())
                                for word in words)}
