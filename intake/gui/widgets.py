@@ -198,10 +198,15 @@ class DataBrowser(Base):
             s = Search(done_callback=self.dosearch)
             self.widget.children = [self.mid, s.widget]
 
-    def dosearch(self, text):
-        if text:
+    def dosearch(self, out):
+        if out:
+            text, depth = out
+            if len(depth) == 1:
+                depth = int(depth)
+            else:
+                depth = 99
             cat = self.cats[self.cat_list.value]
-            cat2 = cat.search(text)
+            cat2 = cat.search(text, depth=depth)
             if len(list(cat2)):
                 self.add_cat(cat2)
             self.widget.children = [self.mid]
@@ -229,7 +234,8 @@ class Search(Base):
         self.ok = widgets.Button(
             icon='check', tooltip='OK',
             layout=widgets.Layout(flex='1 1 auto', width='auto'))
-        self.ok.on_click(lambda ev: self.stop(ok=self.search.value))
+        self.ok.on_click(lambda ev: self.stop(ok=(self.search.value,
+                                                  self.depth.value)))
         self.widget = widgets.HBox(children=[self.label, self.search,
                                              self.depth, self.ok,
                                              self.x])
