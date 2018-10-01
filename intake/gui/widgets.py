@@ -177,8 +177,8 @@ class DataBrowser(Base):
                 return
         self.cats[cat.name] = cat
         self.update_cat_list()
-        self.cat_list.value = cat.name
-        self.cat_selected({'new': cat.name})
+        self.cat_list.value = cat._name
+        self.cat_selected({'new': cat._name})
 
     def del_cat(self, ev):
         if self.cat_list.value:
