@@ -184,6 +184,10 @@ class DataBrowser(Base):
         if self.cat_list.value:
             self.cats.pop(self.cat_list.value)
         self.update_cat_list()
+        if self.cat_list.options:
+            cat = self.cat_list.options[-1]
+            self.cat_list.value = cat
+            self.cat_selected({'new': cat})
 
     def open(self, ev):
         cat_open = AddCat(self.file_chosen, filters=['.yaml', '.yml'])
