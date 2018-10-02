@@ -91,7 +91,7 @@ def expand_defaults(default, client=False, getenv=True, getshell=True):
     """Compile env, client_env, shell and client_shell commands
 
     Execution rules:
-    - env() and shell() execute on server or client, if getenv and getshell
+    - env() and shell() execute where the cat is loaded, if getenv and getshell
       are True, respectively
     - client_env() and client_shell() execute only if client is True and
       getenv/getshell are also True.
