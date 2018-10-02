@@ -95,6 +95,20 @@ class Catalog(DataSource):
         # default version for pre-v1 files
         return self.metadata.get('version', 1)
 
+    def search(self, text, depth=2):
+        words = text.lower().split()
+        cat = Catalog(name=self.name + "_search",
+                      getenv=self.getenv,
+                      getshell=self.getshell,
+                      auth=self.auth,
+                      metadata=(self.metadata or {}).copy(),
+                      storage_options=self.storage_options)
+        cat.metadata['search'] = {'text': text, 'upstream': self.name}
+        cat._entries = {k: v for k, v in self.walk(depth=depth).items()
+                        if any(word in str(v.describe().values()).lower()
+                               for word in words)}
+        return cat
+
     @reload_on_change
     def walk(self, sofar=None, prefix=None, depth=2):
         """Get all entries in this catalog and sub-catalogs
@@ -117,7 +131,7 @@ class Catalog(DataSource):
         out = sofar if sofar is not None else {}
         prefix = [] if prefix is None else prefix
         for name, item in self._entries.items():
-            if item.container == 'catalog' and depth > 1:
+            if item._container == 'catalog' and depth > 1:
                 # recurse with default open parameters
                 try:
                     item().walk(out, prefix + [name], depth-1)
@@ -155,6 +169,8 @@ class Catalog(DataSource):
         
         Can also use attribute syntax, like ``cat.entry_name``.
         """
+        if key in self._entries:
+            return self._entries[key]
         out = self
         for k in key.split('.'):
             if isinstance(out, CatalogEntry):

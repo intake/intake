@@ -63,6 +63,7 @@ class UserParameter(object):
             self.default = coerce(self.type, default)
         except (ValueError, TypeError):
             self.default = None
+        self.expanded_default = self.default
 
         if self.min:
             self.min = coerce(self.type, self.min)
@@ -93,7 +94,7 @@ class UserParameter(object):
         """
         if not isinstance(self._default, six.string_types):
             return
-        self.default = coerce(self.type, expand_defaults(
+        self.expanded_default = coerce(self.type, expand_defaults(
             self._default, client, getenv, getshell))
 
     def validate(self, value):
@@ -196,13 +197,14 @@ class LocalCatalogEntry(CatalogEntry):
     def _create_open_args(self, user_parameters):
         params = {'CATALOG_DIR': self._catalog_dir}
         for parameter in self._user_parameters:
-            if parameter.name in user_parameters:
+            if (parameter.name in user_parameters
+                    and user_parameters[parameter.name] != parameter.default):
                 params[parameter.name] = parameter.validate(
                     user_parameters[parameter.name])
             else:
                 parameter.expand_defaults(getenv=self.getenv,
                                           getshell=self.getshell)
-                params[parameter.name] = parameter.default
+                params[parameter.name] = parameter.expanded_default
 
         self._open_args['cache'] = self._cache
         open_args = expand_templates(self._open_args, params)

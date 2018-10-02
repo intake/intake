@@ -47,8 +47,8 @@ class BaseCache(object):
     def __init__(self, driver, spec, catdir=None, cache_dir=None,
                  storage_options={}):
         """
-        Parameters:
-        -----------
+        Parameters
+        ----------
         driver: str
             Name of the plugin that can load catalog entry
         spec: list
@@ -122,8 +122,9 @@ class BaseCache(object):
         Downloads data from a given url, generates a hashed filename,
         logs metadata, and caches it locally.
 
-        Parameters:
+        Parameters
         ----------
+
         urlpath: str, location of data
             May be a local path, or remote path if including a protocol specifier
             such as ``'s3://'``. May include glob wildcards.
@@ -185,8 +186,9 @@ class BaseCache(object):
 
     def get_metadata(self, urlpath):
         """
-        Parameters:
+        Parameters
         ----------
+
         urlpath: str, location of data
             May be a local path, or remote path if including a protocol specifier
             such as ``'s3://'``. May include glob wildcards.
@@ -201,8 +203,9 @@ class BaseCache(object):
         """
         Clears cache and metadata for a given urlpath.
 
-        Parameters:
+        Parameters
         ----------
+
         urlpath: str, location of data
             May be a local path, or remote path if including a protocol specifier
             such as ``'s3://'``. May include glob wildcards.
@@ -479,8 +482,9 @@ def make_caches(driver, specs, catdir=None, cache_dir=None, storage_options={}):
     """
     Creates Cache objects from the cache_specs provided in the catalog yaml file.
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
+    
     driver: str
         Name of the plugin that can load catalog entry
     specs: list

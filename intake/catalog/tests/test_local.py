@@ -335,31 +335,31 @@ def test_default_expansions():
         os.environ['INTAKE_INT_TEST'] = '1'
         par = UserParameter('', '', 'int', default='env(INTAKE_INT_TEST)')
         par.expand_defaults()
-        assert par.default == 1
+        assert par.expanded_default == 1
     finally:
         del os.environ['INTAKE_INT_TEST']
 
     par = UserParameter('', '', 'str', default='env(USER)')
     par.expand_defaults(getenv=False)
-    assert par.default == 'env(USER)'
+    assert par.expanded_default == 'env(USER)'
     par.expand_defaults()
-    assert par.default == os.getenv('USER', '')
+    assert par.expanded_default == os.getenv('USER', '')
 
     par = UserParameter('', '', 'str', default='client_env(USER)')
     par.expand_defaults()
-    assert par.default == 'client_env(USER)'
+    assert par.expanded_default == 'client_env(USER)'
     par.expand_defaults(client=True)
-    assert par.default == os.getenv('USER', '')
+    assert par.expanded_default == os.getenv('USER', '')
 
     par = UserParameter('', '', 'str', default='shell(echo success)')
     par.expand_defaults(getshell=False)
-    assert par.default == 'shell(echo success)'
+    assert par.expanded_default == 'shell(echo success)'
     par.expand_defaults()
-    assert par.default == 'success'
+    assert par.expanded_default == 'success'
 
     par = UserParameter('', '', 'str', default='client_shell(echo success)')
     par.expand_defaults(client=True)
-    assert par.default == 'success'
+    assert par.expanded_default == 'success'
 
     par = UserParameter('', '', 'int', default=1)
     par.expand_defaults()  # no error from string ops
