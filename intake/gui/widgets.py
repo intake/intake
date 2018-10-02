@@ -83,7 +83,6 @@ class DataBrowser(Base):
             cats = [cats]
         self.cats = OrderedDict([(cat.name, cat) for cat in cats])
         self.cat_list = widgets.Select(rows=9)
-        self.update_cat_list()
         self.item = None
         self.ignore = False
         self.exception = None
@@ -117,6 +116,7 @@ class DataBrowser(Base):
                                           self.item_list, self.detail])
         self.widget = widgets.VBox(children=[self.mid])
         self.widget.__repr__ = self.__repr__
+        self.update_cat_list()
         self.cat_selected({'new': list(self.cats)[0]})
         self.cat_list.observe(self.cat_selected, 'value')
         self.item_list.observe(self.item_selected, 'value')

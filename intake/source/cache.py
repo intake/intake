@@ -480,7 +480,7 @@ registry = {
 
 def make_caches(driver, specs, catdir=None, cache_dir=None, storage_options={}):
     """
-    Creates Cache objects from the cache_specs provided in the catalog yaml file.
+    Creates Cache objects from the cache_specs provided in the catalog yaml file
     
     Parameters
     ----------
