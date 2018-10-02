@@ -89,6 +89,7 @@ class DataSource(object):
         self.shape = None
         self.npartitions = 0
         self._schema = None
+        self.catalog_object = None
 
     def _get_cache(self, urlpath):
         if len(self.cache) == 0:
@@ -285,3 +286,46 @@ class PatternMixin(object):
         elif self.path_as_pattern:
             return path_to_pattern(self._original_urlpath, self.metadata)
         return
+
+
+class AliasSource(DataSource):
+    container = 'other'
+    version = 1
+
+    def __init__(self, target, mapping=None, metadata=None, **kwargs):
+        super(AliasSource, self).__init__(metadata)
+        self.target = target
+        self.mapping = mapping or {target: target}
+        self.kwargs = kwargs
+        self.metadata = metadata
+        self.source = None
+
+    def _get_source(self):
+        if self.source is None:
+            self.source = self.catalog_object[self.mapping[self.target]](
+                metadata=self.metadata, **self.kwargs)
+            self.metadata = self.source.metadata.copy()
+            self.container = self.source.container
+            self.partition_access = self.source.partition_access
+            self.description = self.source.description
+            self.datashape = self.source.datashape
+
+    def discover(self):
+        self._get_source()
+        return self.source.discover()
+
+    def read(self):
+        self._get_source()
+        return self.source.read()
+
+    def read_partition(self, i):
+        self._get_source()
+        return self.source.read_partition(i)
+
+    def read_chunked(self):
+        self._get_source()
+        return self.source.read_chunked()
+
+    def to_dask(self):
+        self._get_source()
+        return self.source.to_dask()

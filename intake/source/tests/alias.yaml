@@ -1,0 +1,20 @@
+sources:
+  csvs:
+    driver: textfiles
+    args:
+      urlpath: '{{ CATALOG_DIR }}/*.csv'
+  yamls:
+    driver: textfiles
+    args:
+      urlpath: '{{ CATALOG_DIR }}/*.yaml'
+  alias1:
+    driver: intake.source.base.AliasSource
+    args:
+      mapping:
+        first: csvs
+        second: yamls
+      target: first
+  alias2:
+    driver: intake.source.base.AliasSource
+    args:
+      target: csvs

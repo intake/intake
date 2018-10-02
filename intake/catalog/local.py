@@ -119,7 +119,7 @@ class LocalCatalogEntry(CatalogEntry):
     """
     def __init__(self, name, description, driver, direct_access, args, cache,
                  parameters, metadata, catalog_dir, getenv=True, 
-                 getshell=True):
+                 getshell=True, catalog=None):
         """
 
         Parameters
@@ -144,6 +144,8 @@ class LocalCatalogEntry(CatalogEntry):
             Can parameter default fields take values from the environment
         getshell: bool
             Can parameter default fields run shell commands
+        catalog: bool
+            Catalog object in which this entry belongs
         """
         self._name = name
         self._description = description
@@ -154,6 +156,7 @@ class LocalCatalogEntry(CatalogEntry):
         self._user_parameters = parameters
         self._metadata = metadata or {}
         self._catalog_dir = catalog_dir
+        self._catalog = catalog
         if isinstance(driver, str):
             self._plugin = [get_plugin_class(driver)]
             containers = set([self._plugin[0].container])
@@ -247,6 +250,7 @@ class LocalCatalogEntry(CatalogEntry):
                                  'perhaps import of plugin failed' % plugin)
 
         data_source = plugin(**open_args)
+        data_source.catalog_object = self._catalog
         data_source.name = self.name
         data_source.description = self._description
 
@@ -566,6 +570,7 @@ class YAMLFileCatalog(Catalog):
 
         self._entries = {}
         for entry in cfg['data_sources']:
+            entry._catalog = self
             self._entries[entry.name] = entry
 
         self.metadata = cfg.get('metadata', {})
