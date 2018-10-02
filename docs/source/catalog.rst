@@ -183,6 +183,9 @@ user to choose at load time with `driver=` as a parameter. Additional arguments 
 be required for each option (which, as usual, may include user parameters); however, the
 same global arguments will be passed to all of the drivers listed.
 
+
+.. code-block:: yaml
+
     sources:
       example:
         description: test
