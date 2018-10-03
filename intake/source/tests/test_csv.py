@@ -98,6 +98,10 @@ def test_read_chunked(sample1_datasource, data_filenames):
 
 
 def check_read_pattern_output(source):
+    da = source.to_dask()
+    assert da.num.cat.known is True
+    assert da.dup.cat.known is True
+
     df = source.read()
     assert len(df.columns) == 5
     assert 'num' in df
