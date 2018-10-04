@@ -75,5 +75,6 @@ Future Directions
 -----------------
 
 Ongoing work for enhancements, as well as requests for plugins, etc., can be found at the
-`issue tracker <https://github.com/ContinuumIO/intake/issues>`_, but see also :ref:`roadmap` for general mid- and
+`issue tracker <https://github.com/ContinuumIO/intake/issues>`_, but see also :ref:`roadmap`
+for general mid- and
 long-term goals.
