@@ -55,6 +55,8 @@ class CSVSource(base.DataSource, base.PatternMixin):
         """Get a column of values for each field in pattern
         """
         try:
+            # CategoricalDtype allows specifying known categories when
+            # creating objects. It was added in pandas 0.21.0.
             from pandas.api.types import CategoricalDtype
             _HAS_CDT = True
         except ImportError:
