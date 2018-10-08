@@ -26,6 +26,8 @@ def test_path_to_glob(pattern, expected):
     {'year': 2016, 'month': 2, 'day': 1}),
     ('{year:.4}/{month:.2}/{day:.2}.csv', '2016/2/01.csv',
     {'year': '2016', 'month': '2', 'day': '01'}),
+    ('{year:.4}{month:.2}{day:.2}.csv', '20160201.csv',
+    {'year': '2016', 'month': '02', 'day': '01'}),
     ('SRLCCTabularDat/Ecoregions_{emissions}_Precip_{model}.csv',
      '/user/examples/SRLCCTabularDat/Ecoregions_a1b_Precip_ECHAM5-MPI.csv',
      {'emissions':'a1b', 'model': 'ECHAM5-MPI'}),
@@ -56,7 +58,7 @@ def test_reverse_format_errors():
                                             "if no separator between fields.")):
         reverse_format(pattern, resolved)
 
-    pattern = '{month:.2}{day:2}{year:.4}'
+    pattern = '{month:.2d}{day:2d}{year:.4d}'
     resolved = '20012001'
     with pytest.raises(ValueError, message="Format specifier must have a set width"):
         reverse_format(pattern, resolved)

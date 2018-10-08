@@ -25,14 +25,19 @@ def _get_parts_of_format_string(resolved_string, literal_texts, format_specs):
         elif i == 0:
             continue
         else:
+            suffix = 's'
             format_spec = format_specs[i-1]
             if not format_spec:
                 raise ValueError(('Format specifier must be set if '
                                   'no separator between fields.'))
             if format_spec[-1].isalpha():
+                suffix = format_spec[-1]
                 format_spec = format_spec[:-1]
             if not format_spec.isdigit():
-                raise ValueError('Format specifier must have a set width')
+                if suffix != 's':
+                    raise ValueError('Format specifier must have a set width')
+                elif format_spec.startswith('.'):
+                    format_spec = format_spec[-1]
             bits.append(_text[0:int(format_spec)])
             _text = _text[int(format_spec):]
     if _text:
