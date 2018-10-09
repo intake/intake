@@ -32,9 +32,13 @@ Glossary
         data-sets are usually entries within a :term:`Catalog` with additional descriptive text and metadata and
         a specification of *how* to load the data.
 
+    Data Source
+        an Intake specification for a specific :term:`Data-set`. In most cases, the two terms are
+        synonymous.
+
     Data User
         a person who uses data to produce models and other inferences/conclusions. This
-        person generally uses standard python analysis packages like numpy, pandas, sklearn and may produce
+        person generally uses standard python analysis packages like Numpy, Pandas, SKLearn and may produce
         graphical output. They will want to be able to find the right data for a given job, and for
         the data to be available in a standard format as quickly and
         easily as possible. In many organisations, the appropriate job title may be Data Scientist, but
@@ -63,7 +67,8 @@ Glossary
         and often the code is a simpler layer over existing functionality in a third-party package.
 
     GUI
-        Intake comes with a graphical user interface for finding and selecting data-sets, based on jupyter-widgets.
+        Intake comes with a graphical user interface for finding and selecting data-sets, based on jupyter-widgets;
+        see :doc:`gui`.
 
     IT
         many organisations will have a dedicated IT team. As a generalisation, such a team may have
@@ -72,7 +77,7 @@ Glossary
         that other groups, for instance requiring all data-set copy actions to be logged centrally.
 
     Plugin
-        Extra functionality for Intake, provided by a package that is installed separately. The most common type of
+        modular extra functionality for Intake, provided by a package that is installed separately. The most common type of
         plugin will be for a :term:`Driver` to load some particular data format; but other parts of Intake are
         pluggable, such as authentication mechanisms for the server.
 
