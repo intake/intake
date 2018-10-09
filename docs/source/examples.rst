@@ -1,5 +1,5 @@
-Intake Examples
-===============
+Examples
+========
 
 Here we list links to notebooks and other code demonstrating the use of Intake in various
 scenarios. The first section is of general interest to various users, and the sections that
@@ -8,6 +8,11 @@ follow tend to be more specific about particular features and workflows.
 Many of the entries here include a link to Binder, which a service that lest you execute
 code live in a notebook environment. This is a great way to experience using Intake.
 It can take a while, sometimes, for Binder to come up, please have patience.
+
+See also the `example data`_ page, containing data-sets which can be built and installed
+as conda packages.
+
+.. _example data: https://github.com/ContinuumIO/intake/tree/master/examples
 
 
 General

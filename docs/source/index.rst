@@ -2,15 +2,26 @@
 
    <img src="_static/images/logo.png" alt="Intake Logo" style="float:right;width:94px;height:60px;">
 
-Intake: A general interface for loading data
-============================================
+Intake
+======
 
-Intake is a lightweight set of tools for loading and sharing data in data science projects.
+*Taking the pain out of data access and distribution*
+
+Intake is a lightweight package for finding, investigating, loading and sharing data. 
+
+Data User
+---------
+
+.. raw:: html
+
+   <img src="_static/images/line.png" alt="Intake Logo" style="float:left;width:160px;height:120px;">
+
+
 
 Intake helps you:
 
 * Load data from a variety of formats (see :ref:`plugin-directory`) into containers you already use,
- like Pandas dataframes, Python lists, NumPy arrays, and more.
+  like Pandas dataframes, Python lists, NumPy arrays, and more.
 * Read data catalogs and actual data from remote/cloud storage
 * Translate your boilerplate data loading code into reusable Intake plugins
 * Describe data sets in catalog files for easy reuse and sharing between projects and with others.
@@ -22,11 +33,11 @@ mechanisms, etc., are easy to implement. Thus, with community support, we can ma
 and data interface
 for the python data ecosystem and take the pain out of data access. Get involved!
 
-New users are encouraged to check out the :ref:`Quickstart` and executable :ref:`Examples`.
+New users are encouraged to check out the Quickstart and executable Examples.
 
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     :caption: Contents:
 
     quickstart.rst
@@ -43,6 +54,7 @@ New users are encouraged to check out the :ref:`Quickstart` and executable :ref:
     plotting.rst
     plugin-directory.rst
     roadmap.rst
+    glossary.rst
 
 
 Indices and tables
