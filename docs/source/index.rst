@@ -45,24 +45,34 @@ smooth the progression of data from developers and providers to users.
 
 .. raw:: html
 
-   <img src="_static/images/terminal.png" alt="FA-terminal" style="float:left;width:80px;height:80px;padding-right:25px">
+   <img src="_static/images/terminal.png" alt="FA-terminal" style="float:right;width:80px;height:80px">
 
 * Create catalogs out of established departmental practices
 * Provide data access credentials via Intake parameters
-* Use server-client architecture as gatekeeper: add authentication methods, add monitoring point.
+* Use server-client architecture as gatekeeper:
+
+   * add authentication methods
+   * add monitoring point.
+
+* Hook Intake into proprietary data access systems.
 
 :term:`Developer`
 -----------------
 
 .. raw:: html
 
-   <img src="_static/images/code.png" alt="Python code" style="float:right;width:140px;height:65px">
+   <img src="_static/images/code.png" alt="Python code" style="float:left;width:200px;height:90px;padding-right:25px">
 
 * Turn boilerplate code into a reusable :term:`Driver`
 * Pluggable architecture of Intake allows for many points to add and improve
+* Open, simple code-base, come and get involved on `github`_!
+
+.. _github: https://github.com/ContinuumIO/intake
 
 
+|
 
+|
 
 .. toctree::
     :maxdepth: 1
