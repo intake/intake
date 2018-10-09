@@ -70,20 +70,28 @@ smooth the progression of data from developers and providers to users.
 .. _github: https://github.com/ContinuumIO/intake
 
 
+First steps
+===========
+
+For a brief demonstration and tutorial, which you can execute locally, go to :doc:`quickstart`.
+For a general description of all of the components of Intake and how they fit together, fo
+to :doc:`overview`. Finally, for some notebooks using Intake and articles about Intake, go
+to :doc:`examples`. These and other documentation pages will make reference to concepts that
+are defined in the :doc:`glossary`.
+
 |
 
 |
 
 .. toctree::
     :maxdepth: 1
-    :caption: Contents:
+    :caption: Documentation Contents
 
     quickstart.rst
     overview.rst
     examples.rst
     gui.rst
-    api_base.rst
-    api_user.rst
+    api.rst
     catalog.rst
     tools.rst
     making-plugins.rst

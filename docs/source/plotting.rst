@@ -1,5 +1,5 @@
-Plotting API
-============
+Plotting
+========
 
 Intake provides a plotting API based on the `hvPlot <https://pyviz.github.io/hvplot/index.html>`_ library, which
 closely mirrors the pandas plotting API but generates interactive plots using `HoloViews <http://holoviews.org/>`_

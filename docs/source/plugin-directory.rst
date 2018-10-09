@@ -3,7 +3,7 @@
 Plugin Directory
 ================
 
-This is a list of known projects which install plugins for Intake:
+This is a list of known projects which install driver plugins for Intake:
 
 * `intake-astro <https://github.com/ContinuumIO/intake-astro>`_ Table and array loading of FITS astronomical data
 * `intake-accumulo <https://github.com/ContinuumIO/intake-accumulo>`_ Apache Accumulo clustered data storage

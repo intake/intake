@@ -21,6 +21,11 @@ Glossary
         automatically. Packages can be created locally, or can be found on `anaconda.org`_ or other package
         repositories.
 
+    Container
+        one of a small number of internal data formats, each :term:`Driver` outputs its data in one of these. The
+        containers correspond to familiar data structures for end-analysis, such as list-of-dicts, Numpy nd-array or
+        Pandas data-frame.
+
     Data-set
         a specific collection of data. The type of data (tabular, multi-dimensional or something else) and the format
         (file type, data service type) are all attributes of the data-set. In addition, in the context of Intake,
@@ -44,15 +49,18 @@ Glossary
         done by a member of the IT team. These people are the most likely to author :term:`Catalogs<Catalog>`.
 
     Developer
-        a developer writes or fixes code. In the context of Intake, a developer may make new format
-        :term:`Drivers<Driver>`, create authentication systems or add functionality to Intake itself.
+        a person who writes or fixes code. In the context of Intake, a developer may make new format
+        :term:`Drivers<Driver>`, create authentication systems or add functionality to Intake itself. They can
+        take existing code for loading data in other projects, and use Intake to add extra functionality to it,
+        for instance, remote data access, parallel processing, or file-name parsing.
 
     Driver
         each catalog entry describes a specific data-set, to be opened in a specific way. The thing that will do
         the work of reading the data is known as a driver, often referred to using a simple name such as "csv". Intake
         has a plugin architecture, and new drivers can be created or installed, and specific catalogs/data-sets may
         require particular drivers for their contained data-sets. If installed as :term:`Conda` packages, then
-        these requirements will be automatically installed for you
+        these requirements will be automatically installed for you. The driver's output will be a :term:`Container`,
+        and often the code is a simpler layer over existing functionality in a third-party package.
 
     GUI
         Intake comes with a graphical user interface for finding and selecting data-sets, based on jupyter-widgets.

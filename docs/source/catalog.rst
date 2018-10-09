@@ -373,6 +373,6 @@ Client Authorization Plugins
 
 Intake servers can check if clients are authorized to access the catalog as a whole, or individual catalog entries.
 Typically a matched pair of server-side plugin (called an "auth plugin") and a client-side plugin (called a "client
-auth plugin) need to be enabled for authorization checks to work.  This feature is still in early development, so
-please `open a Github issue <https://github.com/ContinuumIO/intake/issues/new>`_ to discuss your use case before
-creating a plugin.
+auth plugin) need to be enabled for authorization checks to work.  This feature is still in early development, but see
+module ``intake.auth.secret`` for a demonstration pair of server and client classes implementation auth via a shared
+secret. See :doc:`auth-plugins`.

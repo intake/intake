@@ -65,10 +65,10 @@ Blogs
 
 These are Intake-related articles that may be of interest.
 
-- `Intake: Taking the Pain out of Data Access`_
-- `Intake: Caching Data on First Read Makes Future Analysis Faster`_
-- `Intake: Parsing Data from Filenames and Paths`_
+- `Taking the Pain out of Data Access`_
+- `Caching Data on First Read Makes Future Analysis Faster`_
+- `Parsing Data from Filenames and Paths`_
 
-.. _Intake: Taking the Pain out of Data Access: https://www.anaconda.com/blog/developer-blog/intake-taking-the-pain-out-of-data-access/
-.. _Intake: Caching Data on First Read Makes Future Analysis Faster: https://www.anaconda.com/blog/developer-blog/intake-caching-data-on-first-read-makes-future-analysis-faster/
-.. _Intake: Parsing Data from Filenames and Paths: https://www.anaconda.com/blog/developer-blog/intake-parsing-data-from-filenames-and-paths/
+.. _Taking the Pain out of Data Access: https://www.anaconda.com/blog/developer-blog/intake-taking-the-pain-out-of-data-access/
+.. _Caching Data on First Read Makes Future Analysis Faster: https://www.anaconda.com/blog/developer-blog/intake-caching-data-on-first-read-makes-future-analysis-faster/
+.. _Parsing Data from Filenames and Paths: https://www.anaconda.com/blog/developer-blog/intake-parsing-data-from-filenames-and-paths/

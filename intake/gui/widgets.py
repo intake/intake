@@ -61,8 +61,9 @@ class Base(object):
 class DataBrowser(Base):
     """Intake data set browser
 
-    Usage
-    -----
+    Examples
+    --------
+
     Display GUI in a notebook thus:
 
     >>> gui = intake.gui.widgets.DataBrowser()

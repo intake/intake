@@ -127,6 +127,9 @@ and not having to use boilerplate code in each notebook/script that makes use of
 reference one-another, be stored remotely, and include extra metadata such as a set of named quick-look plots that
 are appropriate for the particular data source.
 
+Note that, if you are *creating* such catalogs, you may well start by trying the ``open_csv`` command,
+above, and then use ``print(ds.yaml())``. If you do this now, you will see that the output is very
+similar to the catalog file we have provided.
 
 Installing Data Source Packages with Conda
 ------------------------------------------
@@ -164,4 +167,4 @@ Using the GUI
 
 A graphical data browser is available in the Jupyter notebook environment. It will show the
 contents of any installed catalogs, plus allows for selecting local and remote catalogs,
-to browse and select entries from these. See :ref:`gui`
+to browse and select entries from these. See :doc:`gui`.
