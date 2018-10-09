@@ -7,37 +7,65 @@ Intake
 
 *Taking the pain out of data access and distribution*
 
-Intake is a lightweight package for finding, investigating, loading and sharing data. 
+Intake is a lightweight package for finding, investigating, loading and disseminating data. It will appeal to different
+groups for some of the reasons below, but is useful for all and acts as a common platform that everyone can use to
+smooth the progression of data from developers and providers to users.
 
-Data User
----------
+
+:term:`Data User`
+-----------------
 
 .. raw:: html
 
-   <img src="_static/images/line.png" alt="Intake Logo" style="float:left;width:160px;height:120px;">
+   <img src="_static/images/line.png" alt="Line graph" style="float:left;width:160px;height:120px;padding-right:25px">
+
+* Intake loads the data for a range of formats and types (see :ref:`plugin-directory`) into containers you already use,
+  like Pandas dataframes, Python lists, NumPy arrays, and more
+* Intake loads, and gets out of your way
+* GUI, search and introspect data-sets in :term:`Catalogs<Catalog>`: quickly find what you need to do your work
+* Install data-sets and automatically get requirements
+* Leverage cloud resources and distributed computing.
+
+:term:`Data Provider`
+---------------------
+
+.. raw:: html
+
+   <img src="_static/images/grid.png" alt="Grid" style="float:right;width:160px;height:120px;">
+
+* Simple spec to define data sources
+* Single point-of truth, no more copy&paste
+* Distribute data using packages, shared files or a server
+* Update definitions in-place
+* Parametrise user options
+* Make use of additional functionality like filename parsing and caching.
+
+:term:`IT`
+----------
+
+.. raw:: html
+
+   <img src="_static/images/terminal.png" alt="FA-terminal" style="float:left;width:80px;height:80px;padding-right:25px">
+
+* Create catalogs out of established departmental practices
+* Provide data access credentials via Intake parameters
+* Use server-client architecture as gatekeeper: add authentication methods, add monitoring point.
+
+:term:`Developer`
+-----------------
+
+.. raw:: html
+
+   <img src="_static/images/code.png" alt="Python code" style="float:right;width:140px;height:65px">
+
+* Turn boilerplate code into a reusable :term:`Driver`
+* Pluggable architecture of Intake allows for many points to add and improve
 
 
-
-Intake helps you:
-
-* Load data from a variety of formats (see :ref:`plugin-directory`) into containers you already use,
-  like Pandas dataframes, Python lists, NumPy arrays, and more.
-* Read data catalogs and actual data from remote/cloud storage
-* Translate your boilerplate data loading code into reusable Intake plugins
-* Describe data sets in catalog files for easy reuse and sharing between projects and with others.
-* Share catalog information (and data sets) over the network with the Intake server
-
-The philosophy of Intake is to be extremely pluggable, so that new plugins, new data service catalogs,
-new auth
-mechanisms, etc., are easy to implement. Thus, with community support, we can make a single catalog
-and data interface
-for the python data ecosystem and take the pain out of data access. Get involved!
-
-New users are encouraged to check out the Quickstart and executable Examples.
 
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     :caption: Contents:
 
     quickstart.rst

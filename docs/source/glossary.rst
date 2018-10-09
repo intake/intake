@@ -4,7 +4,7 @@ Glossary
 .. glossary::
 
     Catalog
-        a collection of entries, each of which corresponds to a specific data-set. Within Intake, a catalog is
+        a collection of entries, each of which corresponds to a specific :term:`Data-set`. Within Intake, a catalog is
         most commonly defined in a :term:`YAML` file, but there are other possibilities, such as connecting to an Intake
         server or another third-party data service, like a SQL database. Thus, catalogs form a hierarchy: any
         catalog can contain other, nested catalogs.
@@ -20,6 +20,12 @@ Glossary
         dependencies that it requires (e.g., Intake and any additional :term:`Driver`), so that Conda can install those
         automatically. Packages can be created locally, or can be found on `anaconda.org`_ or other package
         repositories.
+
+    Data-set
+        a specific collection of data. The type of data (tabular, multi-dimensional or something else) and the format
+        (file type, data service type) are all attributes of the data-set. In addition, in the context of Intake,
+        data-sets are usually entries within a :term:`Catalog` with additional descriptive text and metadata and
+        a specification of *how* to load the data.
 
     Data User
         a person who uses data to produce models and other inferences/conclusions. This
@@ -53,15 +59,29 @@ Glossary
 
     IT
         many organisations will have a dedicated IT team. As a generalisation, such a team may have
-        control of the computing infrastructure and security (dev-ops), and may well act as gate-keepers when
+        control of the computing infrastructure and security (sys-ops), and may well act as gate-keepers when
         exposing data for use by other colleagues. Commonly, IT has stronger policy enforcement requirements
         that other groups, for instance requiring all data-set copy actions to be logged centrally.
+
+    Plugin
+        Extra functionality for Intake, provided by a package that is installed separately. The most common type of
+        plugin will be for a :term:`Driver` to load some particular data format; but other parts of Intake are
+        pluggable, such as authentication mechanisms for the server.
+
+    Server
+        Intake can either read catalogs and data directly, or can talk with an Intake server. The server will
+        provide data source specifications (i.e., a remote :term:`Catalog`), and may also provide the raw data, if
+        the client is not able or not allowed to access it directly. As such, the server can act as a gatekeeper of
+        the data for security and monitoring purposes. The implementation of the server in Intake is accessible as the
+        ``intake-server`` command, and acts as a reference: other implementations can easily be created for
+        specific circumstances.
 
     YAML
         a text-based format for expressing data with a dictionary (key-value) and list structure, with a limited
         number of data-types, such as strings and numbers. YAML uses indentations to nest objects, making it easy
         to read and write for humans, compares to JSON. Intake's catalogs and config are usually expressed in YAML
         files.
+
 
 .. _conda website: https://conda.io/docs/
 .. _anaconda.org: http://anaconda.org
