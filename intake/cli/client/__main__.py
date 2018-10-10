@@ -77,7 +77,7 @@ def example(args):
 
     print('''\nTo load the catalog:
 >>> import intake
->>> cat = intake.Catalog('%s')
+>>> cat = intake.open_catalog('%s')
 ''' % files[0])
 
 

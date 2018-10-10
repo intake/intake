@@ -1,5 +1,7 @@
-API Reference: Base Classes
-===========================
+Base Classes
+------------
+
+This is a reference API class listing, useful mainly for developers.
 
 .. autosummary::
    intake.source.base.DataSource

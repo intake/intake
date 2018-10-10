@@ -1,13 +1,13 @@
-Making Plugins
+Making Drivers
 ==============
 
-The goal of the Intake plugin system is to make it very simple to implement a plugin for a new data source, without
+The goal of the Intake plugin system is to make it very simple to implement a :term:`Driver` for a new data source, without
 any special knowledge of Dask or the Intake catalog system.
 
 Assumptions
 -----------
 
-Although Intake is very flexible about data, there are some basic assumptions that a plugin must satisfy.
+Although Intake is very flexible about data, there are some basic assumptions that a driver must satisfy.
 
 Data Model
 ''''''''''
@@ -18,14 +18,14 @@ Intake currently supports 3 kinds of containers, represented the most common dat
 * ndarray
 * python (list of Python objects, usually dictionaries)
 
-Although a plugin can load *any* type of data into any container, and new container types can be added to the list
+Although a driver can load *any* type of data into any container, and new container types can be added to the list
 above, it is reasonable to expect that the number of container types remains small. Declaring a container type is
 only informational for the user when read locally, but streaming of data from a server requires that the container type
 be known to both server and client.
 
-A given plugin must only return one kind of container.  If a file format (such as HDF5) could reasonably be
+A given driver must only return one kind of container.  If a file format (such as HDF5) could reasonably be
 interpreted as two different data models depending on usage (such as a dataframe or an ndarray), then two different
-plugins need to be created with different names.  If a plugin returns the ``python`` container, it should document
+drivers need to be created with different names.  If a driver returns the ``python`` container, it should document
 what Python objects will appear in the list.
 
 The source of data should be essentially permanent and immutable.  That is, loading the data should not destroy or
@@ -44,14 +44,14 @@ context, the contents of the schema must be serializable by ``msgpack`` (i.e., n
 dictionaries only).
 
 There may be unknown parts of
-the schema before the whole data is read.  Plugins may require this unknown information in the
+the schema before the whole data is read.  drivers may require this unknown information in the
 `__init__()` method (or the catalog spec), or do some kind of partial data inspection to determine the schema; or
 more simply, may be given as unknown ``None`` values.
 Regardless of method used, the
 time spent figuring out the schema ahead of time should be short and not scale with the size of the data.
 
 Typical fields in a schema dictionary are ``npartitions``, ``dtype``, ``shape``, etc., which will be more appropriate
-for some plugins/data-types than others.
+for some drivers/data-types than others.
 
 Partitioning
 ''''''''''''
@@ -76,10 +76,10 @@ should be a dictionary that can be serialized as JSON.  This metadata comes from
 1. A data catalog entry can associate fixed metadata with the data source.  This is helpful for data formats that do
    not have any support for metadata within the file format.
 
-2. The plugin handling the data source may have some general metadata associated with the state of the system at the
+2. The driver handling the data source may have some general metadata associated with the state of the system at the
    time of access, available even before loading any data-specific information.
 
-2. A plugin can add additional metadata when the schema is loaded for the data source.  This allows metadata embedded
+2. A driver can add additional metadata when the schema is loaded for the data source.  This allows metadata embedded
    in the data source to be exported.
 
 From the user perspective, all of the metadata should be loaded once the data source has loaded the rest of the
@@ -89,21 +89,21 @@ schema (after ``discover()``, ``read()``, ``to_dask()``, etc have been called).
 Subclassing ``intake.source.base.DataSource``
 ---------------------------------------------
 
-Every Intake plugin class should be a subclass of ``intake.source.base.DataSource``.
+Every Intake driver class should be a subclass of ``intake.source.base.DataSource``.
 The class should have the following attributes to identify itself:
 
-- ``name``: The short name of the plugin.  This should be a valid python identifier.  You should not include the
-  word ``intake`` in the plugin name.
+- ``name``: The short name of the driver.  This should be a valid python identifier.  You should not include the
+  word ``intake`` in the driver name.
 
-- ``version``: A version string for the plugin.  This may be reported to the user by tools based on Intake, but has
+- ``version``: A version string for the driver.  This may be reported to the user by tools based on Intake, but has
   no semantic importance.
 
 - ``container``: The container type of data sources created by this object, e.g., ``dataframe``, ``ndarray``, or
-  ``python``.  For simplicity, a plugin many only return one typed of container.  If a particular source of data could
-  be used in multiple ways (such as HDF5 files interpreted as dataframes or as ndarrays), two plugins must be created.
-  These two plugins can be part of the same Python package.
+  ``python``.  For simplicity, a driver many only return one typed of container.  If a particular source of data could
+  be used in multiple ways (such as HDF5 files interpreted as dataframes or as ndarrays), two drivers must be created.
+  These two drivers can be part of the same Python package.
 
-- ``partition_access``: Do the data sources returned by this plugin have multiple partitions?  This may help tools in
+- ``partition_access``: Do the data sources returned by this driver have multiple partitions?  This may help tools in
   the future make more optimal decisions about how to present data.  If in doubt (or the answer depends on init
   arguments), ``True`` will always result in correct behavior, even if the data source has only one partition.
 
@@ -153,7 +153,7 @@ Most of the work typically happens in the following methods:
   amount of *approximately* constant  time.  The ``npartitions`` and ``extra_metadata`` attributes must be correct
   when ``_get_schema`` returns.  Further keys such as ``dtype``, ``shape``, etc., should reflect the container type of
   the data-source, and can be ``None`` if not easily knowable, or include ``None`` for some elements. This method should
-  call the ``_get_cache`` method, if caching on first time read is supported by the plugin. For example::
+  call the ``_get_cache`` method, if caching on first time read is supported by the driver. For example::
 
     urlpath, *_ = self._get_cache(self._urlpath)
 
@@ -194,29 +194,29 @@ The full set of methods of interest are as follows:
 It is also important to note that source attributes should be set after ``read()``, ``read_chunked()``,
 ``read_partition()`` and ``to_dask()``, even if ``discover()`` was not called by the user.
 
-.. _plugin-discovery:
+.. _driver-discovery:
 
-Plugin Discovery
+Driver Discovery
 ----------------
 
 When Intake is imported, it will search the Python module path (by default includes ``site-packages`` and other
 directories in your ``$PYTHONPATH``) for packages starting with ``intake_`` and discover DataSource subclasses inside
-those packages to register.  Plugins will be registered based on the``name`` attribute of the object.
-By convention, plugins should have names that are lowercase, valid Python identifiers that do not contain the word
+those packages to register.  drivers will be registered based on the``name`` attribute of the object.
+By convention, drivers should have names that are lowercase, valid Python identifiers that do not contain the word
 ``intake``.
 
-After the discovery phase, Intake will automatically create ``open_[plugin_name]`` convenience functions under the
+After the discovery phase, Intake will automatically create ``open_[driver_name]`` convenience functions under the
 ``intake`` module namespace.  Calling a function like ``open_csv()`` is equivalent to instantiating the
 corresponding data-source class.
 
-To take advantage of plugin discovery, give your installed package a name that starts with ``intake_`` and define
-your plugin class(es) in the ``__init__.py`` of the package.
+To take advantage of driver discovery, give your installed package a name that starts with ``intake_`` and define
+your driver class(es) in the ``__init__.py`` of the package.
 
 Remote Data
 -----------
 
-For plugins loading from files, the author should be aware that it is easy to implement loading
-from files stored in remote services. A simplistic case is demonstrated by the included CSV plugin,
+For drivers loading from files, the author should be aware that it is easy to implement loading
+from files stored in remote services. A simplistic case is demonstrated by the included CSV driver,
 which simply passes a URL to Dask, which in turn can interpret the URL as a remote data service,
 and use the ``storage_options`` as required (see the Dask documentation on `remote data`_).
 
@@ -226,7 +226,7 @@ More advanced usage, where a Dask loader does not already exist, will likely rel
 `dask.bytes.open_files`_ . Use this function to produce lazy ``OpenFile`` object for local
 or remote data, based on a URL, which will have a protocol designation and possibly contain
 glob "*" characters. Additional parameters may be passed to ``open_files``, which should,
-by convention, be supplied by a plugin argument named ``storage_options`` (a dictionary).
+by convention, be supplied by a driver argument named ``storage_options`` (a dictionary).
 
 .. _dask.bytes.open_files: http://dask.pydata.org/en/latest/bytes.html#dask.bytes.open_files
 
@@ -245,23 +245,23 @@ To use an ``OpenFile`` object, make it concrete by using a context:
             # do things with f, which is a file-like object
             f.seek(); f.read()
 
-The ``textfiles`` builtin plugins implements this mechanism, as an example.
+The ``textfiles`` builtin drivers implements this mechanism, as an example.
 
 
 Structured File Paths
 ---------------------
 
-The CSV plugin sets up an example of how to gather data which is encoded in file paths
+The CSV driver sets up an example of how to gather data which is encoded in file paths
 like (``'data_{site}_.csv'``) and return that data in the output.
-Other plugins could also follow the same structure where data is being loaded from a
+Other drivers could also follow the same structure where data is being loaded from a
 set of filenames. Typically this would apply to data-frame output.
-This is possible as long as the plugin has access to each of the file paths at some
-point in ``_get_schema``. Once the file paths are known, the plugin developer can use the helper
+This is possible as long as the driver has access to each of the file paths at some
+point in ``_get_schema``. Once the file paths are known, the driver developer can use the helper
 functions defined in ``intake.source.utils`` to get the values for each field in the pattern
 for each file in the list. These values should then be added to the data, a process which
 normally would happen within the _get_schema method.
 
-The PatternMixin defines plugin properties such as urlpath, path_as_pattern, and pattern.
+The PatternMixin defines driver properties such as urlpath, path_as_pattern, and pattern.
 The implementation might look something like this::
 
     from intake.source.utils import reverse_formats
@@ -284,11 +284,11 @@ The implementation might look something like this::
 
 
 Since dask already has a specific method for including the file paths in the output dataframe,
-in the CSV plugin we set ``include_path_column=True``, to get a dataframe where one of the
+in the CSV driver we set ``include_path_column=True``, to get a dataframe where one of the
 columns contains all the file paths. In this case, `add these fields and values to data`
 is a mapping between the categorical file paths column and the ``values_by_field``.
 
-In other plugins where each file is read in independently the plugin developer
+In other drivers where each file is read in independently the driver developer
 can set the new fields on the data from each file before concattenating.
 This pattern looks more like::
 
@@ -307,5 +307,5 @@ This pattern looks more like::
             return data
 
 
-To toggle on and off this path as pattern behavior, the CSV and intake-xarray plugins
+To toggle on and off this path as pattern behavior, the CSV and intake-xarray drivers
 uses the bool ``path_as_pattern`` keyword argument.

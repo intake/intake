@@ -1,42 +1,49 @@
 Quickstart
 ==========
 
-This guide will show you how to get started using Intake to read data.  It assumes you are working in either a conda or a virtualenv/pip environment.
+This guide will show you how to get started using Intake to read data, and give you a flavour
+of how Intake feels to the :term:`Data User`.
+It assumes you are working in either a conda or a virtualenv/pip environment. For notebooks with
+executable code, see the :doc:`examples`. This walk-through can be run from a notebook or interactive
+python session.
 
 Installation
 ------------
 
-If you are using Anaconda or Miniconda, install Intake and a sample plugin with the following commands::
+If you are using `Anaconda`_ or Miniconda, install Intake with the following commands::
 
     conda install -c intake intake
 
-If you are using virtualenv/pip, run the following commands (**does not work until Intake is on PyPI**)::
+If you are using virtualenv/pip, run the following command::
 
     pip install intake
+
+.. _Anaconda: https://www.anaconda.com/download/
 
 Creating Sample Data
 --------------------
 
 Let's begin by creating a sample data set and catalog.  At the command line, run the ``intake example`` command.
-This will create an example data catalog and two CSV data files.  These files contains some basic facts about the 50
-US states.
+This will create an example data :term:`Catalog` and two CSV data files.  These files contains some basic facts about the 50
+US states, and the catalog includes a specification of how to load them.
 
 Loading a Data Source
 ---------------------
 
-Data sources can be created directly with the ``open_*()`` methods in the ``intake`` module.  To read our example data::
+:term:`Data sources<Data-set>` can be created directly with the ``open_*()`` functions in the ``intake``
+module.  To read our example data::
 
     >>> import intake
     >>> ds = intake.open_csv('states_*.csv')
     >>> print(ds)
     <intake.source.csv.CSVSource object at 0x1163882e8>
 
-Each open method has different arguments, specific for the data format or service being used.
+Each open function has different arguments, specific for the data format or service being used.
 
 Reading Data
 ------------
 
-Intake reads data into memory using containers you are already familiar with:
+Intake reads data into memory using :term:`containers<Container>` you are already familiar with:
 
   * Tables: Pandas DataFrames
   * Multidimensional arrays: NumPy arrays
@@ -47,7 +54,8 @@ To find out what kind of container a data source will produce, inspect the ``con
     >>> ds.container
     'dataframe'
 
-The result will be ``dataframe``, ``ndarray``, or ``python``.  (New container types will be added in the future.)
+The result will be ``dataframe``, ``ndarray``, or ``python``.  (New container types will be added in
+the future.)
 
 For data that fits in memory, you can ask Intake to load it directly::
 
@@ -60,10 +68,12 @@ For data that fits in memory, you can ask Intake to load it directly::
     3    Arkansas    arkansas   AR       The Natural State
     4  California  california   CA            Golden State
 
-Many data sources will also have quick-look plotting available. The attribute ``.plot`` will list a number of built-in
-plotting methods, such as ``.scatter()``.
+Many data sources will also have quick-look plotting available. The attribute ``.plot`` will list
+a number of built-in plotting methods, such as ``.scatter()``, see :doc:`plotting`.
 
-Intake data sources can have *partitions*.  A partition refers to a contiguous chunk of data that can be loaded independent of any other partition.  The partitioning scheme is entirely up to the plugin author.  In the case of the CSV plugin, each ``.csv`` file is a partition.
+Intake data sources can have *partitions*.  A partition refers to a contiguous chunk of data that can be loaded
+independent of any other partition.  The partitioning scheme is entirely up to the plugin author.  In
+the case of the CSV plugin, each ``.csv`` file is a partition.
 
 To read data from a data source one chunk at a time, the ``read_chunked()`` method returns an iterator::
 
@@ -76,7 +86,9 @@ To read data from a data source one chunk at a time, the ``read_chunked()`` meth
 Working with Dask
 -----------------
 
-Working with large datasets is much easier with a parallel, out-of-core computing library like `Dask <https://dask.pydata.org/en/latest/>`_.  Intake can create Dask containers (like ``dask.dataframe``) from data sources that will load their data only when required::
+Working with large datasets is much easier with a parallel, out-of-core computing library like
+`Dask <https://dask.pydata.org/en/latest/>`_.  Intake can create Dask containers (like ``dask.dataframe``)
+from data sources that will load their data only when required::
 
     >>> ddf = ds.to_dask()
     >>> ddf
@@ -88,12 +100,19 @@ Working with large datasets is much easier with a parallel, out-of-core computin
                             ...              ...          ...         ...     ...              ...          ...                      ...           ...      ...        ...             ...                    ...     ...     ...            ...            ...         ...     ...
     Dask Name: from-delayed, 4 tasks
 
-The Dask containers will be partitioned in the same way as the Intake data source, allowing different chunks to be processed in parallel.
+The Dask containers will be partitioned in the same way as the Intake data source, allowing different chunks
+to be processed in parallel. Please read the Dask documentation to understand the differences when
+working with Dask collections (Bag, Array or Data-frames).
 
 Opening a Catalog
 -----------------
 
-It is often useful to move the descriptions of data sources out of your code and into a configuration file that can be reused and shared with other projects and people.  Intake calls this a "catalog", which contains a list of named entries describing how to load data sources.  The ``intake example`` created a catalog file with the following contents:
+It is often useful to move the descriptions of data sources out of your code and into a specification
+file that can be
+reused and shared with other projects and people.  Intake calls this a ":term:`Catalog`", which contains
+a list of named
+entries describing how to load data sources.  The ``intake example`` command, above, created a catalog file
+with the following :term:`YAML`-syntax content:
 
 .. code-block:: yaml
 
@@ -127,17 +146,24 @@ and not having to use boilerplate code in each notebook/script that makes use of
 reference one-another, be stored remotely, and include extra metadata such as a set of named quick-look plots that
 are appropriate for the particular data source.
 
+Note that, if you are *creating* such catalogs, you may well start by trying the ``open_csv`` command,
+above, and then use ``print(ds.yaml())``. If you do this now, you will see that the output is very
+similar to the catalog file we have provided.
 
 Installing Data Source Packages with Conda
 ------------------------------------------
 
-Intake makes it possible to create conda packages that install data sources into a global catalog.  For example, we can
+Intake makes it possible to create :term:`conda packages<Conda package>` that install data sources into a
+global catalog.  For example, we can
 install a data package containing the same data we have been working with::
 
     conda install -c intake data-us-states
 
-Conda installs the catalog file in this package to ``$CONDA_PREFIX/share/intake/us_states.yml``.  Now, when we import
-``intake``, we will see the data from this package appear as part of a global catalog called ``intake.cat``::
+:term:`Conda` installs the catalog file in this package to ``$CONDA_PREFIX/share/intake/us_states.yml``.
+Now, when we import
+``intake``, we will see the data from this package appear as part of a global catalog called ``intake.cat``. In this
+particular case we use Dask to do the reading (which can handle larger-than-memory data and parallel
+processing), but ``read()`` would work also::
 
     >>> import intake
     >>> intake.cat.states.to_dask()[['state','slug']].head()
@@ -149,12 +175,13 @@ Conda installs the catalog file in this package to ``$CONDA_PREFIX/share/intake/
     4  California  california
 
 The global catalog is a union of all catalogs installed in the conda/virtualenv environment and also any catalogs
-installed in user-specific location.
+installed in user-specific locations.
 
 
 Adding Data Source Packages using the Intake path
--------------------------------------------------
-Intake checks the Intake config file for `catalog_path` or the environment variable `INTAKE_PATH` for a colon separated list of paths (semicolon on windows) to search for catalog files.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Intake checks the Intake config file for ``catalog_path`` or the environment variable ``"INTAKE_PATH"`` for a colon
+separated list of paths (semicolon on windows) to search for catalog files.
 When you import ``intake`` we will see all entries from all of the catalogues referenced as part of a global catalog
 called ``intake.cat``.
 
@@ -164,4 +191,4 @@ Using the GUI
 
 A graphical data browser is available in the Jupyter notebook environment. It will show the
 contents of any installed catalogs, plus allows for selecting local and remote catalogs,
-to browse and select entries from these. See :ref:`gui`
+to browse and select entries from these. See :doc:`gui`.
