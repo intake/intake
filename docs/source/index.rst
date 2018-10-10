@@ -52,7 +52,7 @@ smooth the progression of data from developers and providers to users.
 * Use server-client architecture as gatekeeper:
 
    * add authentication methods
-   * add monitoring point.
+   * add monitoring point; track the data-sets being accessed.
 
 * Hook Intake into proprietary data access systems.
 
