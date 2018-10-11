@@ -11,6 +11,11 @@ class Schema(dict):
     """
 
     def __init__(self, **kwargs):
+        """
+        Parameters
+        ----------
+        kwargs: typically include datashape, dtype, shape
+        """
         super(Schema, self).__init__(**kwargs)
         for field in ['datashape', 'dtype', 'extra_metadata', 'shape']:
             # maybe a default-dict
@@ -249,7 +254,8 @@ class PatternMixin(object):
     def path_as_pattern(self):
         if hasattr(self, '_path_as_pattern'):
             return self._path_as_pattern
-        raise KeyError('Plugin needs to set `path_as_pattern` before setting urlpath')
+        raise KeyError('Plugin needs to set `path_as_pattern`'
+                       ' before setting urlpath')
 
     @path_as_pattern.setter
     def path_as_pattern(self, path_as_pattern):

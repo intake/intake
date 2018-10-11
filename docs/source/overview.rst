@@ -80,7 +80,7 @@ to a ":term:`Container`" of the data (e.g., data-frame), a thing on which you ca
 Drivers can be used directly by the user, or indirectly through data catalogs.  Data sources can be pickled, sent over
 the network to other hosts, and reopened (assuming the remote system has access to the required files or servers).
 
-See also the :doc:`Glossary`.
+See also the :doc:`glossary`.
 
 Future Directions
 -----------------
