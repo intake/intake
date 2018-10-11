@@ -11,6 +11,7 @@ This is a reference API class listing, useful mainly for developers.
    intake.catalog.local.UserParameter
    intake.auth.base.BaseAuth
    intake.source.cache.BaseCache
+   intake.source.base.AliasSource
 
 .. autoclass:: intake.source.base.DataSource
    :members:
@@ -36,3 +37,6 @@ This is a reference API class listing, useful mainly for developers.
 
 .. autoclass:: intake.source.cache.BaseCache
    :members:
+
+.. autoclass:: intake.source.base.AliasSource
+   :members: __init__, _get_source

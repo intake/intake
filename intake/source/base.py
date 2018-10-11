@@ -244,6 +244,7 @@ class DataSource(object):
 
 
 class PatternMixin(object):
+    """Helper class to provide file-name parsing abilities to a driver class"""
     @property
     def path_as_pattern(self):
         if hasattr(self, '_path_as_pattern'):
@@ -289,10 +290,38 @@ class PatternMixin(object):
 
 
 class AliasSource(DataSource):
+    """Refer to another named source, unmodified
+
+    The purpose of an Alias is to be able to refer to other source(s) in the
+    same catalog, perhaps leaving the choice of which target to load up to the
+    user. This source makes no sense outside of a catalog.
+
+    In this case, the output of the target source is not modified, but this
+    class acts as a prototype 'derived' source for processing the output of
+    some standard driver.
+
+    After initial discovery, the source's container and other details will be
+    updated from the target; initially, the AliasSource container is not
+    any standard.
+    """
     container = 'other'
     version = 1
+    name = 'alias'
 
     def __init__(self, target, mapping=None, metadata=None, **kwargs):
+        """
+
+        Parameters
+        ----------
+        target: str
+            Name of the source to load, must be a key in the same catalog
+        mapping: dict or None
+            If given, use this to map the string passed as ``target`` to
+            entries in the catalog
+        metadata: dict or None
+            Extra metadata to associate
+        kwargs: passed on to the target
+        """
         super(AliasSource, self).__init__(metadata)
         self.target = target
         self.mapping = mapping or {target: target}
@@ -301,6 +330,8 @@ class AliasSource(DataSource):
         self.source = None
 
     def _get_source(self):
+        if self.catalog_object is None:
+            raise ValueError('AliasSource cannot be used outside a catalog')
         if self.source is None:
             self.source = self.catalog_object[self.mapping[self.target]](
                 metadata=self.metadata, **self.kwargs)
