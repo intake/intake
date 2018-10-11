@@ -1,8 +1,8 @@
 Command Line Tools
 ==================
 
-The package installs two scripts: one for starting the catalog server and
-another is the client for accessing local or remote catalogs.
+The package installs two executable commands: for starting the catalog server; and
+a client for accessing catalogs and manipulating the configuration.
 
 .. _configuration:
 

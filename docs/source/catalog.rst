@@ -4,8 +4,8 @@ Catalogs
 Data catalogs provide an abstraction that allows you to externally define, and optionally share, descriptions of
 datasets, called *catalog entries*.  A catalog entry for a dataset includes information like:
 
-* The name of the Intake plugin that can load the data
-* Arguments to the ``__init__()`` method of the plugin
+* The name of the Intake driver that can load the data
+* Arguments to the ``__init__()`` method of the driver
 * Metadata provided by the catalog author (such as field descriptions and types, or data provenance)
 
 In addition, Intake allows datasets to be *parameterized* in the catalog.  This is most commonly used to allow the
@@ -13,7 +13,7 @@ user to filter down datasets at load time, rather than having to bring everythin
 parameters are defined by the catalog author, then templated into the arguments for ``__init__()`` to modify the data
 being loaded.  This approach is less flexible for the end user than something like the
 `Blaze expression system <https://blaze.readthedocs.io/en/latest/expr-compute-dev.html>`_, but also significantly
-reduces the implementation burden for plugin authors.
+reduces the implementation burden for driver authors.
 
 YAML Format
 -----------
@@ -54,12 +54,12 @@ Intake catalogs are typically described with YAML files.  Here is an example:
 Templating
 ''''''''''
 
-Intake catalog files support Jinja2 templating for plugin arguments. Any occurrence of
+Intake catalog files support Jinja2 templating for driver arguments. Any occurrence of
 a substring like ``{{field}}`` will be replaced by the value of the user parameters with
 that same name. Some additional values are always available:
 
 - ``CATALOG_DIR``: The full path to the directory containing the YAML catalog file.  This is especially useful
-  for constructing paths relative to the catalog directory to locate data files and custom plugins.
+  for constructing paths relative to the catalog directory to locate data files and custom drivers.
 
 Metadata
 ''''''''
@@ -69,11 +69,18 @@ claimed for internal use and some fields may be restricted to local reading; but
 field that is expected is ``version``, which will be updated when a breaking change is made to the
 file format. Any catalog will have ``.metadata`` and ``.version`` attributes available.
 
-Extra Plugins
+Extra drivers
 '''''''''''''
 
-In addition to using plugins already installed in the Python environment with conda or pip
-(see :ref:`plugin-discovery`), a catalog can also use additional plugins from arbitrary locations listed in the YAML
+The ``driver:`` entry of a data source specification can be a driver name, as has been shown in the examples so far.
+It can also be an absolute class path to use for the data source, in which case there will be no ambiguity about how
+to load the data. That is the the preferred way to be explicit, when the driver name alone is not enough
+(see `Driver Selection`_, below). However,
+it is also possible to specify extra modules and directories to scan for plugins, as an alternative method for
+finding driver classes.
+
+In addition to using drivers already installed in the Python environment with conda or pip
+(see :ref:`driver-discovery`), a catalog can also use additional drivers from arbitrary locations listed in the YAML
 file:
 
 .. code-block:: yaml
@@ -88,17 +95,17 @@ file:
 
 The following import methods are allow:
 
-- ``- module: my.module.path``: The Python module to import and search for plugin classes.  This uses the standard
+- ``- module: my.module.path``: The Python module to import and search for driver classes.  This uses the standard
   notation of the Python ``import`` command and will search the PYTHONPATH in the same way.
-- ``- dir: /my/module/directory``: All of the ``*.py`` files in this directory will be executed, and any plugin
+- ``- dir: /my/module/directory``: All of the ``*.py`` files in this directory will be executed, and any driver
   classes found will be added to the catalog's plugin registry.  It is common for the directory of Python files to be
   stored relative to the catalog file itself, so using the ``CATALOG_DIR`` variable will allow that relative path to be
   specified.
 
-Each of the above methods can be used multiple times, and in combination, to load as many extra plugins as are needed.
-Most plugins should be installed as Python packages (enabling autodiscovery), but sometimes catalog-specific plugins may
+Each of the above methods can be used multiple times, and in combination, to load as many extra drivers as are needed.
+Most drivers should be installed as Python packages (enabling autodiscovery), but sometimes catalog-specific drivers may
 be needed to perform specific data transformations that are not broadly applicable enough to warrant creating a
-dedicated package.  In those cases, the above options allow the plugins to be bundled with the catalog instead.
+dedicated package.  In those cases, the above options allow the drivers to be bundled with the catalog instead.
 
 
 Sources
@@ -115,13 +122,13 @@ returned data.  Each data source has several attributes:
 - ``description``: Human readable description of the source.  To help catalog browsing tools, the description should be
   Markdown.
 
-- ``driver``: Name of the Intake plugin to use with this source.  Must either already be installed in the current
+- ``driver``: Name of the Intake :term:`Driver` to use with this source.  Must either already be installed in the current
   Python environment (i.e. with conda or pip) or loaded in the ``plugin`` section of the file.
 
-- ``args``: Keyword arguments to the ``open()`` method of the plugin.  Arguments may use template expansion.
+- ``args``: Keyword arguments to the ``open()`` method of the driver.  Arguments may use template expansion.
 
 - ``metadata``: Any metadata keys that should be attached to the data source when opened.  These will be supplemented
-  by additional metadata provided by the plugin.  Catalog authors can use whatever key names they would like, with the
+  by additional metadata provided by the driver.  Catalog authors can use whatever key names they would like, with the
   exception that keys starting with a leading underscore are reserved for future internal use by Intake.
 
 - ``direct_access``: Control whether the data is directly accessed by the client, or proxied through a catalog server.
@@ -131,7 +138,7 @@ returned data.  Each data source has several attributes:
 
 Parameters allow the user to customize the data returned by a data source.  Most often, parameters are used to filter
 or reduce the data in specific ways defined by the catalog author.  The parameters defined for a given data source are
-available for use in template strings, which can be used to alter the arguments provided to the plugin.  For example,
+available for use in template strings, which can be used to alter the arguments provided to the driver.  For example,
 a data source might accept a "postal_code" argument which is used to alter a database query, or select a particular
 group within a file.  Users set parameters with keyword arguments to the ``get()`` method on the catalog object.
 
@@ -139,22 +146,22 @@ Driver Selection
 ''''''''''''''''
 
 In some cases, it may be possible that multiple backends are capable of loading from the same data
-format or service. Sometimes, this may mean two plugins with unique names, or a single plugin
+format or service. Sometimes, this may mean two drivers with unique names, or a single driver
 with a parameter to choose between the different backends.
 
-However, it is possible that multiple plugins for reading a particular type of data
-also share the same plugin name: for example, both the
-intake-iris and the intake-xarray packages contain plugins with the name ``"netcdf"``, which
+However, it is possible that multiple drivers for reading a particular type of data
+also share the same driver name: for example, both the
+intake-iris and the intake-xarray packages contain drivers with the name ``"netcdf"``, which
 are capable of reading the same files, but with different backends. Here we will describe the
-various possibilities of coping with this situation.
+various possibilities of coping with this situation. Intake's plugin system makes it easy to encode such choices.
 
 It may be
-acceptable to use any plugin which claims to handle that data type, or to give the option of
-which plugin to use to the user, or it may be necessary to specify which precise plugin(s) are
+acceptable to use any driver which claims to handle that data type, or to give the option of
+which driver to use to the user, or it may be necessary to specify which precise driver(s) are
 appropriate for that particular data. Intake allows all of these possibilities, even if the
-backend plugins require extra arguments.
+backend drivers require extra arguments.
 
-Specifying a single plugin explicitly, rather than using a generic name, would look like this:
+Specifying a single driver explicitly, rather than using a generic name, would look like this:
 
 .. code-block:: yaml
 
@@ -164,7 +171,7 @@ Specifying a single plugin explicitly, rather than using a generic name, would l
         driver: package.module.PluginClass
         args: {}
 
-It is also possible to describe a list of plugins with the same syntax. The first one
+It is also possible to describe a list of drivers with the same syntax. The first one
 found will be the one used. Note that the class imports will only happen at data source
 instantiation.
 
@@ -340,10 +347,11 @@ The difference is that operations on the catalog translate to requests sent to t
 provide access to data sources in one of two modes:
 
 * Direct access: In this mode, the catalog server tells the client how to load the data, but the client uses its
-  local plugins to make the connection.  This requires the client has the required plugin already installed *and* has direct access to the files or data servers that the plugin will connect to.
+  local drivers to make the connection.  This requires the client has the required driver already installed *and*
+  has direct access to the files or data servers that the driver will connect to.
 
-* Proxied access: In this mode, the catalog server uses its local plugins to open the data source and stream the data
-  over the network to the client.  The client does not need *any* special plugins to read the data, and can read data
+* Proxied access: In this mode, the catalog server uses its local drivers to open the data source and stream the data
+  over the network to the client.  The client does not need *any* special drivers to read the data, and can read data
   from files and data servers that it cannot access, as long as the catalog server has the required access.
 
 Whether a particular catalog entry supports direct or proxied access is determined by the ``direct_access`` option:
@@ -351,13 +359,13 @@ Whether a particular catalog entry supports direct or proxied access is determin
 
 - ``forbid`` (default): Force all clients to proxy data through the catalog server
 
-- ``allow``: If the client has the required plugin, access the source directly, otherwise proxy the data through the
+- ``allow``: If the client has the required driver, access the source directly, otherwise proxy the data through the
   catalog server.
 
-- ``force``: Force all clients to access the data directly.  If they do not have the required plugin, an exception will
+- ``force``: Force all clients to access the data directly.  If they do not have the required driver, an exception will
   be raised.
 
-Note that when the client is loading a data source via direct access, the catalog server will need to send the plugin
+Note that when the client is loading a data source via direct access, the catalog server will need to send the driver
 arguments to the client.  Do not include sensitive credentials in a data source that allows direct access.
 
 Client Authorization Plugins
@@ -365,6 +373,6 @@ Client Authorization Plugins
 
 Intake servers can check if clients are authorized to access the catalog as a whole, or individual catalog entries.
 Typically a matched pair of server-side plugin (called an "auth plugin") and a client-side plugin (called a "client
-auth plugin) need to be enabled for authorization checks to work.  This feature is still in early development, so
-please `open a Github issue <https://github.com/ContinuumIO/intake/issues/new>`_ to discuss your use case before
-creating a plugin.
+auth plugin) need to be enabled for authorization checks to work.  This feature is still in early development, but see
+module ``intake.auth.secret`` for a demonstration pair of server and client classes implementation auth via a shared
+secret. See :doc:`auth-plugins`.
