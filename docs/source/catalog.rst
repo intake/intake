@@ -37,7 +37,7 @@ Intake catalogs are typically described with YAML files.  Here is an example:
           bar: [1, 2, 3]
         driver: csv
         args: # passed to the open() method
-          urlpath: !template '{{ CATALOG_DIR }}/entry1_*.csv'
+          urlpath: '{{ CATALOG_DIR }}/entry1_*.csv'
 
       entry1_part:
         description: entry1 part
