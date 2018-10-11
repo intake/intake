@@ -302,3 +302,10 @@ def test_yaml_method(source_python):
     assert 'mock' in out  # the "driver"
     assert 'metadata' in out
     assert 'a: 1' in out
+
+
+def test_alias_fail():
+    s = base.AliasSource('atarget')
+    s.container == 'other'
+    with pytest.raises(ValueError):
+        s.read()

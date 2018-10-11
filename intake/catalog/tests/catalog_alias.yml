@@ -1,0 +1,29 @@
+sources:
+  test_cache:
+    description: cache a csv file from the local filesystem
+    driver: csv
+    args:
+      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
+  arr_cache:
+    description: small array
+    driver: numpy
+    args:
+      path: "{{ CATALOG_DIR }}/small.npy"
+      chunks: 5
+  alias0:
+    driver: intake.source.base.AliasSource
+    args:
+      target: test_cache
+  alias1:
+    driver: intake.source.base.AliasSource
+    args:
+      target: "{{choice}}"
+      mapping:
+        first: test_cache
+        second: arr_cache
+    parameters:
+      choice:
+        description: which to alias
+        type: str
+        default: first
+        allowed: ["first", "second"]
