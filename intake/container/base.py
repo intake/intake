@@ -2,6 +2,7 @@ import msgpack
 import requests
 from intake.source.base import DataSource, Schema
 from . import serializer
+from ..compat import unpack_kwargs
 from intake import __version__
 
 
@@ -42,7 +43,7 @@ class RemoteSource(DataSource):
             req = requests.post(self.url, data=msgpack.packb(
                 payload, use_bin_type=True), **self.headers)
             req.raise_for_status()
-            response = msgpack.unpackb(req.content, encoding='utf-8')
+            response = msgpack.unpackb(req.content, **unpack_kwargs)
             self._parse_open_response(response)
 
     def _parse_open_response(self, response):
@@ -100,7 +101,7 @@ def get_partition(url, headers, source_id, container, partition):
         if resp.status_code != 200:
             raise Exception('Error reading data')
 
-        msg = msgpack.unpackb(resp.content, encoding='utf-8')
+        msg = msgpack.unpackb(resp.content, **unpack_kwargs)
         format = msg['format']
         compression = msg['compression']
         compressor = serializer.compression_registry[compression]

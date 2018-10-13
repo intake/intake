@@ -57,6 +57,7 @@ class MsgPackSerializer(object):
             return msgpack.packb(obj, use_bin_type=True)
 
     def decode(self, bytestr, container):
+        from ..compat import unpack_kwargs
         if container in ['ndarray', 'xarray']:
             import msgpack_numpy
             return msgpack.unpackb(bytestr, object_hook=msgpack_numpy.decode)
@@ -64,7 +65,7 @@ class MsgPackSerializer(object):
             import pandas as pd
             return pd.read_msgpack(bytestr)
         else:
-            return msgpack.unpackb(bytestr, encoding='utf-8')
+            return msgpack.unpackb(bytestr, **unpack_kwargs)
 
 
 class PickleSerializer(object):
