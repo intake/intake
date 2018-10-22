@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import shutil
+import warnings
 
 from dask.bytes.utils import infer_storage_options
 from intake.config import conf
@@ -245,49 +246,52 @@ class BaseCache(object):
 
 def _download(file_in, file_out, blocksize, output=False):
     """Read from input and write to output file in blocks"""
-    if output:
-        try:
-            from tqdm.autonotebook import tqdm
-        except ImportError:
-            logger.warn("Cache progress bar requires tqdm to be installed:"
-                        " conda/pip install tqdm")
-            output = False
-    if output:
-        try:
-            file_size = file_in.fs.size(file_in.path)
-            pbar_disabled = False
-        except ValueError as err:
-            logger.debug("File system error requesting size: {}".format(err))
-            file_size = 0
-            pbar_disabled = True
-        for i in range(100):
-            if i not in display:
-                display.add(i)
-                out = i
-                break
-        pbar = tqdm(total=file_size // 2 ** 20, leave=False,
-                    disable=pbar_disabled,
-                    position=out, desc=os.path.basename(file_out.path),
-                    mininterval=0.1,
-                    bar_format=r'{n}/|/{l_bar}')
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore')
 
-    logger.debug("Caching {}".format(file_in.path))
-    with file_in as f1:
-        with file_out as f2:
-            data = True
-            while data:
-                data = f1.read(blocksize)
-                f2.write(data)
-                if output:
-                    pbar.update(len(data) // 2**20)
-    if output:
-        try:
-            pbar.update(pbar.total - pbar.n)  # force to full
-            pbar.close()
-        except Exception as e:
-            logger.debug('tqdm exception: %s' % e)
-        finally:
-            display.remove(out)
+        if output:
+            try:
+                from tqdm.autonotebook import tqdm
+            except ImportError:
+                logger.warn("Cache progress bar requires tqdm to be installed:"
+                            " conda/pip install tqdm")
+                output = False
+        if output:
+            try:
+                file_size = file_in.fs.size(file_in.path)
+                pbar_disabled = False
+            except ValueError as err:
+                logger.debug("File system error requesting size: {}".format(err))
+                file_size = 0
+                pbar_disabled = True
+            for i in range(100):
+                if i not in display:
+                    display.add(i)
+                    out = i
+                    break
+            pbar = tqdm(total=file_size // 2 ** 20, leave=False,
+                        disable=pbar_disabled,
+                        position=out, desc=os.path.basename(file_out.path),
+                        mininterval=0.1,
+                        bar_format=r'{n}/|/{l_bar}')
+
+        logger.debug("Caching {}".format(file_in.path))
+        with file_in as f1:
+            with file_out as f2:
+                data = True
+                while data:
+                    data = f1.read(blocksize)
+                    f2.write(data)
+                    if output:
+                        pbar.update(len(data) // 2**20)
+        if output:
+            try:
+                pbar.update(pbar.total - pbar.n)  # force to full
+                pbar.close()
+            except Exception as e:
+                logger.debug('tqdm exception: %s' % e)
+            finally:
+                display.remove(out)
 
 
 class FileCache(BaseCache):
