@@ -158,8 +158,9 @@ class LocalCatalogEntry(CatalogEntry):
         self._catalog_dir = catalog_dir
         self._catalog = catalog
         if isinstance(driver, str):
-            self._plugin = [get_plugin_class(driver)]
-            containers = set([self._plugin[0].container])
+            dr = get_plugin_class(driver)
+            self._plugin = [dr] if dr is not None else []
+            containers = set(p.container for p in self._plugin)
         elif isinstance(driver, list):
             self._plugin = [get_plugin_class(d) for d in driver]
             self._plugin = [p for p in self._plugin if p is not None]

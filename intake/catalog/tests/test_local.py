@@ -413,3 +413,14 @@ def test_multi_plugins():
     fn = abspath('multi_plugins2.yaml')
     with pytest.raises(ValueError):
         open_catalog(fn)
+
+
+def test_no_plugins():
+    fn = abspath('multi_plugins.yaml')
+    cat = open_catalog(fn)
+    s = cat.tables6
+    with pytest.raises(ValueError):
+        s()
+    s = cat.tables7
+    with pytest.raises(ValueError):
+        s()

@@ -53,3 +53,18 @@ sources:
       myplug2:
           class: csv
     metadata: {}
+  tables6:
+    args:
+        urlpath: "{{ CATALOG_DIR }}/files*"
+    description: "no valid plugin in list"
+    driver:
+      myplug:
+          class: doesnotexist
+    metadata: {}
+  tables7:
+    args:
+        urlpath: "{{ CATALOG_DIR }}/files*"
+    description: "no valid plugin"
+    driver: doesnotexist
+    metadata: {}
+
