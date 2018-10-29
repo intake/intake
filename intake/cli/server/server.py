@@ -192,6 +192,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 logger.debug("Opening entry %s" % entry)
                 source = entry.get(**user_parameters)
                 try:
+                    source.on_server = True
                     source.discover()
                 except Exception as e:
                     raise tornado.web.HTTPError(status_code=400,
