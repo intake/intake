@@ -95,6 +95,7 @@ class DataSource(object):
         self.npartitions = 0
         self._schema = None
         self.catalog_object = None
+        self.on_server = False
 
     def _get_cache(self, urlpath):
         if len(self.cache) == 0:
