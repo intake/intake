@@ -21,6 +21,8 @@ At present, the configuration file might look as follows:
   auth:
     class: "intake.auth.base.BaseAuth"
   port: 5000
+  catalog_path:
+    - /home/myusername/special_dir
 
 These are the defaults, and any parameters not specified will take the values above
 

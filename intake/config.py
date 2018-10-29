@@ -16,7 +16,8 @@ defaults = {
     'cache_dir': os.path.join(expanduser('~'), '.intake/cache'),
     'cache_disabled': False,
     'cache_download_progress': True,
-    'logging': 'INFO'
+    'logging': 'INFO',
+    'catalog_path': []
     }
 conf = {}
 
@@ -58,7 +59,10 @@ def load_conf(fn=None):
         fn = cfile()
     if os.path.isfile(fn):
         with open(fn) as f:
-            conf.update(yaml.load(f))
+            try:
+                conf.update(yaml.load(f))
+            except Exception as e:
+                logger.warning(f'Failure to load config file "{fn}": {e}')
 
 
 def intake_path_dirs(path):
