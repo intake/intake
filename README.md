@@ -14,6 +14,15 @@ Intake helps you:
 
 Documentation is available at [Read the Docs](http://intake.readthedocs.io/en/latest).
 
+Install
+-------
+
+Recommended method using conda:
+```bash
+conda install -c intake intake
+```
+
+
 Development Environment
 ----------------------------
  * Create development Python environment.
