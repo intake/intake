@@ -16,13 +16,13 @@ or file. If both are given, the latter takes priority.
 
 At present, the configuration file might look as follows:
 
-.. code-block::yaml
+.. code-block:: yaml
 
-  auth:
-    class: "intake.auth.base.BaseAuth"
-  port: 5000
-  catalog_path:
-    - /home/myusername/special_dir
+   auth:
+     class: "intake.auth.base.BaseAuth"
+   port: 5000
+   catalog_path:
+     - /home/myusername/special_dir
 
 These are the defaults, and any parameters not specified will take the values above
 
