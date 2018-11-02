@@ -133,7 +133,6 @@ def test_reload_missing_local_directory(tempdir):
     catalog = Catalog(tempdir + '/*')
     assert_items_equal(list(catalog), [])
 
-    os.mkdir(tempdir)
     with open(os.path.join(tempdir, YAML_FILENAME), 'w') as f:
         f.write('''
 plugins:
