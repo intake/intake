@@ -129,22 +129,12 @@ sources:
         pass
 
 
-@pytest.fixture
-def tmpdir():
-    path = tempfile.mkdtemp()
-    subpath = os.path.join(path, 'a')
-
-    yield subpath
-
-    shutil.rmtree(path)
-
-
-def test_reload_missing_local_directory(tmpdir):
-    catalog = Catalog(tmpdir + '/*')
+def test_reload_missing_local_directory(tempdir):
+    catalog = Catalog(tempdir + '/*')
     assert_items_equal(list(catalog), [])
 
-    os.mkdir(tmpdir)
-    with open(os.path.join(tmpdir, YAML_FILENAME), 'w') as f:
+    os.mkdir(tempdir)
+    with open(os.path.join(tempdir, YAML_FILENAME), 'w') as f:
         f.write('''
 plugins:
   source:

@@ -18,12 +18,12 @@ def verify_datasource_interface(source):
 
 
 @pytest.fixture
-def temp_cache(tmpdir):
+def temp_cache(tempdir):
     import intake
     old = intake.config.conf.copy()
     olddir = intake.config.confdir
-    intake.config.confdir = str(tmpdir)
-    intake.config.conf.update({'cache_dir': str(tmpdir),
+    intake.config.confdir = str(tempdir)
+    intake.config.conf.update({'cache_dir': str(tempdir),
                                'cache_download_progress': False,
                                'cache_disabled': False})
     intake.config.save_conf()

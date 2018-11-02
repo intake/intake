@@ -114,3 +114,14 @@ def http_server():
     finally:
         p.terminate()
         p.communicate()
+
+
+@pytest.fixture()
+def tempdir():
+    import tempfile
+    import shutil
+    d = str(tempfile.mkdtemp())
+    try:
+        yield d
+    finally:
+        shutil.rmtree(d)

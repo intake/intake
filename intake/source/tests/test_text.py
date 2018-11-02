@@ -3,10 +3,10 @@ import os
 from intake.source.textfiles import TextFilesSource
 
 
-def test_textfiles(tmpdir):
-    open(os.path.join(tmpdir, '1.txt'), 'wt').write('hello\nworld')
-    open(os.path.join(tmpdir, '2.txt'), 'wt').write('hello\nworld')
-    path = os.path.join(tmpdir, '*.txt')
+def test_textfiles(tempdir):
+    open(os.path.join(tempdir, '1.txt'), 'wt').write('hello\nworld')
+    open(os.path.join(tempdir, '2.txt'), 'wt').write('hello\nworld')
+    path = os.path.join(tempdir, '*.txt')
     t = TextFilesSource(path)
     t.discover()
     assert t.npartitions == len(glob.glob(path))
