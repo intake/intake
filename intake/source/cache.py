@@ -215,7 +215,7 @@ class BaseCache(object):
         for cache_entry in cache_entries:
             try:
                 os.remove(cache_entry['cache_path'])
-            except FileNotFoundError:
+            except (OSError, IOError):
                 pass
         try:
             fn = os.path.dirname(cache_entry['cache_path'])

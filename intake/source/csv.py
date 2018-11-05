@@ -117,7 +117,7 @@ class CSVSource(base.DataSource, base.PatternMixin):
             self._dataframe = self._dataframe.drop([path_column], axis=1)
 
     def _get_schema(self):
-        urlpath, *_ = self._get_cache(self._urlpath)
+        urlpath = self._get_cache(self._urlpath)[0]
 
         if self._dataframe is None:
             self._open_dataset(urlpath)

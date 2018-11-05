@@ -49,7 +49,7 @@ class NPySource(DataSource):
         from dask.bytes import open_files
         import dask.array as da
         if self._arr is None:
-            path, *_ = self._get_cache(self.path)
+            path = self._get_cache(self.path)[0]
 
             files = open_files(path, 'rb', compression=None,
                                **self.storage)

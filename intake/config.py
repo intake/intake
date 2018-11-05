@@ -62,7 +62,8 @@ def load_conf(fn=None):
             try:
                 conf.update(yaml.load(f))
             except Exception as e:
-                logger.warning(f'Failure to load config file "{fn}": {e}')
+                logger.warning('Failure to load config file "{fn}": {e}'
+                               ''.format(fn=fn, e=e))
 
 
 def intake_path_dirs(path):

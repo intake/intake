@@ -40,7 +40,7 @@ class TextFilesSource(base.DataSource):
         from dask.bytes import open_files
         if self._files is None:
 
-            urlpath, *_ = self._get_cache(self._urlpath)
+            urlpath = self._get_cache(self._urlpath)[0]
 
             self._files = open_files(urlpath, mode='rt',
                                      **self._storage_options)

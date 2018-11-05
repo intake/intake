@@ -1,5 +1,7 @@
 # Base classes for Data Loader interface
 from .cache import make_caches
+import sys
+PY2 = sys.version_info[0] == 2
 
 
 class Schema(dict):
@@ -79,6 +81,8 @@ class DataSource(object):
                     kwargs=self._captured_init_kwargs)
 
     def __setstate__(self, state):
+        self._captured_init_kwargs = state['kwargs']
+        self._captured_init_args = state['args']
         self.__init__(*state['args'], **state['kwargs'])
 
     def __init__(self, metadata=None):
@@ -150,9 +154,12 @@ class DataSource(object):
         import inspect
         kwargs = self._captured_init_kwargs.copy()
         meta = kwargs.pop('metadata', self.metadata) or {}
-        # TODO: inspect.signature is py3 only
-        kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
-                      self._captured_init_args)))
+        if PY2:
+            kwargs.update(dict(zip(inspect.getargspec(self.__init__).args,
+                          self._captured_init_args)))
+        else:
+            kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
+                                   self._captured_init_args)))
         data = {'sources': {self.name: {
             'driver': self.__class__.name,
             'description': self.description or "",

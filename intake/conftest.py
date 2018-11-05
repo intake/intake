@@ -99,7 +99,7 @@ def http_server():
         cmd = ['python', '-m', 'SimpleHTTPServer', '8000']
     else:
         cmd = ['python', '-m', 'http.server', '8000']
-    p = subprocess.Popen(cmd, cwd=here)
+    p = subprocess.Popen(cmd, cwd=os.path.join(here, 'catalog', 'tests'))
     timeout = 5
     while True:
         try:
@@ -114,3 +114,14 @@ def http_server():
     finally:
         p.terminate()
         p.communicate()
+
+
+@pytest.fixture()
+def tempdir():
+    import tempfile
+    import shutil
+    d = str(tempfile.mkdtemp())
+    try:
+        yield d
+    finally:
+        shutil.rmtree(d)
