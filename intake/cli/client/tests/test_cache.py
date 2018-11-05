@@ -2,13 +2,17 @@ import intake
 import intake.config
 from intake.source.cache import CacheMetadata
 import os
+import pytest
 import subprocess
+import sys
 from intake.source.tests.util import temp_cache
 cpath = os.path.abspath(
     os.path.join(os.path.dirname(__file__),
                  '../../../catalog/tests/catalog_caching.yml'))
 
 
+@pytest.mark.skipif(sys.version_info[0] == 2,
+                    reason="Py2 exists early on argparse")
 def test_help(tempdir):
     out = subprocess.check_output('INTAKE_CONF_DIR=%s intake cache' % tempdir,
                                   shell=True).decode()
