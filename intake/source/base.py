@@ -171,6 +171,11 @@ class DataSource(object):
                 'source': [{'module': self.__module__}]}
         return dump(data, default_flow_style=False)
 
+    @property
+    def plots(self):
+        """List custom associated quick-plots """
+        return list(self.metadata.get('plots', {}))
+
     def discover(self):
         """Open resource and populate the source attributes."""
         self._load_metadata()

@@ -47,8 +47,11 @@ the PyViz lab extension must be installed first:
 For detailed instructions on displaying plots in the notebook and from the Python command prompt see the
 `hvPlot user guide <https://pyviz.github.io/hvplot/user_guide/Viewing.html>`_.
 
-Python Command Prompt & Scripts 
+Python Command Prompt & Scripts
 --------------------------------
+
+Assuming the US Crime dataset has been installed (in this repo's `examples/` directory, or from
+conda with `conda install -c intake us_crime`):
 
 Once installed the plot API can be used, by using the ``.plot`` method on an intake ``DataSource``:
 
@@ -92,6 +95,25 @@ or by calling ``intake.output_notebook()``:
 
 .. raw:: html
    :file: _static/images/plotting_example.html
+
+Predefined Plots
+----------------
+
+Some catalogs will define plots appropriate to a specific data source. These will be specified
+such that the user gets the right view with the right columns and labels, without having to investigate
+the data in details - this is idea for quick-look plotting when browsing sources.
+
+.. code-block:: python
+
+    import intake
+    intake.us_crime.plots
+
+Returns `['example']`. This works whether accessing the entry object or the source instance. To visualise
+
+.. code-block:: python
+
+    intake.us_crime.plot.example()
+
 
 Persisting metadata
 '''''''''''''''''''

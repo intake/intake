@@ -76,6 +76,11 @@ class CatalogEntry(object):
             self._default_source = self.get()
         return self._default_source
 
+    @property
+    def plots(self):
+        """List custom associated quick-plots """
+        return list(self._metadata.get('plots', {}))
+
     def __getattr__(self, attr):
         # TODO: only consider attr not starting with "_"?
         return getattr(self._get_default_source(), attr)
