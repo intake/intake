@@ -10,6 +10,7 @@ This is a list of known projects which install driver plugins for Intake:
 * `intake-avro <https://github.com/ContinuumIO/intake-avro>`_: Apache Avro data serialization format
 * `intake-dynamodb <https://github.com/informatics-lab/intake-dynamodb>`_
 * `intake-elasticsearch <https://github.com/ContinuumIO/intake-elasticsearch>`_: Elasticsearch search and analytics engine
+* `intake-geopandas <https://github.com/informatics-lab/intake_geopandas>`_: load ESRI Shape Files with geopandas
 * `intake-hbase <https://github.com/ContinuumIO/intake-hbase>`_: Apache HBase database
 * `intake-iris <https://github.com/informatics-lab/intake-iris>`_ load netCDF and GRIB files with IRIS
 * `intake-mongo <https://github.com/ContinuumIO/intake-mongo>`_: MongoDB noSQL query
