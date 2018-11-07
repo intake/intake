@@ -207,7 +207,7 @@ same global arguments will be passed to all of the drivers listed.
 
 
 Parameter Definition
-^^^^^^^^^^^^^^^^^^^^
+''''''''''''''''''''
 
 To enable users to discover parameters on data sources, and to allow UIs to generate interfaces automatically,
 parameters have the following attributes in the catalog.
@@ -256,7 +256,7 @@ will be evaluated on the server side, the evaluation only happens if the user di
 the value when accessing the data.
 
 Caching Source Files Locally
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+''''''''''''''''''''''''''''
 
 To enable caching on the first read of remote data source files, ``cache`` specifications have the following attributes
 in the catalog.
@@ -304,6 +304,38 @@ or, equivalently, the environment parameter ``INTAKE_CACHE_PROGRESS``.
 The "types" of caching are that supported are listed in ``intake.source.cache.registry``, see
 the docstrings of each for specific parameters that should appear in the cache block.
 
+
+Remote Access
+-------------
+
+(see also :ref:`Remote Data` for the implementation details)
+
+Many drives support reading directly from remote data sources such as HTTP, S3 or GCS. In these cases,
+the path to read from is usually given with a protocol prefix such as ``gcs://``. Additional dependencies
+will typically be required (``requests``, ``s3fs``, ``gcsfs``, etc.), any any data conda package
+should specify this.  Further parameters
+may be necessary for communicating with the storage backend and, by convention, the driver should take
+a parameter ``storage_options`` containing arguments to pass to the backend.
+
+As an example of using ``storage_options``, the following
+two sources would allow for reading CSV data from S3 and GCS backends without
+authentication (anonymous access), respectively
+
+.. code-block:: yaml
+
+   sources:
+     s3_csv:
+       description: "Publicly accessible CSV data on S3; requires s3fs"
+       args:
+         urlpath: s3://bucket/path/*.csv
+         storage_options:
+           anon: true
+     gcs_csv:
+       description: "Publicly accessible CSV data on GCS; requires gcsfs"
+       args:
+         urlpath: gcs://bucket/path/*.csv
+         storage_options:
+           token: "anon"
 
 Local Catalogs
 --------------
