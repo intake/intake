@@ -212,6 +212,8 @@ corresponding data-source class.
 To take advantage of driver discovery, give your installed package a name that starts with ``intake_`` and define
 your driver class(es) in the ``__init__.py`` of the package.
 
+.. _remote_data:
+
 Remote Data
 -----------
 

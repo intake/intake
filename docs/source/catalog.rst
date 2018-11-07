@@ -308,7 +308,7 @@ the docstrings of each for specific parameters that should appear in the cache b
 Remote Access
 -------------
 
-(see also :ref:`Remote Data` for the implementation details)
+(see also :ref:`remote_data` for the implementation details)
 
 Many drives support reading directly from remote data sources such as HTTP, S3 or GCS. In these cases,
 the path to read from is usually given with a protocol prefix such as ``gcs://``. Additional dependencies
