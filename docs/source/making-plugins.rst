@@ -99,7 +99,8 @@ The class should have the following attributes to identify itself:
   no semantic importance.
 
 - ``container``: The container type of data sources created by this object, e.g., ``dataframe``, ``ndarray``, or
-  ``python``.  For simplicity, a driver many only return one typed of container.  If a particular source of data could
+  ``python``, one of the keys of ``intake.container.container_map``.
+  For simplicity, a driver many only return one typed of container.  If a particular source of data could
   be used in multiple ways (such as HDF5 files interpreted as dataframes or as ndarrays), two drivers must be created.
   These two drivers can be part of the same Python package.
 
@@ -114,18 +115,22 @@ The base `DataSource` class has a small number of methods which should be overri
 data-frame::
 
     class FooSource(intake.source.base.DataSource):
+        container = 'dataframe'
+        name = 'foo'
+        version = '0.0.1'
+        partition_access = True
+
         def __init__(self, a, b, metadata=None):
             # Do init here with a and b
             super(FooSource, self).__init__(
-                container='dataframe',
                 metadata=metadata
             )
 
         def _get_schema(self):
             return intake.source.base.Schema(
-                datashape='datashape',
-                dtype=np.dtype([('x', np.int64), ('y', np.int64)]),
-                shape=(6,),
+                datashape=None,
+                dtype={'x': "int64", 'y': "int64"},
+                shape=(None, 2),
                 npartitions=2,
                 extra_metadata=dict(c=3, d=4)
             )
@@ -144,12 +149,12 @@ data-frame::
 
 Most of the work typically happens in the following methods:
 
-- ``__init__(self)``: Should be very lightweight and fast.  No files or network resources should be opened, and no
+- ``__init__()``: Should be very lightweight and fast.  No files or network resources should be opened, and no
   significant memory should be allocated yet.  Data sources are often serialized immediately.  The default implementation
   of the pickle protocol in the base class will record all the arguments to ``__init__()`` and recreate the object with
   those arguments when unpickled, assuming the class has no side effects.
 
-- ``_get_schema(self)``: May open files and network resources and return as much of the schema as possible in small
+- ``_get_schema()``: May open files and network resources and return as much of the schema as possible in small
   amount of *approximately* constant  time.  The ``npartitions`` and ``extra_metadata`` attributes must be correct
   when ``_get_schema`` returns.  Further keys such as ``dtype``, ``shape``, etc., should reflect the container type of
   the data-source, and can be ``None`` if not easily knowable, or include ``None`` for some elements. This method should
@@ -167,13 +172,11 @@ Most of the work typically happens in the following methods:
 - ``_close(self)``: Close any network or file handles and deallocate any significant memory.  Note that these
   resources may be need to be reopened/reallocated if a read is called again later.
 
-The full set of methods of interest are as follows:
-
-- ``__init__(self)``: Same as above.  The standard object attributes (like ``dtype`` and ``shape``) should be set to
-  default placeholder values (``None``) if they are not known yet.
+The full set of user methods of interest are as follows:
 
 - ``discover(self)``: Read the source attributes, like ``npartitions``, etc.  As with ``_get_schema()`` above, this
-  method is assumed to be fast, and make a best effort to set attributes.
+  method is assumed to be fast, and make a best effort to set attributes. The output should be serializable, if the
+  source is to be used on a server; the details contained will be used for creating a remote-source on the client.
 
 - ``read(self)``: Return all the data in memory in one in-memory container.
 
