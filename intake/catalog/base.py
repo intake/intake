@@ -54,9 +54,17 @@ class Catalog(DataSource):
         name : str, optional
             Unique identifier for catalog. This is primarily useful when
             manually constructing a catalog. Defaults to None.
+        metadata: dict
+            Additional information about this data
+        auth : BaseClientAuth or None
+            Default, None, falls back to BaseClientAuth.
         ttl : float, optional
             Lifespan (time to live) of cached modification time. Units are in
             seconds. Defaults to 1.
+        getenv: bool
+            Can parameter default fields take values from the environment
+        getshell: bool
+            Can parameter default fields run shell commands
         storage_options : dict
             If using a URL beginning with 'intake://' (remote Intake server),
             parameters to pass to requests when issuing http commands; otherwise
