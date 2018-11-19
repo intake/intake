@@ -321,6 +321,25 @@ class RemoteCatalog(Catalog):
             Default is None (no pagination; fetch all entries in bulk).
         kwargs: may include catalog name, metadata, source ID (if known) and
             auth instance.
+        name : str, optional
+            Unique identifier for catalog. This is primarily useful when
+            manually constructing a catalog. Defaults to None.
+        metadata: dict
+            Additional information about this data
+        auth : BaseClientAuth or None
+            Default, None, falls back to BaseClientAuth.
+        ttl : float, optional
+            Lifespan (time to live) of cached modification time. Units are in
+            seconds. Defaults to 1.
+        getenv: bool
+            Can parameter default fields take values from the environment
+        getshell: bool
+            Can parameter default fields run shell commands
+        storage_options : dict
+            If using a URL beginning with 'intake://' (remote Intake server),
+            parameters to pass to requests when issuing http commands; otherwise
+            parameters to pass to remote backend file-system. Ignored for
+            normal local files.
         """
         self.http_args = http_args
         self.http_args.update(kwargs.get('storage_options', {}))
