@@ -142,5 +142,15 @@ class CSVSource(base.DataSource, base.PatternMixin):
         self._get_schema()
         return self._dataframe
 
+    def to_spark(self):
+        from intake_spark.base import SparkHolder
+        h = SparkHolder(True, [
+            ('read', ),
+            ('format', ("csv", )),
+            ('option', ("header", "true")),
+            ('load', (self.urlpath, ))
+        ], {})
+        return h.setup()
+
     def _close(self):
         self._dataframe = None

@@ -132,7 +132,7 @@ class LocalCatalogEntry(CatalogEntry):
             Name of the plugin that can load this
         direct_access: bool
             Is the client allowed to attempt to reach this data
-        args: list
+        args: dict
             Passed when instantiating the plugin DataSource
         parameters: list
             UserParameters that can be set
@@ -604,7 +604,6 @@ class YAMLFilesCatalog(Catalog):
         self._kwargs = kwargs.copy()
         self._cat_files = []
         self._cats = {}
-        self.name = "multi_yamls"
         super(YAMLFilesCatalog, self).__init__(**kwargs)
 
     def _load(self):
