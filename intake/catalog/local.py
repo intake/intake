@@ -132,7 +132,7 @@ class LocalCatalogEntry(CatalogEntry):
             Name of the plugin that can load this
         direct_access: bool
             Is the client allowed to attempt to reach this data
-        args: list
+        args: dict
             Passed when instantiating the plugin DataSource
         parameters: list
             UserParameters that can be set

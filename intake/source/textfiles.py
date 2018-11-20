@@ -58,6 +58,13 @@ class TextFilesSource(base.DataSource):
         self._get_schema()
         return self.to_dask().compute()
 
+    def to_spark(self):
+        from intake_spark.base import SparkHolder
+        h = SparkHolder(False, [
+            ('textFile', (self._urlpath, ))
+        ], {})
+        return h.setup()
+
     def to_dask(self):
         import dask.bag as db
         from dask import delayed

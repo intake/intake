@@ -215,7 +215,19 @@ class DataSource(object):
 
     def to_dask(self):
         """Return a dask container for this data source"""
-        pass
+        raise NotImplementedError
+
+    def to_spark(self):
+        """Provide an equivalent data object in Apache Spark
+
+        The mapping of python-oriented data containers to Spark ones will be
+        imperfect, and only a small number of drivers are expected to be able
+        to produce Spark objects. The standard arguments may b translated,
+        unsupported or ignored, depending on the specific driver.
+
+        This method requires the package intake-spark
+        """
+        raise NotImplementedError
 
     def close(self):
         """Close open resources corresponding to this data source."""
