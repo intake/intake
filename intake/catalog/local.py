@@ -604,7 +604,6 @@ class YAMLFilesCatalog(Catalog):
         self._kwargs = kwargs.copy()
         self._cat_files = []
         self._cats = {}
-        self.name = "multi_yamls"
         super(YAMLFilesCatalog, self).__init__(**kwargs)
 
     def _load(self):
