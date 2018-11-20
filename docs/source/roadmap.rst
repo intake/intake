@@ -31,10 +31,10 @@ Integration with Apache Spark
 The spark ecosystems and Intake will co-operate nicely! Firstly, Spark sources (i.e., named tables) will become
 standard data sources, so that the data can be streamed from Spark to a python process, and the data-sets referenced
 in a catalog as usual. These data-sets will necessarily be data-frame type, although an RDD-to-sequential method
-may also be possible
+may also be possible. See https://github.com/ContinuumIO/intake-spark
 
-Later, automatic streaming of data *into* Spark should be possible also, with a `to_spark()` method appearing on
-data-frame (and maybe sequence, later) type sources.
+Some sources will acquire a `to_spark()` method, translating the pythonic calls to something that can be
+passe to pyspark and giving back an RDD or DataFrame. See [PR](https://github.com/ContinuumIO/intake/pull/196).
 
 Derived Data-sets
 -----------------
