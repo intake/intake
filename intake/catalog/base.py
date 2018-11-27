@@ -198,8 +198,7 @@ class Catalog(DataSource):
 
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
-
-    def __init__(self, url, http_args={}, **kwargs):
+    def __init__(self, url, http_args={}, page_size=100, **kwargs):
         """Connect to remote Intake Server as a catalog
 
         Parameters
@@ -209,12 +208,16 @@ class RemoteCatalog(Catalog):
         http_args: dict
             Arguments to add to HTTP calls, including "ssl" (True/False) for
             secure connections.
+        page_size : int, optional
+            The number of entries fetched at a time during iteration.
+            Default is 100.
         kwargs: may include catalog name, metadata, source ID (if known) and
             auth instance.
         """
         self.http_args = http_args
         self.http_args.update(kwargs.get('storage_options', {}))
         self.http_args['headers'] = self.http_args.get('headers', {})
+        self.page_size = page_size
         self._source_id = kwargs.get('source_id', None)
         if self._source_id is None:
             secure = http_args.pop('ssl', False)
@@ -230,11 +233,10 @@ class RemoteCatalog(Catalog):
             self.info_url = url.replace('v1/source', 'v1/info')
         self.auth = kwargs.get('auth', None)  # instance of BaseClientAuth
 
-        PAGE_SIZE = 100
-
         def fetch_page(page_number):
             logger.debug("Request page %d of entries", page_number)
-            params = {'page[number]': page_number, 'page[size]': PAGE_SIZE}
+            params = {'page[number]': page_number,
+                      'page[size]': self.page_size}
             response = requests.get(self.info_url, params=params,
                                     **self._get_http_args())
             if response.status_code != 200:
