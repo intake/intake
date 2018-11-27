@@ -268,6 +268,9 @@ class RemoteCatalog(Catalog):
                 auth=self.auth,
                 http_args=self.http_args, **info['source'])
 
+        def server_can_paginate():
+            return self._server_can_paginate
+
         class Entries:
             """Mock enough of the dict interface.
 
@@ -292,6 +295,11 @@ class RemoteCatalog(Catalog):
             def items(self):
                 for item in six.iteritems(self._page_cache):
                     yield item
+                if not server_can_paginate():
+                    # We are talking to an older server, before pagination
+                    # support was added. It would have already sent us all its
+                    # entries, so we are done.
+                    return
                 # Fetch more entries from the server.
                 while True:
                     page = fetch_page(self._highest_page_fetched + 1)
@@ -324,6 +332,7 @@ class RemoteCatalog(Catalog):
                         return source
 
         self._entries = Entries()
+        self._server_can_paginate = True
         super(RemoteCatalog, self).__init__(self, **kwargs)
 
     def _get_http_args(self):
@@ -362,10 +371,13 @@ class RemoteCatalog(Catalog):
         # If the server respects the pagination parameters, info['sources']
         # should be empty. But if we have an old server, it will contain all
         # the entries and we should cache them now.
-        self._entries._page_cache.update({source['name']: RemoteCatalogEntry(
-                url=self.source_url,
-                getenv=self.getenv,
-                getshell=self.getshell,
-                auth=self.auth,
-                http_args=self.http_args, **source)
-                for source in info['sources']})
+        if info['sources']:
+            self._server_can_paginate = False
+            self._entries._page_cache.update(
+                {source['name']: RemoteCatalogEntry(
+                    url=self.source_url,
+                    getenv=self.getenv,
+                    getshell=self.getshell,
+                    auth=self.auth,
+                    http_args=self.http_args, **source)
+                 for source in info['sources']})
