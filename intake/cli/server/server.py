@@ -3,6 +3,7 @@ from __future__ import print_function
 import time
 from uuid import uuid4
 
+import itertools
 import logging
 import msgpack
 import pickle
@@ -84,13 +85,25 @@ class ServerInfoHandler(tornado.web.RequestHandler):
 
     def get(self):
         head = self.request.headers
+        page_size = self.get_argument('page[size]', None)
+        page_number = self.get_argument('page[number]', 1)
         if self.auth.allow_connect(head):
             if 'source_id' in head:
                 cat = self.cache.get(head['source_id'])
             else:
                 cat = self.catalog
             sources = []
-            for name, source in cat.walk(depth=1).items():
+            if page_size is None:
+                # Return all the results in one page. This is important for
+                # back-compat with clients that predate pagination. It may
+                # also be useful to keep things simple for clients that do not
+                # need pagination.
+                start = stop = None
+            else:
+                start = (int(page_number) - 1) * int(page_size)
+                stop = int(page_number) * int(page_size)
+            page = itertools.islice(cat.walk(depth=1).items(), start, stop)
+            for name, source in page:
                 if self.auth.allow_access(head, source, self.catalog):
                     info = source.describe()
                     info['name'] = name
@@ -159,6 +172,31 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         self._catalog = catalog
         self._cache = cache
         self.auth = auth
+
+    def get(self):
+        head = self.request.headers
+        name = self.get_argument('name')
+        if self.auth.allow_connect(head):
+            if 'source_id' in head:
+                cat = self._cache.get(head['source_id'])
+            else:
+                cat = self._catalog
+            try:
+                source = cat[name]
+            except KeyError:
+                msg = 'No such entry'
+                raise tornado.web.HTTPError(status_code=404, log_message=msg,
+                                            reason=msg)
+            if self.auth.allow_access(head, source, self._catalog):
+                info = source.describe()
+                info['name'] = name
+                source_info = dict(source=info)
+                self.write(msgpack.packb(source_info, use_bin_type=True))
+                return
+
+        msg = 'Access forbidden'
+        raise tornado.web.HTTPError(status_code=403, log_message=msg,
+                                    reason=msg)
 
     @tornado.gen.coroutine
     def post(self):
