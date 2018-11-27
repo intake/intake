@@ -169,16 +169,17 @@ class Catalog(DataSource):
         
         Can also use attribute syntax, like ``cat.entry_name``.
         """
-        if key in self._entries:
+        try:
             return self._entries[key]
-        out = self
-        for k in key.split('.'):
-            if isinstance(out, CatalogEntry):
-                out = out()  # default parameters
-            if not isinstance(out, Catalog):
-                raise ValueError("Attempt to recurse into non-catalog")
-            out = getattr(out, k)
-        return out
+        except KeyError:
+            out = self
+            for k in key.split('.'):
+                if isinstance(out, CatalogEntry):
+                    out = out()  # default parameters
+                if not isinstance(out, Catalog):
+                    raise ValueError("Attempt to recurse into non-catalog")
+                out = getattr(out, k)
+            return out
 
     def discover(self):
         return {"container": 'catalog', 'shape': None,
