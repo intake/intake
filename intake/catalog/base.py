@@ -217,7 +217,7 @@ class RemoteCatalog(Catalog):
         self.http_args = http_args
         self.http_args.update(kwargs.get('storage_options', {}))
         self.http_args['headers'] = self.http_args.get('headers', {})
-        self.page_size = page_size
+        self._page_size = page_size
         self._source_id = kwargs.get('source_id', None)
         if self._source_id is None:
             secure = http_args.pop('ssl', False)
@@ -236,7 +236,7 @@ class RemoteCatalog(Catalog):
         def fetch_page(page_number):
             logger.debug("Request page %d of entries", page_number)
             params = {'page[number]': page_number,
-                      'page[size]': self.page_size}
+                      'page[size]': self._page_size}
             response = requests.get(self.info_url, params=params,
                                     **self._get_http_args())
             if response.status_code != 200:
@@ -271,7 +271,11 @@ class RemoteCatalog(Catalog):
                 http_args=self.http_args, **info['source'])
 
         def server_can_paginate():
+            # a closure for use in entries, because we won't know the truth of
+            # this until after _load() is called
             return self._server_can_paginate
+
+        page_size = self._page_size
 
         class Entries:
             """Mock enough of the dict interface.
@@ -288,7 +292,13 @@ class RemoteCatalog(Catalog):
                 # so that iteration reflects the server's order, not an
                 # arbitrary cache order.
                 self._direct_lookup_cache = {}
-                self._highest_page_fetched = 0
+                self._page_number = 1
+
+            def reset(self):
+                "Clear caches to force a reload."
+                self._page_cache.clear()
+                self._direct_lookup_cache.clear()
+                self._page_number = 1
 
             def __iter__(self):
                 for key in self.keys():
@@ -303,14 +313,23 @@ class RemoteCatalog(Catalog):
                     # entries, so we are done.
                     return
                 # Fetch more entries from the server.
-                while True:
-                    page = fetch_page(self._highest_page_fetched + 1)
-                    self._highest_page_fetched += 1
-                    self._page_cache.update(page)
+                done = False
+                while not done:
+                    page = fetch_page(self._page_number)
                     if not page:
-                        # The server has no more entries (but it might next
-                        # time we check).
-                        break
+                        # Empty page. We are done until the next call to
+                        # items().
+                        done = True
+                    elif len(page) == page_size:
+                        # We have a complete page. Cache it and advance to the
+                        # next page.
+                        self._page_cache.update(page)
+                        self._page_number += 1
+                    else:
+                        # Partial page. We are done until the next call to
+                        # items(). Do not cache because we will start with this
+                        # page again next time to look for additional items.
+                        done = True
                     for item in six.iteritems(page):
                         yield item
 
@@ -370,6 +389,7 @@ class RemoteCatalog(Catalog):
                                                     response.status_code))
         info = msgpack.unpackb(response.content, encoding='utf-8')
         self.metadata = info['metadata']
+        self._entries.reset()
         # If the server respects the pagination parameters, info['sources']
         # should be empty. But if we have an old server, it will contain all
         # the entries and we should cache them now.
