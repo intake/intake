@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 import collections
+import json
 import logging
 import six
 import time
@@ -306,7 +307,7 @@ class Entries(dict):
 
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
-    def __init__(self, url, http_args={}, page_size=None, **kwargs):
+    def __init__(self, url, http_args={}, page_size=None, query=None, **kwargs):
         """Connect to remote Intake Server as a catalog
 
         Parameters
@@ -319,6 +320,10 @@ class RemoteCatalog(Catalog):
         page_size : int, optional
             The number of entries fetched at a time during iteration.
             Default is None (no pagination; fetch all entries in bulk).
+        query : Iterable or None
+            List from a sequence of progressive searches. Each element is
+            expected to be a valid argument to Catalog.search() for this
+            Catalog.
         kwargs: may include catalog name, metadata, source ID (if known) and
             auth instance.
         name : str, optional
@@ -341,10 +346,14 @@ class RemoteCatalog(Catalog):
             parameters to pass to remote backend file-system. Ignored for
             normal local files.
         """
+        self._url = url
         self.http_args = http_args
         self.http_args.update(kwargs.get('storage_options', {}))
         self.http_args['headers'] = self.http_args.get('headers', {})
         self._page_size = page_size
+        if query is None:
+            query = ()
+        self._query = tuple(query)
         self._source_id = kwargs.get('source_id', None)
         if self._source_id is None:
             secure = http_args.pop('ssl', False)
@@ -480,3 +489,10 @@ class RemoteCatalog(Catalog):
                     auth=self.auth,
                     http_args=self.http_args, **source)
                  for source in info['sources']})
+
+    def search(self, query):
+        # Return a new RemoteCatalog like this one in all respects except with
+        # this query appended to its list of queries.
+        return RemoteCatalog(url=self._url,
+                             http_args=self.http_args,
+                             query=self._query + (query,))

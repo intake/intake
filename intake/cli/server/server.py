@@ -10,6 +10,7 @@ import time
 from uuid import uuid4
 
 import itertools
+import json
 import logging
 import msgpack
 import tornado.gen
@@ -93,6 +94,7 @@ class ServerInfoHandler(tornado.web.RequestHandler):
         head = self.request.headers
         page_size = self.get_argument('page_size', None)
         page_offset = self.get_argument('page_offset', 0)
+        query_list = json.loads(self.get_argument('query', '[]'))
         if self.auth.allow_connect(head):
             if 'source_id' in head:
                 cat = self.cache.get(head['source_id'])
@@ -108,7 +110,18 @@ class ServerInfoHandler(tornado.web.RequestHandler):
             else:
                 start = int(page_offset)
                 stop = int(page_offset) + int(page_size)
-            page = itertools.islice(cat.walk(depth=1).items(), start, stop)
+            if query_list:
+                # This could be a search of a search of a serach (etc.).
+                # Progressively apply each search and then page through the
+                # final results.
+                refined_cat = cat
+                for query in query_list:
+                    refined_cat = refined_cat.search(query)
+                page = itertools.islice(
+                    refined_cat.walk(depth=1).items(), start, stop)
+            else:
+                # Page through all results.
+                page = itertools.islice(cat.walk(depth=1).items(), start, stop)
             for name, source in page:
                 if self.auth.allow_access(head, source, self.catalog):
                     info = source.describe()
