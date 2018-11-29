@@ -160,6 +160,15 @@ class Catalog(DataSource):
         """Return an iterator over catalog entries."""
         return iter(self._get_entries())
 
+    def __contains__(self, key):
+        # Avoid iterating through all entries.
+        try:
+            self[key]
+        except KeyError:
+            return False
+        else:
+            return True
+
     def __dir__(self):
         return list(self)
 
@@ -175,17 +184,16 @@ class Catalog(DataSource):
         
         Can also use attribute syntax, like ``cat.entry_name``.
         """
-        try:
+        if key in self._entries:
             return self._entries[key]
-        except KeyError:
-            out = self
-            for k in key.split('.'):
-                if isinstance(out, CatalogEntry):
-                    out = out()  # default parameters
-                if not isinstance(out, Catalog):
-                    raise ValueError("Attempt to recurse into non-catalog")
-                out = getattr(out, k)
-            return out
+        out = self
+        for k in key.split('.'):
+            if isinstance(out, CatalogEntry):
+                out = out()  # default parameters
+            if not isinstance(out, Catalog):
+                raise ValueError("Attempt to recurse into non-catalog")
+            out = getattr(out, k)
+        return out
 
     def discover(self):
         return {"container": 'catalog', 'shape': None,
@@ -303,6 +311,15 @@ class RemoteCatalog(Catalog):
             def __iter__(self):
                 for key in self.keys():
                     yield key
+
+            def __contains__(self, key):
+                # Avoid iterating through all entries.
+                try:
+                    self[key]
+                except KeyError:
+                    return False
+                else:
+                    return True
 
             def items(self):
                 for item in six.iteritems(self._page_cache):

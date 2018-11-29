@@ -246,6 +246,10 @@ def test_pagination(intake_server):
     catalog['arr']
     assert len(catalog._entries._page_cache) == 0
     assert len(catalog._entries._direct_lookup_cache) == 1
+    # Using `in` on a Catalog should not iterate.
+    'arr' in catalog
+    assert len(catalog._entries._page_cache) == 0
+    assert len(catalog._entries._direct_lookup_cache) == 1
     # Trigger fetching just one full page.
     list(zip(range(PAGE_SIZE), catalog))
     assert len(catalog._entries._page_cache) == PAGE_SIZE
