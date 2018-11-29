@@ -87,7 +87,6 @@ class ServerInfoHandler(tornado.web.RequestHandler):
         head = self.request.headers
         page_size = self.get_argument('page_size', None)
         page_offset = self.get_argument('page_offset', 0)
-        print('page_size', page_size, 'page_offset', page_offset)
         if self.auth.allow_connect(head):
             if 'source_id' in head:
                 cat = self.cache.get(head['source_id'])

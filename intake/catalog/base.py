@@ -246,10 +246,10 @@ class Entries(dict):
     def items(self):
         for item in six.iteritems(self._page_cache):
             yield item
-        if not self._catalog.server_can_paginate:
-            # We are talking to an older server, before pagination
-            # support was added. It would have already sent us all its
-            # entries, so we are done.
+        if self._catalog.page_size is None:
+            # We are not paginating, either because the user set page_size=None
+            # or the server is a version of intake before pagination parameters
+            # were added.
             return
         # Fetch more entries from the server.
         while True:
@@ -285,7 +285,7 @@ class Entries(dict):
 
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
-    def __init__(self, url, http_args={}, page_size=100, **kwargs):
+    def __init__(self, url, http_args={}, page_size=None, **kwargs):
         """Connect to remote Intake Server as a catalog
 
         Parameters
@@ -297,7 +297,7 @@ class RemoteCatalog(Catalog):
             secure connections.
         page_size : int, optional
             The number of entries fetched at a time during iteration.
-            Default is 100.
+            Default is None (no pagination; fetch all entries in bulk).
         kwargs: may include catalog name, metadata, source ID (if known) and
             auth instance.
         """
@@ -319,7 +319,6 @@ class RemoteCatalog(Catalog):
             self.source_url = url
             self.info_url = url.replace('v1/source', 'v1/info')
         self.auth = kwargs.get('auth', None)  # instance of BaseClientAuth
-        self.server_can_paginate = True
         super(RemoteCatalog, self).__init__(self, **kwargs)
 
     def _make_entries_container(self):
@@ -398,8 +397,12 @@ class RemoteCatalog(Catalog):
         # is iterated over. It will fetch specific sources when they are
         # accessed in this Catalog via __getitem__.
 
-        # Just fetch the metadata.
-        params = {'page_offset': 0, 'page_size': 0}
+        if self.page_size is None:
+            # Fetch all source info.
+            params = {}
+        else:
+            # Just fetch the metadata now; fetch source info later in pages.
+            params = {'page_offset': 0, 'page_size': 0}
         response = requests.get(self.info_url, params=params,
                                 **self._get_http_args())
         try:
@@ -410,11 +413,14 @@ class RemoteCatalog(Catalog):
         info = msgpack.unpackb(response.content, encoding='utf-8')
         self.metadata = info['metadata']
         self._entries.reset()
-        # If the server respects the pagination parameters, info['sources']
-        # should be empty. But if we have an old server, it will contain all
-        # the entries and we should cache them now.
+        # If we are paginating (page_size is not None) and the server we are
+        # working with is new enough to support pagination, info['sources']
+        # should be empty. If either of those things is not true,
+        # info['sources'] will contain all the entries and we should cache them
+        # now.
         if info['sources']:
-            self.server_can_paginate = False
+            # Signal that we are not paginating, even if we were asked to.
+            self._page_size = None
             self._entries._page_cache.update(
                 {source['name']: RemoteCatalogEntry(
                     url=self.source_url,
