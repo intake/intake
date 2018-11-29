@@ -291,7 +291,7 @@ class RemoteCatalog(Catalog):
 
         page_size = self._page_size
 
-        class Entries:
+        class Entries(dict):
             """Mock enough of the dict interface.
 
             This fetches pages of entries from the server during iteration and
