@@ -241,10 +241,11 @@ class RemoteCatalog(Catalog):
             self.info_url = url.replace('v1/source', 'v1/info')
         self.auth = kwargs.get('auth', None)  # instance of BaseClientAuth
 
-        def fetch_page(page_number):
-            logger.debug("Request page %d of entries", page_number)
-            params = {'page[number]': page_number,
-                      'page[size]': self._page_size}
+        def fetch_page(page_offset):
+            logger.debug("Request page entries %d-%d",
+                         page_offset, page_offset + page_size)
+            params = {'page_offset': page_offset,
+                      'page_size': page_size}
             response = requests.get(self.info_url, params=params,
                                     **self._get_http_args())
             # Produce a chained exception with both the underlying HTTPError
@@ -253,7 +254,8 @@ class RemoteCatalog(Catalog):
                 response.raise_for_status()
             except requests.HTTPError:
                 raise RemoteCatalogError(
-                    "Failed to fetch page of entries.")
+                    "Failed to fetch page of entries {}-{}."
+                    "".format(page_offset, page_offset + page_size))
             info = msgpack.unpackb(response.content, encoding='utf-8')
             page = {source['name']: RemoteCatalogEntry(
                 url=self.source_url,
@@ -306,13 +308,13 @@ class RemoteCatalog(Catalog):
                 # so that iteration reflects the server's order, not an
                 # arbitrary cache order.
                 self._direct_lookup_cache = {}
-                self._page_number = 1
+                self._page_offset = 0
 
             def reset(self):
                 "Clear caches to force a reload."
                 self._page_cache.clear()
                 self._direct_lookup_cache.clear()
-                self._page_number = 1
+                self._page_offset = 0
 
             def __iter__(self):
                 for key in self.keys():
@@ -336,25 +338,18 @@ class RemoteCatalog(Catalog):
                     # entries, so we are done.
                     return
                 # Fetch more entries from the server.
-                done = False
-                while not done:
-                    page = fetch_page(self._page_number)
-                    if not page:
-                        # Empty page. We are done until the next call to
-                        # items().
-                        done = True
-                    elif len(page) == page_size:
-                        # We have a complete page. Cache it and advance to the
-                        # next page.
-                        self._page_cache.update(page)
-                        self._page_number += 1
-                    else:
-                        # Partial page. We are done until the next call to
-                        # items(). Do not cache because we will start with this
-                        # page again next time to look for additional items.
-                        done = True
+                while True:
+                    print('fetch with offset', self._page_offset)
+                    page = fetch_page(self._page_offset)
+                    self._page_cache.update(page)
+                    self._page_offset += len(page)
                     for item in six.iteritems(page):
                         yield item
+                    if len(page) < page_size:
+                        # Partial or empty page.
+                        # We are done until the next call to items(), when we
+                        # will resume at the offset where we left off.
+                        break
 
             def keys(self):
                 for key, value in self.items():
@@ -404,7 +399,7 @@ class RemoteCatalog(Catalog):
         # accessed in this Catalog via __getitem__.
 
         # Just fetch the metadata.
-        params = {'page[number]': 1, 'page[size]': 0}
+        params = {'page_offset': 0, 'page_size': 0}
         response = requests.get(self.info_url, params=params,
                                 **self._get_http_args())
         try:

@@ -85,8 +85,9 @@ class ServerInfoHandler(tornado.web.RequestHandler):
 
     def get(self):
         head = self.request.headers
-        page_size = self.get_argument('page[size]', None)
-        page_number = self.get_argument('page[number]', 1)
+        page_size = self.get_argument('page_size', None)
+        page_offset = self.get_argument('page_offset', 0)
+        print('page_size', page_size, 'page_offset', page_offset)
         if self.auth.allow_connect(head):
             if 'source_id' in head:
                 cat = self.cache.get(head['source_id'])
@@ -100,8 +101,8 @@ class ServerInfoHandler(tornado.web.RequestHandler):
                 # need pagination.
                 start = stop = None
             else:
-                start = (int(page_number) - 1) * int(page_size)
-                stop = int(page_number) * int(page_size)
+                start = int(page_offset)
+                stop = int(page_offset) + int(page_size)
             page = itertools.islice(cat.walk(depth=1).items(), start, stop)
             for name, source in page:
                 if self.auth.allow_access(head, source, self.catalog):
