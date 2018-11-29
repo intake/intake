@@ -251,7 +251,7 @@ class RemoteCatalog(Catalog):
             # and our own more direct context.
             try:
                 response.raise_for_status()
-            except HTTPError:
+            except requests.HTTPError:
                 raise RemoteCatalogError(
                     "Failed to fetch page of entries.")
             info = msgpack.unpackb(response.content, encoding='utf-8')
@@ -273,7 +273,7 @@ class RemoteCatalog(Catalog):
                 raise KeyError(name)
             try:
                 response.raise_for_status()
-            except HTTPError:
+            except requests.HTTPError:
                 raise RemoteCatalogError(
                     "Failed to fetch entry {!r}.".format(name))
             info = msgpack.unpackb(response.content, encoding='utf-8')
@@ -409,7 +409,7 @@ class RemoteCatalog(Catalog):
                                 **self._get_http_args())
         try:
             response.raise_for_status()
-        except HTTPError:
+        except requests.HTTPError:
             raise RemoteCatalogError(
                 "Failed to fetch metadata {!r}.".format(name))
         info = msgpack.unpackb(response.content, encoding='utf-8')
