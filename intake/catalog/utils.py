@@ -155,3 +155,7 @@ def coerce(dtype, value):
         return value
     op = COERCION_RULES[dtype]
     return op() if value is None else op(value)
+
+
+class RemoteCatalogError(Exception):
+    pass

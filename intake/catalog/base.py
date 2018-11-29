@@ -10,7 +10,7 @@ from requests.compat import urljoin, urlparse
 from ..auth.base import BaseClientAuth
 from .entry import CatalogEntry
 from .remote import RemoteCatalogEntry
-from .utils import flatten, reload_on_change
+from .utils import flatten, reload_on_change, RemoteCatalogError
 from ..source.base import DataSource
 logger = logging.getLogger('intake')
 
@@ -247,9 +247,13 @@ class RemoteCatalog(Catalog):
                       'page[size]': self._page_size}
             response = requests.get(self.info_url, params=params,
                                     **self._get_http_args())
-            if response.status_code != 200:
-                raise Exception('%s: status code %d' % (response.url,
-                                                        response.status_code))
+            # Produce a chained exception with both the underlying HTTPError
+            # and our own more direct context.
+            try:
+                response.raise_for_status()
+            except HTTPError:
+                raise RemoteCatalogError(
+                    "Failed to fetch page of entries.")
             info = msgpack.unpackb(response.content, encoding='utf-8')
             page = {source['name']: RemoteCatalogEntry(
                 url=self.source_url,
@@ -267,9 +271,11 @@ class RemoteCatalog(Catalog):
                                     **self._get_http_args())
             if response.status_code == 404:
                 raise KeyError(name)
-            if response.status_code != 200:
-                raise Exception('%s: status code %d' % (response.url,
-                                                        response.status_code))
+            try:
+                response.raise_for_status()
+            except HTTPError:
+                raise RemoteCatalogError(
+                    "Failed to fetch entry {!r}.".format(name))
             info = msgpack.unpackb(response.content, encoding='utf-8')
             return RemoteCatalogEntry(
                 url=self.source_url,
@@ -401,9 +407,11 @@ class RemoteCatalog(Catalog):
         params = {'page[number]': 1, 'page[size]': 0}
         response = requests.get(self.info_url, params=params,
                                 **self._get_http_args())
-        if response.status_code != 200:
-            raise Exception('%s: status code %d' % (response.url,
-                                                    response.status_code))
+        try:
+            response.raise_for_status()
+        except HTTPError:
+            raise RemoteCatalogError(
+                "Failed to fetch metadata {!r}.".format(name))
         info = msgpack.unpackb(response.content, encoding='utf-8')
         self.metadata = info['metadata']
         self._entries.reset()
