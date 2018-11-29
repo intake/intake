@@ -381,7 +381,8 @@ class RemoteCatalog(Catalog):
         logger.debug("Request page entries %d-%d",
                      page_offset, page_offset + self._page_size)
         params = {'page_offset': page_offset,
-                  'page_size': self._page_size}
+                  'page_size': self._page_size,
+                  'query': json.dumps(self._query)}
         http_args = self._get_http_args(params)
         response = requests.get(self.info_url, **http_args)
         # Produce a chained exception with both the underlying HTTPError
@@ -406,7 +407,7 @@ class RemoteCatalog(Catalog):
 
     def fetch_by_name(self, name):
         logger.debug("Requesting info about entry named '%s'", name)
-        params = {'name': name}
+        params = {'name': name, 'query': json.dumps(self._query)}
         http_args = self._get_http_args(params)
         response = requests.get(self.source_url, **http_args)
         if response.status_code == 404:
@@ -459,7 +460,7 @@ class RemoteCatalog(Catalog):
 
         if self.page_size is None:
             # Fetch all source info.
-            params = {}
+            params = {'query': json.dumps(self._query)}
         else:
             # Just fetch the metadata now; fetch source info later in pages.
             params = {'page_offset': 0, 'page_size': 0}
