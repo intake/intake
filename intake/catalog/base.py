@@ -75,12 +75,15 @@ class Catalog(DataSource):
             args = args[0]
         self.args = args
         self.updated = time.time()
-        # Allow the subclass to have set self._entries to some other dict-like
-        # object *before* this is run so that the last thing to happen is
-        # force_reload().
-        if getattr(self, '_entries', None) is None:
-            self._entries = {}
+        self._entries = self._make_entries_container()
         self.force_reload()
+
+    def _make_entries_container(self):
+        """Subclasses may override this to return some other dict-like.
+
+        See RemoteCatalog below for the motivating example for this hook.
+        """
+        return {}
 
     def _load(self):
         """Override this: load catalog entries"""
@@ -317,8 +320,10 @@ class RemoteCatalog(Catalog):
             self.info_url = url.replace('v1/source', 'v1/info')
         self.auth = kwargs.get('auth', None)  # instance of BaseClientAuth
         self.server_can_paginate = True
-        self._entries = Entries(self)
         super(RemoteCatalog, self).__init__(self, **kwargs)
+
+    def _make_entries_container(self):
+        return Entries(self)
 
     @property
     def page_size(self):
