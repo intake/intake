@@ -409,7 +409,7 @@ class RemoteCatalog(Catalog):
             response.raise_for_status()
         except requests.HTTPError:
             raise RemoteCatalogError(
-                "Failed to fetch metadata {!r}.".format(name))
+                "Failed to fetch metadata.")
         info = msgpack.unpackb(response.content, encoding='utf-8')
         self.metadata = info['metadata']
         self._entries.reset()
