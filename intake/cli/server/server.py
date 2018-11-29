@@ -202,11 +202,19 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         """
         head = self.request.headers
         name = self.get_argument('name')
+        query_list = json.loads(self.get_argument('query', '[]'))
         if self.auth.allow_connect(head):
             if 'source_id' in head:
                 cat = self._cache.get(head['source_id'])
             else:
                 cat = self._catalog
+            if query_list:
+                # This could be a search of a search of a serach (etc.).
+                # Progressively apply each search and then page through the
+                # final results.
+                cat = cat
+                for query in query_list:
+                    cat = cat.search(query)
             try:
                 # This would ideally be cat[name] and not access the interal
                 # structure cat._entries. However in the case of a client
