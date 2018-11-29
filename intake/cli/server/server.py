@@ -174,6 +174,13 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         self.auth = auth
 
     def get(self):
+        """
+        Access one source's info.
+
+        This is for direct access to an entry by name for random access, which
+        is useful to the client when the whole catalog has not first been
+        listed and pulled locally (e.g., in the case of pagination).
+        """
         head = self.request.headers
         name = self.get_argument('name')
         if self.auth.allow_connect(head):
