@@ -203,6 +203,82 @@ class Catalog(DataSource):
         # TODO: maybe close all entries?
         pass
 
+class Entries(dict):
+    """Fetches entries from server on item lookup and iteration.
+
+    This fetches pages of entries from the server during iteration and
+    caches them. On __getitem__ it fetches the sepcific entry from the
+    server.
+    """
+    # This has PY3-style lazy methods (keys, values, items). Since it's
+    # internal we should not need the PY2-only iter* variants.
+    def __init__(self, catalog):
+        self._catalog = catalog
+        self._page_cache = collections.OrderedDict()
+        # Put lookups that were due to __getitem__ in a separate cache
+        # so that iteration reflects the server's order, not an
+        # arbitrary cache order.
+        self._direct_lookup_cache = {}
+        self._page_offset = 0
+
+    def reset(self):
+        "Clear caches to force a reload."
+        self._page_cache.clear()
+        self._direct_lookup_cache.clear()
+        self._page_offset = 0
+
+    def __iter__(self):
+        for key in self.keys():
+            yield key
+
+    def __contains__(self, key):
+        # Avoid iterating through all entries.
+        try:
+            self[key]
+        except KeyError:
+            return False
+        else:
+            return True
+
+    def items(self):
+        for item in six.iteritems(self._page_cache):
+            yield item
+        if not self._catalog.server_can_paginate:
+            # We are talking to an older server, before pagination
+            # support was added. It would have already sent us all its
+            # entries, so we are done.
+            return
+        # Fetch more entries from the server.
+        while True:
+            page = self._catalog.fetch_page(self._page_offset)
+            self._page_cache.update(page)
+            self._page_offset += len(page)
+            for item in six.iteritems(page):
+                yield item
+            if len(page) < self._catalog.page_size:
+                # Partial or empty page.
+                # We are done until the next call to items(), when we
+                # will resume at the offset where we left off.
+                break
+
+    def keys(self):
+        for key, value in self.items():
+            yield key
+
+    def values(self):
+        for key, value in self.items():
+            yield value
+
+    def __getitem__(self, key):
+        try:
+            return self._direct_lookup_cache[key]
+        except KeyError:
+            try:
+                return self._page_cache[key]
+            except KeyError:
+                source = self._catalog.fetch_by_name(key)
+                self._direct_lookup_cache[key] = source
+                return source
 
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
@@ -240,139 +316,58 @@ class RemoteCatalog(Catalog):
             self.source_url = url
             self.info_url = url.replace('v1/source', 'v1/info')
         self.auth = kwargs.get('auth', None)  # instance of BaseClientAuth
-
-        def fetch_page(page_offset):
-            logger.debug("Request page entries %d-%d",
-                         page_offset, page_offset + page_size)
-            params = {'page_offset': page_offset,
-                      'page_size': page_size}
-            response = requests.get(self.info_url, params=params,
-                                    **self._get_http_args())
-            # Produce a chained exception with both the underlying HTTPError
-            # and our own more direct context.
-            try:
-                response.raise_for_status()
-            except requests.HTTPError:
-                raise RemoteCatalogError(
-                    "Failed to fetch page of entries {}-{}."
-                    "".format(page_offset, page_offset + page_size))
-            info = msgpack.unpackb(response.content, encoding='utf-8')
-            page = {source['name']: RemoteCatalogEntry(
-                url=self.source_url,
-                getenv=self.getenv,
-                getshell=self.getshell,
-                auth=self.auth,
-                http_args=self.http_args, **source)
-                for source in info['sources']}
-            return page
-
-        def fetch_by_name(name):
-            logger.debug("Requesting info about entry named '%s'", name)
-            params = {'name': name}
-            response = requests.get(self.source_url, params=params,
-                                    **self._get_http_args())
-            if response.status_code == 404:
-                raise KeyError(name)
-            try:
-                response.raise_for_status()
-            except requests.HTTPError:
-                raise RemoteCatalogError(
-                    "Failed to fetch entry {!r}.".format(name))
-            info = msgpack.unpackb(response.content, encoding='utf-8')
-            return RemoteCatalogEntry(
-                url=self.source_url,
-                getenv=self.getenv,
-                getshell=self.getshell,
-                auth=self.auth,
-                http_args=self.http_args, **info['source'])
-
-        def server_can_paginate():
-            # a closure for use in entries, because we won't know the truth of
-            # this until after _load() is called
-            return self._server_can_paginate
-
-        page_size = self._page_size
-
-        class Entries(dict):
-            """Mock enough of the dict interface.
-
-            This fetches pages of entries from the server during iteration and
-            caches them. On __getitem__ it fetches the sepcific entry from the
-            server.
-            """
-            # This has PY3-style lazy methods (keys, values, items). Since it's
-            # internal we should not need the PY2-only iter* variants.
-            def __init__(self):
-                self._page_cache = collections.OrderedDict()
-                # Put lookups that were due to __getitem__ in a separate cache
-                # so that iteration reflects the server's order, not an
-                # arbitrary cache order.
-                self._direct_lookup_cache = {}
-                self._page_offset = 0
-
-            def reset(self):
-                "Clear caches to force a reload."
-                self._page_cache.clear()
-                self._direct_lookup_cache.clear()
-                self._page_offset = 0
-
-            def __iter__(self):
-                for key in self.keys():
-                    yield key
-
-            def __contains__(self, key):
-                # Avoid iterating through all entries.
-                try:
-                    self[key]
-                except KeyError:
-                    return False
-                else:
-                    return True
-
-            def items(self):
-                for item in six.iteritems(self._page_cache):
-                    yield item
-                if not server_can_paginate():
-                    # We are talking to an older server, before pagination
-                    # support was added. It would have already sent us all its
-                    # entries, so we are done.
-                    return
-                # Fetch more entries from the server.
-                while True:
-                    print('fetch with offset', self._page_offset)
-                    page = fetch_page(self._page_offset)
-                    self._page_cache.update(page)
-                    self._page_offset += len(page)
-                    for item in six.iteritems(page):
-                        yield item
-                    if len(page) < page_size:
-                        # Partial or empty page.
-                        # We are done until the next call to items(), when we
-                        # will resume at the offset where we left off.
-                        break
-
-            def keys(self):
-                for key, value in self.items():
-                    yield key
-
-            def values(self):
-                for key, value in self.items():
-                    yield value
-
-            def __getitem__(self, key):
-                try:
-                    return self._direct_lookup_cache[key]
-                except KeyError:
-                    try:
-                        return self._page_cache[key]
-                    except KeyError:
-                        source = fetch_by_name(key)
-                        self._direct_lookup_cache[key] = source
-                        return source
-
-        self._entries = Entries()
-        self._server_can_paginate = True
+        self.server_can_paginate = True
+        self._entries = Entries(self)
         super(RemoteCatalog, self).__init__(self, **kwargs)
+
+    @property
+    def page_size(self):
+        return self._page_size
+
+    def fetch_page(self, page_offset):
+        logger.debug("Request page entries %d-%d",
+                     page_offset, page_offset + self._page_size)
+        params = {'page_offset': page_offset,
+                  'page_size': self._page_size}
+        response = requests.get(self.info_url, params=params,
+                                **self._get_http_args())
+        # Produce a chained exception with both the underlying HTTPError
+        # and our own more direct context.
+        try:
+            response.raise_for_status()
+        except requests.HTTPError:
+            raise RemoteCatalogError(
+                "Failed to fetch page of entries {}-{}."
+                "".format(page_offset, page_offset + self._page_size))
+        info = msgpack.unpackb(response.content, encoding='utf-8')
+        page = {source['name']: RemoteCatalogEntry(
+            url=self.source_url,
+            getenv=self.getenv,
+            getshell=self.getshell,
+            auth=self.auth,
+            http_args=self.http_args, **source)
+            for source in info['sources']}
+        return page
+
+    def fetch_by_name(self, name):
+        logger.debug("Requesting info about entry named '%s'", name)
+        params = {'name': name}
+        response = requests.get(self.source_url, params=params,
+                                **self._get_http_args())
+        if response.status_code == 404:
+            raise KeyError(name)
+        try:
+            response.raise_for_status()
+        except requests.HTTPError:
+            raise RemoteCatalogError(
+                "Failed to fetch entry {!r}.".format(name))
+        info = msgpack.unpackb(response.content, encoding='utf-8')
+        return RemoteCatalogEntry(
+            url=self.source_url,
+            getenv=self.getenv,
+            getshell=self.getshell,
+            auth=self.auth,
+            http_args=self.http_args, **info['source'])
 
     def _get_http_args(self):
         """
@@ -414,7 +409,7 @@ class RemoteCatalog(Catalog):
         # should be empty. But if we have an old server, it will contain all
         # the entries and we should cache them now.
         if info['sources']:
-            self._server_can_paginate = False
+            self.server_can_paginate = False
             self._entries._page_cache.update(
                 {source['name']: RemoteCatalogEntry(
                     url=self.source_url,
