@@ -1,15 +1,22 @@
 import os
 import os.path
+
+import pytest
+import requests
+import shutil
+import subprocess
 import time
 
 from tornado.ioloop import IOLoop
 from tornado.testing import AsyncHTTPTestCase
 import msgpack
 
-from intake import Catalog
+from intake import Catalog, open_catalog
 from intake.container.serializer import MsgPackSerializer, GzipCompressor
 from intake.cli.server.server import IntakeServer
 from intake.compat import unpack_kwargs
+
+catalog_file = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
 
 class TestServerV1Base(AsyncHTTPTestCase):
@@ -210,3 +217,34 @@ class TestServerV1Source(TestServerV1Base):
         # source should be gone
         with self.assertRaises(KeyError):
             self.server._cache.peek(source_id)
+
+
+
+@pytest.fixture()
+def multi_server(tmpdir):
+    fn1 = os.path.join(tmpdir, 'cat1.yaml')
+    os.link(catalog_file, fn1)
+    fn2 = os.path.join(tmpdir, 'cat2.yaml')
+    os.link(catalog_file, fn2)
+
+    P = subprocess.Popen(['intake-server', fn1, fn2, '--no-flatten'])
+    t = time.time()
+    while True:
+        try:
+            requests.get('http://localhost:5000')
+            try:
+                yield 'intake://localhost:5000'
+            finally:
+                P.terminate()
+                P.wait()
+                shutil.rmtree(tmpdir)
+            break
+        except:
+            time.sleep(0.2)
+            assert time.time() - t < 10
+
+
+def test_flatten_flag(multi_server):
+    cat = open_catalog(multi_server)
+    assert list(cat) == ['cat1', 'cat2']
+    assert 'use_example1' in cat.cat1()
