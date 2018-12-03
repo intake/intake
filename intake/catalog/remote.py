@@ -28,6 +28,7 @@ class RemoteCatalogEntry(CatalogEntry):
         self.kwargs = kwargs
         self._description = self.kwargs.get('description', "")
         self._metadata = self.kwargs.get('metatata', {})
+        self._page_size = self.kwargs.get('page_size', None)
         getenv = kwargs.pop('getenv', True)
         getshell = kwargs.pop('getshell', True)
         self.http_args = kwargs.pop('http_args', {}).copy()
@@ -64,11 +65,13 @@ class RemoteCatalogEntry(CatalogEntry):
         return open_remote(
             self.url, entry['name'], container=entry['container'],
             user_parameters=user_parameters, description=entry['description'],
-            http_args=http_args
+            http_args=http_args,
+            page_size=self._page_size
             )
 
 
-def open_remote(url, entry, container, user_parameters, description, http_args):
+def open_remote(url, entry, container, user_parameters, description, http_args,
+                page_size=None):
     """Create either local direct data source or remote streamed source"""
     from intake.container import container_map
     if url.startswith('intake://'):
@@ -87,6 +90,9 @@ def open_remote(url, entry, container, user_parameters, description, http_args):
             source = plugin_registry[response['plugin']](**response['args'])
         else:
             # Proxied access
+            if container == 'catalog':
+                # Propage the page_size setting into nested Catalogs.
+                response['page_size'] = page_size
             source = container_map[container](
                 url, http_args, parameters=user_parameters,
                 name=entry, **response)

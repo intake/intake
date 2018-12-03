@@ -349,7 +349,9 @@ class RemoteCatalog(Catalog):
             getenv=self.getenv,
             getshell=self.getshell,
             auth=self.auth,
-            http_args=self.http_args, **source)
+            http_args=self.http_args,
+            page_size=self._page_size,
+            **source)
             for source in info['sources']}
         return page
 
@@ -371,7 +373,9 @@ class RemoteCatalog(Catalog):
             getenv=self.getenv,
             getshell=self.getshell,
             auth=self.auth,
-            http_args=self.http_args, **info['source'])
+            http_args=self.http_args,
+            page_size=self._page_size,
+            **info['source'])
 
     def _get_http_args(self):
         """
