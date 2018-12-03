@@ -7,6 +7,7 @@
 
 import msgpack
 import requests
+from requests.compat import urljoin
 import six
 
 from ..source import registry as plugin_registry
@@ -90,8 +91,9 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
                    name=entry,
                    parameters=user_parameters,
                    available_plugins=list(plugin_registry.keys()))
-    req = requests.post(url, data=msgpack.packb(
-        payload, use_bin_type=True), **http_args)
+    req = requests.post(urljoin(url, '/v1/source'),
+                        data=msgpack.packb(payload, use_bin_type=True),
+                        **http_args)
     if req.ok:
         response = msgpack.unpackb(req.content, **unpack_kwargs)
 

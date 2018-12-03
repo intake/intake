@@ -346,7 +346,12 @@ class RemoteCatalog(Catalog):
             parameters to pass to remote backend file-system. Ignored for
             normal local files.
         """
-        self._url = url
+        secure = http_args.pop('ssl', False)
+        scheme = 'https' if secure else 'http'
+        url = url.replace('intake', scheme)
+        if not url.endswith('/'):
+            url = url + '/'
+        self.url = url
         self.http_args = http_args
         self.http_args.update(kwargs.get('storage_options', {}))
         self.http_args['headers'] = self.http_args.get('headers', {})
@@ -356,17 +361,14 @@ class RemoteCatalog(Catalog):
         self._query = tuple(query)
         self._source_id = kwargs.get('source_id', None)
         if self._source_id is None:
-            secure = http_args.pop('ssl', False)
-            scheme = 'https' if secure else 'http'
-            base_url = url.replace('intake', scheme) + '/'
-            self.info_url = urljoin(base_url, 'v1/info')
-            self.source_url = urljoin(base_url, 'v1/source')
-            self.name = urlparse(base_url).netloc.replace(
+            self.info_url = urljoin(url, 'v1/info')
+            self.source_url = urljoin(url, 'v1/source')
+            self.name = urlparse(url).netloc.replace(
                 '.', '_').replace(':', '_')
         else:
             self.name = kwargs['name']
-            self.source_url = url
-            self.info_url = url.replace('v1/source', 'v1/info')
+            self.info_url = urljoin(url, 'v1/info')
+            self.source_url = urljoin(url, 'v1/source')
         self.auth = kwargs.get('auth', None)  # instance of BaseClientAuth
         super(RemoteCatalog, self).__init__(self, **kwargs)
 
@@ -395,7 +397,7 @@ class RemoteCatalog(Catalog):
                 "".format(page_offset, page_offset + self._page_size))
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         page = {source['name']: RemoteCatalogEntry(
-            url=self.source_url,
+            url=self.url,
             getenv=self.getenv,
             getshell=self.getshell,
             auth=self.auth,
@@ -419,7 +421,7 @@ class RemoteCatalog(Catalog):
                 "Failed to fetch entry {!r}.".format(name))
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         return RemoteCatalogEntry(
-            url=self.source_url,
+            url=self.url,
             getenv=self.getenv,
             getshell=self.getshell,
             auth=self.auth,
@@ -484,7 +486,7 @@ class RemoteCatalog(Catalog):
             self._page_size = None
             self._entries._page_cache.update(
                 {source['name']: RemoteCatalogEntry(
-                    url=self.source_url,
+                    url=self.url,
                     getenv=self.getenv,
                     getshell=self.getshell,
                     auth=self.auth,
@@ -494,6 +496,6 @@ class RemoteCatalog(Catalog):
     def search(self, query):
         # Return a new RemoteCatalog like this one in all respects except with
         # this query appended to its list of queries.
-        return RemoteCatalog(url=self._url,
+        return RemoteCatalog(url=self.url,
                              http_args=self.http_args,
                              query=self._query + (query,))
