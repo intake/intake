@@ -91,7 +91,7 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
         else:
             # Proxied access
             if container == 'catalog':
-                # Propage the page_size setting into nested Catalogs.
+                # Propagate the page_size setting into nested Catalogs.
                 response['page_size'] = page_size
             source = container_map[container](
                 url, http_args, parameters=user_parameters,
