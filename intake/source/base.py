@@ -200,9 +200,7 @@ class DataSource(object):
             yield self._get_partition(i)
 
     def read_partition(self, i):
-        """Return a (offset_tuple, container) corresponding to i-th partition.
-
-        Offset tuple is of same length as shape.
+        """Return a part of the data corresponding to i-th partition.
 
         By default, assumes i should be an integer between zero and npartitions;
         override for more complex indexing schemes.

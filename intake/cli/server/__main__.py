@@ -19,7 +19,7 @@ def call_exit_on_sigterm(signal, frame):
 
 def main(argv=None):
     from intake.config import conf
-    from intake import Catalog
+    from intake import open_catalog
 
     if argv is None:
         argv = sys.argv
@@ -28,9 +28,13 @@ def main(argv=None):
     parser.add_argument('-p', '--port', type=int, default=conf['port'],
                         help='port number for server to listen on')
     parser.add_argument('--sys-exit-on-sigterm', action='store_true',
-                        help='internal flag used during unit testing to ensure .coverage file is written')
+                        help='internal flag used during unit testing to ensure '
+                             '.coverage file is written')
     parser.add_argument('catalog_args', metavar='FILE', type=str, nargs='+',
                         help='Name of catalog YAML file')
+    parser.add_argument('--flatten', dest='flatten', action='store_true')
+    parser.add_argument('--no-flatten', dest='flatten', action='store_false')
+    parser.set_defaults(flatten=True)
     args = parser.parse_args(argv[1:])
 
     if args.sys_exit_on_sigterm:
@@ -43,7 +47,7 @@ def main(argv=None):
     catargs = args.catalog_args
     catargs = catargs[0] if len(catargs) == 1 else catargs
     logger.info("catalog_args: %s" % catargs)
-    catalog = Catalog(catargs)
+    catalog = open_catalog(catargs, flatten=args.flatten)
 
     logger.info('Entries:' + ','.join(list(catalog)))
 
