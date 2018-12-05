@@ -1,3 +1,10 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 import os
 import pytest
 import shutil
@@ -19,7 +26,7 @@ def test_load_csv(catalog_cache):
 
     cache_paths = cache.load(cat._urlpath, output=False)
     cache_path = cache_paths[-1]
-    
+
     assert cache._cache_dir in cache_path
     assert os.path.isfile(cache_path)
 
@@ -36,7 +43,7 @@ def test_bad_type_cache(catalog_cache):
 
     cache_paths = cache.load(cat._urlpath, output=False)
     cache_path = cache_paths[-1]
-    
+
     assert cache._cache_dir in cache_path
     assert os.path.isfile(cache_path)
 
@@ -53,7 +60,7 @@ def test_load_textfile(catalog_cache):
 
     cache_paths = cache.load(cat._urlpath, output=False)
     cache_path = cache_paths[-1]
-    
+
     assert cache._cache_dir in cache_path
     assert os.path.isfile(cache_path)
 
@@ -70,7 +77,7 @@ def test_load_arr(catalog_cache):
 
     cache_paths = cache.load(cat.path, output=False)
     cache_path = cache_paths[-1]
-    
+
     assert cache._cache_dir in cache_path
     assert os.path.isfile(cache_path)
 
@@ -133,7 +140,7 @@ def test_clear_all(catalog_cache):
 
     for cache_path in cache_paths:
         assert not os.path.exists(cache_path)
-    
+
     cache.clear_all()
 
 
@@ -251,7 +258,7 @@ def test_ds_set_cache_dir(catalog_cache):
 
     cache_paths = cache.load(cat._urlpath, output=False)
     cache_path = cache_paths[-1]
-    
+
     assert new_cache_dir in cache_path
     assert defaults[0] not in cache_path
     assert os.path.isfile(cache_path)

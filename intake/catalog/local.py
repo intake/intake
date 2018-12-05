@@ -1,3 +1,10 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 import logging
 import os
 import os.path
@@ -118,7 +125,7 @@ class LocalCatalogEntry(CatalogEntry):
     """A catalog entry on the local system
     """
     def __init__(self, name, description, driver, direct_access, args, cache,
-                 parameters, metadata, catalog_dir, getenv=True, 
+                 parameters, metadata, catalog_dir, getenv=True,
                  getshell=True, catalog=None):
         """
 
