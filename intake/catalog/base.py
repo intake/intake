@@ -333,10 +333,7 @@ class RemoteCatalog(Catalog):
                      page_offset, page_offset + self._page_size)
         params = {'page_offset': page_offset,
                   'page_size': self._page_size}
-        http_args = self._get_http_args()
-        merged_params = http_args.get('params', {})
-        merged_params.update(params)
-        http_args['params'] = merged_params
+        http_args = self._get_http_args(params)
         response = requests.get(self.info_url, **http_args)
         # Produce a chained exception with both the underlying HTTPError
         # and our own more direct context.
@@ -361,10 +358,7 @@ class RemoteCatalog(Catalog):
     def fetch_by_name(self, name):
         logger.debug("Requesting info about entry named '%s'", name)
         params = {'name': name}
-        http_args = self._get_http_args()
-        merged_params = http_args.get('params', {})
-        merged_params.update(params)
-        http_args['params'] = merged_params
+        http_args = self._get_http_args(params)
         response = requests.get(self.source_url, **http_args)
         if response.status_code == 404:
             raise KeyError(name)
@@ -383,9 +377,11 @@ class RemoteCatalog(Catalog):
             page_size=self._page_size,
             **info['source'])
 
-    def _get_http_args(self):
+    def _get_http_args(self, params):
         """
-        Return a copy of the http_args with auth headers and 'source_id' added.
+        Return a copy of the http_args
+
+        Adds auth headers and 'source_id', merges in params.
         """
         # Add the auth headers to any other headers
         headers = self.http_args.get('headers', {})
@@ -398,6 +394,11 @@ class RemoteCatalog(Catalog):
         if self._source_id is not None:
             headers['source_id'] = self._source_id
         http_args['headers'] = headers
+
+        # Merge in any params specified by the caller.
+        merged_params = http_args.get('params', {})
+        merged_params.update(params)
+        http_args['params'] = merged_params
         return http_args
 
     def _load(self):
@@ -413,10 +414,7 @@ class RemoteCatalog(Catalog):
         else:
             # Just fetch the metadata now; fetch source info later in pages.
             params = {'page_offset': 0, 'page_size': 0}
-        http_args = self._get_http_args()
-        merged_params = http_args.get('params', {})
-        merged_params.update(params)
-        http_args['params'] = merged_params
+        http_args = self._get_http_args(params)
         response = requests.get(self.info_url, **http_args)
         try:
             response.raise_for_status()
