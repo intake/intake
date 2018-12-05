@@ -12,8 +12,8 @@ except Exception as e:
 
     class DataBrowser(object):
         def __repr__(self):
-            raise RuntimeError("Initialisation of GUI failed, even though"
-                               "ipywidgets is installed. Please update it"
+            raise RuntimeError("Initialisation of GUI failed, even though "
+                               "ipywidgets is installed. Please update it "
                                "to a more recent version.")
 
 
