@@ -114,11 +114,10 @@ class ServerInfoHandler(tornado.web.RequestHandler):
                 # This could be a search of a search of a serach (etc.).
                 # Progressively apply each search and then page through the
                 # final results.
-                refined_cat = cat
                 for query in query_list:
-                    refined_cat = refined_cat.search(query)
+                    cat = cat.search(query)
                 page = itertools.islice(
-                    refined_cat.walk(depth=1).items(), start, stop)
+                    cat.walk(depth=1).items(), start, stop)
             else:
                 # Page through all results.
                 page = itertools.islice(cat.walk(depth=1).items(), start, stop)
@@ -129,7 +128,7 @@ class ServerInfoHandler(tornado.web.RequestHandler):
                     sources.append(info)
 
             server_info = dict(version=__version__, sources=sources,
-                               metadata=self.catalog.metadata)
+                               metadata=cat.metadata)
         else:
             msg = 'Access forbidden'
             raise tornado.web.HTTPError(status_code=403, log_message=msg,
