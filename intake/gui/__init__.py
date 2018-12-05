@@ -27,7 +27,6 @@ class InstanceMaker(object):
 
     def _instantiate(self):
         if self._instance is None:
-            print("instantiate")
             self._instance = self._cls(*self._args, **self.kwargs)
 
     def __getattr__(self, attr, *args, **kwargs):
