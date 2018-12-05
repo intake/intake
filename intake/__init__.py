@@ -19,7 +19,7 @@ from .catalog import local
 from .catalog.default import load_combo_catalog
 from .source import registry
 from .source.discovery import autodiscover
-from .gui import DataBrowser
+from .gui import DataBrowser, InstanceMaker
 
 # Populate list of autodetected plugins
 registry.update(autodiscover())
@@ -143,4 +143,4 @@ def open_catalog(uri=None, **kwargs):
 
 
 Catalog = open_catalog
-gui = DataBrowser()
+gui = InstanceMaker(DataBrowser)

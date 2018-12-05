@@ -9,6 +9,7 @@ from __future__ import print_function
 import time
 from uuid import uuid4
 
+import itertools
 import logging
 import msgpack
 import pickle
@@ -90,13 +91,25 @@ class ServerInfoHandler(tornado.web.RequestHandler):
 
     def get(self):
         head = self.request.headers
+        page_size = self.get_argument('page_size', None)
+        page_offset = self.get_argument('page_offset', 0)
         if self.auth.allow_connect(head):
             if 'source_id' in head:
                 cat = self.cache.get(head['source_id'])
             else:
                 cat = self.catalog
             sources = []
-            for name, source in cat.walk(depth=1).items():
+            if page_size is None:
+                # Return all the results in one page. This is important for
+                # back-compat with clients that predate pagination. It may
+                # also be useful to keep things simple for clients that do not
+                # need pagination.
+                start = stop = None
+            else:
+                start = int(page_offset)
+                stop = int(page_offset) + int(page_size)
+            page = itertools.islice(cat.walk(depth=1).items(), start, stop)
+            for name, source in page:
                 if self.auth.allow_access(head, source, self.catalog):
                     info = source.describe()
                     info['name'] = name
@@ -165,6 +178,49 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         self._catalog = catalog
         self._cache = cache
         self.auth = auth
+
+    def get(self):
+        """
+        Access one source's info.
+
+        This is for direct access to an entry by name for random access, which
+        is useful to the client when the whole catalog has not first been
+        listed and pulled locally (e.g., in the case of pagination).
+        """
+        head = self.request.headers
+        name = self.get_argument('name')
+        if self.auth.allow_connect(head):
+            if 'source_id' in head:
+                cat = self._cache.get(head['source_id'])
+            else:
+                cat = self._catalog
+            try:
+                # This would ideally be cat[name] and not access the interal
+                # structure cat._entries. However in the case of a client
+                # accessing RemoteCatalog['metadata'], we need the server to
+                # return 404 (which will prompt the client to check
+                # RemoteCatalog.metadata and thereby find what it is looking
+                # for). The server should not attempt to return metadata as a
+                # source, which it would do if we access cat['metadata'].
+                # Therefore we need to make sure `name` is really an entry by
+                # checking directly. If the attribute/key distinction is made
+                # sligtly less permissive in the future, this can be
+                # revisited.
+                source = cat._entries[name]
+            except KeyError:
+                msg = 'No such entry'
+                raise tornado.web.HTTPError(status_code=404, log_message=msg,
+                                            reason=msg)
+            if self.auth.allow_access(head, source, self._catalog):
+                info = source.describe()
+                info['name'] = name
+                source_info = dict(source=info)
+                self.write(msgpack.packb(source_info, use_bin_type=True))
+                return
+
+        msg = 'Access forbidden'
+        raise tornado.web.HTTPError(status_code=403, log_message=msg,
+                                    reason=msg)
 
     @tornado.gen.coroutine
     def post(self):

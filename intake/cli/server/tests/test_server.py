@@ -226,7 +226,6 @@ class TestServerV1Source(TestServerV1Base):
             self.server._cache.peek(source_id)
 
 
-
 @pytest.fixture()
 def multi_server(tmpdir):
     fn1 = os.path.join(tmpdir, 'cat1.yaml')
