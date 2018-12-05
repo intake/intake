@@ -235,3 +235,29 @@ def test_remote_arr(intake_server):
     assert s.npartitions == 2
     assert s.read_partition(0).ravel().tolist() == list(range(50))
     assert s.read().ravel().tolist() == list(range(100))
+
+
+def test_pagination(intake_server):
+    PAGE_SIZE = 2
+    catalog = Catalog(intake_server, page_size=PAGE_SIZE)
+    assert len(catalog._entries._page_cache) == 0
+    assert len(catalog._entries._direct_lookup_cache) == 0
+    # Trigger fetching one specific name.
+    catalog['arr']
+    assert len(catalog._entries._page_cache) == 0
+    assert len(catalog._entries._direct_lookup_cache) == 1
+    # Using `in` on a Catalog should not iterate.
+    'arr' in catalog
+    assert len(catalog._entries._page_cache) == 0
+    assert len(catalog._entries._direct_lookup_cache) == 1
+    # Trigger fetching just one full page.
+    list(zip(range(PAGE_SIZE), catalog))
+    assert len(catalog._entries._page_cache) == PAGE_SIZE
+    assert len(catalog._entries._direct_lookup_cache) == 1
+    # Trigger fetching all pages by list-ifying.
+    list(catalog)
+    assert len(catalog._entries._page_cache) > PAGE_SIZE
+    assert len(catalog._entries._direct_lookup_cache) == 1
+    # Now direct lookup by name should be free because everything is cached.
+    catalog['text']
+    assert len(catalog._entries._direct_lookup_cache) == 1

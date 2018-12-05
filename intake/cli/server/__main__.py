@@ -27,6 +27,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Intake Catalog Server')
     parser.add_argument('-p', '--port', type=int, default=conf['port'],
                         help='port number for server to listen on')
+    parser.add_argument('--list-entries', action='store_true',
+                        help='list catalog entries at startup')
     parser.add_argument('--sys-exit-on-sigterm', action='store_true',
                         help='internal flag used during unit testing to ensure '
                              '.coverage file is written')
@@ -48,8 +50,9 @@ def main(argv=None):
     catargs = catargs[0] if len(catargs) == 1 else catargs
     logger.info("catalog_args: %s" % catargs)
     catalog = open_catalog(catargs, flatten=args.flatten)
-
-    logger.info('Entries:' + ','.join(list(catalog)))
+    if args.list_entries:
+        # This is not a good idea if the Catalog is huge.
+        logger.info('Entries:' + ','.join(list(catalog)))
 
     logger.info('Listening on port %d' % args.port)
 
