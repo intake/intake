@@ -333,8 +333,11 @@ class RemoteCatalog(Catalog):
                      page_offset, page_offset + self._page_size)
         params = {'page_offset': page_offset,
                   'page_size': self._page_size}
-        response = requests.get(self.info_url, params=params,
-                                **self._get_http_args())
+        http_args = self._get_http_args()
+        merged_params = http_args.get('params', {})
+        merged_params.update(params)
+        http_args['params'] = merged_params
+        response = requests.get(self.info_url, **http_args)
         # Produce a chained exception with both the underlying HTTPError
         # and our own more direct context.
         try:
@@ -358,8 +361,11 @@ class RemoteCatalog(Catalog):
     def fetch_by_name(self, name):
         logger.debug("Requesting info about entry named '%s'", name)
         params = {'name': name}
-        response = requests.get(self.source_url, params=params,
-                                **self._get_http_args())
+        http_args = self._get_http_args()
+        merged_params = http_args.get('params', {})
+        merged_params.update(params)
+        http_args['params'] = merged_params
+        response = requests.get(self.source_url, **http_args)
         if response.status_code == 404:
             raise KeyError(name)
         try:
@@ -407,8 +413,11 @@ class RemoteCatalog(Catalog):
         else:
             # Just fetch the metadata now; fetch source info later in pages.
             params = {'page_offset': 0, 'page_size': 0}
-        response = requests.get(self.info_url, params=params,
-                                **self._get_http_args())
+        http_args = self._get_http_args()
+        merged_params = http_args.get('params', {})
+        merged_params.update(params)
+        http_args['params'] = merged_params
+        response = requests.get(self.info_url, **http_args)
         try:
             response.raise_for_status()
         except requests.HTTPError:
