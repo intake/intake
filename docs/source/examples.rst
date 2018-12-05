@@ -19,12 +19,12 @@ General
 -------
 
 - Basic Data scientist workflow: using Intake
-  [`Static <https://github.com/martindurant/intake-release-blog/blob/master/data_scientist.ipynb>`_]
-  [`Executable <https://mybinder.org/v2/gh/martindurant/intake-release-blog/master?filepath=data_scientist.ipynb>`_].
+  [`Static <https://github.com/martindurant/intake-release-blog/blob/master/data_scientist.ipynb>`__]
+  [`Executable <https://mybinder.org/v2/gh/martindurant/intake-release-blog/master?filepath=data_scientist.ipynb>`__].
 
 - Workflow for creating catalogs: a Data Engineer's approach to Intake
-  [`Static <https://github.com/martindurant/intake-release-blog/blob/master/data_engineer.ipynb>`_]
-  [`Executable <https://mybinder.org/v2/gh/martindurant/intake-release-blog/master?filepath=data_engineer.ipynb>`_]
+  [`Static <https://github.com/martindurant/intake-release-blog/blob/master/data_engineer.ipynb>`__]
+  [`Executable <https://mybinder.org/v2/gh/martindurant/intake-release-blog/master?filepath=data_engineer.ipynb>`__]
 
 Developer
 ---------
@@ -32,8 +32,8 @@ Developer
 Tutorials delving deeper into the Internals of Intake, for those who wish to contribute
 
 - How you would go about writing a new plugin
-  [`Static <https://github.com/martindurant/intake-release-blog/blob/master/dev.ipynb>`_]
-  [`Executable <https://mybinder.org/v2/gh/martindurant/intake-release-blog/master?filepath=dev.ipynb>`_]
+  [`Static <https://github.com/martindurant/intake-release-blog/blob/master/dev.ipynb>`__]
+  [`Executable <https://mybinder.org/v2/gh/martindurant/intake-release-blog/master?filepath=dev.ipynb>`__]
 
 Features
 --------
@@ -43,22 +43,22 @@ More specific examples of Intake functionality
 - Caching:
 
     - Using automatically cached of data-files
-      [`Static <https://github.com/mmccarty/intake-blog/blob/master/examples/caching.ipynb>`_]
-      [`Executable <https://mybinder.org/v2/gh/mmccarty/intake-blog/master?filepath=examples%2Fcaching.ipynb>`_]
+      [`Static <https://github.com/mmccarty/intake-blog/blob/master/examples/caching.ipynb>`__]
+      [`Executable <https://mybinder.org/v2/gh/mmccarty/intake-blog/master?filepath=examples%2Fcaching.ipynb>`__]
 
     - Earth science demonstration of cached dataset
-      [`Static <https://github.com/mmccarty/intake-blog/blob/master/examples/Walker_Lake.ipynb>`_]
-      [`Executable <https://mybinder.org/v2/gh/mmccarty/intake-blog/master?filepath=examples%2FWalker_Lake.ipynb>`_]
+      [`Static <https://github.com/mmccarty/intake-blog/blob/master/examples/Walker_Lake.ipynb>`__]
+      [`Executable <https://mybinder.org/v2/gh/mmccarty/intake-blog/master?filepath=examples%2FWalker_Lake.ipynb>`__]
 
 - File-name pattern parsing:
 
     - Satellite imagery, science workflow
-      [`Static <https://github.com/jsignell/intake-blog/blob/master/path-as-pattern/landsat.ipynb>`_]
-      [`Executable <https://mybinder.org/v2/gh/jsignell/intake-blog/master?filepath=path-as-pattern%2Flandsat.ipynb>`_]
+      [`Static <https://github.com/jsignell/intake-blog/blob/master/path-as-pattern/landsat.ipynb>`__]
+      [`Executable <https://mybinder.org/v2/gh/jsignell/intake-blog/master?filepath=path-as-pattern%2Flandsat.ipynb>`__]
 
     - How to set up pattern parsing
-      [`Static <https://github.com/jsignell/intake-blog/blob/master/path-as-pattern/csv.ipynb>`_]
-      [`Executable <https://mybinder.org/v2/gh/jsignell/intake-blog/master?filepath=path-as-pattern%2Fcsv.ipynb>`_]
+      [`Static <https://github.com/jsignell/intake-blog/blob/master/path-as-pattern/csv.ipynb>`__]
+      [`Executable <https://mybinder.org/v2/gh/jsignell/intake-blog/master?filepath=path-as-pattern%2Fcsv.ipynb>`__]
 
 Blogs
 -----
