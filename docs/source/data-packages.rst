@@ -4,7 +4,7 @@ Making Data Packages
 Combined with the `Conda Package Manger <https://conda.io/docs/>`_, Intake makes it possible to create *data packages*
 which can be installed and upgraded just like software packages.  This offers several advantages:
 
-  * Distributing datasets becomes as easy as installing software
+  * Distributing datasets becomes as easy ``conda install``
   * Data packages can be versioned, improving reproducibility in some cases
   * Data packages can depend on the libraries required for reading
   * Data packages can be self-describing using Intake catalog files
@@ -20,10 +20,13 @@ The steps involved in creating a data package are:
 
 1. Identifying a dataset, which can be accessed via a URL or included directly as one or more files in the package.
 
-2. Creating a package containing an intake catalog file, meta.yaml (description of the data, version, requirements,
-   etc.) and a script to copy the data.
+2. Creating a package containing:
 
-3. Building the package using the command conda build.
+   * an intake catalog file
+   * a ``meta.yaml`` file (description of the data, version, requirements, etc.)
+   * a script to copy the data
+
+3. Building the package using the command ``conda build``.
 
 4. Uploading the package to a package repository such as `Anaconda Cloud <https://anaconda.org>`_ or your own private
    repository.
@@ -50,20 +53,20 @@ An example that packages up data from a Github repository would look like this:
     package:
       version: '1.0.0'
       name: 'data-us-states'
-    
+
     source:
       git_rev: v1.0.0
       git_url: https://github.com/CivilServiceUSA/us-states
-    
+
     build:
       number: 0
       noarch: generic
-    
+
     requirements:
       run:
         - intake
       build: []
-    
+
     about:
       description: Data about US states from CivilServices (https://civil.services/)
       license: MIT
@@ -86,7 +89,7 @@ The corresponding ``build.sh`` file in the recipe looks like this:
 .. code-block:: bash
 
     #!/bin/bash
-    
+
     mkdir -p $PREFIX/share/intake/civilservices
     cp $SRC_DIR/data/states.csv $PREFIX/share/intake/civilservices
     cp $RECIPE_DIR/us_states.yaml $PREFIX/share/intake/
