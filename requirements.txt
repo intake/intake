@@ -2,7 +2,6 @@
 appdirs
 dask >=0.17.0
 holoviews
-ipywidgets >=7.2
 jinja2
 msgpack-numpy
 msgpack-python
