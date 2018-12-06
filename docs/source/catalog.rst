@@ -342,9 +342,9 @@ Local Catalogs
 
 A Catalog can be loaded from a YAML file on the local filesystem by creating a Catalog object::
 
-    from intake import load_catalog
+    from intake import open_catalog
 
-    cat = load_catalog('catalog.yaml')
+    cat = open_catalog('catalog.yaml')
 
 Then sources can be listed::
 
@@ -358,7 +358,7 @@ Intake also supports loading all of the files ending in ``.yml`` and ``.yaml`` i
 explicit glob-string. Note that the URL provided may refer to a remote storage systems by passing a protocol
 specifier such as ``s3://``, ``gcs://``.::
 
-    cat = load_catalog('/research/my_project/catalog.d/')
+    cat = open_catalog('/research/my_project/catalog.d/')
 
 Intake Catalog objects will automatically detect changes or new additions to catalog files and directories on disk.
 These changes will not affect already-opened data sources.

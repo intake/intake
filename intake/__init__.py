@@ -124,7 +124,7 @@ def open_catalog(uri=None, **kwargs):
                     if uri.endswith(('.yml', '.yaml')):
                         driver = 'yaml_file_cat'
                     else:
-                        uri = uri + '/*'
+                        uri = uri + '/*.y*ml'
                         driver = 'yaml_files_cat'
         else:
             # empty cat
