@@ -82,7 +82,7 @@ def test_source_plugin_config(catalog1):
 
 def test_metadata(catalog1):
     assert hasattr(catalog1, 'metadata')
-    assert catalog1['metadata']['test'] is True
+    assert catalog1.metadata['test'] is True
 
 
 def test_use_source_plugin_from_config(catalog1):

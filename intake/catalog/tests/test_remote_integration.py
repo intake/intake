@@ -50,7 +50,7 @@ def test_bad_url(intake_server):
 def test_metadata(intake_server):
     catalog = Catalog(intake_server)
     assert hasattr(catalog, 'metadata')
-    assert catalog['metadata']['test'] is True
+    assert catalog.metadata['test'] is True
     assert catalog.version == 1
 
 
