@@ -1,3 +1,10 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 import os.path
 import subprocess
 import tempfile
@@ -119,7 +126,7 @@ def test_example(temp_current_working_directory):
     assert os.path.exists('us_states.yml')
     assert os.path.exists('states_1.csv')
     assert os.path.exists('states_2.csv')
-    
+
     # should fail second time due to existing files
     cmd = [ex, '-m', 'intake.cli.client', 'example']
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE,

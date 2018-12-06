@@ -67,7 +67,7 @@ Intake is built out of four core concepts:
 * Data Source: An object that represents a reference to a data source.  Data source objects have methods for loading the
   data into standard containers, like Pandas DataFrames, but do not load any data until specifically requested.
 
-* Catalog: A collection of catalog entries, each of which defined a Data Source. Catalog objects can be created from
+* Catalog: A collection of catalog entries, each of which defines a Data Source. Catalog objects can be created from
   local YAML definitions, by connecting
   to remote servers, or by some driver that knows how to query an external data service.
 
@@ -86,6 +86,5 @@ Future Directions
 -----------------
 
 Ongoing work for enhancements, as well as requests for plugins, etc., can be found at the
-`issue tracker <https://github.com/ContinuumIO/intake/issues>`_, but see also :ref:`roadmap`
-for general mid- and
-long-term goals.
+`issue tracker <https://github.com/ContinuumIO/intake/issues>`_. See the :ref:`roadmap`
+for general mid- and long-term goals.

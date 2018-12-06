@@ -1,3 +1,10 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 import os
 import pytest
 import shutil
@@ -14,7 +21,7 @@ logging.basicConfig()
 
 @pytest.fixture
 def file_cache():
-    return FileCache('csv', 
+    return FileCache('csv',
                      {'argkey': 'urlpath', 'regex': 'test/path', 'type': 'file'})
 
 
@@ -27,12 +34,12 @@ def test_ensure_cache_dir(file_cache):
 
     with open(file_cache._cache_dir, 'w') as f:
         f.write('')
-    
+
     with pytest.raises(Exception):
         file_cache._ensure_cache_dir()
 
     os.remove(file_cache._cache_dir)
-    
+
     file_cache.clear_all()
 
 

@@ -1,3 +1,10 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 from datetime import datetime
 from hashlib import md5
 
@@ -71,7 +78,7 @@ class BaseCache(object):
 
         self._storage_options = storage_options
         self._metadata = CacheMetadata()
-    
+
     def _ensure_cache_dir(self):
         if not os.path.exists(self._cache_dir):
             os.makedirs(self._cache_dir)
@@ -95,7 +102,7 @@ class BaseCache(object):
 
     def _hash(self, urlpath):
         return md5(
-                str((os.path.basename(urlpath), 
+                str((os.path.basename(urlpath),
                      self._spec.get('regex', ''),
                      self._driver)).encode()
             ).hexdigest()
@@ -199,7 +206,7 @@ class BaseCache(object):
         Metadata (dict) about a given urlpath.
         """
         return self._metadata.get(urlpath)
-    
+
     def clear_cache(self, urlpath):
         """
         Clears cache and metadata for a given urlpath.
@@ -222,14 +229,14 @@ class BaseCache(object):
             os.rmdir(fn)
         except (OSError, IOError):
             logger.debug("Failed to remove cache directory: %s" % fn)
-    
+
     def clear_all(self):
         """
         Clears all cache and metadata.
         """
         for urlpath in self._metadata.keys():
             self.clear_cache(urlpath)
-        
+
         # Safely clean up anything else.
         if not os.path.isdir(self._cache_dir):
             return
@@ -470,7 +477,7 @@ class CacheMetadata(collections.MutableMapping):
         item = self._metadata.pop(key, default)
         self._save()
         return item
-    
+
     def keys(self):
         return list(self._metadata.keys())
 
@@ -485,10 +492,10 @@ registry = {
 def make_caches(driver, specs, catdir=None, cache_dir=None, storage_options={}):
     """
     Creates Cache objects from the cache_specs provided in the catalog yaml file
-    
+
     Parameters
     ----------
-    
+
     driver: str
         Name of the plugin that can load catalog entry
     specs: list

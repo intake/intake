@@ -1,3 +1,10 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 class CatalogEntry(object):
     """A single item appearing in a catalog
 
@@ -17,7 +24,7 @@ class CatalogEntry(object):
 
         Returns: dict with keys
 
-          container : str 
+          container : str
               kind of container used by this data source
           description : str
               Markdown-friendly description of data source
@@ -41,14 +48,14 @@ class CatalogEntry(object):
           plugin : str
               Name of data plugin to use
           description : str
-              Markdown-friendly description of data source 
+              Markdown-friendly description of data source
           direct_access : str
               Mode of remote access: forbid, allow, force
           metadata : dict
               Dictionary of metadata defined in the catalog for this data source
           args: dict
               Dictionary of keyword arguments for the plugin
-        
+
         """
         raise NotImplementedError
 

@@ -1,3 +1,10 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 import collections
 import logging
 import six
@@ -184,7 +191,7 @@ class Catalog(DataSource):
 
     def __getitem__(self, key):
         """Return a catalog entry by name.
-        
+
         Can also use attribute syntax, like ``cat.entry_name``.
         """
         if key in self._entries:
