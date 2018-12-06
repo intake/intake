@@ -1,43 +1,26 @@
 language: generic
+
 git:
   depth: false
+
 os:
   - linux
+
 branches:
   only:
   - master
+
 env:
   matrix:
   - CONDA_PY=36
   global:
+    # ANACONDA_TOKEN
     secure: XJ+hvBFtSNUy6xYQmpEFVoR1MTYdTtLIN9R46qfW5XhAOEzuA0mDBd4FL9mgaw4+hoB4+3B8ItHquGxRN/ugw8O/VRA5CuGBbmfbJfG2vLKAbe3RruTueijbxIpiPAhgEp11HtLWGYiaXR47Hug/hO5nFnHAqF9DpQfvsO5ntlFcMnNRVFp7uHbkdz651yQ3en4frSLP/07sK7zGMculb5VKeFH7RdD7Imyqi/BqXX3Mq4ymcgJ/lSEbgO46hP1wX6q4/SSFEQyb4tUUgM6yK6nZEjs6R6DLXpW9PFncTHsjBu39+aZR5tFQqRFOMoaVY2WVxDFSC4Hx8kUXuDQMfuR4JgVOEDSDLr8iws7Fr7svWEpz0TfasbN2/j4LSL+4bjtpZE/Baz3TrUf1LsmbjIgGIDiruLcVpQLrD3msHjjHiyldUs3gDCjndPuaxg0f3AKz/04xNXTNxg+RyVIGjP/6dHDRNIyHfToBhkt42wjt4bDiyxK78ty5Qn+EnDPJn1R22dULFXTwMnEO9QbzJCKZz2xwClp8toxHYRTUsjD68IDxipqd4gn6R16OgMcA9wtzomoz5UmFbo3ambUluzMVv3v9KS4spqykPWF8wTuGfJy2pEJAm6E9bwa4Jw1RZx9GWSYp/Zm8QR0Vx10dTTy/X7/wX44f/P9pv/dQUiw=
-install:
-- |
-  echo "Installing a fresh version of Miniconda."
-  MINICONDA_URL="https://repo.continuum.io/miniconda"
-  MINICONDA_FILE="Miniconda3-latest-$(case $TRAVIS_OS_NAME in (linux) echo Linux;; (osx) echo MacOSX;;esac)-x86_64.sh"
-  curl -L -O "${MINICONDA_URL}/${MINICONDA_FILE}"
-  bash $MINICONDA_FILE -b
-- |
-  echo "Configuring conda."
-  source $HOME/miniconda3/bin/activate root
-  conda install -y conda-build anaconda-client conda-verify
-script:
-- |
-  if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-      conda build -c defaults -c conda-forge ./conda
-  else
-      # Workaround for Travis-CI bug #2: https://github.com/travis-ci/travis-ci/issues/7773
-      conda build -c defaults -c conda-forge --no-test ./conda
-  fi
-- |
-  if [ -n "$TRAVIS_TAG" ]; then
-      # If tagged git version, upload package to main channel
-      anaconda -t ${ANACONDA_TOKEN} upload -u intake --force `conda build --output ./conda`
-  elif ! [ -n "$TRAVIS_PULL_REQUEST" ]; then
-      # Otherwise upload package to dev channel
-      anaconda -t ${ANACONDA_TOKEN} upload -u intake --label dev --force `conda build --output ./conda`
-  fi
+
+install: scripts/ci/install.sh
+
+script: scripts/ci/build.sh
+
 notifications:
   email: false
   on_success: change
