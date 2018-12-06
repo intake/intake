@@ -125,6 +125,7 @@ class Catalog(DataSource):
     def search(self, text, depth=2):
         words = text.lower().split()
         cat = Catalog(name=self.name + "_search",
+                      ttl=self.ttl,
                       getenv=self.getenv,
                       getshell=self.getshell,
                       auth=self.auth,
