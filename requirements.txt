@@ -1,3 +1,7 @@
+appdirs
+dask[complete]
+holoviews
+ipywidgets >= 7.2
 jinja2
 msgpack-numpy
 msgpack-python
@@ -5,11 +9,7 @@ numpy
 pandas
 pytest
 python-snappy
-ruamel.yaml >= 0.15.0
 requests
-appdirs
+ruamel.yaml >= 0.15.0
 six
 tornado >= 4.5.1
-dask[complete]
-holoviews
-ipywidgets >= 7.2
