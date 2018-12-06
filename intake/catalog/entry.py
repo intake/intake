@@ -16,9 +16,6 @@ class CatalogEntry(object):
         self.getenv = getenv
         self.getshell = getshell
 
-    def __repr__(self):
-        return repr(self.describe())
-
     def describe(self):
         """Get a dictionary of attributes of this entry.
 
