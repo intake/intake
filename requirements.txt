@@ -1,7 +1,8 @@
+# This file is also processed by conda-build, so keep spaces as "pkg >=1.2"
 appdirs
-dask[complete]
+dask >=0.17.0
 holoviews
-ipywidgets >= 7.2
+ipywidgets >=7.2
 jinja2
 msgpack-numpy
 msgpack-python
@@ -9,6 +10,6 @@ numpy
 pandas
 python-snappy
 requests
-ruamel.yaml >= 0.15.0
+ruamel.yaml >=0.15.0
 six
-tornado >= 4.5.1
+tornado >=4.5.1

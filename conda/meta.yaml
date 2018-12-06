@@ -23,16 +23,16 @@ requirements:
   run:
     - python
     - numpy
-    - pandas
-    - msgpack-python
-    - msgpack-numpy
-    - requests
-    - tornado
-    - jinja2
+
+    {% for dep in data['install_requires'] %}
+    {% if "ruamel.yaml" not in dep %}
+    - {{ dep.lower() }}
+    {% endif %}
+    {% endfor %}
+
+    # There is an unfortunate name difference for this package in the main
+    # conda repo. This can be removed when/if ruamel.yaml becomes available
     - ruamel_yaml >=0.15.0
-    - dask >=0.17.0
-    - python-snappy
-    - appdirs
 
 test:
   requires:
