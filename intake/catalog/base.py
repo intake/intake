@@ -187,7 +187,12 @@ class Catalog(DataSource):
 
     def __getattr__(self, item):
         if not item.startswith('_'):
-            return self._get_entry(item)
+            # Fall back to __getitem__.
+            try:
+                return self._get_entry(item)
+            except KeyError:
+                raise AttributeError(item)
+        raise AttributeError(item)
 
     def __getitem__(self, key):
         """Return a catalog entry by name.
