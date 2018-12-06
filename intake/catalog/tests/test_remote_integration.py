@@ -268,3 +268,22 @@ def test_pagination(intake_server):
     # Now direct lookup by name should be free because everything is cached.
     catalog['text']
     assert len(catalog._entries._direct_lookup_cache) == 1
+
+
+def test_getitem_and_getattr(intake_server):
+    catalog = Catalog(intake_server)
+    catalog['arr']
+    with pytest.raises(KeyError):
+        catalog['doesnotexist']
+    with pytest.raises(KeyError):
+        catalog['_doesnotexist']
+    with pytest.raises(KeyError):
+        # This exists as an *attribute* but not as an item.
+        catalog['metadata']
+    catalog.arr  # alias to catalog['arr']
+    catalog.metadata  # a normal attribute
+    with pytest.raises(AttributeError):
+        catalog.doesnotexit
+    with pytest.raises(AttributeError):
+        catalog._doesnotexit
+    catalog.metadata

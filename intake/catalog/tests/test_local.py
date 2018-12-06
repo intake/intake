@@ -431,3 +431,24 @@ def test_no_plugins():
     s = cat.tables7
     with pytest.raises(ValueError):
         s()
+
+
+def test_getitem_and_getattr():
+    from intake.source.csv import CSVSource
+    fn = abspath('multi_plugins.yaml')
+    catalog = open_catalog(fn)
+    catalog['tables0']
+    with pytest.raises(KeyError):
+        catalog['doesnotexist']
+    with pytest.raises(KeyError):
+        catalog['_doesnotexist']
+    with pytest.raises(KeyError):
+        # This exists as an *attribute* but not as an item.
+        catalog['metadata']
+    catalog.tables0  # alias to catalog['tables0']
+    catalog.metadata  # a normal attribute
+    with pytest.raises(AttributeError):
+        catalog.doesnotexit
+    with pytest.raises(AttributeError):
+        catalog._doesnotexit
+    catalog.metadata
