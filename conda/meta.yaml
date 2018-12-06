@@ -1,3 +1,5 @@
+{% set data = load_setup_py_data() %}
+
 package:
    name: intake
    version: {{ environ.get('GIT_DESCRIBE_TAG', 'unknown') }}
@@ -42,7 +44,7 @@ test:
     - py.test --pyargs -v intake
 
 about:
-  home: https://github.com/ContinuumIO/intake
-  license: BSD
+  home: {{ data['url'] }}
+  license: {{ data['license'] }}
   license_file: LICENSE
-  summary: Data ingest catalog system
+  summary: {{ data['description'] }}
