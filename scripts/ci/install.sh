@@ -2,7 +2,7 @@
 
 set -e # exit on error
 
-CONDA_REQS="conda-build anaconda-client conda-verify"
+CONDA_REQS="conda-build=3.17.0 anaconda-client=1.7.2 conda-verify=3.1.1"
 
 PLATFORM="$(case $TRAVIS_OS_NAME in (linux) echo Linux;; (osx) echo MacOSX;;esac)"
 
