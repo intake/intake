@@ -111,6 +111,7 @@ class Catalog(DataSource):
         # default version for pre-v1 files
         return self.metadata.get('version', 1)
 
+    @reload_on_change
     def search(self, text, depth=2):
         words = text.lower().split()
         cat = Catalog(name=self.name + "_search",
@@ -172,12 +173,7 @@ class Catalog(DataSource):
 
     def __contains__(self, key):
         # Avoid iterating through all entries.
-        try:
-            self[key]
-        except KeyError:
-            return False
-        else:
-            return True
+        return key in self._get_entries()  # triggers reload_on_change
 
     def __dir__(self):
         return list(self)
@@ -187,23 +183,31 @@ class Catalog(DataSource):
 
     def __getattr__(self, item):
         if not item.startswith('_'):
-            return self._get_entry(item)
+            # Fall back to __getitem__.
+            try:
+                return self[item]  # triggers reload_on_change
+            except KeyError:
+                raise AttributeError(item)
+        raise AttributeError(item)
 
     def __getitem__(self, key):
         """Return a catalog entry by name.
 
         Can also use attribute syntax, like ``cat.entry_name``.
         """
-        if key in self._entries:
+        if key in self._get_entries():  # triggers reload_on_change
             return self._entries[key]
         out = self
-        for k in key.split('.'):
-            if isinstance(out, CatalogEntry):
-                out = out()  # default parameters
-            if not isinstance(out, Catalog):
-                raise ValueError("Attempt to recurse into non-catalog")
-            out = getattr(out, k)
-        return out
+        if '.' in key:
+            for k in key.split('.'):
+                if isinstance(out, CatalogEntry):
+                    out = out()  # default parameters
+                if not isinstance(out, Catalog):
+                    raise ValueError("Attempt to recurse into non-catalog")
+                out = out[k]
+            return out
+        else:
+            raise KeyError(key)
 
     def discover(self):
         return {"container": 'catalog', 'shape': None,
@@ -212,6 +216,7 @@ class Catalog(DataSource):
     def _close(self):
         # TODO: maybe close all entries?
         pass
+
 
 class Entries(dict):
     """Fetches entries from server on item lookup and iteration.
@@ -289,6 +294,7 @@ class Entries(dict):
                 source = self._catalog.fetch_by_name(key)
                 self._direct_lookup_cache[key] = source
                 return source
+
 
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
