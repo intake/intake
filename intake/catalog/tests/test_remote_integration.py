@@ -73,7 +73,7 @@ def test_environment_evaluation(intake_server):
     catalog = Catalog(intake_server)
     import os
     os.environ['INTAKE_TEST'] = 'client'
-    d = catalog['remote_env']
+    catalog['remote_env']
 
 
 def test_read(intake_server):

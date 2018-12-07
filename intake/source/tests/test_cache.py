@@ -12,7 +12,6 @@ import shutil
 from intake.source.cache import FileCache, CacheMetadata
 import intake
 import intake.config
-from intake.source.tests.util import temp_cache # NOQA
 here = os.path.dirname(os.path.abspath(__file__))
 import logging
 logger = logging.getLogger('intake')

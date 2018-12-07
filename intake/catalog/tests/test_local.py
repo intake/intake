@@ -293,16 +293,16 @@ def test_duplicate_data_sources():
     path = os.path.dirname(__file__)
     uri = os.path.join(path, 'catalog_dup_sources.yml')
 
-    with pytest.raises(exceptions.DuplicateKeyError) as except_info:
-        c = Catalog(uri)
+    with pytest.raises(exceptions.DuplicateKeyError):
+        Catalog(uri)
 
 
 def test_duplicate_parameters():
     path = os.path.dirname(__file__)
     uri = os.path.join(path, 'catalog_dup_parameters.yml')
 
-    with pytest.raises(exceptions.DuplicateKeyError) as except_info:
-        c = Catalog(uri)
+    with pytest.raises(exceptions.DuplicateKeyError):
+        Catalog(uri)
 
 
 @pytest.fixture
