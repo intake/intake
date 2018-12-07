@@ -338,11 +338,21 @@ def test_catalog_file_removal(temp_catalog_file):
 
 
 def test_flatten_duplicate_error():
-    i1 = iter(temp_catalog_file())
-    i2 = iter(temp_catalog_file())
-    for f1, f2 in zip(i1, i2):
-        with pytest.raises(ValueError):
-            open_catalog([f1, f2])
+    path = tempfile.mkdtemp()
+    f1 = os.path.join(path, 'catalog.yaml')
+    path = tempfile.mkdtemp()
+    f2 = os.path.join(path, 'catalog.yaml')
+    for f in [f1, f2]:
+        with open(f, 'w') as fo:
+            fo.write("""
+        sources:
+          a:
+            driver: csv
+            args:
+              urlpath: /not/a/file
+        """)
+    with pytest.raises(ValueError):
+        open_catalog([f1, f2])
 
 
 def test_multi_cat_names():
