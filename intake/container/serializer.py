@@ -58,7 +58,6 @@ class MsgPackSerializer(object):
             import msgpack_numpy
             return msgpack.packb(obj, default=msgpack_numpy.encode)
         elif container == 'dataframe':
-            import pandas as pd
             return obj.to_msgpack()
         else:
             return msgpack.packb(obj, use_bin_type=True)

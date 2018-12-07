@@ -46,4 +46,4 @@ def test_discover_pluginprefix(extra_pythonpath):
 
 def test_discover_collision(extra_pythonpath):
     with pytest.warns(UserWarning):
-        registry = discovery.autodiscover(plugin_prefix='collision_')
+        discovery.autodiscover(plugin_prefix='collision_')

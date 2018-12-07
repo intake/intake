@@ -7,7 +7,6 @@
 
 import os
 import subprocess
-import pytest
 
 
 def test_reset(tempdir):

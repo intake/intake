@@ -12,7 +12,6 @@ from uuid import uuid4
 import itertools
 import logging
 import msgpack
-import pickle
 import tornado.gen
 import tornado.ioloop
 import tornado.web

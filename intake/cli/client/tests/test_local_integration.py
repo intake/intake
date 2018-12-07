@@ -9,7 +9,6 @@ import os.path
 import subprocess
 import tempfile
 import shutil
-import sys
 
 import pytest
 
