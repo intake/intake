@@ -1,6 +1,8 @@
+{% set data = load_setup_py_data() %}
+
 package:
    name: intake
-   version: {{ environ.get('GIT_DESCRIBE_TAG', 'unknown') }}
+   version:  {{ data['version'] }}
 
 source:
    path: ..
@@ -8,8 +10,9 @@ source:
 build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
   entry_points:
-    - intake-server = intake.cli.server.__main__:main
-    - intake = intake.cli.client.__main__:main
+    {% for entry in data['entry_points']['console_scripts'] %}
+    - {{ entry }}
+    {% endfor %}
   script: python setup.py install --single-version-externally-managed --record=record.txt
   noarch: python
 
@@ -20,16 +23,16 @@ requirements:
   run:
     - python
     - numpy
-    - pandas
-    - msgpack-python
-    - msgpack-numpy
-    - requests
-    - tornado
-    - jinja2
+
+    {% for dep in data['install_requires'] %}
+    {% if "ruamel.yaml" not in dep %}
+    - {{ dep.lower() }}
+    {% endif %}
+    {% endfor %}
+
+    # There is an unfortunate name difference for this package in the main
+    # conda repo. This can be removed when/if ruamel.yaml becomes available
     - ruamel_yaml >=0.15.0
-    - dask >=0.17.0
-    - python-snappy
-    - appdirs
 
 test:
   requires:
@@ -42,7 +45,7 @@ test:
     - py.test --pyargs -v intake
 
 about:
-  home: https://github.com/ContinuumIO/intake
-  license: BSD
+  home: {{ data['url'] }}
+  license: {{ data['license'] }}
   license_file: LICENSE
-  summary: Data ingest catalog system
+  summary: {{ data['description'] }}

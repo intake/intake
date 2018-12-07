@@ -9,8 +9,7 @@
 from setuptools import setup, find_packages
 import versioneer
 
-
-requires = open('requirements.txt').read().strip().split('\n')
+requires = [line.strip() for line in open('requirements.txt').readlines() if not line.startswith("#")]
 
 setup(
     name='intake',
