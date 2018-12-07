@@ -18,7 +18,7 @@ import pandas
 from .util import assert_items_equal
 from intake import Catalog, open_catalog
 from intake.catalog import exceptions, local
-from intake.catalog.local import get_dir, UserParameter
+from intake.catalog.local import get_dir, UserParameter, LocalCatalogEntry
 
 
 def abspath(filename):
@@ -451,4 +451,6 @@ def test_getitem_and_getattr():
         catalog.doesnotexit
     with pytest.raises(AttributeError):
         catalog._doesnotexit
-    catalog.metadata
+    assert catalog.tables0 is catalog['tables0']
+    assert isinstance(catalog.tables0, LocalCatalogEntry)
+    assert isinstance(catalog.metadata, (dict, type(None)))

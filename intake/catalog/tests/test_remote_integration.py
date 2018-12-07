@@ -14,6 +14,7 @@ import pandas as pd
 from ...source.tests.util import verify_datasource_interface
 from .util import assert_items_equal
 from intake import Catalog
+from intake.catalog.remote import RemoteCatalogEntry
 
 TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
@@ -286,4 +287,6 @@ def test_getitem_and_getattr(intake_server):
         catalog.doesnotexit
     with pytest.raises(AttributeError):
         catalog._doesnotexit
-    catalog.metadata
+    assert catalog.arr is catalog['arr']
+    assert isinstance(catalog.arr, RemoteCatalogEntry)
+    assert isinstance(catalog.metadata, (dict, type(None)))

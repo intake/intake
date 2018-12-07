@@ -185,7 +185,7 @@ class Catalog(DataSource):
         if not item.startswith('_'):
             # Fall back to __getitem__.
             try:
-                return self._get_entry(item)  # triggers reload_on_change
+                return self[item]  # triggers reload_on_change
             except KeyError:
                 raise AttributeError(item)
         raise AttributeError(item)
