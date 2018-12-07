@@ -510,7 +510,7 @@ def register_plugin_dir(path):
     for f in glob.glob(path + '/*.py'):
         for k, v in load_plugins_from_module(f).items():
             if k:
-                global_registry[k[0]] = v
+                global_registry[k] = v
 
 
 def get_dir(path):
