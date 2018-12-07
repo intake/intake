@@ -644,18 +644,23 @@ class YAMLFilesCatalog(Catalog):
                                           kwargs, [], {}, self.metadata, d)
                 if self._flatten:
                     # store a concrete Catalog
-                    self._cats[f.path] = entry()
+                    try:
+                        self._cats[f.path] = entry()
+                    except IOError as e:
+                        logger.info('Loading "%s" as a catalog failed: %s'
+                                    '' % (entry, e))
                 else:
                     # store a catalog entry
                     self._cats[f.path] = entry
-        for entry in self._cats.values():
+        for name, entry in list(self._cats.items()):
             if self._flatten:
                 entry.reload()
                 inter = set(entry._entries).intersection(self._entries)
                 if inter:
-                    raise ValueError('Conflicting names when flattening multiple'
-                                     ' catalogs. Sources %s exist in more than'
-                                     ' one' % inter)
+                    raise ValueError(
+                        'Conflicting names when flattening multiple'
+                        ' catalogs. Sources %s exist in more than'
+                        ' one' % inter)
                 self._entries.update(entry._entries)
             else:
                 self._entries[entry._name] = entry

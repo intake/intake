@@ -294,7 +294,7 @@ def test_duplicate_data_sources():
     uri = os.path.join(path, 'catalog_dup_sources.yml')
 
     with pytest.raises(exceptions.DuplicateKeyError) as except_info:
-        c = Catalog(uri)
+        Catalog(uri)
 
 
 def test_duplicate_parameters():
@@ -302,7 +302,7 @@ def test_duplicate_parameters():
     uri = os.path.join(path, 'catalog_dup_parameters.yml')
 
     with pytest.raises(exceptions.DuplicateKeyError) as except_info:
-        c = Catalog(uri)
+        Catalog(uri)
 
 
 @pytest.fixture
@@ -335,6 +335,26 @@ def test_catalog_file_removal(temp_catalog_file):
     os.remove(temp_catalog_file)
     time.sleep(1.5)  # wait for catalog refresh
     assert set(cat) == set()
+
+
+def test_flatten_duplicate_error():
+    i1 = iter(temp_catalog_file())
+    i2 = iter(temp_catalog_file())
+    for f1, f2 in zip(i1, i2):
+        with pytest.raises(ValueError):
+            open_catalog([f1, f2])
+
+
+def test_multi_cat_names():
+    fn = abspath("catalog_union*.yaml")
+    cat = open_catalog(fn)
+    assert cat.name == fn
+    assert fn in repr(cat)
+
+    fn1 = abspath("catalog_union_1.yaml")
+    fn2 = abspath("catalog_union_2.yaml")
+    cat = open_catalog([fn1, fn2])
+    assert cat.name == '2 files'
 
 
 def test_default_expansions():
