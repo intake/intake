@@ -18,7 +18,7 @@ import pandas
 from .util import assert_items_equal
 from intake import Catalog, open_catalog
 from intake.catalog import exceptions, local
-from intake.catalog.local import get_dir, UserParameter
+from intake.catalog.local import get_dir, UserParameter, LocalCatalogEntry
 
 
 def abspath(filename):
@@ -82,7 +82,7 @@ def test_source_plugin_config(catalog1):
 
 def test_metadata(catalog1):
     assert hasattr(catalog1, 'metadata')
-    assert catalog1['metadata']['test'] is True
+    assert catalog1.metadata['test'] is True
 
 
 def test_use_source_plugin_from_config(catalog1):
@@ -293,7 +293,7 @@ def test_duplicate_data_sources():
     path = os.path.dirname(__file__)
     uri = os.path.join(path, 'catalog_dup_sources.yml')
 
-    with pytest.raises(exceptions.DuplicateKeyError) as except_info:
+    with pytest.raises(exceptions.DuplicateKeyError):
         Catalog(uri)
 
 
@@ -301,7 +301,7 @@ def test_duplicate_parameters():
     path = os.path.dirname(__file__)
     uri = os.path.join(path, 'catalog_dup_parameters.yml')
 
-    with pytest.raises(exceptions.DuplicateKeyError) as except_info:
+    with pytest.raises(exceptions.DuplicateKeyError):
         Catalog(uri)
 
 
@@ -451,3 +451,26 @@ def test_no_plugins():
     s = cat.tables7
     with pytest.raises(ValueError):
         s()
+
+
+def test_getitem_and_getattr():
+    from intake.source.csv import CSVSource
+    fn = abspath('multi_plugins.yaml')
+    catalog = open_catalog(fn)
+    catalog['tables0']
+    with pytest.raises(KeyError):
+        catalog['doesnotexist']
+    with pytest.raises(KeyError):
+        catalog['_doesnotexist']
+    with pytest.raises(KeyError):
+        # This exists as an *attribute* but not as an item.
+        catalog['metadata']
+    catalog.tables0  # alias to catalog['tables0']
+    catalog.metadata  # a normal attribute
+    with pytest.raises(AttributeError):
+        catalog.doesnotexit
+    with pytest.raises(AttributeError):
+        catalog._doesnotexit
+    assert catalog.tables0 is catalog['tables0']
+    assert isinstance(catalog.tables0, LocalCatalogEntry)
+    assert isinstance(catalog.metadata, (dict, type(None)))

@@ -13,7 +13,6 @@ import time
 
 import pytest
 
-from .util import assert_items_equal
 from intake import Catalog
 
 from intake.auth.secret import SecretClientAuth

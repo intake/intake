@@ -14,6 +14,7 @@ import pandas as pd
 from ...source.tests.util import verify_datasource_interface
 from .util import assert_items_equal
 from intake import Catalog
+from intake.catalog.remote import RemoteCatalogEntry
 
 TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
@@ -50,7 +51,7 @@ def test_bad_url(intake_server):
 def test_metadata(intake_server):
     catalog = Catalog(intake_server)
     assert hasattr(catalog, 'metadata')
-    assert catalog['metadata']['test'] is True
+    assert catalog.metadata['test'] is True
     assert catalog.version == 1
 
 
@@ -73,7 +74,7 @@ def test_environment_evaluation(intake_server):
     catalog = Catalog(intake_server)
     import os
     os.environ['INTAKE_TEST'] = 'client'
-    d = catalog['remote_env']
+    catalog['remote_env']
 
 
 def test_read(intake_server):
@@ -268,3 +269,24 @@ def test_pagination(intake_server):
     # Now direct lookup by name should be free because everything is cached.
     catalog['text']
     assert len(catalog._entries._direct_lookup_cache) == 1
+
+
+def test_getitem_and_getattr(intake_server):
+    catalog = Catalog(intake_server)
+    catalog['arr']
+    with pytest.raises(KeyError):
+        catalog['doesnotexist']
+    with pytest.raises(KeyError):
+        catalog['_doesnotexist']
+    with pytest.raises(KeyError):
+        # This exists as an *attribute* but not as an item.
+        catalog['metadata']
+    catalog.arr  # alias to catalog['arr']
+    catalog.metadata  # a normal attribute
+    with pytest.raises(AttributeError):
+        catalog.doesnotexit
+    with pytest.raises(AttributeError):
+        catalog._doesnotexit
+    assert catalog.arr is catalog['arr']
+    assert isinstance(catalog.arr, RemoteCatalogEntry)
+    assert isinstance(catalog.metadata, (dict, type(None)))

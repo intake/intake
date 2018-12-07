@@ -196,7 +196,7 @@ def test_plot(sample1_datasource):
     import holoviews
 
     p = sample1_datasource.plot()
-    assert isinstance(sample1_datasource.plot(), holoviews.NdOverlay)
+    assert isinstance(p, holoviews.NdOverlay)
 
 
 def test_close(sample1_datasource, data_filenames):

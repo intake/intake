@@ -103,7 +103,6 @@ class TestServerV1Source(TestServerV1Base):
         return responses
 
     def test_open(self):
-        import pickle
         msg = dict(action='open', name='entry1', parameters={})
         resp_msg, = self.make_post_request(msg)
 

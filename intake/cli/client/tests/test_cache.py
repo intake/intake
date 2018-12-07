@@ -12,7 +12,6 @@ import os
 import pytest
 import subprocess
 import sys
-from intake.source.tests.util import temp_cache
 cpath = os.path.abspath(
     os.path.join(os.path.dirname(__file__),
                  '../../../catalog/tests/catalog_caching.yml'))
