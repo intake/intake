@@ -621,19 +621,18 @@ class YAMLFilesCatalog(Catalog):
         if isinstance(self.path, (list, tuple)):
             files = sum([open_files(p, mode='rb', **options)
                          for p in self.path], [])
+            self.name = "%i files" % len(files)
         else:
             if isinstance(self.path, str) and '*' not in self.path:
                 self.path = self.path + '/*'
             files = open_files(self.path, mode='rb', **options)
+            self.name = self.path
         if not set(f.path for f in files) == set(
                 f.path for f in self._cat_files):
             # glob changed, reload all
             self._cat_files = files
             self._cats.clear()
         for f in files:
-            if os.path.isdir(f.path):
-                # don't attempt to descend into directories
-                continue
             name = os.path.split(f.path)[-1].replace(
                 '.yaml', '').replace('.yml', '')
             kwargs = self.kwargs.copy()
@@ -652,6 +651,11 @@ class YAMLFilesCatalog(Catalog):
         for entry in self._cats.values():
             if self._flatten:
                 entry.reload()
+                inter = set(entry._entries).intersection(self._entries)
+                if inter:
+                    raise ValueError('Conflicting names when flattening multiple'
+                                     ' catalogs. Sources %s exist in more than'
+                                     ' one' % inter)
                 self._entries.update(entry._entries)
             else:
                 self._entries[entry._name] = entry
