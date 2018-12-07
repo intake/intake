@@ -337,6 +337,36 @@ def test_catalog_file_removal(temp_catalog_file):
     assert set(cat) == set()
 
 
+def test_flatten_duplicate_error():
+    path = tempfile.mkdtemp()
+    f1 = os.path.join(path, 'catalog.yaml')
+    path = tempfile.mkdtemp()
+    f2 = os.path.join(path, 'catalog.yaml')
+    for f in [f1, f2]:
+        with open(f, 'w') as fo:
+            fo.write("""
+        sources:
+          a:
+            driver: csv
+            args:
+              urlpath: /not/a/file
+        """)
+    with pytest.raises(ValueError):
+        open_catalog([f1, f2])
+
+
+def test_multi_cat_names():
+    fn = abspath("catalog_union*.yaml")
+    cat = open_catalog(fn)
+    assert cat.name == fn
+    assert fn in repr(cat)
+
+    fn1 = abspath("catalog_union_1.yaml")
+    fn2 = abspath("catalog_union_2.yaml")
+    cat = open_catalog([fn1, fn2])
+    assert cat.name == '2 files'
+
+
 def test_default_expansions():
     try:
         os.environ['INTAKE_INT_TEST'] = '1'

@@ -621,19 +621,18 @@ class YAMLFilesCatalog(Catalog):
         if isinstance(self.path, (list, tuple)):
             files = sum([open_files(p, mode='rb', **options)
                          for p in self.path], [])
+            self.name = "%i files" % len(files)
         else:
             if isinstance(self.path, str) and '*' not in self.path:
                 self.path = self.path + '/*'
             files = open_files(self.path, mode='rb', **options)
+            self.name = self.path
         if not set(f.path for f in files) == set(
                 f.path for f in self._cat_files):
             # glob changed, reload all
             self._cat_files = files
             self._cats.clear()
         for f in files:
-            if os.path.isdir(f.path):
-                # don't attempt to descend into directories
-                continue
             name = os.path.split(f.path)[-1].replace(
                 '.yaml', '').replace('.yml', '')
             kwargs = self.kwargs.copy()
@@ -645,13 +644,23 @@ class YAMLFilesCatalog(Catalog):
                                           kwargs, [], {}, self.metadata, d)
                 if self._flatten:
                     # store a concrete Catalog
-                    self._cats[f.path] = entry()
+                    try:
+                        self._cats[f.path] = entry()
+                    except IOError as e:
+                        logger.info('Loading "%s" as a catalog failed: %s'
+                                    '' % (entry, e))
                 else:
                     # store a catalog entry
                     self._cats[f.path] = entry
-        for entry in self._cats.values():
+        for name, entry in list(self._cats.items()):
             if self._flatten:
                 entry.reload()
+                inter = set(entry._entries).intersection(self._entries)
+                if inter:
+                    raise ValueError(
+                        'Conflicting names when flattening multiple'
+                        ' catalogs. Sources %s exist in more than'
+                        ' one' % inter)
                 self._entries.update(entry._entries)
             else:
                 self._entries[entry._name] = entry

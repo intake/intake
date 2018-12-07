@@ -105,7 +105,16 @@ def open_catalog(uri=None, **kwargs):
         Designator for the location of the catalog.
     kwargs:
         passed to subclass instance, see documentation of the individual
-        catalog classes.
+        catalog classes. For example, ``yaml_files_cat`` (when specifying
+        multiple uris or a glob string) takes the additional
+        parameter ``flatten=True|False``, specifying whether all data sources
+        are merged in a single namespace, or each file becomes
+        a sub-catalog.
+
+    See also
+    --------
+    intake.open_yaml_files_cat, intake.open_yaml_file_cat,
+    intake.open_intake_remote
     """
     driver = kwargs.pop('driver', None)
     if driver is None:
@@ -131,7 +140,7 @@ def open_catalog(uri=None, **kwargs):
                     if uri.endswith(('.yml', '.yaml')):
                         driver = 'yaml_file_cat'
                     else:
-                        uri = uri + '/*.y*ml'
+                        uri = uri.rstrip('/') + '/*.y*ml'
                         driver = 'yaml_files_cat'
         else:
             # empty cat
