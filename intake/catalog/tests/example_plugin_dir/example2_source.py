@@ -9,9 +9,9 @@ from intake.source.base import DataSource
 
 
 class Ex2Plugin(DataSource):
-    name = 'example2',
-    version = '0.1',
-    container = 'dataframe',
+    name = 'example2'
+    version = '0.1'
+    container = 'dataframe'
     partition_access = True
 
     def __init__(self):
