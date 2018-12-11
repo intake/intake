@@ -2,8 +2,6 @@
 
 set -e # exit on error
 
-source ${HOME}/miniconda3/bin/activate root
-
 echo "Building conda package."
 conda build -c defaults -c conda-forge --no-test ./conda
 
