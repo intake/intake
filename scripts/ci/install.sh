@@ -4,6 +4,9 @@ set -e # exit on error
 
 CONDA_REQS="conda-build=3.17.0 anaconda-client=1.7.2 conda-verify=3.1.1"
 
+# TODO: ideally this could be read from the conda recipe
+TEST_REQS="pytest pytest-cov coverage"
+
 PLATFORM="$(case $TRAVIS_OS_NAME in (linux) echo Linux;; (osx) echo MacOSX;;esac)"
 
 echo "Installing Miniconda."
@@ -22,4 +25,4 @@ echo -e "$PINNED_PKGS" > $HOME/miniconda3/conda-meta/pinned
 echo "Configuring conda."
 source ${HOME}/miniconda3/bin/activate root
 conda config --set auto_update_conda off
-conda install --yes ${CONDA_REQS}
+conda install --yes ${CONDA_REQS} ${TEST_REQS}
