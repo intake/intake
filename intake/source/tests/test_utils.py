@@ -38,6 +38,12 @@ def test_path_to_glob(pattern, expected):
      {'emissions':'a1b', 'model': 'ECHAM5-MPI'}),
     ('data_{date:%Y_%m_%d}.csv', 'data_2016_10_01.csv',
      {'date': datetime.datetime(2016, 10, 1, 0, 0)}),
+    ('{state}{zip:5}', 'PA19104',
+    {'state': 'PA', 'zip': '19104'}),
+    ('{state}{zip:5d}.csv', 'PA19104.csv',
+    {'state': 'PA', 'zip': 19104}),
+    ('{state:2}{zip:d}.csv', 'PA19104.csv',
+    {'state': 'PA', 'zip': 19104}),
 ])
 def test_reverse_format(pattern, resolved, expected):
     assert reverse_format(pattern, resolved) == expected
