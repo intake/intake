@@ -12,7 +12,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from .. import base
+import intake.source.base as base
 
 
 def test_datasource_base_method_exceptions():

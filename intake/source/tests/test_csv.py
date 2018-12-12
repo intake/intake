@@ -11,7 +11,7 @@ import pickle
 import pytest
 import pandas as pd
 
-from .. import csv
+import intake.source.csv as csv
 from .util import verify_plugin_interface, verify_datasource_interface
 
 

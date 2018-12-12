@@ -5,7 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from ...source import base, registry
+from intake.source import base, registry
 
 
 def assert_items_equal(a, b):
