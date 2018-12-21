@@ -11,7 +11,7 @@ import pickle
 import pytest
 import pandas as pd
 
-from ...source.tests.util import verify_datasource_interface
+from intake.source.tests.util import verify_datasource_interface
 from .util import assert_items_equal
 from intake import Catalog
 from intake.catalog.remote import RemoteCatalogEntry

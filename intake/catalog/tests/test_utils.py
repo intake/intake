@@ -5,7 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from .. import utils
+import intake.catalog.utils as utils
 
 
 def test_expand_templates():

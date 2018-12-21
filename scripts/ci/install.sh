@@ -20,6 +20,8 @@ mkdir -p $HOME/miniconda3/conda-meta
 echo -e "$PINNED_PKGS" > $HOME/miniconda3/conda-meta/pinned
 
 echo "Configuring conda."
-source ${HOME}/miniconda3/bin/activate root
 conda config --set auto_update_conda off
 conda install --yes ${CONDA_REQS}
+
+echo "Installing test dependencies."
+conda install --yes `python scripts/deps.py`

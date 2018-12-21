@@ -2,18 +2,17 @@
 
 set -e # exit on error
 
-source ${HOME}/miniconda3/bin/activate root
-
-# Workaround for Travis-CI bug #2: https://github.com/travis-ci/travis-ci/issues/7773
-if ! [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    EXTRA_OPTS="--no-test"
-fi
-
 echo "Building conda package."
-conda build -c defaults -c conda-forge ${EXTRA_OPTS:-} ./conda
+conda build -c defaults -c conda-forge --no-test ./conda
 
-# If tagged, upload package to main channel
+# If tagged, upload package to main channel, otherwise, run tests
 if [ -n "$TRAVIS_TAG" ]; then
     echo "Uploading conda package."
     anaconda -t ${ANACONDA_TOKEN} upload -u intake --force `conda build --output ./conda`
+else
+    echo "Installing conda package locally."
+    conda install -y --use-local intake
+
+    echo "Running unit tests."
+    py.test
 fi

@@ -1,8 +1,9 @@
 [run]
 omit =
+    */tests/*
     */test_*.py
     *_version.py
-source = 
+source =
     intake
 [report]
 show_missing = True
