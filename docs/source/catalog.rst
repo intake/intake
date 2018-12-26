@@ -205,6 +205,7 @@ same global arguments will be passed to all of the drivers listed.
             class: another_package.PluginClass2
         args: {}
 
+.. _paramdefs:
 
 Parameter Definition
 ''''''''''''''''''''

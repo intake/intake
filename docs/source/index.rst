@@ -101,6 +101,7 @@ are defined in the :doc:`glossary`.
     plugin-directory.rst
     roadmap.rst
     glossary.rst
+    server.rst
 
 
 Indices and tables

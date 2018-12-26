@@ -289,8 +289,8 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             partition = request.get('partition', None)
 
             chunk_encoder = self._pick_encoder(accepted_formats,
-                                                     accepted_compression,
-                                                     source.container)
+                                               accepted_compression,
+                                               source.container)
 
             logger.debug("Read partition %s" % partition)
             if partition is not None:
