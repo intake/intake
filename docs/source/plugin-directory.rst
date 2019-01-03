@@ -25,6 +25,7 @@ This is a list of known projects which install driver plugins for Intake:
 * `intake-sql <https://github.com/ContinuumIO/intake-sql>`_: Generic SQL queries via SQLAlchemy
 * `intake-splunk <https://github.com/ContinuumIO/intake-splunk>`_: Splunk machine data query
 * `intake-xarray <https://github.com/ContinuumIO/intake-xarray>`_: load netCDF, Zarr and other multi-dimensional data
+* `intake-cmip <https://github.com/NCAR/intake-cmip>`_:  load `CMIP <https://cmip.llnl.gov/>`_ (Coupled Model Intercomparison Project) data
 
 Don't see your favorite format?  See :doc:`making-plugins` for how to create new plugins.
 
