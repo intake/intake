@@ -8,6 +8,7 @@ This is a list of known projects which install driver plugins for Intake:
 * `intake-astro <https://github.com/ContinuumIO/intake-astro>`_ Table and array loading of FITS astronomical data
 * `intake-accumulo <https://github.com/ContinuumIO/intake-accumulo>`_ Apache Accumulo clustered data storage
 * `intake-avro <https://github.com/ContinuumIO/intake-avro>`_: Apache Avro data serialization format
+* `intake-cmip <https://github.com/NCAR/intake-cmip>`_:  load `CMIP <https://cmip.llnl.gov/>`_ (Coupled Model Intercomparison Project) data
 * `intake-dynamodb <https://github.com/informatics-lab/intake-dynamodb>`_ link to Amazon DynamoDB
 * `intake-elasticsearch <https://github.com/ContinuumIO/intake-elasticsearch>`_: Elasticsearch search and analytics engine
 * `intake-geopandas <https://github.com/informatics-lab/intake_geopandas>`_: load ESRI Shape Files with geopandas
@@ -25,7 +26,6 @@ This is a list of known projects which install driver plugins for Intake:
 * `intake-sql <https://github.com/ContinuumIO/intake-sql>`_: Generic SQL queries via SQLAlchemy
 * `intake-splunk <https://github.com/ContinuumIO/intake-splunk>`_: Splunk machine data query
 * `intake-xarray <https://github.com/ContinuumIO/intake-xarray>`_: load netCDF, Zarr and other multi-dimensional data
-* `intake-cmip <https://github.com/NCAR/intake-cmip>`_:  load `CMIP <https://cmip.llnl.gov/>`_ (Coupled Model Intercomparison Project) data
 
 Don't see your favorite format?  See :doc:`making-plugins` for how to create new plugins.
 
