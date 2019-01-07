@@ -15,8 +15,8 @@ two routes are available:
 The server may be configured to use auth services, which, when passed the header of the incoming
 call, can determine whether the given request is allowed. See :doc:`auth-plugins`.
 
-Info handler, GET
------------------
+GET /info
+---------
 
 Retrieve information about the data-sets available on this server. The list of data-sets may be
 paginated, in order to avoid excessively long transactions. Notice that the catalog for which a listing
@@ -26,14 +26,15 @@ sub-catalogs are handled on the server.
 Parameters
 ~~~~~~~~~~
 
-- ``page_size``, int or none: to enable pagination, set this value. The number of entries returned
+- ``page_size``, int or none (optional): to enable pagination, set this value. The number of entries returned
   will be this value at most. If None, returns all entries.
 
-- ``page_offset``, int: when paginating, start the list from this numerical offset. The order of entries
+- ``page_offset``, int (optional): when paginating, start the list from this numerical offset. The order of entries
   is guaranteed if the base catalog has not changed.
 
-- ``source_id``, uuid string: when the catalog being accessed is not the route catalog, but an open data-source
-  on the server, this its unique identifier. See Source, POST for how these IDs are generated.
+- ``source_id``, uuid string (optional): when the catalog being accessed is not the route catalog, but an open data-source
+  on the server, this is its unique identifier. See ``POST /source`` for how these IDs are generated.
+  If the catalog being accessed is the root Catalog, this parameter should be omitted.
 
 Returns
 ~~~~~~~
@@ -45,28 +46,29 @@ Returns
 
 - ``metadata``, object: any metadata associated with the whole catalog
 
-Source handler, GET
--------------------
+GET /source
+-----------
 
-Fetch information about a specific source. This is the random-access variant of the Info, GET route, by which
+Fetch information about a specific source. This is the random-access variant of the ``GET /info`` route, by which
 a particular data-source can be accessed without paginating through all of the sources.
 
 Parameters
 ~~~~~~~~~~
 
-- ``name``, string: the data source name being accessed, one of the members of the catalog
+- ``name``, string (required): the data source name being accessed, one of the members of the catalog
 
-- ``source_id``, uuid string: when the catalog being accessed is not the root catalog, but an open data-source
-  on the server, this its unique identifier. See Source, POST for how these IDs are generated.
+- ``source_id``, uuid string (optional): when the catalog being accessed is not the root catalog, but an open data-source
+  on the server, this is its unique identifier. See ``POST /source`` for how these IDs are generated.
+  If the catalog being accessed is the root Catalog, this parameter should be omitted.
 
 Returns
 ~~~~~~~
 
-Same as one of the entries in ``sources`` for Info, GET: the result of ``.describe()`` on the given data-source in the
+Same as one of the entries in ``sources`` for ``GET /info``: the result of ``.describe()`` on the given data-source in the
 server
 
-Source handler, POST, action="open"
------------------------------------
+POST /source, action="open"
+---------------------------
 
 This is a more involved processing of a data-source, and, if successful, returns one of two possible scenarios:
 
@@ -85,20 +87,20 @@ In this case, the response also includes a UUID string for the open instance on 
 cache of open sources maintained by the server.
 
 Note that "opening" a data entry which is itself is a catalog implies instantiating that catalog object on the
-server and returning its UUID, such that a listing can be made using Info, GET or Source, GET.
+server and returning its UUID, such that a listing can be made using ``GET/ info`` or ``GET /source``.
 
 Parameters
 ~~~~~~~~~~
 
-- ``name``, string: the data source name being accessed, one of the members of the catalog
+- ``name``, string (required): the data source name being accessed, one of the members of the catalog
 
-- ``source_id``, uuid string: when the catalog being accessed is not the root catalog, but an open data-source
-  on the server, this its unique identifier.
+- ``source_id``, uuid string (optional): when the catalog being accessed is not the root catalog, but an open data-source
+  on the server, this is its unique identifier. If the catalog being accessed is the root Catalog, this parameter should be omitted.
 
-- ``available_plugins``, list of string: the set of named data drivers supported by the client. If the driver required
+- ``available_plugins``, list of string (optional): the set of named data drivers supported by the client. If the driver required
   by the data-source is not supported by the client, then the source must be opened remote-access.
 
-- ``parameters``, object: user parameters to pass to the data-source when instantiating. Whether or not direct-access
+- ``parameters``, object (optional): user parameters to pass to the data-source when instantiating. Whether or not direct-access
   is possible may, in principle, depend on these parameters, but this is unlikely. Note that some parameter default
   value functions are designed to be evaluated on the server, which may have access to, for example, some credentials
   service (see :ref:`paramdefs`).
@@ -111,20 +113,21 @@ If direct-access, the driver plugin name and set of arguments for instantiating 
 If remote-access, the data-source container, schema and source-ID so that further reads can be made from the
 server.
 
-Source handler, POST, action="read"
------------------------------------
+POST /source, action="read"
+---------------------------
 
 This route fetches data from the server once a data-source has been opened in remote-access mode.
 
 Parameters
 ~~~~~~~~~~
-- ``source_id``, uuid string: the identifier of the data-source in the server's source cache. This is returned
+- ``source_id``, uuid string (required): the identifier of the data-source in the server's source cache. This is returned
   when ``action="open"``.
 
-- ``partition``, int or tuple: section/chunk of the data to fetch. In cases where the data-source is partitioned,
+- ``partition``, int or tuple (optional, but necessary for some sources): section/chunk of the data to fetch.
+  In cases where the data-source is partitioned,
   the client will fetch the data one partition at a time, so that it will appear partitioned in the same manner on
   the client side for iteration of passing to Dask. Some data-sources do not support partitioning, and then this
   parameter is not required/ignored.
 
-- ``accepted_formats``, ``accepted_compression``, list of strings: to specify how serialization of data happens. This
+- ``accepted_formats``, ``accepted_compression``, list of strings (required): to specify how serialization of data happens. This
   is an expert feature, see docs in the module ``intake.container.serializer``.
