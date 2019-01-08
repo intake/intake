@@ -239,7 +239,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 msg = 'Access forbidden'
                 raise tornado.web.HTTPError(status_code=403, log_message=msg,
                                             reason=msg)
-            user_parameters = request['parameters']
+            user_parameters = request.get('parameters', {})
             client_plugins = request.get('available_plugins', [])
 
             # Can the client directly access the data themselves?
@@ -289,8 +289,8 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             partition = request.get('partition', None)
 
             chunk_encoder = self._pick_encoder(accepted_formats,
-                                                     accepted_compression,
-                                                     source.container)
+                                               accepted_compression,
+                                               source.container)
 
             logger.debug("Read partition %s" % partition)
             if partition is not None:
