@@ -12,8 +12,7 @@ import argparse
 import shutil
 import yaml
 
-from intake import Catalog
-
+from intake import Catalog, __version__
 
 def print_entry_info(catalog, name):
     info = catalog[name].describe()
@@ -168,6 +167,8 @@ def main(argv=None):
 
     parser = argparse.ArgumentParser(description='Intake Catalog CLI', add_help=False)
     subparsers = parser.add_subparsers(help='sub-command help')
+
+    parser.add_argument('-v', '--version', action='version', version=__version__)
 
     list_parser = subparsers.add_parser('list', help='catalog listing')
     list_parser.add_argument('--full', action='store_true')
