@@ -12,6 +12,14 @@ import argparse
 import shutil
 import yaml
 
+def _version(modname, attr):
+    from importlib import import_module
+    try:
+        mod = import_module(modname)
+        return getattr(mod, attr)
+    except ImportError:
+        pass
+
 from intake import Catalog, __version__
 
 def print_entry_info(catalog, name):
@@ -19,6 +27,15 @@ def print_entry_info(catalog, name):
     for key in sorted(info.keys()):
         print("[{}] {}={}".format(name, key, info[key]))
 
+def info(args):
+    if_installed = lambda version_or_none: version_or_none or "(not installed)"
+    print("Python version      :  %s" % sys.version.split('\n')[0])
+    print("IPython version     :  %s" % if_installed(_version('IPython', '__version__')))
+    print("Tornado version     :  %s" % if_installed(_version('tornado', 'version')))
+    print("Dask version        :  %s" % if_installed(_version('dask', '__version__')))
+    print("Pandas version      :  %s" % if_installed(_version('pandas', '__version__')))
+    print("Numpy version       :  %s" % if_installed(_version('numpy', '__version__')))
+    print("Intake version      :  %s" % __version__)
 
 def listing(args):
     catalog = Catalog(args.uri)
@@ -169,6 +186,9 @@ def main(argv=None):
     subparsers = parser.add_subparsers(help='sub-command help')
 
     parser.add_argument('-v', '--version', action='version', version=__version__)
+
+    info_parser = subparsers.add_parser('info', help='Intake package runtime info')
+    info_parser.set_defaults(func=info)
 
     list_parser = subparsers.add_parser('list', help='catalog listing')
     list_parser.add_argument('--full', action='store_true')
