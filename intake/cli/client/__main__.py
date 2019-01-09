@@ -165,7 +165,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = argparse.ArgumentParser(description='Intake Catalog CLI', add_help=False)
+    parser = argparse.ArgumentParser(description='Intake Catalog CLI')
     subparsers = parser.add_subparsers(help='sub-command help')
 
     parser.add_argument('-v', '--version', action='version', version=__version__)
