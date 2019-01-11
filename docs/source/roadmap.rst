@@ -25,30 +25,43 @@ become more universally useful when it can act as a bridge to several other syst
 .. _SQLCatalog: https://intake-sql.readthedocs.io/en/latest/api.html#intake_sql.SQLCatalog
 
 
-Integration with Apache Spark
------------------------------
+Streaming Source
+----------------
 
-The spark ecosystems and Intake will co-operate nicely! Firstly, Spark sources (i.e., named tables) will become
-standard data sources, so that the data can be streamed from Spark to a python process, and the data-sets referenced
-in a catalog as usual. These data-sets will necessarily be data-frame type, although an RDD-to-sequential method
-may also be possible. See https://github.com/ContinuumIO/intake-spark
+Many data sources are inherently time-sensitive and event-wise. These are not covered well by existing
+Python tools, but the ``streamz`` library may present a nice way to model them. From the Intake point of
+view, the task would be to develop a streaming type, and at least one data driver that uses it.
 
-Some sources will acquire a `to_spark()` method, translating the pythonic calls to something that can be
-passe to pyspark and giving back an RDD or DataFrame. See [PR](https://github.com/ContinuumIO/intake/pull/196).
+The most obvious place to start would be read a file: every time a new line appears in the file, an event
+is emitted. This is appropriate, for instance, for watching the log files of a web-server, and indeed could
+be extended to read from an arbitrary socket.
 
-Derived Data-sets
------------------
 
-Often, we can conceive of a data-type as being a modified version of another data-type. For example:
-the "csv" plugin produced data-frames from a set of files in the CSV format, while another plugin
-takes data-frames with a particular set of fields as input, and produces new data-frames based on some
-model predictions.
+Persistence
+-----------
 
-Rather than allow a general pipeline with arbitrary code specified in catalogues, we aim to allow
-the creation of arbitrary *plugins*, where the inputs are the outputs of other data-sources. This
-way, the logic stays in the code of the plugin, which can be distributed as python/conda packages as
-usual, but a path is in place to generate "second-order" data products. Naturally, such derived
-plugins ought to be thorough about describing the process in the metadata of the resultant data-source.
-Preliminary work: `PR`_.
+Intake is not in the business or *writing* data. However, each of the container types do lend themselves
+to a particular on-disc format, wherever they came from. This proposal is to allow for a persist method
+on every source, which loads the data and saves it to a configured storage location (local or remote),
+and automatically adds an entry to some "persisted data" catalog. Such entries may be time-restricted and
+eventually expire, or perhaps automatically renew themselves.
 
-.. _PR: https://github.com/ContinuumIO/intake/pull/176
+This is the counterpart to caching, which involves making local copies of remote files. Here we can save
+anything, for example the output of an expensive SQL query.
+
+
+Next-generation GUI
+-------------------
+
+The jupyter-widgets GUI is useful and simple, but we can do better. See the `long form proposal`_
+
+.. _long form proposal::https://github.com/ContinuumIO/intake/issues/225
+
+
+Catalog services
+----------------
+
+We are experimenting with reflecting external catalog-like data servers as Intake catalogs, so that the
+familiar API can be used for all the disparate services. See for example `this discussion`_.
+
+.. _this discussion:
