@@ -18,12 +18,6 @@ impetus to get the work done. Conversations over the coming months can help dete
 drivers that should be created by the Intake team, and those that might be contributed by the
 community.
 
-Similarly, there are many third-party data services, some of which are paid and prorietary.
-Currently, `SQLCatalog`_ is the first example, and therefore reference, of this, but Intake will
-become more universally useful when it can act as a bridge to several other systems.
-
-.. _SQLCatalog: https://intake-sql.readthedocs.io/en/latest/api.html#intake_sql.SQLCatalog
-
 
 Streaming Source
 ----------------
