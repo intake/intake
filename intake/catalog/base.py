@@ -322,9 +322,8 @@ class RemoteCatalog(Catalog):
             The number of entries fetched at a time during iteration.
             Default is None (no pagination; fetch all entries in bulk).
         query : Iterable or None
-            List from a sequence of progressive searches. Each element is
-            expected to be a valid argument to Catalog.search() for this
-            Catalog.
+            A sequence of progressive searches. Each element is expected to be
+            a valid argument to Catalog.search() for this Catalog.
         kwargs: may include catalog name, metadata, source ID (if known) and
             auth instance.
         name : str, optional
@@ -357,9 +356,8 @@ class RemoteCatalog(Catalog):
         self.http_args.update(kwargs.get('storage_options', {}))
         self.http_args['headers'] = self.http_args.get('headers', {})
         self._page_size = page_size
-        if query is None:
-            query = ()
-        self._query = tuple(query)
+        # Convert to (immutable) tuple just to avoid accidental mutation.
+        self._query = tuple(query or (, ))
         self._source_id = kwargs.get('source_id', None)
         if self._source_id is None:
             self.info_url = urljoin(url, 'v1/info')
