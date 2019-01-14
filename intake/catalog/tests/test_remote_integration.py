@@ -13,7 +13,7 @@ import pandas as pd
 
 from intake.source.tests.util import verify_datasource_interface
 from .util import assert_items_equal
-from intake import Catalog
+from intake import Catalog, RemoteCatalog
 from intake.catalog.remote import RemoteCatalogEntry
 
 TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
@@ -290,3 +290,18 @@ def test_getitem_and_getattr(intake_server):
     assert catalog.arr is catalog['arr']
     assert isinstance(catalog.arr, RemoteCatalogEntry)
     assert isinstance(catalog.metadata, (dict, type(None)))
+
+
+def test_search(intake_server):
+    catalog = Catalog(intake_server)
+
+    results = catalog.search('text', depth=1)
+    assert isinstance(results, RemoteCatalog)
+    assert list(results) == ['text']
+    assert isinstance(results['text'], RemoteCatalogEntry)
+
+    catalog = Catalog(intake_server)
+    results = catalog.search('text', depth=2)
+    assert isinstance(results, RemoteCatalog)
+    assert set(results) == set(['text', 'nested.text'])
+    assert isinstance(results['nested.text'], RemoteCatalogEntry)
