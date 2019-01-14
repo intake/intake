@@ -114,8 +114,8 @@ class ServerInfoHandler(tornado.web.RequestHandler):
                 # This could be a search of a search of a serach (etc.).
                 # Progressively apply each search and then page through the
                 # final results.
-                for query in query_list:
-                    cat = cat.search(query)
+                for args, kwargs in query_list:
+                    cat = cat.search(*args, **kwargs)
                 page = itertools.islice(
                     cat.walk(depth=1).items(), start, stop)
             else:
@@ -212,8 +212,8 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 # Progressively apply each search and then page through the
                 # final results.
                 cat = cat
-                for query in query_list:
-                    cat = cat.search(query)
+                for args, kwargs, in query_list:
+                    cat = cat.search(*args, **kwargs)
             try:
                 # This would ideally be cat[name] and not access the interal
                 # structure cat._entries. However in the case of a client

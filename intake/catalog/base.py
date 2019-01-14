@@ -323,7 +323,8 @@ class RemoteCatalog(Catalog):
             Default is None (no pagination; fetch all entries in bulk).
         query : Iterable or None
             A sequence of progressive searches. Each element is expected to be
-            a valid argument to Catalog.search() for this Catalog.
+            ``(args, kwargs)`` where these would be valid arguments when passed
+            into ``Catalog.search(*args, **kwargs)``.
         kwargs: may include catalog name, metadata, source ID (if known) and
             auth instance.
         name : str, optional
@@ -492,9 +493,18 @@ class RemoteCatalog(Catalog):
                     http_args=self.http_args, **source)
                  for source in info['sources']})
 
-    def search(self, query):
+    def search(self, *args, **kwargs):
         # Return a new RemoteCatalog like this one in all respects except with
         # this query appended to its list of queries.
-        return RemoteCatalog(url=self.url,
-                             http_args=self.http_args,
-                             query=self._query + (query,))
+        return RemoteCatalog(
+            url=self.url,
+            http_args=self.http_args,
+            query=self._query + ((args, kwargs),),
+            # Give a name like <This Catalog>.search(...) with args and kwargs
+            # filled in.
+            name=("{!r}.search(".format(self) +
+                  ", ".join("{!r}".format(arg) for arg in args) +
+                  ", " if kwargs else "" +
+                  ", ".join("{!s}={!r}".format(k, v)
+                            for k, v in kwargs.items()) +
+                  ")"))
