@@ -357,7 +357,7 @@ class RemoteCatalog(Catalog):
         self.http_args['headers'] = self.http_args.get('headers', {})
         self._page_size = page_size
         # Convert to (immutable) tuple just to avoid accidental mutation.
-        self._query = tuple(query or (, ))
+        self._query = tuple(query or ())
         self._source_id = kwargs.get('source_id', None)
         if self._source_id is None:
             self.info_url = urljoin(url, 'v1/info')
