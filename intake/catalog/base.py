@@ -504,7 +504,7 @@ class RemoteCatalog(Catalog):
             # filled in.
             name=("{!r}.search(".format(self) +
                   ", ".join("{!r}".format(arg) for arg in args) +
-                  ", " if kwargs else "" +
+                  (", " if kwargs else "") +
                   ", ".join("{!s}={!r}".format(k, v)
                             for k, v in kwargs.items()) +
                   ")"))
