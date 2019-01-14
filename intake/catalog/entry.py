@@ -5,6 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+
 class CatalogEntry(object):
     """A single item appearing in a catalog
 
@@ -44,6 +45,8 @@ class CatalogEntry(object):
         Returns: dict with keys
           plugin : str
               Name of data plugin to use
+          container: str
+              Data type returned
           description : str
               Markdown-friendly description of data source
           direct_access : str
@@ -88,6 +91,19 @@ class CatalogEntry(object):
     def __getattr__(self, attr):
         # TODO: only consider attr not starting with "_"?
         return getattr(self._get_default_source(), attr)
+
+    def __getitem__(self, item):
+        """Pass getitem to data source, assuming default parameters
+
+        Also supports multiple items ([.., ..]), in which case the first
+        component only will be used to instantiate, and the rest passed on.
+        """
+        if isinstance(item, tuple):
+            if len(item) > 1:
+                return self._get_default_source()[item[0]].__getitem__(item[1:])
+            else:
+                item = item[0]
+        return self._get_default_source()[item]
 
     def __repr__(self):
         return "<Catalog Entry: %s>" % self.name

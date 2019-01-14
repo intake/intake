@@ -47,7 +47,7 @@ class TestServerV1Info(TestServerV1Base):
 
         info = self.decode(response.body)
 
-        self.assert_('version' in info)
+        self.assertTrue('version' in info)
 
         expected = [
             {
@@ -116,20 +116,20 @@ class TestServerV1Source(TestServerV1Base):
         md.pop('catalog_dir', None)
         self.assertEqual(md, dict(foo='bar', bar=[1, 2, 3], cache=[]))
 
-        self.assert_(isinstance(resp_msg['source_id'], str))
+        self.assertTrue(isinstance(resp_msg['source_id'], str))
 
     def test_open_direct(self):
         msg = dict(action='open', name='entry1_part', parameters=dict(part='2'),
                    available_plugins=['csv'])
         resp_msg, = self.make_post_request(msg)
 
-        self.assert_('csv' in resp_msg['plugin'])
+        self.assertTrue('csv' in resp_msg['plugin'])
         args = resp_msg['args']
-        self.assertEquals(set(args.keys()), set(['urlpath', 'metadata']))
-        self.assert_(args['urlpath'].endswith('/entry1_2.csv'))
+        self.assertEqual(set(args.keys()), set(['urlpath', 'metadata']))
+        self.assertTrue(args['urlpath'].endswith('/entry1_2.csv'))
         md = args['metadata']
         md.pop('catalog_dir', None)
-        self.assertEquals(md, dict(foo='baz', bar=[2, 4, 6], cache=[]))
+        self.assertEqual(md, dict(foo='baz', bar=[2, 4, 6], cache=[]))
         self.assertEqual(resp_msg['description'], 'entry1 part')
 
     def test_read_part_compressed(self):

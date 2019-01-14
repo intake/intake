@@ -74,6 +74,12 @@ def test_nested(catalog1):
     assert 'nested.nested' in catalog1.walk(depth=2)
 
 
+def test_getitem(catalog1):
+    assert list(catalog1) == list(catalog1['nested']())
+    assert list(catalog1) == list(catalog1['nested.nested']())
+    assert list(catalog1) == list(catalog1['nested', 'nested']())
+
+
 def test_source_plugin_config(catalog1):
     from intake import registry
     assert 'example1' in registry
