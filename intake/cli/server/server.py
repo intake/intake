@@ -88,6 +88,7 @@ class ServerInfoHandler(tornado.web.RequestHandler):
     def initialize(self, cache, catalog, auth):
         self.cache = cache
         self.catalog = catalog
+        self.searches = {}  # Map search queries to cached sources.
         self.auth = auth
 
     def get(self):
@@ -98,8 +99,10 @@ class ServerInfoHandler(tornado.web.RequestHandler):
         if self.auth.allow_connect(head):
             if 'source_id' in head:
                 cat = self.cache.get(head['source_id'])
+                query_key = (head['source_id'],)
             else:
                 cat = self.catalog
+                query_key = ()
             sources = []
             if page_size is None:
                 # Return all the results in one page. This is important for
@@ -115,7 +118,15 @@ class ServerInfoHandler(tornado.web.RequestHandler):
                 # Progressively apply each search and then page through the
                 # final results.
                 for args, kwargs in query_list:
-                    cat = cat.search(*args, **kwargs)
+                    # The results of each search are cached.
+                    query_key += (str((args, kwargs)),)
+                    try:
+                        source_id = self.searches[query_key]
+                        cat = self.cache[source_id]
+                    except KeyError:
+                        cat = cat.search(*args, **kwargs)
+                        source_id = self.cache.add(cat)
+                        self.searches[query_key] = source_id
                 page = itertools.islice(
                     cat.walk(depth=1).items(), start, stop)
             else:
@@ -189,6 +200,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
     def initialize(self, catalog, cache, auth):
         self._catalog = catalog
         self._cache = cache
+        self.searches = {}  # Map search queries to cached sources.
         self.auth = auth
 
     def get(self):
@@ -205,15 +217,25 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         if self.auth.allow_connect(head):
             if 'source_id' in head:
                 cat = self._cache.get(head['source_id'])
+                query_key = (head['source_id'],)
             else:
                 cat = self._catalog
+                query_key = ()
             if query_list:
                 # This could be a search of a search of a serach (etc.).
                 # Progressively apply each search and then page through the
                 # final results.
                 cat = cat
                 for args, kwargs, in query_list:
-                    cat = cat.search(*args, **kwargs)
+                    # The results of each search are cached.
+                    query_key += (str((args, kwargs)),)
+                    try:
+                        source_id = self.searches[query_key]
+                        cat = self._cache[source_id]
+                    except KeyError:
+                        cat = cat.search(*args, **kwargs)
+                        source_id = self._cache.add(cat)
+                        self.searches[query_key] = source_id
             try:
                 # This would ideally be cat[name] and not access the interal
                 # structure cat._entries. However in the case of a client
