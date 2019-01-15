@@ -101,7 +101,7 @@ def test_get_fail():
                                stderr=subprocess.PIPE)
     _, err = process.communicate()
 
-    assert "KeyError: 'entry2'" in err.decode('utf-8')
+    assert "KeyError('entry2')" in err.decode('utf-8')
 
 @pytest.fixture
 def temp_current_working_directory():

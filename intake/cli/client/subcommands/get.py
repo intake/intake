@@ -3,7 +3,12 @@
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+'''
+
+'''
+
+from __future__ import print_function
 
 import logging
 log = logging.getLogger(__name__)
@@ -13,24 +18,29 @@ log = logging.getLogger(__name__)
 #-----------------------------------------------------------------------------
 
 # Standard library imports
-import sys
 
 # External imports
 
 # Intake imports
-from . import subcommands
+from intake import Catalog
+from intake.cli.util import Subcommand
 
 #-----------------------------------------------------------------------------
 # API
 #-----------------------------------------------------------------------------
 
-def main(argv=None):
-    ''' Execute the "intake" command line program.
+class Get(Subcommand):
+    ''' Get a catalog entry
 
     '''
-    from intake.cli.bootstrap import main as _main
 
-    return _main('Intake Catalog CLI', subcommands.all, argv or sys.argv)
+    name = "get"
 
-if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    def initialize(self):
+        self.parser.add_argument('uri', metavar='URI', type=str, help='Catalog URI')
+        self.parser.add_argument('name', metavar='NAME', type=str, help='Catalog name')
+
+    def invoke(self, args):
+        catalog = Catalog(args.uri)
+        with catalog[args.name].get() as f:
+            print(f.read())
