@@ -20,6 +20,7 @@ from intake.config import conf
 from intake.container import serializer
 from intake.auth import get_auth_class
 from intake import __version__
+from intake.compat import unpack_kwargs
 logger = logging.getLogger('intake')
 
 
@@ -223,7 +224,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
 
     @tornado.gen.coroutine
     def post(self):
-        request = msgpack.unpackb(self.request.body, encoding='utf-8')
+        request = msgpack.unpackb(self.request.body, **unpack_kwargs)
         action = request['action']
         head = self.request.headers
         logger.debug('Source POST: %s' % request)

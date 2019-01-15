@@ -12,6 +12,7 @@ import six
 from ..source import registry as plugin_registry
 from .entry import CatalogEntry
 from .utils import expand_defaults, coerce
+from ..compat import unpack_kwargs
 
 
 class RemoteCatalogEntry(CatalogEntry):
@@ -33,6 +34,7 @@ class RemoteCatalogEntry(CatalogEntry):
         self.auth = auth
         self.args = args
         self.kwargs = kwargs
+        self.container = self.kwargs.get('container', None)
         self._description = self.kwargs.get('description', "")
         self._metadata = self.kwargs.get('metatata', {})
         self._page_size = self.kwargs.get('page_size', None)
@@ -49,6 +51,7 @@ class RemoteCatalogEntry(CatalogEntry):
 
     def describe_open(self, **kwargs):
         return {
+            'container': self.container,
             'plugin': None,
             'description': self._description,
             'direct_access': False,
@@ -90,7 +93,7 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
     req = requests.post(url, data=msgpack.packb(
         payload, use_bin_type=True), **http_args)
     if req.ok:
-        response = msgpack.unpackb(req.content, encoding='utf-8')
+        response = msgpack.unpackb(req.content, **unpack_kwargs)
 
         if 'plugin' in response:
             # Direct access

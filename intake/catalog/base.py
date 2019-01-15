@@ -19,6 +19,7 @@ from .entry import CatalogEntry
 from .remote import RemoteCatalogEntry
 from .utils import flatten, reload_on_change, RemoteCatalogError
 from ..source.base import DataSource
+from ..compat import unpack_kwargs
 logger = logging.getLogger('intake')
 
 
@@ -201,19 +202,18 @@ class Catalog(DataSource):
     def __getitem__(self, key):
         """Return a catalog entry by name.
 
-        Can also use attribute syntax, like ``cat.entry_name``.
+        Can also use attribute syntax, like ``cat.entry_name``, or
+        item lookup cat['non-python name']. This enables walking through
+        nested directories with cat.name1.name2, cat['name1.name2'] *or*
+        cat['name1', 'name2']
         """
         if key in self._get_entries():  # triggers reload_on_change
             return self._entries[key]
-        out = self
-        if '.' in key:
-            for k in key.split('.'):
-                if isinstance(out, CatalogEntry):
-                    out = out()  # default parameters
-                if not isinstance(out, Catalog):
-                    raise ValueError("Attempt to recurse into non-catalog")
-                out = out[k]
-            return out
+        if isinstance(key, str) and '.' in key:
+            key = key.split('.')
+        if isinstance(key, (tuple, list)):
+            if len(key) > 1 and key[0] in self._entries:
+                return self._entries[key[0]].__getitem__(*key[1:])
         else:
             raise KeyError(key)
 
@@ -383,7 +383,7 @@ class RemoteCatalog(Catalog):
             raise RemoteCatalogError(
                 "Failed to fetch page of entries {}-{}."
                 "".format(page_offset, page_offset + self._page_size))
-        info = msgpack.unpackb(response.content, encoding='utf-8')
+        info = msgpack.unpackb(response.content, **unpack_kwargs)
         page = {source['name']: RemoteCatalogEntry(
             url=self.source_url,
             getenv=self.getenv,
@@ -407,7 +407,7 @@ class RemoteCatalog(Catalog):
         except requests.HTTPError:
             raise RemoteCatalogError(
                 "Failed to fetch entry {!r}.".format(name))
-        info = msgpack.unpackb(response.content, encoding='utf-8')
+        info = msgpack.unpackb(response.content, **unpack_kwargs)
         return RemoteCatalogEntry(
             url=self.source_url,
             getenv=self.getenv,
@@ -461,7 +461,7 @@ class RemoteCatalog(Catalog):
         except requests.HTTPError:
             raise RemoteCatalogError(
                 "Failed to fetch metadata.")
-        info = msgpack.unpackb(response.content, encoding='utf-8')
+        info = msgpack.unpackb(response.content, **unpack_kwargs)
         self.metadata = info['metadata']
         self._entries.reset()
         # If we are paginating (page_size is not None) and the server we are
