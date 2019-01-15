@@ -505,11 +505,4 @@ class RemoteCatalog(Catalog):
             url=self.url,
             http_args=self.http_args,
             query=self._query + ((args, kwargs),),
-            # Give a name like <This Catalog>.search(...) with args and kwargs
-            # filled in.
-            name=("{!r}.search(".format(self) +
-                  ", ".join("{!r}".format(arg) for arg in args) +
-                  (", " if kwargs else "") +
-                  ", ".join("{!s}={!r}".format(k, v)
-                            for k, v in kwargs.items()) +
-                  ")"))
+            name="")
