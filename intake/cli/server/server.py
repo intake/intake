@@ -88,7 +88,6 @@ class ServerInfoHandler(tornado.web.RequestHandler):
     def initialize(self, cache, catalog, auth):
         self.cache = cache
         self.catalog = catalog
-        self.searches = {}  # Map search queries to cached sources.
         self.auth = auth
 
     def get(self):
@@ -97,12 +96,17 @@ class ServerInfoHandler(tornado.web.RequestHandler):
         page_offset = self.get_argument('page_offset', 0)
         query_list = json.loads(self.get_argument('query', '[]'))
         if self.auth.allow_connect(head):
+            # The query_key uniquely identifies in the cache a Catalog that is
+            # the result of a search query. It is a tuple, and its first
+            # element, is the source_id of the Catalog that the search was
+            # performed on --- or an empty string if the search was on the
+            # "root" Catalog.
             if 'source_id' in head:
                 cat = self.cache.get(head['source_id'])
                 query_key = (head['source_id'],)
             else:
                 cat = self.catalog
-                query_key = ()
+                query_key = ('', )
             sources = []
             if page_size is None:
                 # Return all the results in one page. This is important for
@@ -114,19 +118,17 @@ class ServerInfoHandler(tornado.web.RequestHandler):
                 start = int(page_offset)
                 stop = int(page_offset) + int(page_size)
             if query_list:
-                # This could be a search of a search of a serach (etc.).
+                # This could be a search of a search of a search (etc.).
                 # Progressively apply each search and then page through the
                 # final results.
                 for args, kwargs in query_list:
                     # The results of each search are cached.
                     query_key += (str((args, kwargs)),)
                     try:
-                        source_id = self.searches[query_key]
-                        cat = self.cache[source_id]
+                        cat = self.cache.get(query_key)
                     except KeyError:
                         cat = cat.search(*args, **kwargs)
-                        source_id = self.cache.add(cat)
-                        self.searches[query_key] = source_id
+                        self.cache.add(cat, source_id=query_key)
                 page = itertools.islice(
                     cat.walk(depth=1).items(), start, stop)
             else:
@@ -152,8 +154,9 @@ class SourceCache(object):
     def __init__(self):
         self._sources = {}
 
-    def add(self, source):
-        source_id = str(uuid4())
+    def add(self, source, source_id=None):
+        if source_id is None:
+            source_id = str(uuid4())
         now = time.time()
         self._sources[source_id] = dict(source=source, open_time=now,
                                         last_time=now)
@@ -200,7 +203,6 @@ class ServerSourceHandler(tornado.web.RequestHandler):
     def initialize(self, catalog, cache, auth):
         self._catalog = catalog
         self._cache = cache
-        self.searches = {}  # Map search queries to cached sources.
         self.auth = auth
 
     def get(self):
@@ -215,14 +217,19 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         name = self.get_argument('name')
         query_list = json.loads(self.get_argument('query', '[]'))
         if self.auth.allow_connect(head):
+            # The query_key uniquely identifies in the cache a Catalog that is
+            # the result of a search query. It is a tuple, and its first
+            # element is the source_id of the Catalog that the search was
+            # performed on --- or an empty string if the search was on the
+            # "root" Catalog.
             if 'source_id' in head:
                 cat = self._cache.get(head['source_id'])
                 query_key = (head['source_id'],)
             else:
                 cat = self._catalog
-                query_key = ()
+                query_key = ('',)
             if query_list:
-                # This could be a search of a search of a serach (etc.).
+                # This could be a search of a search of a search (etc.).
                 # Progressively apply each search and then page through the
                 # final results.
                 cat = cat
@@ -230,12 +237,10 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                     # The results of each search are cached.
                     query_key += (str((args, kwargs)),)
                     try:
-                        source_id = self.searches[query_key]
-                        cat = self._cache[source_id]
+                        cat = self._cache.get(query_key)
                     except KeyError:
                         cat = cat.search(*args, **kwargs)
-                        source_id = self._cache.add(cat)
-                        self.searches[query_key] = source_id
+                        self._cache.add(cat, source_id=query_key)
             try:
                 # This would ideally be cat[name] and not access the interal
                 # structure cat._entries. However in the case of a client
