@@ -6,11 +6,11 @@
 #-----------------------------------------------------------------------------
 from __future__ import print_function
 
+import base64
 import time
 from uuid import uuid4
 
 import itertools
-import json
 import logging
 import msgpack
 import tornado.gen
@@ -94,7 +94,11 @@ class ServerInfoHandler(tornado.web.RequestHandler):
         head = self.request.headers
         page_size = self.get_argument('page_size', None)
         page_offset = self.get_argument('page_offset', 0)
-        query_list = json.loads(self.get_argument('query', '[]'))
+        # query_list is sent as base64-encoded msgpack-encoded data.
+        msgpack_encoded_query_list = base64.decodebytes(
+            self.get_argument('query', ENCODED_EMPTY_LIST).encode())
+        query_list = msgpack.unpackb(msgpack_encoded_query_list,
+                                     **unpack_kwargs)
         if self.auth.allow_connect(head):
             # The query_key uniquely identifies in the cache a Catalog that is
             # the result of a search query. It is a tuple, and its first
@@ -215,7 +219,11 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         """
         head = self.request.headers
         name = self.get_argument('name')
-        query_list = json.loads(self.get_argument('query', '[]'))
+        # query_list is sent as base64-encoded msgpack-encoded data.
+        msgpack_encoded_query_list = base64.decodebytes(
+            self.get_argument('query', ENCODED_EMPTY_LIST).encode())
+        query_list = msgpack.unpackb(msgpack_encoded_query_list,
+                                     **unpack_kwargs)
         if self.auth.allow_connect(head):
             # The query_key uniquely identifies in the cache a Catalog that is
             # the result of a search query. It is a tuple, and its first
@@ -388,3 +396,6 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         else:
             msg = dict(error='unknown error')
         self.write(msgpack.packb(msg, use_bin_type=True))
+
+
+ENCODED_EMPTY_LIST = base64.encodebytes(msgpack.packb([], use_bin_type=True)).decode()

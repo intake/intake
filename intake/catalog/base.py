@@ -5,8 +5,8 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import base64
 import collections
-import json
 import logging
 import six
 import time
@@ -385,7 +385,11 @@ class RemoteCatalog(Catalog):
         params = {'page_offset': page_offset,
                   'page_size': self._page_size}
         if self._query:
-            params['query'] = json.dumps(self._query)
+            msgpack_encoded = msgpack.packb(self._query, use_bin_type=True)
+            # Base64-encode the msgpack bytes so that we can put them into a
+            # GET query parameter. Slice to omit the \n at the end.
+            base64_encoded = base64.encodebytes(msgpack_encoded)[:-1]
+            params['query'] = base64_encoded
         http_args = self._get_http_args(params)
         response = requests.get(self.info_url, **http_args)
         # Produce a chained exception with both the underlying HTTPError
@@ -412,7 +416,11 @@ class RemoteCatalog(Catalog):
         logger.debug("Requesting info about entry named '%s'", name)
         params = {'name': name}
         if self._query:
-            params['query'] = json.dumps(self._query)
+            msgpack_encoded = msgpack.packb(self._query, use_bin_type=True)
+            # Base64-encode the msgpack bytes so that we can put them into a
+            # GET query parameter. Slice to omit the \n at the end.
+            base64_encoded = base64.encodebytes(msgpack_encoded)[:-1]
+            params['query'] = base64_encoded
         http_args = self._get_http_args(params)
         response = requests.get(self.source_url, **http_args)
         if response.status_code == 404:
@@ -470,7 +478,11 @@ class RemoteCatalog(Catalog):
             # Just fetch the metadata now; fetch source info later in pages.
             params = {'page_offset': 0, 'page_size': 0}
         if self._query:
-            params['query'] = json.dumps(self._query)
+            msgpack_encoded = msgpack.packb(self._query, use_bin_type=True)
+            # Base64-encode the msgpack bytes so that we can put them into a
+            # GET query parameter. Slice to omit the \n at the end.
+            base64_encoded = base64.encodebytes(msgpack_encoded)[:-1]
+            params['query'] = base64_encoded
         http_args = self._get_http_args(params)
         response = requests.get(self.info_url, **http_args)
         try:
