@@ -4,7 +4,7 @@ function install() {
     conda config --add channels conda-forge
     conda config --get channels
     conda update -q conda
-    conda install jinja2 pyyaml
+    conda install jinja2 pyyaml pytest
     conda install $(python scripts/deps.py)
 }
 
