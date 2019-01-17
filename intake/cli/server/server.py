@@ -273,13 +273,45 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         head = self.request.headers
         logger.debug('Source POST: %s' % request)
 
-        if action == 'open':
+        if action == 'search':
+            if 'source_id' in head:
+                cat = self._cache.get(head['source_id'])
+            else:
+                cat = self._catalog
+            query = request['query']
+            # Construct a cache key from the source_id of the Catalog being
+            # searched and the query itself.
+            query_source_id = '-'.join((head.get('source_id', 'root'),
+                                       str(query)))
+            try:
+                cat = self._cache.get(query_source_id)
+            except KeyError:
+                try:
+                    args, kwargs = query
+                    cat = cat.search(*args, **kwargs)
+                except Exception as err:
+                    logger.exception("Search query %r on Catalog %r failed",
+                                     query, cat)
+                    raise tornado.web.HTTPError(
+                        status_code=400,
+                        log_message="Search query failed",
+                        reason=str(err))
+                self._cache.add(cat, source_id=query_source_id)
+            response = {'source_id': query_source_id}
+            self.write(msgpack.packb(response, use_bin_type=True))
+            self.finish()
+        elif action == 'open':
             if 'source_id' in head:
                 cat = self._cache.get(head['source_id'])
             else:
                 cat = self._catalog
             entry_name = request['name']
-            entry = cat[entry_name]
+            try:
+                entry = cat[entry_name]
+            except KeyError:
+                msg = "Catalog has no entry {!r}".format(entry_name)
+                raise tornado.web.HTTPError(status_code=404, log_message=msg,
+                                            reason=msg)
             if not self.auth.allow_access(head, entry, cat):
                 msg = 'Access forbidden'
                 raise tornado.web.HTTPError(status_code=403, log_message=msg,
