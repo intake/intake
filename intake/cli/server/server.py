@@ -288,7 +288,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 source_id = self._cache.add(source)
                 logger.debug('Container: %s, ID: %s' % (source.container,
                                                         source_id))
-                response = dict(source._schema)
+                response = dict(source._schema or {})
                 response.update(dict(container=source.container,
                                      source_id=source_id,
                                      metadata=source.metadata))

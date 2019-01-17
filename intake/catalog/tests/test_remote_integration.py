@@ -337,3 +337,7 @@ def test_search(intake_server):
     assert isinstance(remote_results, RemoteCatalog)
     assert list(local_results) == list(remote_results) == expected
 
+
+def test_access_subcatalog(intake_server):
+    catalog = Catalog(intake_server)
+    catalog['nested']
