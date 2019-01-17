@@ -12,7 +12,8 @@ install:
   # and the user has the necessary permissions to make environment changes. In a CI
   # environment these are not necessary and slow things down noticeably on Windows.
   # also adding conda-forge as highest-priority default channel
-  - conda config --set always_yes yes --set changeps1 no --set auto_update_conda no --set safety_checks disabled --add channels conda-forge
+  - conda config --set always_yes yes --set changeps1 no --set auto_update_conda no --set safety_checks disabled
+  - conda config --add channels conda-forge
   - conda update -q conda
   - conda env create -n test_env python=3.6 pytest
   - conda activate test_env
