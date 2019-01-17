@@ -1,0 +1,23 @@
+# Inspired by appveyor in xarray and anaconda-project
+
+build: false
+
+environment:
+  global:
+    CONDA: "C:\\Miniconda36-x64"
+
+install:
+  - "SET PATH=%CONDA%;%CONDA%\\Scripts;%PATH%"
+  # The safety checks are simply intended to ensure that there is enough disk space
+  # and the user has the necessary permissions to make environment changes. In a CI
+  # environment these are not necessary and slow things down noticeably on Windows.
+  - conda config --set always_yes yes --set changeps1 no --set auto_update_conda no --set safety_checks disabled --add channels conda-forge
+  - conda update -q conda
+  - conda env create -n test_env python=3.6 pytest
+  - conda activate test_env
+  - conda install --file requirements.txt
+  - python setup.py install
+  - conda list
+
+script:
+  - pytest intake --verbose
