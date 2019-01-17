@@ -6,7 +6,6 @@
 #-----------------------------------------------------------------------------
 from __future__ import print_function
 
-import base64
 import time
 from uuid import uuid4
 
@@ -109,8 +108,6 @@ class ServerInfoHandler(tornado.web.RequestHandler):
             else:
                 start = int(page_offset)
                 stop = int(page_offset) + int(page_size)
-                page = itertools.islice(
-                    cat.walk(depth=1).items(), start, stop)
             page = itertools.islice(cat.walk(depth=1).items(), start, stop)
             for name, source in page:
                 if self.auth.allow_access(head, source, self.catalog):
@@ -231,7 +228,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             # Construct a cache key from the source_id of the Catalog being
             # searched and the query itself.
             query_source_id = '-'.join((head.get('source_id', 'root'),
-                                       str(query)))
+                                        str(query)))
             try:
                 cat = self._cache.get(query_source_id)
             except KeyError:
