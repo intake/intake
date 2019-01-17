@@ -20,5 +20,5 @@ install:
   - python setup.py install
   - conda list
 
-script:
+test_script:
   - pytest intake --verbose
