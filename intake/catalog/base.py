@@ -7,6 +7,7 @@
 
 import base64
 import collections
+import copy
 import logging
 import six
 import time
@@ -308,7 +309,7 @@ class Entries(dict):
 
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
-    def __init__(self, url, http_args={}, page_size=None, **kwargs):
+    def __init__(self, url, http_args=None, page_size=None, **kwargs):
         """Connect to remote Intake Server as a catalog
 
         Parameters
@@ -343,6 +344,11 @@ class RemoteCatalog(Catalog):
             parameters to pass to remote backend file-system. Ignored for
             normal local files.
         """
+        if http_args is None:
+            http_args = {}
+        else:
+            # Make a deep copy to avoid mutating input.
+            http_args = copy.deepcopy(http_args)
         secure = http_args.pop('ssl', False)
         scheme = 'https' if secure else 'http'
         url = url.replace('intake', scheme)
