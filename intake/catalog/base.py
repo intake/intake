@@ -353,6 +353,8 @@ class RemoteCatalog(Catalog):
         if not url.endswith('/'):
             url = url + '/'
         self.url = url
+        self.info_url = urljoin(url, 'v1/info')
+        self.source_url = urljoin(url, 'v1/source')
         self.http_args = http_args
         self.http_args.update(kwargs.get('storage_options', {}))
         self.http_args['headers'] = self.http_args.get('headers', {})
@@ -361,14 +363,10 @@ class RemoteCatalog(Catalog):
         self._query = tuple(query or ())
         self._source_id = kwargs.get('source_id', None)
         if self._source_id is None:
-            self.info_url = urljoin(url, 'v1/info')
-            self.source_url = urljoin(url, 'v1/source')
             self.name = urlparse(url).netloc.replace(
                 '.', '_').replace(':', '_')
         else:
             self.name = kwargs['name']
-            self.info_url = urljoin(url, 'v1/info')
-            self.source_url = urljoin(url, 'v1/source')
         self.auth = kwargs.get('auth', None)  # instance of BaseClientAuth
         super(RemoteCatalog, self).__init__(self, **kwargs)
 
