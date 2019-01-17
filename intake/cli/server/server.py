@@ -250,18 +250,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                         cat = cat.search(*args, **kwargs)
                         self._cache.add(cat, source_id=query_key)
             try:
-                # This would ideally be cat[name] and not access the interal
-                # structure cat._entries. However in the case of a client
-                # accessing RemoteCatalog['metadata'], we need the server to
-                # return 404 (which will prompt the client to check
-                # RemoteCatalog.metadata and thereby find what it is looking
-                # for). The server should not attempt to return metadata as a
-                # source, which it would do if we access cat['metadata'].
-                # Therefore we need to make sure `name` is really an entry by
-                # checking directly. If the attribute/key distinction is made
-                # sligtly less permissive in the future, this can be
-                # revisited.
-                source = cat._entries[name]
+                source = cat[name]
             except KeyError:
                 msg = 'No such entry'
                 raise tornado.web.HTTPError(status_code=404, log_message=msg,
