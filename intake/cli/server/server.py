@@ -94,23 +94,11 @@ class ServerInfoHandler(tornado.web.RequestHandler):
         head = self.request.headers
         page_size = self.get_argument('page_size', None)
         page_offset = self.get_argument('page_offset', 0)
-        # query_list is sent as base64-encoded msgpack-encoded data.
-        msgpack_encoded_query_list = base64.decodebytes(
-            self.get_argument('query', ENCODED_EMPTY_LIST).encode())
-        query_list = msgpack.unpackb(msgpack_encoded_query_list,
-                                     **unpack_kwargs)
         if self.auth.allow_connect(head):
-            # The query_key uniquely identifies in the cache a Catalog that is
-            # the result of a search query. It is a tuple, and its first
-            # element, is the source_id of the Catalog that the search was
-            # performed on --- or an empty string if the search was on the
-            # "root" Catalog.
             if 'source_id' in head:
                 cat = self.cache.get(head['source_id'])
-                query_key = (head['source_id'],)
             else:
                 cat = self.catalog
-                query_key = ('', )
             sources = []
             if page_size is None:
                 # Return all the results in one page. This is important for
@@ -121,23 +109,9 @@ class ServerInfoHandler(tornado.web.RequestHandler):
             else:
                 start = int(page_offset)
                 stop = int(page_offset) + int(page_size)
-            if query_list:
-                # This could be a search of a search of a search (etc.).
-                # Progressively apply each search and then page through the
-                # final results.
-                for args, kwargs in query_list:
-                    # The results of each search are cached.
-                    query_key += (str((args, kwargs)),)
-                    try:
-                        cat = self.cache.get(query_key)
-                    except KeyError:
-                        cat = cat.search(*args, **kwargs)
-                        self.cache.add(cat, source_id=query_key)
                 page = itertools.islice(
                     cat.walk(depth=1).items(), start, stop)
-            else:
-                # Page through all results.
-                page = itertools.islice(cat.walk(depth=1).items(), start, stop)
+            page = itertools.islice(cat.walk(depth=1).items(), start, stop)
             for name, source in page:
                 if self.auth.allow_access(head, source, self.catalog):
                     info = source.describe()
@@ -219,36 +193,11 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         """
         head = self.request.headers
         name = self.get_argument('name')
-        # query_list is sent as base64-encoded msgpack-encoded data.
-        msgpack_encoded_query_list = base64.decodebytes(
-            self.get_argument('query', ENCODED_EMPTY_LIST).encode())
-        query_list = msgpack.unpackb(msgpack_encoded_query_list,
-                                     **unpack_kwargs)
         if self.auth.allow_connect(head):
-            # The query_key uniquely identifies in the cache a Catalog that is
-            # the result of a search query. It is a tuple, and its first
-            # element is the source_id of the Catalog that the search was
-            # performed on --- or an empty string if the search was on the
-            # "root" Catalog.
             if 'source_id' in head:
                 cat = self._cache.get(head['source_id'])
-                query_key = (head['source_id'],)
             else:
                 cat = self._catalog
-                query_key = ('',)
-            if query_list:
-                # This could be a search of a search of a search (etc.).
-                # Progressively apply each search and then page through the
-                # final results.
-                cat = cat
-                for args, kwargs, in query_list:
-                    # The results of each search are cached.
-                    query_key += (str((args, kwargs)),)
-                    try:
-                        cat = self._cache.get(query_key)
-                    except KeyError:
-                        cat = cat.search(*args, **kwargs)
-                        self._cache.add(cat, source_id=query_key)
             try:
                 source = cat[name]
             except KeyError:
@@ -417,6 +366,3 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         else:
             msg = dict(error='unknown error')
         self.write(msgpack.packb(msg, use_bin_type=True))
-
-
-ENCODED_EMPTY_LIST = base64.encodebytes(msgpack.packb([], use_bin_type=True)).decode()

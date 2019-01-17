@@ -308,7 +308,7 @@ class Entries(dict):
 
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
-    def __init__(self, url, http_args={}, page_size=None, query=None, **kwargs):
+    def __init__(self, url, http_args={}, page_size=None, **kwargs):
         """Connect to remote Intake Server as a catalog
 
         Parameters
@@ -321,10 +321,6 @@ class RemoteCatalog(Catalog):
         page_size : int, optional
             The number of entries fetched at a time during iteration.
             Default is None (no pagination; fetch all entries in bulk).
-        query : Iterable or None
-            A sequence of progressive searches. Each element is expected to be
-            ``(args, kwargs)`` where these would be valid arguments when passed
-            into ``Catalog.search(*args, **kwargs)``.
         kwargs: may include catalog name, metadata, source ID (if known) and
             auth instance.
         name : str, optional
@@ -359,8 +355,6 @@ class RemoteCatalog(Catalog):
         self.http_args.update(kwargs.get('storage_options', {}))
         self.http_args['headers'] = self.http_args.get('headers', {})
         self._page_size = page_size
-        # Convert to (immutable) tuple just to avoid accidental mutation.
-        self._query = tuple(query or ())
         self._source_id = kwargs.get('source_id', None)
         if self._source_id is None:
             self.name = urlparse(url).netloc.replace(
@@ -382,22 +376,16 @@ class RemoteCatalog(Catalog):
                      page_offset, page_offset + self._page_size)
         params = {'page_offset': page_offset,
                   'page_size': self._page_size}
-        if self._query:
-            msgpack_encoded = msgpack.packb(self._query, use_bin_type=True)
-            # Base64-encode the msgpack bytes so that we can put them into a
-            # GET query parameter. Slice to omit the \n at the end.
-            base64_encoded = base64.encodebytes(msgpack_encoded)[:-1]
-            params['query'] = base64_encoded
         http_args = self._get_http_args(params)
         response = requests.get(self.info_url, **http_args)
         # Produce a chained exception with both the underlying HTTPError
         # and our own more direct context.
         try:
             response.raise_for_status()
-        except requests.HTTPError:
-            raise RemoteCatalogError(
+        except requests.HTTPError as err:
+            six.raise_from(RemoteCatalogError(
                 "Failed to fetch page of entries {}-{}."
-                "".format(page_offset, page_offset + self._page_size))
+                "".format(page_offset, page_offset + self._page_size)), err)
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         page = {source['name']: RemoteCatalogEntry(
             url=self.url,
@@ -413,21 +401,15 @@ class RemoteCatalog(Catalog):
     def fetch_by_name(self, name):
         logger.debug("Requesting info about entry named '%s'", name)
         params = {'name': name}
-        if self._query:
-            msgpack_encoded = msgpack.packb(self._query, use_bin_type=True)
-            # Base64-encode the msgpack bytes so that we can put them into a
-            # GET query parameter. Slice to omit the \n at the end.
-            base64_encoded = base64.encodebytes(msgpack_encoded)[:-1]
-            params['query'] = base64_encoded
         http_args = self._get_http_args(params)
         response = requests.get(self.source_url, **http_args)
         if response.status_code == 404:
             raise KeyError(name)
         try:
             response.raise_for_status()
-        except requests.HTTPError:
-            raise RemoteCatalogError(
-                "Failed to fetch entry {!r}.".format(name))
+        except requests.HTTPError as err:
+            six.raise_from(RemoteCatalogError(
+                "Failed to fetch entry {!r}.".format(name)), err)
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         return RemoteCatalogEntry(
             url=self.url,
@@ -475,19 +457,13 @@ class RemoteCatalog(Catalog):
         else:
             # Just fetch the metadata now; fetch source info later in pages.
             params = {'page_offset': 0, 'page_size': 0}
-        if self._query:
-            msgpack_encoded = msgpack.packb(self._query, use_bin_type=True)
-            # Base64-encode the msgpack bytes so that we can put them into a
-            # GET query parameter. Slice to omit the \n at the end.
-            base64_encoded = base64.encodebytes(msgpack_encoded)[:-1]
-            params['query'] = base64_encoded
         http_args = self._get_http_args(params)
         response = requests.get(self.info_url, **http_args)
         try:
             response.raise_for_status()
-        except requests.HTTPError:
-            raise RemoteCatalogError(
-                "Failed to fetch metadata.")
+        except requests.HTTPError as err:
+            six.raise_from(RemoteCatalogError(
+                "Failed to fetch metadata."), err)
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         self.metadata = info['metadata']
         self._entries.reset()
@@ -509,10 +485,19 @@ class RemoteCatalog(Catalog):
                  for source in info['sources']})
 
     def search(self, *args, **kwargs):
-        # Return a new RemoteCatalog like this one in all respects except with
-        # this query appended to its list of queries.
+        request = {'action': 'search', 'query': (args, kwargs),
+                   'source_id': self._source_id}
+        response = requests.post(
+            url=self.source_url, **self._get_http_args({}),
+            data=msgpack.packb(request, use_bin_type=True))
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as err:
+            six.raise_from(RemoteCatalogError("Failed search query."), err)
+        source = msgpack.unpackb(response.content, **unpack_kwargs)
+        source_id = source['source_id']
         return RemoteCatalog(
             url=self.url,
             http_args=self.http_args,
-            query=self._query + ((args, kwargs),),
+            source_id=source_id,
             name="")

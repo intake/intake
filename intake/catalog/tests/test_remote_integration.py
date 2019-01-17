@@ -293,15 +293,47 @@ def test_getitem_and_getattr(intake_server):
 
 
 def test_search(intake_server):
-    catalog = Catalog(intake_server)
+    remote_catalog = Catalog(intake_server)
+    local_catalog = Catalog(TEST_CATALOG_PATH)
 
-    results = catalog.search('text', depth=1)
-    assert isinstance(results, RemoteCatalog)
-    assert list(results) == ['text']
-    assert isinstance(results['text'], RemoteCatalogEntry)
+    # Basic example
+    remote_results = remote_catalog.search('entry1')
+    local_results = local_catalog.search('entry1')
+    expected = ['nested.entry1', 'nested.entry1_part', 'entry1', 'entry1_part']
+    assert isinstance(remote_results, RemoteCatalog)
+    assert list(local_results) == list(remote_results) == expected
 
-    catalog = Catalog(intake_server)
-    results = catalog.search('text', depth=2)
-    assert isinstance(results, RemoteCatalog)
-    assert set(results) == set(['text', 'nested.text'])
-    assert isinstance(results['nested.text'], RemoteCatalogEntry)
+    # Progressive search
+    remote_results = remote_catalog.search('entry1').search('part')
+    local_results = local_catalog.search('entry1').search('part')
+    expected = ['nested.entry1_part', 'entry1_part']
+    assert isinstance(remote_results, RemoteCatalog)
+    assert list(local_results) == list(remote_results) == expected
+
+    # Double progressive search
+    remote_results = (remote_catalog
+        .search('entry1')
+        .search('part')
+        .search('part'))
+    local_results = (local_catalog
+        .search('entry1')
+        .search('part')
+        .search('part'))
+    expected = ['nested.entry1_part', 'entry1_part']
+    assert isinstance(remote_results, RemoteCatalog)
+    assert list(local_results) == list(remote_results) == expected
+
+    # Search on a nested Catalog.
+    remote_results = remote_catalog['nested'].search('entry1')
+    local_results = local_catalog['nested'].search('entry1')
+    expected = ['nested.entry1', 'nested.entry1_part', 'entry1', 'entry1_part']
+    assert isinstance(remote_results, RemoteCatalog)
+    assert list(local_results) == list(remote_results) == expected
+
+    # Search with empty results set
+    remote_results = remote_catalog.search('DOES NOT EXIST')
+    local_results = local_catalog.search('DOES NOT EXIST')
+    expected = []
+    assert isinstance(remote_results, RemoteCatalog)
+    assert list(local_results) == list(remote_results) == expected
+
