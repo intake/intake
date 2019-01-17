@@ -12,7 +12,7 @@ Installation
 
 If you are using `Anaconda`_ or Miniconda, install Intake with the following commands::
 
-    conda install -c intake intake
+    conda install -c conda-forge intake
 
 If you are using virtualenv/pip, run the following command::
 

@@ -19,7 +19,7 @@ Install
 
 Recommended method using conda:
 ```bash
-conda install -c intake intake
+conda install -c conda-forge intake
 ```
 
 
