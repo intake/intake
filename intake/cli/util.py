@@ -79,16 +79,38 @@ def print_entry_info(catalog, name):
         print("[{}] {}={}".format(name, key, info[key]))
 
 class Subcommand(object):
-    '''
+    ''' Abstract base class for subcommands
+
+    Subclasses should define a class variable ``name`` that will be used as the
+    subparser name, and a docstring, that will be used as the subparser help.
+    After initialization, the parser for this comman will be avaialble as
+    ``self.parser``.
+
+    Subclasses must also implement:
+
+    * an ``initialize(self)`` method that configures ``self.parser``
+
+    * an ``invoke(self, args)`` method that accepts a set of argparse
+      processed arguments as input.
 
     '''
 
     def __init__(self, parser):
+        ''' Configure a parser for this command.
+
+        '''
         self.parser = parser
         self.initialize()
 
-    def initialize(self, args):
+    def initialize(self):
+        ''' Implement in subclasses to configure self.parser with any arguments
+        or additional sub-parsers.
+
+        '''
         raise NotImplementedError("Subclasses must implement initialize()")
 
     def invoke(self, args):
+        ''' Implement in subclasses to perform the actual work of the command
+
+        '''
         raise NotImplementedError("Subclasses must implement invoke()")
