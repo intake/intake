@@ -14,6 +14,7 @@ import sys
 import tempfile
 import time
 import yaml
+from .utils import make_path_posix
 
 ex = sys.executable
 here = os.path.dirname(__file__)
@@ -33,7 +34,7 @@ def tempdir():
 @contextmanager
 def temp_conf(conf):
     with tempdir() as d:
-        fn = os.path.join(d, 'conf.yaml')
+        fn = make_path_posix(os.path.join(d, 'conf.yaml'))
         with open(fn, 'w') as f:
             yaml.dump(conf, f)
         yield fn

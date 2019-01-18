@@ -13,6 +13,8 @@ import pytest
 import requests
 
 from intake.util_tests import ex, PY2
+from intake.utils import make_path_posix
+
 here = os.path.dirname(__file__)
 
 
@@ -139,8 +141,8 @@ def temp_cache(tempdir):
     import intake
     old = intake.config.conf.copy()
     olddir = intake.config.confdir
-    intake.config.confdir = str(tempdir)
-    intake.config.conf.update({'cache_dir': str(tempdir),
+    intake.config.confdir = make_path_posix(str(tempdir))
+    intake.config.conf.update({'cache_dir': make_path_posix(str(tempdir)),
                                'cache_download_progress': False,
                                'cache_disabled': False})
     intake.config.save_conf()

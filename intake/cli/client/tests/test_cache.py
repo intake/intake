@@ -14,18 +14,16 @@ import subprocess
 import sys
 cpath = os.path.abspath(
     os.path.join(os.path.dirname(__file__),
-                 '../../../catalog/tests/catalog_caching.yml'))
+                 '..', '..', '..', 'catalog', 'tests', 'catalog_caching.yml'))
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2,
                     reason="Py2 exists early on argparse")
-def test_help(tempdir):
-    out = subprocess.check_output('INTAKE_CONF_DIR=%s intake cache' % tempdir,
-                                  shell=True).decode()
+def test_help(temp_cache):
+    out = subprocess.check_output('intake cache').decode()
     assert 'usage: ' in out
 
-    out2 = subprocess.check_output('INTAKE_CONF_DIR=%s intake cache -h' % tempdir,
-                                   shell=True).decode()
+    out2 = subprocess.check_output('intake cache -h').decode()
     assert out2 == out
 
 

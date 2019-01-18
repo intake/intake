@@ -22,8 +22,10 @@ from intake.catalog import exceptions, local
 from intake.catalog.local import get_dir, UserParameter, LocalCatalogEntry
 from intake.utils import make_path_posix
 
+
 def abspath(filename):
-    return make_path_posix(os.path.abspath(filename))
+    return make_path_posix(
+        os.path.join(os.path.dirname(__file__), filename))
 
 
 @pytest.fixture
