@@ -50,8 +50,7 @@ sources:
     time.sleep(2)
 
     yield intake_server
-    import pdb; pdb.set_trace()
-    # os.remove(fullname)
+    os.remove(fullname)
 
 
 def test_reload_updated_config(intake_server_with_config):

@@ -77,7 +77,6 @@ class BaseCache(object):
                                 'from a catalog file.')
             cd = os.path.join(catdir, 'intake_cache')
         self._cache_dir = cd
-        import pdb; pdb.set_trace()
 
         self._storage_options = storage_options
         self._metadata = CacheMetadata()
@@ -100,7 +99,6 @@ class BaseCache(object):
             posixpath.join(self._cache_dir, cache_subdir),
             path
         )
-        import pdb; pdb.set_trace()
 
         return urlpath if path == cache_path else cache_path
 
@@ -115,7 +113,7 @@ class BaseCache(object):
         if subdir is None:
             subdir = self._hash(urlpath)
         cache_path = self._munge_path(subdir, urlpath)
-        import pdb; pdb.set_trace()
+
         dirname = os.path.dirname(cache_path)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
@@ -174,7 +172,6 @@ class BaseCache(object):
         outnames = []
         for file_in, file_out in zip(files_in, files_out):
             cache_path = file_out.path
-            import pdb; pdb.set_trace()
             outnames.append(cache_path)
 
             # If `_munge_path` did not find a match we want to avoid
@@ -227,14 +224,12 @@ class BaseCache(object):
         cache_entries = self._metadata.pop(urlpath, [])  # ignore if missing
         for cache_entry in cache_entries:
             try:
-                import pdb; pdb.set_trace()
-                # os.remove(cache_entry['cache_path'])
+                os.remove(cache_entry['cache_path'])
             except (OSError, IOError):
                 pass
         try:
             fn = os.path.dirname(cache_entry['cache_path'])
-            import pdb; pdb.set_trace()
-            # os.rmdir(fn)
+            os.rmdir(fn)
         except (OSError, IOError):
             logger.debug("Failed to remove cache directory: %s" % fn)
 
@@ -250,12 +245,11 @@ class BaseCache(object):
             return
         for subdir in os.listdir(self._cache_dir):
             try:
-                fn = os.path.join(self._cache_dir, subdir)
+                fn = posixpath.join(self._cache_dir, subdir)
                 if os.path.isdir(fn):
                     shutil.rmtree(fn)
                 if os.path.isfile(fn):
-                    import pdb; pdb.set_trace()
-                    # os.remove(fn)
+                    os.remove(fn)
             except (OSError, IOError) as e:
                 logger.warning(str(e))
 

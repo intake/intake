@@ -37,8 +37,7 @@ def test_ensure_cache_dir(file_cache):
     with pytest.raises(Exception):
         file_cache._ensure_cache_dir()
 
-    import pdb; pdb.set_trace()
-    # os.remove(file_cache._cache_dir)
+    os.remove(file_cache._cache_dir)
 
     file_cache.clear_all()
 

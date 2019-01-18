@@ -92,8 +92,7 @@ def intake_server(request):
         if server_conf:
             try:
                 env.pop('INTAKE_CONF_FILE', None)
-                import pdb; pdb.set_trace()
-                # os.remove(server_conf)
+                os.remove(server_conf)
             except:
                 pass
         p.terminate()
