@@ -234,7 +234,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             except KeyError:
                 try:
                     args, kwargs = query
-                    cat = cat.search(*args, **kwargs)
+                    results_cat = cat.search(*args, **kwargs)
                 except Exception as err:
                     logger.exception("Search query %r on Catalog %r failed",
                                      query, cat)
@@ -242,7 +242,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                         status_code=400,
                         log_message="Search query failed",
                         reason=str(err))
-                self._cache.add(cat, source_id=query_source_id)
+                self._cache.add(results_cat, source_id=query_source_id)
             response = {'source_id': query_source_id}
             self.write(msgpack.packb(response, use_bin_type=True))
             self.finish()
