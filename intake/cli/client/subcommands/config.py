@@ -69,7 +69,7 @@ class Config(Subcommand):
         if 'INTAKE_CONF_FILE' in os.environ:
             print('INTAKE_CONF_FILE: ', os.environ['INTAKE_CONF_FILE'])
         ex = "" if os.path.isfile(conffile) else "(does not exist)"
-        print('Using: ', conffile), ex)
+        print('Using: ', conffile, ex)
 
     def _list_defaults(self, args):
         from intake.config import defaults
