@@ -18,13 +18,7 @@ cpath = make_path_posix(
         os.path.join(os.path.dirname(__file__),
                      '..', '..', '..', 
                      'catalog', 'tests', 'catalog_caching.yml')))
-
-@pytest.fixture(scope='function')
-def env(temp_cache, tempdir):
-    env = os.environ.copy()
-    env["INTAKE_CONF_DIR"] = intake.config.confdir
-    env['INTAKE_CACHE_DIR'] = intake.config.conf['cache_dir']
-    return env
+                     
 
 @pytest.mark.skipif(sys.version_info[0] == 2,
                     reason="Py2 exists early on argparse")

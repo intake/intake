@@ -152,3 +152,12 @@ def temp_cache(tempdir):
     finally:
         intake.config.confdir = olddir
         intake.config.conf.update(old)
+
+
+@pytest.fixture(scope='function')
+def env(temp_cache, tempdir):
+    import intake
+    env = os.environ.copy()
+    env["INTAKE_CONF_DIR"] = intake.config.confdir
+    env['INTAKE_CACHE_DIR'] = intake.config.conf['cache_dir']
+    return env
