@@ -8,18 +8,21 @@
 from os.path import expanduser
 import logging
 import os
+import posixpath
 import yaml
+from .utils import make_path_posix
 logger = logging.getLogger('intake')
 
-confdir = os.getenv('INTAKE_CONF_DIR',
-                    os.path.join(expanduser('~'), '.intake'))
-conffile = os.getenv('INTAKE_CONF_FILE', None)
+confdir =  make_path_posix(
+    os.getenv('INTAKE_CONF_DIR', os.path.join(expanduser('~'), '.intake')))
+conffile = make_path_posix(
+    os.getenv('INTAKE_CONF_FILE', posixpath.join(confdir, 'conf.yaml')))
 
 
 defaults = {
     'auth': {'class': 'intake.auth.base.BaseAuth'},
     'port': 5000,
-    'cache_dir': os.path.join(expanduser('~'), '.intake/cache'),
+    'cache_dir': posixpath.join(confdir, 'cache'),
     'cache_disabled': False,
     'cache_download_progress': True,
     'logging': 'INFO',
@@ -34,11 +37,6 @@ def reset_conf():
     conf.update(defaults)
 
 
-def cfile():
-    return os.getenv('INTAKE_CONF_FILE', None) or os.path.join(
-        confdir, 'conf.yaml')
-
-
 def save_conf(fn=None):
     """Save current configuration to file as YAML
 
@@ -46,7 +44,7 @@ def save_conf(fn=None):
     set by INTAKE_CONF_DIR.
     """
     if fn is None:
-        fn = cfile()
+        fn = conffile
     try:
         os.makedirs(os.path.dirname(fn))
     except (OSError, IOError):
@@ -62,7 +60,7 @@ def load_conf(fn=None):
     by the INTAKE_CONF_DIR env-var or is ~/.intake/ .
     """
     if fn is None:
-        fn = cfile()
+        fn = conffile
     if os.path.isfile(fn):
         with open(fn) as f:
             try:
@@ -82,7 +80,7 @@ reset_conf()
 load_conf(conffile)
 # environment variables take precedence over conf file
 if 'INTAKE_CACHE_DIR' in os.environ:
-    conf['cache_dir'] = os.environ['INTAKE_CACHE_DIR']
+    conf['cache_dir'] = make_path_posix(os.environ['INTAKE_CACHE_DIR'])
 if 'INTAKE_DISABLE_CACHING' in os.environ:
     conf['cache_disabled'] = os.environ['INTAKE_DISABLE_CACHING'
                                         ].lower() == 'true'
@@ -92,7 +90,8 @@ if 'INTAKE_CACHE_PROGRESS' in os.environ:
 if 'INTAKE_LOG_LEVEL' in os.environ:
     conf['logging'] = os.environ['INTAKE_LOG_LEVEL']
 if 'INTAKE_PATH' in os.environ:
-    conf['catalog_path'] = intake_path_dirs(os.environ['INTAKE_PATH'])
+    conf['catalog_path'] = make_path_posix(
+        intake_path_dirs(os.environ['INTAKE_PATH']))
 logger.setLevel(conf['logging'])
 ch = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s %(name)s:%(levelname)s, %(message)s')

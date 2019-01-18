@@ -36,7 +36,8 @@ def user_catalog():
     yield target_catalog
     # Remove the file, but not the directory (because there might be other
     # files already there)
-    os.remove(target_catalog)
+    import pdb; pdb.set_trace()
+    # os.remove(target_catalog)
 
 @pytest.fixture
 def tmp_path_catalog():
@@ -49,7 +50,8 @@ def tmp_path_catalog():
     yield target_catalog
     # Remove the file, but not the directory (because there might be other
     # files already there)
-    os.remove(target_catalog)
+    import pdb; pdb.set_trace()
+    # os.remove(target_catalog)
 
 def test_autoregister_open():
     assert hasattr(intake, 'open_csv')

@@ -63,13 +63,13 @@ class Config(Subcommand):
                 print(yaml.dump(conf, default_flow_style=False))
 
     def _info(self, args):
-        from intake.config import cfile
+        from intake.config import conffile
         if 'INTAKE_CONF_DIR' in os.environ:
             print('INTAKE_CONF_DIR: ', os.environ['INTAKE_CONF_DIR'])
         if 'INTAKE_CONF_FILE' in os.environ:
             print('INTAKE_CONF_FILE: ', os.environ['INTAKE_CONF_FILE'])
-        ex = "" if os.path.isfile(cfile()) else "(does not exist)"
-        print('Using: ', cfile(), ex)
+        ex = "" if os.path.isfile(conffile) else "(does not exist)"
+        print('Using: ', conffile), ex)
 
     def _list_defaults(self, args):
         from intake.config import defaults

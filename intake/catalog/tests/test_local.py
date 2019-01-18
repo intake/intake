@@ -338,7 +338,8 @@ def test_catalog_file_removal(temp_catalog_file):
     cat = Catalog(cat_dir + '/*')
     assert set(cat) == {'a', 'b'}
 
-    os.remove(temp_catalog_file)
+    import pdb; pdb.set_trace()
+    # os.remove(temp_catalog_file)
     time.sleep(1.5)  # wait for catalog refresh
     assert set(cat) == set()
 

@@ -7,7 +7,7 @@
 
 import logging
 import os
-import os.path
+import posixpath
 import yaml
 
 try:
@@ -26,6 +26,7 @@ from .entry import CatalogEntry
 from ..source import registry as global_registry
 from ..source import get_plugin_class
 from ..source.discovery import load_plugins_from_module
+from ..utils import make_path_posix
 from .utils import expand_templates, expand_defaults, coerce, COERCION_RULES
 
 
@@ -515,8 +516,9 @@ def register_plugin_dir(path):
 
 def get_dir(path):
     if '://' in path:
-        return os.path.dirname(path)
-    return os.path.join(os.getcwd(), os.path.dirname(path))
+        return posixpath.dirname(path)
+    return make_path_posix(
+        os.path.dirname(os.path.abspath(path)))
 
 
 class YAMLFileCatalog(Catalog):
