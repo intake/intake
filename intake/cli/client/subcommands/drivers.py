@@ -52,11 +52,11 @@ class Drivers(Subcommand):
         list.set_defaults(invoke=self._list)
 
         enable = sub_parser.add_parser('enable', help='Enable one or more intake drivers.')
-        enable.add_argument('drivers', type=str, help='Python package name, such as intake_xarray', nargs='+')
+        enable.add_argument('drivers', type=str, help='Module path and class name, as in package.submodule.ClassName', nargs='+')
         enable.set_defaults(invoke=self._enable)
 
         disable = sub_parser.add_parser('disable', help='Disable one or more intake drivers.')
-        disable.add_argument('drivers', type=str, help='Python package name, such as intake_xarray', nargs='+')
+        disable.add_argument('drivers', type=str, help='Module path and class name, as in package.submodule.ClassName', nargs='+')
         disable.set_defaults(invoke=self._disable)
 
     def invoke(self, args):
