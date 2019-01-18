@@ -19,11 +19,11 @@ from .catalog import local
 from .catalog.default import load_combo_catalog
 from .container import upload
 from .source import registry
-from .source.discovery import autodiscover
-from .gui import InstanceMaker
+from .source.discovery import all_enabled_drivers
+from .gui import DataBrowser, InstanceMaker
 
-# Populate list of autodetected plugins
-registry.update(autodiscover())
+# Populate list of autodetected or explicitly configured drivers (plugins).
+registry.update(all_enabled_drivers())
 
 from .source import csv, textfiles, npy, zarr
 registry['csv'] = csv.CSVSource
