@@ -7,6 +7,7 @@
 
 import os
 import subprocess
+import shutil
 import time
 
 import pytest
@@ -125,7 +126,7 @@ def http_server():
         p.communicate()
 
 
-@pytest.fixture()
+@pytest.fixture(scope='function')
 def tempdir():
     import tempfile
     import shutil
@@ -136,7 +137,7 @@ def tempdir():
         shutil.rmtree(d)
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def temp_cache(tempdir):
     import intake
     old = intake.config.conf.copy()
