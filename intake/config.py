@@ -23,7 +23,8 @@ defaults = {
     'cache_disabled': False,
     'cache_download_progress': True,
     'logging': 'INFO',
-    'catalog_path': []
+    'catalog_path': [],
+    'persist_path': 'DEFAULT'
     }
 conf = {}
 
@@ -93,6 +94,12 @@ if 'INTAKE_LOG_LEVEL' in os.environ:
     conf['logging'] = os.environ['INTAKE_LOG_LEVEL']
 if 'INTAKE_PATH' in os.environ:
     conf['catalog_path'] = intake_path_dirs(os.environ['INTAKE_PATH'])
+if 'INTAKE_PERSIST_PATH' in os.environ:
+    conf['persist_path'] = os.environ['INTAKE_PERSIST_PATH']
+if conf['persist_path'] == 'DEFAULT':
+    conf['persist_path'] = conf['cache_dir'] + '/persist/'
+
+
 logger.setLevel(conf['logging'])
 ch = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s %(name)s:%(levelname)s, %(message)s')

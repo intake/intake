@@ -279,6 +279,20 @@ class DataSource(object):
         """
         return self.plot
 
+    def persist(self, name, **kwargs):
+        from ..container import container_map
+        import datetime
+        method = container_map[self.container].persist
+        out = method(self, name, **kwargs)
+        out.description = self.description
+        metadata = {'type': 'persisted_dataset',
+                    'timestamp': datetime.datetime.now().isoformat(),
+                    'previous_metadata': self.metadata,
+                    'persist_kwargs': kwargs}
+        out.metadata = metadata
+        # save out.yaml() to persisted sources catalog
+        return out
+
 
 class PatternMixin(object):
     """Helper class to provide file-name parsing abilities to a driver class"""
