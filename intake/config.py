@@ -15,8 +15,6 @@ logger = logging.getLogger('intake')
 
 confdir =  make_path_posix(
     os.getenv('INTAKE_CONF_DIR', os.path.join(expanduser('~'), '.intake')))
-conffile = make_path_posix(
-    os.getenv('INTAKE_CONF_FILE', posixpath.join(confdir, 'conf.yaml')))
 
 
 defaults = {
@@ -29,6 +27,11 @@ defaults = {
     'catalog_path': []
     }
 conf = {}
+
+
+def cfile():
+    return make_path_posix(
+        os.getenv('INTAKE_CONF_FILE', posixpath.join(confdir, 'conf.yaml')))
 
 
 def reset_conf():
@@ -44,7 +47,7 @@ def save_conf(fn=None):
     set by INTAKE_CONF_DIR.
     """
     if fn is None:
-        fn = conffile
+        fn = cfile()
     try:
         os.makedirs(os.path.dirname(fn))
     except (OSError, IOError):
@@ -60,7 +63,7 @@ def load_conf(fn=None):
     by the INTAKE_CONF_DIR env-var or is ~/.intake/ .
     """
     if fn is None:
-        fn = conffile
+        fn = cfile()
     if os.path.isfile(fn):
         with open(fn) as f:
             try:
@@ -77,7 +80,7 @@ def intake_path_dirs(path):
 
 
 reset_conf()
-load_conf(conffile)
+load_conf(cfile())
 # environment variables take precedence over conf file
 if 'INTAKE_CACHE_DIR' in os.environ:
     conf['cache_dir'] = make_path_posix(os.environ['INTAKE_CACHE_DIR'])

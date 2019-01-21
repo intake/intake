@@ -20,6 +20,7 @@ from intake.util_tests import temp_conf, server
     {'other': True}
 ])
 def test_load_conf(conf):
+    # This test will only work if your config is set to default
     inconf = config.conf.copy()
     expected = inconf.copy()
     with temp_conf(conf) as fn:

@@ -20,10 +20,11 @@ def test_reset(env):
     assert 'port: 5000' in txt
 
 
-def test_info(env):
+def test_info(tempdir):  # if envs is used, conf file will already exist
+    env = os.environ.copy()
+    env["INTAKE_CONF_DIR"] = confdir = tempdir
     out = subprocess.check_output(['intake', 'config', 'info'],
                                   env=env, universal_newlines=True)
-    confdir = env['INTAKE_CONF_DIR']
     fn = posixpath.join(confdir, 'conf.yaml')
     assert fn in out
     assert 'INTAKE_CONF_DIR' in out
@@ -36,9 +37,9 @@ def test_info(env):
     assert "(does not exist)" not in out
 
 
-def test_defaults(env):
+def test_defaults():
     out = subprocess.check_output(['intake', 'config', 'list-defaults'],
-                                  env=env, universal_newlines=True)
+                                  universal_newlines=True)
     assert 'port: 5000' in out
 
 

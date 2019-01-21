@@ -480,7 +480,6 @@ def test_no_plugins():
 
 
 def test_getitem_and_getattr():
-    from intake.source.csv import CSVSource
     fn = abspath('multi_plugins.yaml')
     catalog = open_catalog(fn)
     catalog['tables0']
