@@ -543,8 +543,9 @@ class YAMLFileCatalog(Catalog):
         options = self.storage_options or {}
         if hasattr(self.path, 'path') or hasattr(self.path, 'read'):
             file_open = self.path
-            self.path = getattr(self.path, 'path',
-                                getattr(self.path, 'name', 'file'))
+            self.path = make_path_posix(
+                getattr(self.path, 'path',
+                        getattr(self.path, 'name', 'file')))
         else:
             file_open = open_files(self.path, mode='rb', **options)
             assert len(file_open) == 1
@@ -624,10 +625,12 @@ class YAMLFilesCatalog(Catalog):
             files = sum([open_files(p, mode='rb', **options)
                          for p in self.path], [])
             self.name = "%i files" % len(files)
+            self.path = [make_path_posix(p) for p in self.path]
         else:
             if isinstance(self.path, str) and '*' not in self.path:
                 self.path = self.path + '/*'
             files = open_files(self.path, mode='rb', **options)
+            self.path = make_path_posix(self.path)
             self.name = self.path
         if not set(f.path for f in files) == set(
                 f.path for f in self._cat_files):
@@ -635,11 +638,11 @@ class YAMLFilesCatalog(Catalog):
             self._cat_files = files
             self._cats.clear()
         for f in files:
-            name = os.path.split(f.path)[-1].replace(
+            name = posixpath.split(f.path)[-1].replace(
                 '.yaml', '').replace('.yml', '')
             kwargs = self.kwargs.copy()
             kwargs['path'] = f.path
-            d = os.path.dirname(f.path)
+            d = make_path_posix(os.path.dirname(f.path))
             if f.path not in self._cats:
                 entry = LocalCatalogEntry(name, "YAML file: %s" % name,
                                           'yaml_file_cat', True,

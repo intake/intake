@@ -6,23 +6,25 @@
 #-----------------------------------------------------------------------------
 
 import os.path
+import posixpath
 import pickle
 
 import pytest
 import pandas as pd
 
 import intake.source.csv as csv
+from intake.utils import make_path_posix
 from .util import verify_plugin_interface, verify_datasource_interface
 
 
 @pytest.fixture
 def data_filenames():
-    basedir = os.path.dirname(__file__)
-    return dict(sample1=os.path.join(basedir, 'sample1.csv'),
-                sample2_1=os.path.join(basedir, 'sample2_1.csv'),
-                sample2_2=os.path.join(basedir, 'sample2_2.csv'),
-                sample2_all=os.path.join(basedir, 'sample2_*.csv'),
-                sample_pattern=os.path.join(basedir, 'sample{num:d}_{dup:d}.csv'))
+    basedir = make_path_posix(os.path.dirname(__file__))
+    return dict(sample1=posixpath.join(basedir, 'sample1.csv'),
+                sample2_1=posixpath.join(basedir, 'sample2_1.csv'),
+                sample2_2=posixpath.join(basedir, 'sample2_2.csv'),
+                sample2_all=posixpath.join(basedir, 'sample2_*.csv'),
+                sample_pattern=posixpath.join(basedir, 'sample{num:d}_{dup:d}.csv'))
 
 
 @pytest.fixture
@@ -52,7 +54,8 @@ def sample_list_datasource_with_path_as_pattern_str(data_filenames):
 @pytest.fixture
 def sample_pattern_datasource_with_cache(data_filenames):
     metadata = {'cache': [{'argkey': 'urlpath',
-                           'regex': os.path.dirname(__file__),
+                           'regex': make_path_posix(
+                                os.path.dirname(__file__)),
                            'type': 'file'}]}
     return csv.CSVSource(data_filenames['sample_pattern'], metadata=metadata)
 

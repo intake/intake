@@ -129,7 +129,7 @@ def http_server():
 def tempdir():
     import tempfile
     import shutil
-    d = str(tempfile.mkdtemp())
+    d = make_path_posix(str(tempfile.mkdtemp()))
     try:
         yield d
     finally:
@@ -141,7 +141,7 @@ def temp_cache(tempdir):
     import intake
     old = intake.config.conf.copy()
     olddir = intake.config.confdir
-    intake.config.confdir = make_path_posix(str(tempdir))
+    intake.config.confdir = tempdir
     intake.config.conf.update({'cache_dir': make_path_posix(str(tempdir)),
                                'cache_download_progress': False,
                                'cache_disabled': False})

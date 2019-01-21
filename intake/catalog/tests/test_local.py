@@ -372,13 +372,13 @@ def test_flatten_duplicate_error():
 
 
 def test_multi_cat_names():
-    fn = abspath("catalog_union*.yaml")
+    fn = abspath("catalog_union*.yml")
     cat = open_catalog(fn)
     assert cat.name == fn
     assert fn in repr(cat)
 
-    fn1 = abspath("catalog_union_1.yaml")
-    fn2 = abspath("catalog_union_2.yaml")
+    fn1 = abspath("catalog_union_1.yml")
+    fn2 = abspath("catalog_union_2.yml")
     cat = open_catalog([fn1, fn2])
     assert cat.name == '2 files'
 

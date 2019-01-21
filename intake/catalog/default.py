@@ -12,6 +12,7 @@ import subprocess
 import sys
 
 from intake.config import conf
+from intake.utils import make_path_posix
 from .local import YAMLFilesCatalog, Catalog
 
 
@@ -70,7 +71,7 @@ def global_data_dir():
 
     if prefix:
         # conda and virtualenv use Linux-style directory pattern
-        return os.path.join(prefix, 'share', 'intake')
+        return make_path_posix(os.path.join(prefix, 'share', 'intake'))
     else:
         return appdirs.site_data_dir(appname='intake', appauthor='intake')
 
