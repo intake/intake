@@ -11,7 +11,8 @@ import subprocess
 
 
 def test_reset(env):
-    subprocess.call('intake config reset', env=env)
+    subprocess.call(['intake', 'config', 'reset'],
+                    env=env, universal_newlines=True)
     confdir = env['INTAKE_CONF_DIR']
     fn = posixpath.join(confdir, 'conf.yaml')
     assert os.path.isfile(fn)
@@ -20,7 +21,8 @@ def test_reset(env):
 
 
 def test_info(env):
-    out = subprocess.check_output('intake config info', env=env).decode()
+    out = subprocess.check_output(['intake', 'config', 'info'],
+                                  env=env, universal_newlines=True)
     confdir = env['INTAKE_CONF_DIR']
     fn = posixpath.join(confdir, 'conf.yaml')
     assert fn in out
@@ -29,13 +31,14 @@ def test_info(env):
     assert "(does not exist)" in out
     with open(fn, 'w') as f:
         f.write('port: 5000')
-    out = subprocess.check_output('intake config info', env=env).decode()
+    out = subprocess.check_output(['intake', 'config', 'info'],
+                                  env=env, universal_newlines=True)
     assert "(does not exist)" not in out
 
 
 def test_defaults(env):
-    out = subprocess.check_output('intake config list-defaults', 
-                                  env=env).decode()
+    out = subprocess.check_output(['intake', 'config', 'list-defaults'],
+                                  env=env, universal_newlines=True)
     assert 'port: 5000' in out
 
 
@@ -44,15 +47,18 @@ def test_get(env):
     fn = posixpath.join(confdir, 'conf.yaml')
     with open(fn, 'w') as f:
         f.write('port: 5001')
-    out = subprocess.check_output('intake config get', env=env).decode()
+    out = subprocess.check_output(['intake', 'config', 'get'],
+                                  env=env, universal_newlines=True)
     assert 'port: 5001' in out
-    out = subprocess.check_output('intake config get port', env=env).decode()
+    out = subprocess.check_output(['intake', 'config', 'get', 'port'],
+                                  env=env, universal_newlines=True)
     assert out.startswith('5001')
 
 
 def test_log_level():
     env = os.environ.copy()
     env['INTAKE_LOG_LEVEL'] = 'DEBUG'
-    out = subprocess.check_output('intake config info',
-                                  stderr=subprocess.STDOUT, env=env).decode()
+    out = subprocess.check_output(['intake', 'config', 'info'],
+                                  stderr=subprocess.STDOUT,
+                                  env=env, universal_newlines=True)
     assert "logger set to debug" in out
