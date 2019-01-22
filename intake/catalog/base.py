@@ -392,7 +392,7 @@ class RemoteCatalog(Catalog):
         # Include (cached) tab-completable entries and normal attributes.
         warnings.warn(
             "Tab-complete and dir() on RemoteCatalog may include only a "
-            " subset of the available entries.")
+            "subset of the available entries.")
         # Ensure that at least one page of data has been loaded so that *some*
         # entries are included. (If the page has already been cached, this will
         # have effect.)
