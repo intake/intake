@@ -360,6 +360,7 @@ class RemoteCatalog(Catalog):
         self.http_args['headers'] = self.http_args.get('headers', {})
         self._page_size = page_size
         self._source_id = kwargs.get('source_id', None)
+        self._len = None
         if self._source_id is None:
             self.name = urlparse(url).netloc.replace(
                 '.', '_').replace(':', '_')
@@ -470,6 +471,9 @@ class RemoteCatalog(Catalog):
                 "Failed to fetch metadata."), err)
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         self.metadata = info['metadata']
+        # The intake server now always provides a length, but the server may be
+        # running an older version of intake.
+        self._len = info.get('length')
         self._entries.reset()
         # If we are paginating (page_size is not None) and the server we are
         # working with is new enough to support pagination, info['sources']
@@ -505,3 +509,12 @@ class RemoteCatalog(Catalog):
             http_args=self.http_args,
             source_id=source_id,
             name="")
+
+    def __len__(self):
+        if self._len is None:
+            # The server is running an old version of intake and did not
+            # provide a length, so we have no choice but to do this the
+            # expensive way.
+            return sum(1 for entry in self)
+        else:
+            return self._len

@@ -341,3 +341,9 @@ def test_search(intake_server):
 def test_access_subcatalog(intake_server):
     catalog = Catalog(intake_server)
     catalog['nested']
+
+
+def test_len(intake_server):
+    remote_catalog = Catalog(intake_server)
+    local_catalog = Catalog(TEST_CATALOG_PATH)
+    assert sum(1 for entry in local_catalog) == len(remote_catalog)
