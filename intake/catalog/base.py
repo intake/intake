@@ -7,7 +7,9 @@
 
 import collections
 import copy
+import keyword
 import logging
+import re
 import six
 import time
 
@@ -186,7 +188,12 @@ class Catalog(DataSource):
         return key in self._get_entries()  # triggers reload_on_change
 
     def __dir__(self):
-        return list(self)
+        # Include tab-completable entries and normal attributes.
+        return (
+            [entry for entry in self._get_entries() if
+             re.match("[_A-Za-z][_a-zA-Z0-9]*$", entry)  # valid Python identifer
+             and not keyword.iskeyword(entry)]  # not a Python keyword
+            + list(self.__dict__.keys()))
 
     def __repr__(self):
         return "<Intake catalog: %s>" % self.name
