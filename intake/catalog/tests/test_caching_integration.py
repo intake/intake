@@ -252,16 +252,16 @@ def test_ds_set_cache_dir(catalog_cache):
     cat = catalog_cache['test_cache']
     defaults = cat.cache_dirs
 
-    new_cache_dir = make_path_posix(
-            os.path.join(os.getcwd(), 'test_cache_dir'))
+    new_cache_dir = os.path.join(os.getcwd(), 'test_cache_dir')
     cat.set_cache_dir(new_cache_dir)
 
     cache = cat.cache[0]
 
     cache_paths = cache.load(cat._urlpath, output=False)
     cache_path = cache_paths[-1]
+    expected_cache_dir = make_path_posix(new_cache_dir)
 
-    assert new_cache_dir in cache_path
+    assert expected_cache_dir in cache_path
     assert defaults[0] not in cache_path
     assert os.path.isfile(cache_path)
 
@@ -271,4 +271,4 @@ def test_ds_set_cache_dir(catalog_cache):
     assert all(c in string.hexdigits for c in cache_id)
     cache.clear_all()
 
-    shutil.rmtree(new_cache_dir)
+    shutil.rmtree(expected_cache_dir)

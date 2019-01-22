@@ -9,6 +9,7 @@
 '''
 
 from .cache import make_caches
+from ..utils import make_path_posix
 import sys
 PY2 = sys.version_info[0] == 2
 
@@ -66,7 +67,7 @@ class DataSource(object):
 
     def set_cache_dir(self, cache_dir):
         for c in self.cache:
-            c._cache_dir = cache_dir
+            c._cache_dir = make_path_posix(cache_dir)
 
     def __new__(cls, *args, **kwargs):
         """Capture creation args when instantiating"""
