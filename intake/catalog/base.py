@@ -12,6 +12,7 @@ import logging
 import re
 import six
 import time
+import warnings
 
 import msgpack
 import requests
@@ -292,6 +293,15 @@ class Entries(dict):
                 # will resume at the offset where we left off.
                 break
 
+    def cached_items(self):
+        """
+        Iterate over items that are already cached. Perform no requests.
+        """
+        for item in six.iteritems(self._page_cache):
+            yield item
+        for item in six.iteritems(self._direct_lookup_cache):
+            yield item
+
     def keys(self):
         for key, value in self.items():
             yield key
@@ -377,6 +387,24 @@ class RemoteCatalog(Catalog):
 
     def _make_entries_container(self):
         return Entries(self)
+
+    def __dir__(self):
+        # Include (cached) tab-completable entries and normal attributes.
+        warnings.warn(
+            "Tab-complete and dir() on RemoteCatalog may include only a "
+            " subset of the available entries.")
+        # Ensure that at least one page of data has been loaded so that *some*
+        # entries are included. (If the page has already been cached, this will
+        # have effect.)
+        next(iter(self))
+        # Loop through the cached entries, but do not trigger iteration over
+        # the full set.
+        # Intentionally access _entries directly to avoid paying for a reload.
+        return (
+            [key for key, _ in self._entries.cached_items() if
+             re.match("[_A-Za-z][_a-zA-Z0-9]*$", key)  # valid Python identifer
+             and not keyword.iskeyword(key)]  # not a Python keyword
+            + list(self.__dict__.keys()))
 
     @property
     def page_size(self):

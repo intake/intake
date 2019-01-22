@@ -270,6 +270,25 @@ def test_pagination(intake_server):
     catalog['text']
     assert len(catalog._entries._direct_lookup_cache) == 1
 
+def test_dir(intake_server):
+    PAGE_SIZE = 2
+    catalog = Catalog(intake_server, page_size=PAGE_SIZE)
+    assert len(catalog._entries._page_cache) == 0
+    assert len(catalog._entries._direct_lookup_cache) == 0
+    with pytest.warns(UserWarning, match="Tab-complete"):
+        dir_ = dir(catalog)
+    # __dir__ triggers loading the first page.
+    assert len(catalog._entries._page_cache) == 2
+    assert len(catalog._entries._direct_lookup_cache) == 0
+    assert 'metadata' in dir_  # a normal attribute
+    assert 'use_example1' in dir_  # an entry from the first page
+    assert 'arr' not in dir_  # an entry we haven't cached yet
+    # Trigger fetching one specific name.
+    catalog['arr']
+    with pytest.warns(UserWarning, match="Tab-complete"):
+        dir_ = dir(catalog)
+    assert 'metadata' in dir_
+    assert 'arr' in dir_  # an entry cached via direct access
 
 def test_getitem_and_getattr(intake_server):
     catalog = Catalog(intake_server)
