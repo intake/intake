@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 import collections
+import copy
 import logging
 import six
 import time
@@ -123,6 +124,7 @@ class Catalog(DataSource):
     def search(self, text, depth=2):
         words = text.lower().split()
         cat = Catalog(name=self.name + "_search",
+                      ttl=self.ttl,
                       getenv=self.getenv,
                       getshell=self.getshell,
                       auth=self.auth,
@@ -305,7 +307,7 @@ class Entries(dict):
 
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
-    def __init__(self, url, http_args={}, page_size=None, **kwargs):
+    def __init__(self, url, http_args=None, page_size=None, **kwargs):
         """Connect to remote Intake Server as a catalog
 
         Parameters
@@ -340,23 +342,29 @@ class RemoteCatalog(Catalog):
             parameters to pass to remote backend file-system. Ignored for
             normal local files.
         """
+        if http_args is None:
+            http_args = {}
+        else:
+            # Make a deep copy to avoid mutating input.
+            http_args = copy.deepcopy(http_args)
+        secure = http_args.pop('ssl', False)
+        scheme = 'https' if secure else 'http'
+        url = url.replace('intake', scheme)
+        if not url.endswith('/'):
+            url = url + '/'
+        self.url = url
+        self.info_url = urljoin(url, 'v1/info')
+        self.source_url = urljoin(url, 'v1/source')
         self.http_args = http_args
         self.http_args.update(kwargs.get('storage_options', {}))
         self.http_args['headers'] = self.http_args.get('headers', {})
         self._page_size = page_size
         self._source_id = kwargs.get('source_id', None)
         if self._source_id is None:
-            secure = http_args.pop('ssl', False)
-            scheme = 'https' if secure else 'http'
-            base_url = url.replace('intake', scheme) + '/'
-            self.info_url = urljoin(base_url, 'v1/info')
-            self.source_url = urljoin(base_url, 'v1/source')
-            self.name = urlparse(base_url).netloc.replace(
+            self.name = urlparse(url).netloc.replace(
                 '.', '_').replace(':', '_')
         else:
             self.name = kwargs['name']
-            self.source_url = url
-            self.info_url = url.replace('v1/source', 'v1/info')
         self.auth = kwargs.get('auth', None)  # instance of BaseClientAuth
         super(RemoteCatalog, self).__init__(self, **kwargs)
 
@@ -378,13 +386,13 @@ class RemoteCatalog(Catalog):
         # and our own more direct context.
         try:
             response.raise_for_status()
-        except requests.HTTPError:
-            raise RemoteCatalogError(
+        except requests.HTTPError as err:
+            six.raise_from(RemoteCatalogError(
                 "Failed to fetch page of entries {}-{}."
-                "".format(page_offset, page_offset + self._page_size))
+                "".format(page_offset, page_offset + self._page_size)), err)
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         page = {source['name']: RemoteCatalogEntry(
-            url=self.source_url,
+            url=self.url,
             getenv=self.getenv,
             getshell=self.getshell,
             auth=self.auth,
@@ -403,12 +411,12 @@ class RemoteCatalog(Catalog):
             raise KeyError(name)
         try:
             response.raise_for_status()
-        except requests.HTTPError:
-            raise RemoteCatalogError(
-                "Failed to fetch entry {!r}.".format(name))
+        except requests.HTTPError as err:
+            six.raise_from(RemoteCatalogError(
+                "Failed to fetch entry {!r}.".format(name)), err)
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         return RemoteCatalogEntry(
-            url=self.source_url,
+            url=self.url,
             getenv=self.getenv,
             getshell=self.getshell,
             auth=self.auth,
@@ -457,9 +465,9 @@ class RemoteCatalog(Catalog):
         response = requests.get(self.info_url, **http_args)
         try:
             response.raise_for_status()
-        except requests.HTTPError:
-            raise RemoteCatalogError(
-                "Failed to fetch metadata.")
+        except requests.HTTPError as err:
+            six.raise_from(RemoteCatalogError(
+                "Failed to fetch metadata."), err)
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         self.metadata = info['metadata']
         self._entries.reset()
@@ -473,9 +481,27 @@ class RemoteCatalog(Catalog):
             self._page_size = None
             self._entries._page_cache.update(
                 {source['name']: RemoteCatalogEntry(
-                    url=self.source_url,
+                    url=self.url,
                     getenv=self.getenv,
                     getshell=self.getshell,
                     auth=self.auth,
                     http_args=self.http_args, **source)
                  for source in info['sources']})
+
+    def search(self, *args, **kwargs):
+        request = {'action': 'search', 'query': (args, kwargs),
+                   'source_id': self._source_id}
+        response = requests.post(
+            url=self.source_url, **self._get_http_args({}),
+            data=msgpack.packb(request, use_bin_type=True))
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as err:
+            six.raise_from(RemoteCatalogError("Failed search query."), err)
+        source = msgpack.unpackb(response.content, **unpack_kwargs)
+        source_id = source['source_id']
+        return RemoteCatalog(
+            url=self.url,
+            http_args=self.http_args,
+            source_id=source_id,
+            name="")
