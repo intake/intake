@@ -15,7 +15,6 @@ import requests
 from requests.compat import urljoin, urlparse
 
 from ..auth.base import BaseClientAuth
-from .entry import CatalogEntry
 from .remote import RemoteCatalogEntry
 from .utils import flatten, reload_on_change, RemoteCatalogError
 from ..source.base import DataSource

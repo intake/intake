@@ -8,18 +8,19 @@
 from os.path import expanduser
 import logging
 import os
+import posixpath
 import yaml
+from .utils import make_path_posix
 logger = logging.getLogger('intake')
 
-confdir = os.getenv('INTAKE_CONF_DIR',
-                    os.path.join(expanduser('~'), '.intake'))
-conffile = os.getenv('INTAKE_CONF_FILE', None)
+confdir =  make_path_posix(
+    os.getenv('INTAKE_CONF_DIR', os.path.join(expanduser('~'), '.intake')))
 
 
 defaults = {
     'auth': {'class': 'intake.auth.base.BaseAuth'},
     'port': 5000,
-    'cache_dir': os.path.join(expanduser('~'), '.intake/cache'),
+    'cache_dir': posixpath.join(confdir, 'cache'),
     'cache_disabled': False,
     'cache_download_progress': True,
     'logging': 'INFO',
@@ -29,15 +30,15 @@ defaults = {
 conf = {}
 
 
+def cfile():
+    return make_path_posix(
+        os.getenv('INTAKE_CONF_FILE', posixpath.join(confdir, 'conf.yaml')))
+
+
 def reset_conf():
     """Set conf values back to defaults"""
     conf.clear()
     conf.update(defaults)
-
-
-def cfile():
-    return os.getenv('INTAKE_CONF_FILE', None) or os.path.join(
-        confdir, 'conf.yaml')
 
 
 def save_conf(fn=None):
@@ -80,10 +81,10 @@ def intake_path_dirs(path):
 
 
 reset_conf()
-load_conf(conffile)
+load_conf(cfile())
 # environment variables take precedence over conf file
 if 'INTAKE_CACHE_DIR' in os.environ:
-    conf['cache_dir'] = os.environ['INTAKE_CACHE_DIR']
+    conf['cache_dir'] = make_path_posix(os.environ['INTAKE_CACHE_DIR'])
 if 'INTAKE_DISABLE_CACHING' in os.environ:
     conf['cache_disabled'] = os.environ['INTAKE_DISABLE_CACHING'
                                         ].lower() == 'true'
@@ -93,7 +94,8 @@ if 'INTAKE_CACHE_PROGRESS' in os.environ:
 if 'INTAKE_LOG_LEVEL' in os.environ:
     conf['logging'] = os.environ['INTAKE_LOG_LEVEL']
 if 'INTAKE_PATH' in os.environ:
-    conf['catalog_path'] = intake_path_dirs(os.environ['INTAKE_PATH'])
+    conf['catalog_path'] = make_path_posix(
+        intake_path_dirs(os.environ['INTAKE_PATH']))
 if 'INTAKE_PERSIST_PATH' in os.environ:
     conf['persist_path'] = os.environ['INTAKE_PERSIST_PATH']
 if conf['persist_path'] == 'DEFAULT':

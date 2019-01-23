@@ -11,6 +11,7 @@ try:
     DASK_VERSION = LooseVersion(dask.__version__)
 except:
     DASK_VERSION = None
+from ..utils import make_path_posix
 
 def _validate_format_spec(format_spec):
     if not format_spec:
@@ -183,6 +184,9 @@ def reverse_format(format_string, resolved_string):
         if conversion:
             raise ValueError(('Conversion not allowed. Found on {}.'
                               .format(field_names[i])))
+
+    # ensure that resolved string is in posix format
+    resolved_string = make_path_posix(resolved_string)
 
     # get a list of the parts that matter
     bits = _get_parts_of_format_string(resolved_string, literal_texts, format_specs)

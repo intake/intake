@@ -65,23 +65,23 @@ def test_roundtripping_reverse_format(pattern, expected):
 def test_reverse_format_errors():
     pattern = '{month}{day}{year}'
     resolved = '20012001'
-    with pytest.raises(ValueError, message=("Format specifier must be set "
-                                            "if no separator between fields.")):
+    with pytest.raises(ValueError, match=("Format specifier must be set "
+                                          "if no separator between fields.")):
         reverse_format(pattern, resolved)
 
     pattern = '{month:.2}{day:2}{year:.4}'
     resolved = '20012001'
-    with pytest.raises(ValueError, message="Format specifier must have a set width"):
+    with pytest.raises(ValueError, match="Format specifier must have a set width"):
         reverse_format(pattern, resolved)
 
     pattern = '{band!s}'
     resolved = '1'
-    with pytest.raises(ValueError, message="Conversion not allowed. Found on band"):
+    with pytest.raises(ValueError, match="Conversion not allowed. Found on band"):
         reverse_format(pattern, resolved)
 
     pattern = 'data_{band}'
     resolved = '1'
-    with pytest.raises(ValueError, message=("Resolved string must match "
+    with pytest.raises(ValueError, match=("Resolved string must match "
                                             "pattern. 'data_' not found.")):
 
         reverse_format(pattern, resolved)

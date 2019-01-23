@@ -12,89 +12,78 @@ import os
 import pytest
 import subprocess
 import sys
-cpath = os.path.abspath(
-    os.path.join(os.path.dirname(__file__),
-                 '../../../catalog/tests/catalog_caching.yml'))
+from intake.utils import make_path_posix
+cpath = make_path_posix(
+    os.path.abspath(
+        os.path.join(os.path.dirname(__file__),
+                     '..', '..', '..',
+                     'catalog', 'tests', 'catalog_caching.yml')))
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2,
                     reason="Py2 exists early on argparse")
-def test_help(tempdir):
-    out = subprocess.check_output('INTAKE_CONF_DIR=%s intake cache' % tempdir,
-                                  shell=True).decode()
-    assert 'usage: ' in out
+def test_help(env):
+    out = subprocess.check_output(['intake', 'cache'],
+                                  env=env, universal_newlines=True)
+    assert out.startswith('usage: ')
 
-    out2 = subprocess.check_output('INTAKE_CONF_DIR=%s intake cache -h' % tempdir,
-                                   shell=True).decode()
+    out2 = subprocess.check_output(['intake', 'cache', '-h'],
+                                   env=env, universal_newlines=True)
     assert out2 == out
 
 
-def test_list_keys(temp_cache):
-    tempdir = intake.config.confdir
-    out = subprocess.check_output('INTAKE_CONF_DIR=%s intake cache'
-                                  ' list-keys' % tempdir,
-                                  shell=True).decode()
-    assert '[]\n' in out  # empty cache
+def test_list_keys(env):
+    out = subprocess.check_output(['intake', 'cache', 'list-keys'],
+                                  env=env, universal_newlines=True)
+    assert out.startswith('[]')  # empty cache
     cat = intake.open_catalog(cpath)
     cat.test_cache.read()
-    out = subprocess.check_output('INTAKE_CONF_DIR=%s intake cache list-keys'
-                                  '' % tempdir,
-                                  shell=True).decode()
+    out = subprocess.check_output(['intake', 'cache', 'list-keys'],
+                                  env=env, universal_newlines=True)
     assert 'states.csv' in out
 
 
-def test_precache(temp_cache):
-    tempdir = intake.config.confdir
-    out = subprocess.check_output('INTAKE_CONF_DIR=%s intake cache list-keys'
-                                  '' % tempdir,
-                                  shell=True).decode()
-    assert out == "[]\n\n"
-    out = subprocess.check_output('INTAKE_CONF_DIR=%s INTAKE_CACHE_DIR=%s '
-                                  'intake precache %s ' %
-                                  (tempdir, tempdir, cpath), shell=True).decode()
+def test_precache(env):
+    out = subprocess.check_output(['intake', 'cache', 'list-keys'],
+                                  env=env, universal_newlines=True)
+    assert out.startswith('[]')  # empty cache
+    out = subprocess.check_output(['intake', 'precache', cpath],
+                                  env=env, universal_newlines=True)
     assert out.count('Caching for entry') > 1
-    out = subprocess.check_output('INTAKE_CONF_DIR=%s intake cache list-keys'
-                                  '' % tempdir,
-                                  shell=True).decode()
+    out = subprocess.check_output(['intake', 'cache', 'list-keys'],
+                                  env=env, universal_newlines=True)
     assert 'states.csv' in out
     assert 'small.npy' in out
 
 
-def test_clear_all(temp_cache):
-    tempdir = intake.config.confdir
+def test_clear_all(env):
     cat = intake.open_catalog(cpath)
     cat.test_cache.read()
     md = CacheMetadata()
     assert len(md) == 1
     assert 'states' in list(md)[0]
-    subprocess.call('INTAKE_CONF_DIR=%s intake cache clear'
-                    '' % tempdir,
-                    shell=True)
+    subprocess.call(['intake', 'cache', 'clear'], env=env)
     md = CacheMetadata()
     assert len(md) == 0
 
 
-def test_clear_one(temp_cache):
-    tempdir = intake.config.confdir
+def test_clear_one(env):
     cat = intake.open_catalog(cpath)
     cat.test_cache.read()
     cat.arr_cache.read()
     md = CacheMetadata()
     keys = list(md)
     assert len(keys) == 2
-    subprocess.call('INTAKE_CONF_DIR=%s intake cache clear %s'
-                    '' % (tempdir, keys[0]),
-                    shell=True)
+    subprocess.call(['intake', 'cache', 'clear', keys[0]],
+                    env=env)
     md = CacheMetadata()
     assert len(md) == 1
     assert list(md)[0] == keys[1]
 
 
-def test_usage(temp_cache):
-    tempdir = intake.config.confdir
+def test_usage(env):
     from intake.source.cache import BaseCache
     BaseCache(None, None).clear_all()
-    out = subprocess.check_output('INTAKE_CONF_DIR=%s INTAKE_CACHE_DIR=%s'
-                                  ' intake cache usage' % (tempdir, tempdir),
-                                  shell=True).decode()
+    out = subprocess.check_output(['intake', 'cache', 'usage'],
+                                  env=env, universal_newlines=True)
     assert '0.0' in out  # empty!

@@ -13,6 +13,8 @@ import pytest
 import requests
 
 from intake.util_tests import ex, PY2
+from intake.utils import make_path_posix
+
 here = os.path.dirname(__file__)
 
 
@@ -123,24 +125,24 @@ def http_server():
         p.communicate()
 
 
-@pytest.fixture()
+@pytest.fixture(scope='function')
 def tempdir():
     import tempfile
     import shutil
-    d = str(tempfile.mkdtemp())
+    d = make_path_posix(str(tempfile.mkdtemp()))
     try:
         yield d
     finally:
         shutil.rmtree(d)
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def temp_cache(tempdir):
     import intake
     old = intake.config.conf.copy()
     olddir = intake.config.confdir
-    intake.config.confdir = str(tempdir)
-    intake.config.conf.update({'cache_dir': str(tempdir),
+    intake.config.confdir = tempdir
+    intake.config.conf.update({'cache_dir': make_path_posix(str(tempdir)),
                                'cache_download_progress': False,
                                'cache_disabled': False})
     intake.config.save_conf()
@@ -149,3 +151,12 @@ def temp_cache(tempdir):
     finally:
         intake.config.confdir = olddir
         intake.config.conf.update(old)
+
+
+@pytest.fixture(scope='function')
+def env(temp_cache, tempdir):
+    import intake
+    env = os.environ.copy()
+    env["INTAKE_CONF_DIR"] = intake.config.confdir
+    env['INTAKE_CACHE_DIR'] = intake.config.conf['cache_dir']
+    return env

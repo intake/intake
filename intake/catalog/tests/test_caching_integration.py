@@ -12,6 +12,7 @@ import time
 
 import intake
 from intake.config import conf
+from intake.utils import make_path_posix
 
 
 @pytest.fixture
@@ -258,8 +259,9 @@ def test_ds_set_cache_dir(catalog_cache):
 
     cache_paths = cache.load(cat._urlpath, output=False)
     cache_path = cache_paths[-1]
+    expected_cache_dir = make_path_posix(new_cache_dir)
 
-    assert new_cache_dir in cache_path
+    assert expected_cache_dir in cache_path
     assert defaults[0] not in cache_path
     assert os.path.isfile(cache_path)
 
@@ -269,4 +271,4 @@ def test_ds_set_cache_dir(catalog_cache):
     assert all(c in string.hexdigits for c in cache_id)
     cache.clear_all()
 
-    shutil.rmtree(new_cache_dir)
+    shutil.rmtree(expected_cache_dir)
