@@ -7,7 +7,6 @@
 
 import datetime
 import os.path
-import posixpath
 import shutil
 import tempfile
 import time
@@ -104,16 +103,16 @@ def test_get_dir():
     path = 'example/catalog.yml'
     out = get_dir(path)
     assert os.path.isabs(out)
-    assert out.endswith('/example')
+    assert out.endswith('/example/')
     path = '/example/catalog.yml'
     out = get_dir(path)
     # it's ok if the first two chars indicate drive for win (C:)
-    assert posixpath.dirname(path) in [out, out[2:]]
+    assert '/example/' in [out, out[2:]]
     path = 'example'
     out = get_dir(path)
     assert os.path.isabs(out)
     assert not out.endswith('/example')
-    assert not out.endswith('/')
+    assert out.endswith('/')
 
 
 @pytest.mark.parametrize("dtype,expected", [

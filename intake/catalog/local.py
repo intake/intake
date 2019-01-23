@@ -517,8 +517,11 @@ def register_plugin_dir(path):
 def get_dir(path):
     if '://' in path:
         return posixpath.dirname(path)
-    return make_path_posix(
-        os.path.dirname(os.path.abspath(path)))
+    path = make_path_posix(
+        os.path.join(os.getcwd(), os.path.dirname(path)))
+    if path[-1] != '/':
+        path += '/'
+    return path
 
 
 class YAMLFileCatalog(Catalog):
@@ -638,7 +641,7 @@ class YAMLFilesCatalog(Catalog):
             self._cat_files = files
             self._cats.clear()
         for f in files:
-            name = posixpath.split(f.path)[-1].replace(
+            name = os.path.split(f.path)[-1].replace(
                 '.yaml', '').replace('.yml', '')
             kwargs = self.kwargs.copy()
             kwargs['path'] = f.path
