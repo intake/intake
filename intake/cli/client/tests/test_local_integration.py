@@ -43,7 +43,8 @@ def test_full_list():
 def test_describe():
     cmd = [ex, '-m', 'intake.cli.client', 'describe', TEST_CATALOG_YAML,
            'entry1']
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                               universal_newlines=True)
     out, _ = process.communicate()
 
     expected = """\
@@ -53,31 +54,33 @@ def test_describe():
 [entry1] user_parameters=[]
 """
 
-    assert out.decode('utf-8') == expected
+    assert out == expected
 
 
 def test_exists_pass():
     cmd = [ex, '-m', 'intake.cli.client', 'exists', TEST_CATALOG_YAML, 'entry1']
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                               universal_newlines=True)
     out, _ = process.communicate()
 
-    assert out.decode('utf-8') == "True\n"
+    assert out == "True\n"
 
 
 def test_exists_fail():
     cmd = [ex, '-m', 'intake.cli.client', 'exists', TEST_CATALOG_YAML, 'entry2']
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                               universal_newlines=True)
     out, _ = process.communicate()
 
-    assert out.decode('utf-8') == "False\n"
+    assert out == "False\n"
 
 
 def test_discover():
     cmd = [ex, '-m', 'intake.cli.client', 'discover', TEST_CATALOG_YAML,
            'entry1']
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                               universal_newlines=True)
     out, _ = process.communicate()
-    out = out.decode('utf-8')
 
     assert "'datashape':" in out
     assert "'dtype':" in out
@@ -88,20 +91,22 @@ def test_discover():
 
 def test_get_pass():
     cmd = [ex, '-m', 'intake.cli.client', 'get', TEST_CATALOG_YAML, 'entry1']
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                               universal_newlines=True)
     out, _ = process.communicate()
 
-    assert 'Charlie1   25.0     3' in out.decode('utf-8')
-    assert 'Eve2   25.0     3' in out.decode('utf-8')
+    assert 'Charlie1   25.0     3' in out
+    assert 'Eve2   25.0     3' in out
 
 
 def test_get_fail():
     cmd = [ex, '-m', 'intake.cli.client', 'get', TEST_CATALOG_YAML, 'entry2']
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+                               stderr=subprocess.PIPE,
+                               universal_newlines=True)
     _, err = process.communicate()
 
-    assert "KeyError('entry2')" in err.decode('utf-8')
+    assert "KeyError('entry2'" in err
 
 @pytest.fixture
 def temp_current_working_directory():
@@ -118,7 +123,8 @@ def temp_current_working_directory():
 def test_example(temp_current_working_directory):
     cmd = [ex, '-m', 'intake.cli.client', 'example']
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+                               stderr=subprocess.PIPE,
+                               universal_newlines=True)
     stdout, stderr = process.communicate()
 
     assert process.returncode == 0
@@ -129,7 +135,8 @@ def test_example(temp_current_working_directory):
     # should fail second time due to existing files
     cmd = [ex, '-m', 'intake.cli.client', 'example']
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+                               stderr=subprocess.PIPE,
+                               universal_newlines=True)
     _, err = process.communicate()
 
     assert process.returncode > 0

@@ -20,6 +20,7 @@ from intake.util_tests import temp_conf, server
     {'other': True}
 ])
 def test_load_conf(conf):
+    # This test will only work if your config is set to default
     inconf = config.conf.copy()
     expected = inconf.copy()
     with temp_conf(conf) as fn:
@@ -61,23 +62,24 @@ def test_conf():
 
 
 def test_conf_auth():
-    with temp_conf({'auth': {'class': 'intake.auth.secret.SecretAuth',
+    with temp_conf({'port': 5556,
+                    'auth': {'class': 'intake.auth.secret.SecretAuth',
                              'kwargs': {'secret': 'test'}}}) as fn:
         env = os.environ.copy()
         env['INTAKE_CONF_FILE'] = fn
-        with server(env=env, wait=5000):
+        with server(env=env, wait=5556):
             # raw request
-            r = requests.get('http://localhost:5000/v1/info')
+            r = requests.get('http://localhost:5556/v1/info')
             assert r.status_code == 403
-            r = requests.get('http://localhost:5000/v1/info',
+            r = requests.get('http://localhost:5556/v1/info',
                              headers={'intake-secret': 'test'})
             assert r.ok
 
             # with cat
             with pytest.raises(Exception):
-                intake.Catalog('intake://localhost:5000')
+                intake.Catalog('intake://localhost:5556')
 
-            cat = intake.Catalog('intake://localhost:5000',
+            cat = intake.Catalog('intake://localhost:5556',
                                  storage_options={'headers':
                                                   {'intake-secret': 'test'}})
             assert 'entry1' in cat

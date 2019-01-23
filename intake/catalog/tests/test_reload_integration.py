@@ -50,7 +50,6 @@ sources:
     time.sleep(2)
 
     yield intake_server
-
     os.remove(fullname)
 
 

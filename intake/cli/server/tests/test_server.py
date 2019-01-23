@@ -22,13 +22,14 @@ from intake import Catalog, open_catalog
 from intake.container.serializer import MsgPackSerializer, GzipCompressor
 from intake.cli.server.server import IntakeServer
 from intake.compat import unpack_kwargs
+from intake.utils import make_path_posix
 
-catalog_file = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
+catalog_file = make_path_posix(
+    os.path.join(os.path.dirname(__file__), 'catalog1.yml'))
 
 
 class TestServerV1Base(AsyncHTTPTestCase):
     def get_app(self):
-        catalog_file = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
         local_catalog = Catalog(catalog_file)
         self.server = IntakeServer(local_catalog)
         return self.server.make_app()
@@ -227,11 +228,10 @@ class TestServerV1Source(TestServerV1Base):
 
 @pytest.fixture()
 def multi_server(tmpdir):
-    fn1 = os.path.join(tmpdir, 'cat1.yaml')
+    fn1 = make_path_posix(os.path.join(tmpdir, 'cat1.yaml'))
     os.link(catalog_file, fn1)
-    fn2 = os.path.join(tmpdir, 'cat2.yaml')
+    fn2 = make_path_posix(os.path.join(tmpdir, 'cat2.yaml'))
     os.link(catalog_file, fn2)
-
     P = subprocess.Popen(['intake-server', fn1, fn2, '--no-flatten'])
     t = time.time()
     while True:

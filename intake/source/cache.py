@@ -12,11 +12,13 @@ import collections
 import json
 import logging
 import os
+import posixpath
 import shutil
 import warnings
 
 from dask.bytes.utils import infer_storage_options
 from intake.config import conf
+from intake.utils import make_path_posix
 
 logger = logging.getLogger('intake')
 
@@ -30,12 +32,12 @@ def sanitize_path(path):
     if protocol in ('http', 'https'):
         # Most FSs remove the protocol but not HTTPFS. We need to strip
         # it to match properly.
-        return os.path.normpath(path.replace("{}://".format(protocol), ''))
+        path = os.path.normpath(path.replace("{}://".format(protocol), ''))
     elif protocol == 'file':
         # Just removing trailing slashes from file paths.
-        return os.path.normpath(path)
-    # Otherwise we leave the path alone
-    return path
+        path = os.path.normpath(path)
+    # Otherwise we just make sure that path is posix
+    return make_path_posix(path)
 
 
 display = set()
@@ -68,12 +70,12 @@ class BaseCache(object):
         """
         self._driver = driver
         self._spec = spec
-        cd = cache_dir or conf['cache_dir']
+        cd = make_path_posix(cache_dir or conf['cache_dir'])
         if cd == 'catdir':
             if catdir is None:
                 raise TypeError('cache_dir="catdir" only allowed when loaded'
                                 'from a catalog file.')
-            cd = os.path.join(catdir, 'intake_cache')
+            cd = posixpath.join(catdir, 'intake_cache')
         self._cache_dir = cd
 
         self._storage_options = storage_options
@@ -94,7 +96,7 @@ class BaseCache(object):
 
         cache_path = re.sub(
             r"%s" % regex,
-            os.path.join(self._cache_dir, cache_subdir),
+            posixpath.join(self._cache_dir, cache_subdir),
             path
         )
 
@@ -111,9 +113,12 @@ class BaseCache(object):
         if subdir is None:
             subdir = self._hash(urlpath)
         cache_path = self._munge_path(subdir, urlpath)
+
         dirname = os.path.dirname(cache_path)
         if not os.path.exists(dirname):
-            os.makedirs(dirname)
+            if not (dirname.startswith('https://') or 
+                    dirname.startswith('http://')):
+                os.makedirs(dirname)
 
         return cache_path
 
@@ -242,7 +247,7 @@ class BaseCache(object):
             return
         for subdir in os.listdir(self._cache_dir):
             try:
-                fn = os.path.join(self._cache_dir, subdir)
+                fn = posixpath.join(self._cache_dir, subdir)
                 if os.path.isdir(fn):
                     shutil.rmtree(fn)
                 if os.path.isfile(fn):
@@ -380,7 +385,8 @@ class CompressedCache(BaseCache):
         self._urlpath = urlpath
         files_in = open_files(urlpath, 'rb')
         files_out = [open_files(
-            [os.path.join(d, os.path.basename(f.path))], 'wb',
+            [make_path_posix(
+                os.path.join(d, os.path.basename(f.path)))], 'wb',
                                 **self._storage_options)[0]
              for f in files_in]
         super(CompressedCache, self)._load(files_in, files_out, urlpath,
@@ -432,7 +438,8 @@ class CacheMetadata(collections.MutableMapping):
     def __init__(self, *args, **kwargs):
         from intake import config
 
-        self._path = os.path.join(config.confdir, 'cache_metadata.json')
+        self._path = posixpath.join(make_path_posix(config.confdir), 
+                                    'cache_metadata.json')
         d = os.path.dirname(self._path)
         if not os.path.exists(d):
             os.makedirs(d)

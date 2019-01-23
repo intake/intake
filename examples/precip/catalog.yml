@@ -3,7 +3,7 @@ sources:
     description: These data sets are subsets of the Maurer, et al. (2007) bias corrected, spatially downscaled monthly climate predictions. The CSV files here cover three emissions scenarios b1 (low emissions and rate of change), a1b (middle) and a2 (high). Emission scenarios are possibilities for how the future will unfold in terms of greenhouse gas emissions, land use and other environmental factors. 
     driver: csv
     args:
-      urlpath: '{{ CATALOG_DIR }}data/SRLCC_{emissions}_Precip_{model}.csv'
+      urlpath: '{{ CATALOG_DIR }}/data/SRLCC_{emissions}_Precip_{model}.csv'
       csv_kwargs:
         skiprows: 3
         names: ['time', 'precip']

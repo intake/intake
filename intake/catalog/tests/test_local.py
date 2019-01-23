@@ -19,10 +19,12 @@ from .util import assert_items_equal
 from intake import Catalog, open_catalog
 from intake.catalog import exceptions, local
 from intake.catalog.local import get_dir, UserParameter, LocalCatalogEntry
+from intake.utils import make_path_posix
 
 
 def abspath(filename):
-    return os.path.join(os.path.dirname(__file__), filename)
+    return make_path_posix(
+        os.path.join(os.path.dirname(__file__), filename))
 
 
 @pytest.fixture
@@ -99,11 +101,18 @@ def test_get_dir():
     assert get_dir('s3://path/catalog.yml') == 's3://path'
     assert get_dir('https://example.com/catalog.yml') == 'https://example.com'
     path = 'example/catalog.yml'
-    assert get_dir(path) == os.path.join(os.getcwd(), os.path.dirname(path))
+    out = get_dir(path)
+    assert os.path.isabs(out)
+    assert out.endswith('/example/')
     path = '/example/catalog.yml'
-    assert get_dir(path) == os.path.dirname(path)
+    out = get_dir(path)
+    # it's ok if the first two chars indicate drive for win (C:)
+    assert '/example/' in [out, out[2:]]
     path = 'example'
-    assert get_dir(path) == os.path.join(os.getcwd(), '')
+    out = get_dir(path)
+    assert os.path.isabs(out)
+    assert not out.endswith('/example')
+    assert out.endswith('/')
 
 
 @pytest.mark.parametrize("dtype,expected", [
@@ -362,13 +371,13 @@ def test_flatten_duplicate_error():
 
 
 def test_multi_cat_names():
-    fn = abspath("catalog_union*.yaml")
+    fn = abspath("catalog_union*.yml")
     cat = open_catalog(fn)
     assert cat.name == fn
     assert fn in repr(cat)
 
-    fn1 = abspath("catalog_union_1.yaml")
-    fn2 = abspath("catalog_union_2.yaml")
+    fn1 = abspath("catalog_union_1.yml")
+    fn2 = abspath("catalog_union_2.yml")
     cat = open_catalog([fn1, fn2])
     assert cat.name == '2 files'
 
@@ -470,7 +479,6 @@ def test_no_plugins():
 
 
 def test_getitem_and_getattr():
-    from intake.source.csv import CSVSource
     fn = abspath('multi_plugins.yaml')
     catalog = open_catalog(fn)
     catalog['tables0']
