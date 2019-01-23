@@ -57,7 +57,7 @@ class RemoteDataFrame(RemoteSource):
         self.dataframe = None
 
     @staticmethod
-    def persist(source, name=None, **kwargs):
+    def _persist(source, name=None, **kwargs):
         """Save dataframe to local persistant store
 
         Makes a parquet dataset out of the data using dask.dataframe.to_parquet.
@@ -67,8 +67,8 @@ class RemoteDataFrame(RemoteSource):
         ----------
         source: a DataSource instance to save
         name: str or None
-            Key to refer to this persisted dataset by. If nto given, will attempt to
-            get from the source's name
+            Key to refer to this persisted dataset by. If nto given, will
+            attempt to get from the source's name
         kwargs: passed on to dask.dataframe.to_parquet
         """
         try:

@@ -281,9 +281,10 @@ class DataSource(object):
         return self.plot
 
     def persist(self, name, **kwargs):
+        """Save data from this source to local persistent storage"""
         from ..container import container_map
         import datetime
-        method = container_map[self.container].persist
+        method = container_map[self.container]._persist
         out = method(self, name, **kwargs)
         out.description = self.description
         metadata = {'type': 'persisted_dataset',
@@ -293,6 +294,11 @@ class DataSource(object):
         out.metadata = metadata
         # save out.yaml() to persisted sources catalog
         return out
+
+    @staticmethod
+    def _persist(source, name, **kwargs):
+        """To be implemented by 'container' sources for locally persisting"""
+        raise NotImplementedError
 
 
 class PatternMixin(object):

@@ -13,7 +13,7 @@ import yaml
 from .utils import make_path_posix
 logger = logging.getLogger('intake')
 
-confdir =  make_path_posix(
+confdir = make_path_posix(
     os.getenv('INTAKE_CONF_DIR', os.path.join(expanduser('~'), '.intake')))
 
 
@@ -90,7 +90,7 @@ if 'INTAKE_DISABLE_CACHING' in os.environ:
                                         ].lower() == 'true'
 if 'INTAKE_CACHE_PROGRESS' in os.environ:
     conf['cache_download_progress'] = os.environ['INTAKE_CACHE_PROGRESS'
-                                      ].lower() == 'true'
+                                                 ].lower() == 'true'
 if 'INTAKE_LOG_LEVEL' in os.environ:
     conf['logging'] = os.environ['INTAKE_LOG_LEVEL']
 if 'INTAKE_PATH' in os.environ:
