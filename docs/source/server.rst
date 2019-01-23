@@ -67,6 +67,29 @@ Returns
 Same as one of the entries in ``sources`` for ``GET /info``: the result of ``.describe()`` on the given data-source in the
 server
 
+POST /source, action="search"
+-----------------------------
+
+Searching a Catalog returns search results in the form of a new Catalog. This
+"results" Catalog is cached on the server the same as any other Catalog.
+
+Paramters
+~~~~~~~~~
+
+- ``source_id``, uuid string (optional): When the catalog being searched is not
+  the root catalog, but a subcatalog on the server, this is its unique
+  identifier. If the catalog being searched is the root Catalog, this parameter
+  should be omitted.
+- ``query``: tuple of ``(args, kwargs)``: These will be unpacked into
+  ``Catalog.search`` on the server to create the "results" Catalog.
+
+Returns
+~~~~~~~
+
+- ``source_id``, uuid string: the identifier of the results Catalog in the
+  server's source cache
+
+
 POST /source, action="open"
 ---------------------------
 

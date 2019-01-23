@@ -116,7 +116,7 @@ class ServerInfoHandler(tornado.web.RequestHandler):
                     sources.append(info)
 
             server_info = dict(version=__version__, sources=sources,
-                               metadata=self.catalog.metadata)
+                               metadata=cat.metadata)
         else:
             msg = 'Access forbidden'
             raise tornado.web.HTTPError(status_code=403, log_message=msg,
@@ -129,8 +129,9 @@ class SourceCache(object):
     def __init__(self):
         self._sources = {}
 
-    def add(self, source):
-        source_id = str(uuid4())
+    def add(self, source, source_id=None):
+        if source_id is None:
+            source_id = str(uuid4())
         now = time.time()
         self._sources[source_id] = dict(source=source, open_time=now,
                                         last_time=now)
@@ -195,18 +196,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             else:
                 cat = self._catalog
             try:
-                # This would ideally be cat[name] and not access the interal
-                # structure cat._entries. However in the case of a client
-                # accessing RemoteCatalog['metadata'], we need the server to
-                # return 404 (which will prompt the client to check
-                # RemoteCatalog.metadata and thereby find what it is looking
-                # for). The server should not attempt to return metadata as a
-                # source, which it would do if we access cat['metadata'].
-                # Therefore we need to make sure `name` is really an entry by
-                # checking directly. If the attribute/key distinction is made
-                # sligtly less permissive in the future, this can be
-                # revisited.
-                source = cat._entries[name]
+                source = cat[name]
             except KeyError:
                 msg = 'No such entry'
                 raise tornado.web.HTTPError(status_code=404, log_message=msg,
@@ -229,13 +219,45 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         head = self.request.headers
         logger.debug('Source POST: %s' % request)
 
-        if action == 'open':
+        if action == 'search':
+            if 'source_id' in head:
+                cat = self._cache.get(head['source_id'])
+            else:
+                cat = self._catalog
+            query = request['query']
+            # Construct a cache key from the source_id of the Catalog being
+            # searched and the query itself.
+            query_source_id = '-'.join((head.get('source_id', 'root'),
+                                        str(query)))
+            try:
+                cat = self._cache.get(query_source_id)
+            except KeyError:
+                try:
+                    args, kwargs = query
+                    results_cat = cat.search(*args, **kwargs)
+                except Exception as err:
+                    logger.exception("Search query %r on Catalog %r failed",
+                                     query, cat)
+                    raise tornado.web.HTTPError(
+                        status_code=400,
+                        log_message="Search query failed",
+                        reason=str(err))
+                self._cache.add(results_cat, source_id=query_source_id)
+            response = {'source_id': query_source_id}
+            self.write(msgpack.packb(response, use_bin_type=True))
+            self.finish()
+        elif action == 'open':
             if 'source_id' in head:
                 cat = self._cache.get(head['source_id'])
             else:
                 cat = self._catalog
             entry_name = request['name']
-            entry = cat[entry_name]
+            try:
+                entry = cat[entry_name]
+            except KeyError:
+                msg = "Catalog has no entry {!r}".format(entry_name)
+                raise tornado.web.HTTPError(status_code=404, log_message=msg,
+                                            reason=msg)
             if not self.auth.allow_access(head, entry, cat):
                 msg = 'Access forbidden'
                 raise tornado.web.HTTPError(status_code=403, log_message=msg,
@@ -263,7 +285,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 source_id = self._cache.add(source)
                 logger.debug('Container: %s, ID: %s' % (source.container,
                                                         source_id))
-                response = dict(source._schema)
+                response = dict(source._schema or {})
                 response.update(dict(container=source.container,
                                      source_id=source_id,
                                      metadata=source.metadata))
