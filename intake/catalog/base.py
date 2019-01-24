@@ -7,9 +7,12 @@
 
 import collections
 import copy
+import keyword
 import logging
+import re
 import six
 import time
+import warnings
 
 import msgpack
 import requests
@@ -186,6 +189,14 @@ class Catalog(DataSource):
         return key in self._get_entries()  # triggers reload_on_change
 
     def __dir__(self):
+        # Include tab-completable entries and normal attributes.
+        return (
+            [entry for entry in self if
+             re.match("[_A-Za-z][_a-zA-Z0-9]*$", entry)  # valid Python identifer
+             and not keyword.iskeyword(entry)]  # not a Python keyword
+            + list(self.__dict__.keys()))
+
+    def _ipython_key_completions_(self):
         return list(self)
 
     def __repr__(self):
@@ -244,12 +255,15 @@ class Entries(dict):
         # arbitrary cache order.
         self._direct_lookup_cache = {}
         self._page_offset = 0
+        # True if all pages are cached locally
+        self.complete = self._catalog.page_size is None
 
     def reset(self):
         "Clear caches to force a reload."
         self._page_cache.clear()
         self._direct_lookup_cache.clear()
         self._page_offset = 0
+        self.complete = self._catalog.page_size is None
 
     def __iter__(self):
         for key in self.keys():
@@ -283,7 +297,17 @@ class Entries(dict):
                 # Partial or empty page.
                 # We are done until the next call to items(), when we
                 # will resume at the offset where we left off.
+                self.complete = True
                 break
+
+    def cached_items(self):
+        """
+        Iterate over items that are already cached. Perform no requests.
+        """
+        for item in six.iteritems(self._page_cache):
+            yield item
+        for item in six.iteritems(self._direct_lookup_cache):
+            yield item
 
     def keys(self):
         for key, value in self.items():
@@ -370,6 +394,28 @@ class RemoteCatalog(Catalog):
 
     def _make_entries_container(self):
         return Entries(self)
+
+    def __dir__(self):
+        # Include (cached) tab-completable entries and normal attributes.
+        return (
+            [key for key in self._ipython_key_completions_() if
+             re.match("[_A-Za-z][_a-zA-Z0-9]*$", key)  # valid Python identifer
+             and not keyword.iskeyword(key)]  # not a Python keyword
+            + list(self.__dict__.keys()))
+
+    def _ipython_key_completions_(self):
+        if not self._entries.complete:
+            # Ensure that at least one page of data has been loaded so that
+            # *some* entries are included.
+            next(iter(self))
+        if not self._entries.complete:
+            warnings.warn(
+                "Tab-complete and dir() on RemoteCatalog may include only a "
+                "subset of the available entries.")
+        # Loop through the cached entries, but do not trigger iteration over
+        # the full set.
+        # Intentionally access _entries directly to avoid paying for a reload.
+        return [key for key, _ in self._entries.cached_items()]
 
     @property
     def page_size(self):
