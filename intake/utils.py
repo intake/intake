@@ -6,5 +6,7 @@
 #-----------------------------------------------------------------------------
 
 def make_path_posix(path):
-    return path.replace('\\', '/')
-    
+    """ Make path generic """
+    if '://' in path:
+        return path
+    return path.replace('\\', '/').replace('//', '/')
