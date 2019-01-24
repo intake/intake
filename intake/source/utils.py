@@ -175,6 +175,9 @@ def reverse_format(format_string, resolved_string):
     fmt = Formatter()
     args = {}
 
+    # ensure that format_string is in posix format
+    format_string = make_path_posix(format_string)
+
     # split the string into bits
     literal_texts, field_names, format_specs, conversions = zip(*fmt.parse(format_string))
     if not any(field_names):

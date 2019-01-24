@@ -16,6 +16,13 @@ def test_windows_file_path():
     assert actual == expected
 
 
+def test_make_path_posix_removes_double_sep():
+    path = 'user//fake.file'
+    actual = make_path_posix(path)
+    expected = 'user/fake.file'
+    assert actual == expected
+
+
 @pytest.mark.parametrize('path', [
     '~/fake.file',
     'https://example.com',
