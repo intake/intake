@@ -137,6 +137,9 @@ class Catalog(DataSource):
         cat._entries = {k: v for k, v in self.walk(depth=depth).items()
                         if any(word in str(v.describe().values()).lower()
                                for word in words)}
+        cat.cat = self
+        for e in cat._entries.values():
+            e._catalog = cat
         return cat
 
     @reload_on_change
@@ -174,7 +177,9 @@ class Catalog(DataSource):
 
     @reload_on_change
     def _get_entry(self, name):
-        return self._entries[name]
+        entry = self._entries[name]
+        entry._catalog = self
+        return entry
 
     @reload_on_change
     def _get_entries(self):
@@ -220,7 +225,9 @@ class Catalog(DataSource):
         cat['name1', 'name2']
         """
         if key in self._get_entries():  # triggers reload_on_change
-            return self._entries[key]
+            e = self._entries[key]
+            e._catalog = self
+            return e
         if isinstance(key, str) and '.' in key:
             key = key.split('.')
         if isinstance(key, (tuple, list)):
@@ -550,11 +557,13 @@ class RemoteCatalog(Catalog):
             six.raise_from(RemoteCatalogError("Failed search query."), err)
         source = msgpack.unpackb(response.content, **unpack_kwargs)
         source_id = source['source_id']
-        return RemoteCatalog(
+        cat = RemoteCatalog(
             url=self.url,
             http_args=self.http_args,
             source_id=source_id,
             name="")
+        cat.cat = self
+        return cat
 
     def __len__(self):
         if self._len is None:

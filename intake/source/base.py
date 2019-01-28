@@ -8,6 +8,7 @@
 
 '''
 
+from dask.base import tokenize
 from .cache import make_caches
 from ..utils import make_path_posix
 import sys
@@ -86,22 +87,36 @@ class DataSource(object):
                         kwargs['storage_options'][key])
         return o
 
+    @property
+    def classname(self):
+        return '.'.join([self.__class__.__module__, self.__class__.__name__])
+
     def __getstate__(self):
-        return dict(args=self._captured_init_args,
+        return dict(cls=self.classname,
+                    args=self._captured_init_args,
                     kwargs=self._captured_init_kwargs)
+
+    def __hash__(self):
+        return int(tokenize(self.__getstate__()), 16)
+
+    def __eq__(self, other):
+        return hash(self) == hash(other)
 
     def __setstate__(self, state):
         self._captured_init_kwargs = state['kwargs']
         self._captured_init_args = state['args']
+        state.pop('cls', None)
         self.__init__(*state['args'], **state['kwargs'])
 
     def __init__(self, metadata=None):
         # default data
         self.metadata = metadata or {}
         if isinstance(self.metadata, dict):
-            storage_options = self._captured_init_kwargs.get('storage_options', {})
+            storage_options = self._captured_init_kwargs.get('storage_options',
+                                                             {})
             self.cache = make_caches(self.name, self.metadata.get('cache'),
-                                     catdir=self.metadata.get('catalog_dir', None),
+                                     catdir=self.metadata.get('catalog_dir',
+                                                              None),
                                      storage_options=storage_options)
         self.datashape = None
         self.dtype = None
@@ -110,6 +125,7 @@ class DataSource(object):
         self._schema = None
         self.catalog_object = None
         self.on_server = False
+        self.cat = None  # the cat from which this source was made
 
     def _get_cache(self, urlpath):
         if len(self.cache) == 0:

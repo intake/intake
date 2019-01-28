@@ -28,6 +28,12 @@ def test_datasource_base_method_exceptions():
         assert method_name in str(except_info.value)
 
 
+def test_name():
+    d = base.DataSource()
+    assert d.classname == 'intake.source.base.DataSource'
+    assert isinstance(hash(d), int)
+
+
 def test_datasource_base_context_manager():
     # Base data source should raise a "need to implement" exception when it
     # enters the context manager (which loads the schema)
