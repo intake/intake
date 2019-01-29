@@ -160,23 +160,7 @@ class DataSource(object):
             self.npartitions = self._schema.npartitions
             self.metadata.update(self._schema.extra_metadata)
 
-    def yaml(self, with_plugin=False):
-        """Return YAML representation of this data-source
-
-        The output may be roughly appropriate for inclusion in a YAML
-        catalog. This is a best-effort implementation
-
-        Parameters
-        ----------
-        with_plugin: bool
-            If True, create a "plugins" section, for cases where this source
-            is created with a plugin not expected to be in the global Intake
-            registry.
-        """
-        try:
-            from ruamel.yaml import dump
-        except:
-            from ruamel_yaml import dump
+    def _yaml(self, with_plugin=False):
         import inspect
         kwargs = self._captured_init_kwargs.copy()
         meta = kwargs.pop('metadata', self.metadata) or {}
@@ -195,6 +179,26 @@ class DataSource(object):
         if with_plugin:
             data['plugins'] = {
                 'source': [{'module': self.__module__}]}
+        return data
+
+    def yaml(self, with_plugin=False):
+        """Return YAML representation of this data-source
+
+        The output may be roughly appropriate for inclusion in a YAML
+        catalog. This is a best-effort implementation
+
+        Parameters
+        ----------
+        with_plugin: bool
+            If True, create a "plugins" section, for cases where this source
+            is created with a plugin not expected to be in the global Intake
+            registry.
+        """
+        try:
+            from ruamel.yaml import dump
+        except (ImportError, NameError, AttributeError):
+            from ruamel_yaml import dump
+        data = self._yaml(with_plugin=with_plugin)
         return dump(data, default_flow_style=False)
 
     @property
@@ -296,12 +300,12 @@ class DataSource(object):
         """
         return self.plot
 
-    def persist(self, name, **kwargs):
+    def persist(self, **kwargs):
         """Save data from this source to local persistent storage"""
         from ..container import container_map
         import datetime
         method = container_map[self.container]._persist
-        out = method(self, name, **kwargs)
+        out = method(self, **kwargs)
         out.description = self.description
         metadata = {'type': 'persisted_dataset',
                     'timestamp': datetime.datetime.now().isoformat(),

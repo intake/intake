@@ -58,7 +58,7 @@ class RemoteDataFrame(RemoteSource):
         self.dataframe = None
 
     @staticmethod
-    def _persist(source, name=None, **kwargs):
+    def _persist(source, **kwargs):
         """Save dataframe to local persistant store
 
         Makes a parquet dataset out of the data using dask.dataframe.to_parquet.
@@ -77,7 +77,7 @@ class RemoteDataFrame(RemoteSource):
         except ImportError:
             raise ImportError("Please install intake-parquet to use persistence"
                               " on dataframe container sources.")
-        name = name or source.name
+        name = source.__hash__()
         df = source.to_dask()
         dn = posixpath.join(conf.get('persist_path'), name)
         if os.path.exists(dn):
