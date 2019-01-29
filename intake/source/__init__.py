@@ -15,6 +15,13 @@ registry = {}
 classes = {}
 
 
+def import_name(name):
+    import importlib
+    mod, cls = name.rsplit('.', 1)
+    module = importlib.import_module(mod)
+    return getattr(module, cls)
+
+
 def get_plugin_class(name):
     if name in registry:
         return registry[name]
@@ -22,15 +29,8 @@ def get_plugin_class(name):
         logger.debug('Plugin name "%s" not known' % name)
         return None
     if name not in classes:
-        import importlib
-        mod, cls = name.rsplit('.', 1)
         try:
-            module = importlib.import_module(mod)
-        except ImportError:
-            logger.debug('Import of plugin module "%s" failed' % mod)
-            return None
-        try:
-            classes[name] = getattr(module, cls)
-        except (KeyError, NameError):
-            logger.debug('Class "%s" not found in module "%s"' % (cls, mod))
+            classes[name] = import_name(name)
+        except (KeyError, NameError, ImportError):
+            logger.debug('Failed to import "%s"' % name)
     return classes.get(name, None)

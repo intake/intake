@@ -7,9 +7,12 @@
 
 import collections
 import copy
+import keyword
 import logging
+import re
 import six
 import time
+import warnings
 
 import msgpack
 import requests
@@ -134,6 +137,9 @@ class Catalog(DataSource):
         cat._entries = {k: v for k, v in self.walk(depth=depth).items()
                         if any(word in str(v.describe().values()).lower()
                                for word in words)}
+        cat.cat = self
+        for e in cat._entries.values():
+            e._catalog = cat
         return cat
 
     @reload_on_change
@@ -171,7 +177,9 @@ class Catalog(DataSource):
 
     @reload_on_change
     def _get_entry(self, name):
-        return self._entries[name]
+        entry = self._entries[name]
+        entry._catalog = self
+        return entry
 
     @reload_on_change
     def _get_entries(self):
@@ -186,6 +194,14 @@ class Catalog(DataSource):
         return key in self._get_entries()  # triggers reload_on_change
 
     def __dir__(self):
+        # Include tab-completable entries and normal attributes.
+        return (
+            [entry for entry in self if
+             re.match("[_A-Za-z][_a-zA-Z0-9]*$", entry)  # valid Python identifer
+             and not keyword.iskeyword(entry)]  # not a Python keyword
+            + list(self.__dict__.keys()))
+
+    def _ipython_key_completions_(self):
         return list(self)
 
     def __repr__(self):
@@ -209,7 +225,9 @@ class Catalog(DataSource):
         cat['name1', 'name2']
         """
         if key in self._get_entries():  # triggers reload_on_change
-            return self._entries[key]
+            e = self._entries[key]
+            e._catalog = self
+            return e
         if isinstance(key, str) and '.' in key:
             key = key.split('.')
         if isinstance(key, (tuple, list)):
@@ -244,12 +262,15 @@ class Entries(dict):
         # arbitrary cache order.
         self._direct_lookup_cache = {}
         self._page_offset = 0
+        # True if all pages are cached locally
+        self.complete = self._catalog.page_size is None
 
     def reset(self):
         "Clear caches to force a reload."
         self._page_cache.clear()
         self._direct_lookup_cache.clear()
         self._page_offset = 0
+        self.complete = self._catalog.page_size is None
 
     def __iter__(self):
         for key in self.keys():
@@ -283,7 +304,17 @@ class Entries(dict):
                 # Partial or empty page.
                 # We are done until the next call to items(), when we
                 # will resume at the offset where we left off.
+                self.complete = True
                 break
+
+    def cached_items(self):
+        """
+        Iterate over items that are already cached. Perform no requests.
+        """
+        for item in six.iteritems(self._page_cache):
+            yield item
+        for item in six.iteritems(self._direct_lookup_cache):
+            yield item
 
     def keys(self):
         for key, value in self.items():
@@ -360,6 +391,7 @@ class RemoteCatalog(Catalog):
         self.http_args['headers'] = self.http_args.get('headers', {})
         self._page_size = page_size
         self._source_id = kwargs.get('source_id', None)
+        self._len = None
         if self._source_id is None:
             self.name = urlparse(url).netloc.replace(
                 '.', '_').replace(':', '_')
@@ -370,6 +402,28 @@ class RemoteCatalog(Catalog):
 
     def _make_entries_container(self):
         return Entries(self)
+
+    def __dir__(self):
+        # Include (cached) tab-completable entries and normal attributes.
+        return (
+            [key for key in self._ipython_key_completions_() if
+             re.match("[_A-Za-z][_a-zA-Z0-9]*$", key)  # valid Python identifer
+             and not keyword.iskeyword(key)]  # not a Python keyword
+            + list(self.__dict__.keys()))
+
+    def _ipython_key_completions_(self):
+        if not self._entries.complete:
+            # Ensure that at least one page of data has been loaded so that
+            # *some* entries are included.
+            next(iter(self))
+        if not self._entries.complete:
+            warnings.warn(
+                "Tab-complete and dir() on RemoteCatalog may include only a "
+                "subset of the available entries.")
+        # Loop through the cached entries, but do not trigger iteration over
+        # the full set.
+        # Intentionally access _entries directly to avoid paying for a reload.
+        return [key for key, _ in self._entries.cached_items()]
 
     @property
     def page_size(self):
@@ -470,6 +524,9 @@ class RemoteCatalog(Catalog):
                 "Failed to fetch metadata."), err)
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         self.metadata = info['metadata']
+        # The intake server now always provides a length, but the server may be
+        # running an older version of intake.
+        self._len = info.get('length')
         self._entries.reset()
         # If we are paginating (page_size is not None) and the server we are
         # working with is new enough to support pagination, info['sources']
@@ -500,8 +557,19 @@ class RemoteCatalog(Catalog):
             six.raise_from(RemoteCatalogError("Failed search query."), err)
         source = msgpack.unpackb(response.content, **unpack_kwargs)
         source_id = source['source_id']
-        return RemoteCatalog(
+        cat = RemoteCatalog(
             url=self.url,
             http_args=self.http_args,
             source_id=source_id,
             name="")
+        cat.cat = self
+        return cat
+
+    def __len__(self):
+        if self._len is None:
+            # The server is running an old version of intake and did not
+            # provide a length, so we have no choice but to do this the
+            # expensive way.
+            return sum(1 for entry in self)
+        else:
+            return self._len

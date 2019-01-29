@@ -270,6 +270,52 @@ def test_pagination(intake_server):
     catalog['text']
     assert len(catalog._entries._direct_lookup_cache) == 1
 
+def test_dir(intake_server):
+    PAGE_SIZE = 2
+    catalog = Catalog(intake_server, page_size=PAGE_SIZE)
+    assert len(catalog._entries._page_cache) == 0
+    assert len(catalog._entries._direct_lookup_cache) == 0
+    assert not catalog._entries.complete
+
+    with pytest.warns(UserWarning, match="Tab-complete"):
+        key_completions = catalog._ipython_key_completions_()
+    with pytest.warns(UserWarning, match="Tab-complete"):
+        dir_ = dir(catalog)
+    # __dir__ triggers loading the first page.
+    assert len(catalog._entries._page_cache) == 2
+    assert len(catalog._entries._direct_lookup_cache) == 0
+    assert not catalog._entries.complete
+    assert set(key_completions) == set(['use_example1', 'nested'])
+    assert 'metadata' in dir_  # a normal attribute
+    assert 'use_example1' in dir_  # an entry from the first page
+    assert 'arr' not in dir_  # an entry we haven't cached yet
+
+    # Trigger fetching one specific name.
+    catalog['arr']
+    with pytest.warns(UserWarning, match="Tab-complete"):
+        dir_ = dir(catalog)
+    with pytest.warns(UserWarning, match="Tab-complete"):
+        key_completions = catalog._ipython_key_completions_()
+    assert 'metadata' in dir_
+    assert 'arr' in dir_  # an entry cached via direct access
+    assert 'arr' in key_completions
+
+    # Load everything.
+    list(catalog)
+    assert catalog._entries.complete
+    with pytest.warns(None) as record:
+        assert set(catalog) == set(catalog._ipython_key_completions_())
+        assert set(catalog).issubset(set(dir(catalog)))
+    assert len(record) == 0
+
+    # Load without pagination (with also loads everything).
+    catalog = Catalog(intake_server, page_size=None)
+    assert catalog._entries.complete
+    with pytest.warns(None) as record:
+        assert set(catalog) == set(catalog._ipython_key_completions_())
+        assert set(catalog).issubset(set(dir(catalog)))
+    assert len(record) == 0
+
 
 def test_getitem_and_getattr(intake_server):
     catalog = Catalog(intake_server)
@@ -341,3 +387,9 @@ def test_search(intake_server):
 def test_access_subcatalog(intake_server):
     catalog = Catalog(intake_server)
     catalog['nested']
+
+
+def test_len(intake_server):
+    remote_catalog = Catalog(intake_server)
+    local_catalog = Catalog(TEST_CATALOG_PATH)
+    assert sum(1 for entry in local_catalog) == len(remote_catalog)

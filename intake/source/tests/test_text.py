@@ -7,7 +7,10 @@
 
 import glob
 import os
+import pytest
 from intake.source.textfiles import TextFilesSource
+from intake.source import import_name
+from dask.bytes import open_files
 
 
 def test_textfiles(tempdir):
@@ -16,8 +19,63 @@ def test_textfiles(tempdir):
     path = os.path.join(tempdir, '*.txt')
     t = TextFilesSource(path)
     t.discover()
-    assert t.npartitions == len(glob.glob(path))
+    assert t.npartitions == 2
     assert t._get_partition(0) == t.to_dask().to_delayed()[0].compute()
     out = t.read()
     assert isinstance(out, list)
     assert out[0] == 'hello\n'
+
+
+@pytest.mark.parametrize('comp', [None, 'gzip', 'bz2'])
+def test_complex_text(tempdir, comp):
+    dump, load, read = 'json.dumps', 'json.loads', True
+    dump = import_name(dump)
+    data = [{'something': 'simple', 'and': 0}] * 2
+    for f in ['1.out', '2.out']:
+        fn = os.path.join(tempdir, f)
+        with open_files([fn], mode='wt', compression=comp)[0] as fo:
+            if read:
+                fo.write(dump(data))
+            else:
+                dump(data, fo)
+    # that was all setup
+
+    path = os.path.join(tempdir, '*.out')
+    t = TextFilesSource(path, text_mode=True, compression=comp,
+                        decoder=load)
+    t.discover()
+    assert t.npartitions == 2
+    assert t._get_partition(0) == t.to_dask().to_delayed()[0].compute()
+    out = t.read()
+    assert isinstance(out, list)
+    assert out[0] == data[0]
+
+
+@pytest.mark.parametrize('comp', [None, 'gzip', 'bz2'])
+@pytest.mark.parametrize('pars', [['msgpack.pack', 'msgpack.unpack', False],
+                                  ['msgpack.packb', 'msgpack.unpackb', True],
+                                  ['pickle.dump', 'pickle.load', False],
+                                  ['pickle.dumps', 'pickle.loads', True]])
+def test_complex_bytes(tempdir, comp, pars):
+    dump, load, read = pars
+    dump = import_name(dump)
+    # using bytestrings means not needing extra en/decode argument to msgpack
+    data = [{b'something': b'simple', b'and': 0}] * 2
+    for f in ['1.out', '2.out']:
+        fn = os.path.join(tempdir, f)
+        with open_files([fn], mode='wb', compression=comp)[0] as fo:
+            if read:
+                fo.write(dump(data))
+            else:
+                dump(data, fo)
+    # that was all setup
+
+    path = os.path.join(tempdir, '*.out')
+    t = TextFilesSource(path, text_mode=False, compression=comp,
+                        decoder=load, read=read)
+    t.discover()
+    assert t.npartitions == 2
+    assert t._get_partition(0) == t.to_dask().to_delayed()[0].compute()
+    out = t.read()
+    assert isinstance(out, list)
+    assert out[0] == data[0]

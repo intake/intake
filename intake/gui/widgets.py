@@ -29,7 +29,7 @@ def ignore(ob):
         ob.ignore = False
 
 
-class Base(object):
+class Base(object):  # pragma: no cover
     done_callback = None
 
     def stop(self, ok=False):
@@ -65,7 +65,7 @@ class Base(object):
                 self.widget._handle_displayed(**kwargs)
 
 
-class DataBrowser(Base):
+class DataBrowser(Base):  # pragma: no cover
     """Intake data set browser
 
     Examples
@@ -226,7 +226,7 @@ class DataBrowser(Base):
         self.widget.children = [self.mid]
 
 
-class Search(Base):
+class Search(Base):  # pragma: no cover
     def __init__(self, done_callback=None):
         self.done_callback = done_callback
         self.label = widgets.Label(value='Search Text:')
@@ -249,7 +249,7 @@ class Search(Base):
                                              self.x])
 
 
-class AddCat(Base):
+class AddCat(Base):  # pragma: no cover
     """Sub-widget for adding new cats from file or remote"""
 
     def __init__(self, done_callback=None, filters=None):
@@ -268,7 +268,7 @@ class AddCat(Base):
         self.widget.set_title(1, "Remote")
 
 
-class URLSelector(Base):
+class URLSelector(Base):  # pragma: no cover
     def __init__(self, done_callback=None):
         self.done_callback = done_callback
         self.lurl = widgets.Label(value='URL:')
@@ -287,7 +287,7 @@ class URLSelector(Base):
                                              self.x])
 
 
-class FileSelector(Base):
+class FileSelector(Base):  # pragma: no cover
     """
     ipywidgets interface for picking files
 

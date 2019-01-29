@@ -114,8 +114,12 @@ class ServerInfoHandler(tornado.web.RequestHandler):
                     info = source.describe()
                     info['name'] = name
                     sources.append(info)
-
+            try:
+                length = len(cat)
+            except TypeError:
+                length = sum(1 for entry in cat)
             server_info = dict(version=__version__, sources=sources,
+                               length=length,
                                metadata=cat.metadata)
         else:
             msg = 'Access forbidden'

@@ -262,6 +262,7 @@ class LocalCatalogEntry(CatalogEntry):
         data_source.catalog_object = self._catalog
         data_source.name = self.name
         data_source.description = self._description
+        data_source.cat = self._catalog
 
         return data_source
 

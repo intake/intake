@@ -229,9 +229,9 @@ class TestServerV1Source(TestServerV1Base):
 @pytest.fixture()
 def multi_server(tmpdir):
     fn1 = make_path_posix(os.path.join(tmpdir, 'cat1.yaml'))
-    os.link(catalog_file, fn1)
+    shutil.copyfile(catalog_file, fn1)
     fn2 = make_path_posix(os.path.join(tmpdir, 'cat2.yaml'))
-    os.link(catalog_file, fn2)
+    shutil.copyfile(catalog_file, fn2)
     P = subprocess.Popen(['intake-server', fn1, fn2, '--no-flatten'])
     t = time.time()
     while True:
