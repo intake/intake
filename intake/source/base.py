@@ -96,8 +96,13 @@ class DataSource(object):
                     args=self._captured_init_args,
                     kwargs=self._captured_init_kwargs)
 
+    @property
+    def _tok(self):
+        """String unique token for this source"""
+        return tokenize(self.__getstate__())
+
     def __hash__(self):
-        return int(tokenize(self.__getstate__()), 16)
+        return int(self._tok, 16)
 
     def __eq__(self, other):
         return hash(self) == hash(other)
@@ -171,7 +176,7 @@ class DataSource(object):
             kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
                                    self._captured_init_args)))
         data = {'sources': {self.name: {
-            'driver': self.__class__.name,
+            'driver': self.classname,
             'description': self.description or "",
             'metadata': meta,
             'args': kwargs
@@ -300,23 +305,27 @@ class DataSource(object):
         """
         return self.plot
 
-    def persist(self, **kwargs):
+    def persist(self, ttl=None, **kwargs):
         """Save data from this source to local persistent storage"""
         from ..container import container_map
-        import datetime
+        from ..container.persist import PersistStore
+        import time
         method = container_map[self.container]._persist
-        out = method(self, **kwargs)
+        store = PersistStore()
+        out = method(self, path=store.getdir(self), **kwargs)
         out.description = self.description
-        metadata = {'type': 'persisted_dataset',
-                    'timestamp': datetime.datetime.now().isoformat(),
+        metadata = {'timestamp': time.time(),
                     'previous_metadata': self.metadata,
-                    'persist_kwargs': kwargs}
+                    'original_source': self.__getstate__(),
+                    'persist_kwargs': kwargs,
+                    'ttl': ttl,
+                    'cat': {} if self.cat is None else self.cat.__getstate__()}
         out.metadata = metadata
-        # save out.yaml() to persisted sources catalog
+        store.add(self)
         return out
 
     @staticmethod
-    def _persist(source, name, **kwargs):
+    def _persist(source, path, **kwargs):
         """To be implemented by 'container' sources for locally persisting"""
         raise NotImplementedError
 
