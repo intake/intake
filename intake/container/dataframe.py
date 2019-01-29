@@ -7,6 +7,7 @@
 
 from intake.source.base import Schema, DataSource
 import os
+import posixpath
 from .base import RemoteSource, get_partition
 from ..config import conf
 
@@ -67,7 +68,7 @@ class RemoteDataFrame(RemoteSource):
         ----------
         source: a DataSource instance to save
         name: str or None
-            Key to refer to this persisted dataset by. If nto given, will
+            Key to refer to this persisted dataset by. If not given, will
             attempt to get from the source's name
         kwargs: passed on to dask.dataframe.to_parquet
         """
@@ -78,7 +79,7 @@ class RemoteDataFrame(RemoteSource):
                               " on dataframe container sources.")
         name = name or source.name
         df = source.to_dask()
-        dn = conf.get('persist_path') + '/' + name
+        dn = posixpath.join(conf.get('persist_path'), name)
         if os.path.exists(dn):
             # can be more general for remote persist, with open_files or
             # fsspec or something
@@ -92,17 +93,17 @@ class RemoteDataFrame(RemoteSource):
 class GenericDataFrame(DataSource):
     """Create partitioned dataframe from a set of files and any reader
 
-    This data-source allows you to specify any reader to create data-frames.
+    This data-source allows you to specify any reader to create dataframes.
     The reader must take an open file-like object as input, and output a
-    Pandas data-frame.
+    pandas.DataFrame.
 
     Parameters
     ----------
-    url: str
+    urlpath: str
         Location of data. May be local files or remote with a protocol
         specifier. May be a list of files or a glob pattern to be expanded.
     reader: func
-        f(open_file, **kwargs) -> pandas data-frame
+        f(open_file, **kwargs) -> pandas.DataFrame
     storage_options: dict
         Passed to the file-system backend to open files; typically includes
         credentials for remote storage
@@ -113,8 +114,8 @@ class GenericDataFrame(DataSource):
     name = 'generic_dataframe'
     container = 'dataframe'
 
-    def __init__(self, url, reader, storage_options=None, **kwargs):
-        self.url = url
+    def __init__(self, urlpath, reader, storage_options=None, **kwargs):
+        self.url = urlpath
         self.reader = reader
         self.storage_options = storage_options or {}
         kwargs = kwargs.copy()
@@ -135,10 +136,10 @@ class GenericDataFrame(DataSource):
                 return df
 
         if self.dataframe is None:
-            self.parts = [dask.delayed(read_a_file)(
-                open_file, self.reader, self.kwargs
-            )
-                          for open_file in self.files]
+            self.parts = [
+                dask.delayed(read_a_file)(open_file, self.reader, self.kwargs)
+                for open_file in self.files
+            ]
             self.dataframe = dd.from_delayed(self.parts)
             self.npartitions = self.dataframe.npartitions
             self.shape = (None, len(self.dataframe.columns))
