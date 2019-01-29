@@ -5,7 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from . import base
+from . import base, import_name
 
 
 class TextFilesSource(base.DataSource):
@@ -22,7 +22,8 @@ class TextFilesSource(base.DataSource):
     container = 'python'
     partition_access = True
 
-    def __init__(self, urlpath, metadata=None,
+    def __init__(self, urlpath, text_mode=True, text_encoding='utf8',
+                 compression=None, decoder=None, read=True, metadata=None,
                  storage_options=None):
         """
 
@@ -31,6 +32,25 @@ class TextFilesSource(base.DataSource):
         urlpath : str or list(str)
             Target files. Can be a glob-path (with "*") and include protocol
             specified (e.g., "s3://"). Can also be a list of absolute paths.
+        text_mode : bool
+            Whether to open the file in text mode, recoding binary
+            characters on the fly
+        text_encoding : str
+            If text_mode is True, apply this encoding. UTF* is by far the most
+            common
+        compression : str or None
+            If given, decompress the file with the given codec on load. Can
+            be something like "gz", "bz2", or to try to guess from the filename,
+            'infer'
+        decoder : function, str or None
+            Use this to decode the contents of files. If None, you will get
+            a list of lines of text/bytes. If a function, it must operate on
+            an open file-like object or a bytes/str instance, and return a
+            list
+        read : bool
+            If decoder is not None, this flag controls whether bytes/str get
+            passed to the function indicated (True) or the open file-like
+            object (False)
         storage_options: dict
             Options to pass to the file reader backend, including text-specific
             encoding arguments, and parameters specific to the remote
@@ -40,6 +60,13 @@ class TextFilesSource(base.DataSource):
         self._storage_options = storage_options or {}
         self._dataframe = None
         self._files = None
+        if isinstance(decoder, str):
+            decoder = import_name(decoder)
+        self.decoder = decoder
+        self.compression = compression
+        self.mode = 'rt' if text_mode else 'rb'
+        self.encoding = text_encoding
+        self._read = read
 
         super(TextFilesSource, self).__init__(metadata=metadata)
 
@@ -49,8 +76,10 @@ class TextFilesSource(base.DataSource):
 
             urlpath = self._get_cache(self._urlpath)[0]
 
-            self._files = open_files(urlpath, mode='rt',
-                                     **self._storage_options)
+            self._files = open_files(
+                urlpath, mode=self.mode, encoding=self.encoding,
+                compression=self.compression,
+                **self._storage_options)
             self.npartitions = len(self._files)
         return base.Schema(datashape=None,
                            dtype=None,
@@ -59,7 +88,7 @@ class TextFilesSource(base.DataSource):
                            extra_metadata=self.metadata)
 
     def _get_partition(self, i):
-        return get_file(self._files[i])
+        return get_file(self._files[i], self.decoder, self._read)
 
     def read(self):
         self._get_schema()
@@ -76,10 +105,15 @@ class TextFilesSource(base.DataSource):
         import dask.bag as db
         from dask import delayed
         dfile = delayed(get_file)
-        return db.from_delayed([dfile(f) for f in self._files])
+        return db.from_delayed([dfile(f, self.decoder, self._read)
+                                for f in self._files])
 
 
-def get_file(f):
+def get_file(f, decoder, read):
     """Serializable function to take an OpenFile object and read lines"""
     with f as f:
-        return list(f)
+        if decoder is None:
+            return list(f)
+        else:
+            d = f.read() if read else f
+            return decoder(d)
