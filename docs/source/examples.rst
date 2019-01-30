@@ -70,10 +70,10 @@ These are Intake-related articles that may be of interest.
 - `Parsing Data from Filenames and Paths`_
 - `Intake for cataloguing Spark`_
 
-.. _Intake for cataloguing Spark: https://www.anaconda.com/blog/developer-blog/intake-for-cataloging-spark/
-.. _Taking the Pain out of Data Access: https://www.anaconda.com/blog/developer-blog/intake-taking-the-pain-out-of-data-access/
-.. _Caching Data on First Read Makes Future Analysis Faster: https://www.anaconda.com/blog/developer-blog/intake-caching-data-on-first-read-makes-future-analysis-faster/
-.. _Parsing Data from Filenames and Paths: https://www.anaconda.com/blog/developer-blog/intake-parsing-data-from-filenames-and-paths/
+.. _Intake for cataloguing Spark: https://www.anaconda.com/intake-for-cataloging-spark/
+.. _Taking the Pain out of Data Access: https://www.anaconda.com/intake-taking-the-pain-out-of-data-access/
+.. _Caching Data on First Read Makes Future Analysis Faster: https://www.anaconda.com/intake-caching-data-on-first-read-makes-future-analysis-faster/
+.. _Parsing Data from Filenames and Paths: https://www.anaconda.com/intake-parsing-data-from-filenames-and-paths/
 
 Talks
 -----
