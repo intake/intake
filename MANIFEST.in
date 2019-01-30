@@ -16,3 +16,4 @@ include versioneer.py
 include intake/_version.py
 include intake/catalog/tests/example_plugin_dir/example2_source.py
 include requirements.txt
+include LICENSE
