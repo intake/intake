@@ -321,7 +321,8 @@ class DataSource(object):
                     'ttl': ttl,
                     'cat': {} if self.cat is None else self.cat.__getstate__()}
         out.metadata = metadata
-        store.add(self)
+        out.name = self._tok
+        store.add(self._tok, out)
         return out
 
     @staticmethod

@@ -19,7 +19,15 @@ from ..source import import_name
 class PersistStore(YAMLFileCatalog):
     def __init__(self, path=None):
         self.pdir = path or conf.get('persist_path')
-        super(PersistStore, self).__init__(posixpath.join(path, 'cat.yaml'))
+        try:
+            os.makedirs(self.pdir)
+        except (OSError, IOError):
+            pass
+        path = posixpath.join(self.pdir, 'cat.yaml')
+        if not os.path.exists(path):
+            with open(path, 'w') as f:
+                f.write('sources: {}')
+        super(PersistStore, self).__init__(path)
 
     def getdir(self, source):
         """Clear/create a directory to store a persisted dataset into"""
@@ -40,11 +48,19 @@ class PersistStore(YAMLFileCatalog):
             The thing to add to the persisted catalogue, referring to persisted
             data
         """
-        data = yaml.load(self.path)
+        with open(self.path) as f:
+            data = yaml.load(f)
         data['sources'][key] = source._yaml()['sources'][source.name]
         with open(self.path, 'w') as fo:
             fo.write(yaml.dump(data, default_flow_style=False))
         self._load()
+
+    def get_tok(self, source):
+        if source in self:
+            source = source.name
+        elif isinstance(source, DataSource):
+            source = source._tok
+        return source
 
     def remove(self, source, delfiles=True):
         """Remove a dataset from the persist store
@@ -56,10 +72,7 @@ class PersistStore(YAMLFileCatalog):
         delfiles : bool
             Whether to remove the on-disc artifact
         """
-        if source in self:
-            source = source.name
-        elif isinstance(source, DataSource):
-            source = source._tok
+        source = self.get_tok(source)
         data = yaml.load(self.path)
         del data['sources'][source]
         with open(self.path, 'w') as fo:
@@ -68,8 +81,9 @@ class PersistStore(YAMLFileCatalog):
             shutil.rmtree(posixpath.join(self.pdir, source))
         self._load()
 
-    def backtrack(self, key):
+    def backtrack(self, source):
         """Given a unique key in the store, recreate original source"""
+        key = self.get_tok(source)
         s = self[key]()
         cls, args, kwargs = s.metadata['original_source']
         cls = import_name(cls)
