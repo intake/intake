@@ -10,7 +10,7 @@ import posixpath
 import shutil
 import time
 import yaml
-from ..catalog.local import YAMLFileCatalog
+from ..catalog.local import YAMLFileCatalog, CatalogEntry
 from .. import DataSource
 from ..config import conf
 from ..source import import_name
@@ -53,19 +53,29 @@ class PersistStore(YAMLFileCatalog):
         data['sources'][key] = source._yaml()['sources'][source.name]
         with open(self.path, 'w') as fo:
             fo.write(yaml.dump(data, default_flow_style=False))
-        self._load()
+        self._entries[key] = source
 
     def get_tok(self, source):
-        if source in self:
-            source = source.name
-        elif isinstance(source, DataSource):
-            source = source._tok
-        return source
+        """Get string token from object
+
+        Strings are assumed to already be a token; if source or entry, see
+        if it is a persisted thing ("original_tok" is in its metadata), else
+        generate its own token.
+        """
+        if isinstance(source, str):
+            return source
+
+        if isinstance(source, CatalogEntry):
+            return source._metadata.get('original_tok', source._tok)
+
+        if isinstance(source, DataSource):
+            return source.metadata.get('original_tok', source._tok)
+        raise ValueError
 
     def remove(self, source, delfiles=True):
         """Remove a dataset from the persist store
 
-        source : str or DataSource
+        source : str or DataSource or Lo
             If a str, this is the unique ID of the original source, which is
             the key of the persisted dataset within the store. If a source,
             can be either the original or the persisted source.
@@ -79,7 +89,7 @@ class PersistStore(YAMLFileCatalog):
             fo.write(yaml.dump(data, default_flow_style=False))
         if delfiles:
             shutil.rmtree(posixpath.join(self.pdir, source))
-        self._load()
+        self._entries.pop(source)
 
     def backtrack(self, source):
         """Given a unique key in the store, recreate original source"""
@@ -88,7 +98,8 @@ class PersistStore(YAMLFileCatalog):
         cls, args, kwargs = s.metadata['original_source']
         cls = import_name(cls)
         sout = cls(*args, **kwargs)
-        sout.metadata = s.metadata['previous_metadata']
+        sout.metadata = s.metadata['original_metadata']
+        sout.name = s.metadata['original_name']
         return sout
 
     def refresh(self, key):

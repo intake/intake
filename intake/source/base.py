@@ -315,13 +315,15 @@ class DataSource(object):
         out = method(self, path=store.getdir(self), **kwargs)
         out.description = self.description
         metadata = {'timestamp': time.time(),
-                    'previous_metadata': self.metadata,
+                    'original_metadata': self.metadata,
                     'original_source': self.__getstate__(),
+                    'original_name': self.name,
+                    'original_tok': self._tok,
                     'persist_kwargs': kwargs,
                     'ttl': ttl,
                     'cat': {} if self.cat is None else self.cat.__getstate__()}
         out.metadata = metadata
-        out.name = self._tok
+        out.name = self.name
         store.add(self._tok, out)
         return out
 

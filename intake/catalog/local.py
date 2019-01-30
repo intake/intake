@@ -225,20 +225,6 @@ class LocalCatalogEntry(CatalogEntry):
         md['catalog_dir'] = self._catalog_dir
         open_args['metadata'] = md
 
-        return open_args
-
-    def describe_open(self, **user_parameters):
-        return {
-            'plugin': self._driver,
-            'description': self._description,
-            'direct_access': self._direct_access,
-            'metadata': self._metadata,
-            'args': self._create_open_args(user_parameters)
-        }
-
-    def get(self, **user_parameters):
-        """Instantiate the DataSource for the given parameters"""
-        open_args = self._create_open_args(user_parameters)
         plugin = user_parameters.get('plugin', None)
         if len(self._plugin) == 0:
             raise ValueError('No plugins loaded for this entry: %s'
@@ -258,6 +244,29 @@ class LocalCatalogEntry(CatalogEntry):
                 raise ValueError('Attempt to select not available plugin %s, '
                                  'perhaps import of plugin failed' % plugin)
 
+        return plugin, open_args
+
+    def describe_open(self, **user_parameters):
+        _, args = self._create_open_args(user_parameters)
+        return {
+            'plugin': self._driver,
+            'description': self._description,
+            'direct_access': self._direct_access,
+            'metadata': self._metadata,
+            'args': args
+        }
+
+    @property
+    def _tok(self, **user_parameters):
+        from dask.base import tokenize
+        plugin, open_args = self._create_open_args(user_parameters)
+        plugin = '.'.join([plugin.__module__, plugin.__name__])
+        return tokenize({'cls': plugin.classname, 'args': (),
+                         'kwargs': open_args})
+
+    def get(self, **user_parameters):
+        """Instantiate the DataSource for the given parameters"""
+        plugin, open_args = self._create_open_args(user_parameters)
         data_source = plugin(**open_args)
         data_source.catalog_object = self._catalog
         data_source.name = self.name
