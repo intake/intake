@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 import os
 
 # External imports
-import yaml
+from ruamel import yaml
 
 # Intake imports
 from intake.cli.util import Subcommand

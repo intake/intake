@@ -8,7 +8,7 @@
 import logging
 import os
 import posixpath
-import yaml
+from ruamel import yaml
 
 try:
     from ruamel.yaml.constructor import DuplicateKeyError
