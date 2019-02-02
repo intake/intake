@@ -9,8 +9,8 @@ msgpack-python
 numpy
 pandas
 python-snappy
+pyyaml
 requests
-ruamel.yaml >=0.15.0
 six
 toolz
 tornado >=4.5.1

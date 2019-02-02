@@ -13,7 +13,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from ruamel import yaml
+import yaml
 
 from .utils import make_path_posix
 

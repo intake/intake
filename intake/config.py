@@ -9,7 +9,7 @@ from os.path import expanduser
 import logging
 import os
 import posixpath
-from ruamel import yaml
+import yaml
 
 from .utils import make_path_posix
 logger = logging.getLogger('intake')
