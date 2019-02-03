@@ -29,6 +29,8 @@ matrix:
       python:
         - "3.7"
       install:
+        - sudo apt update
+        - sudo apt install libsnappy-dev
         - pip install -e .
         - pip install pytest
       script:
