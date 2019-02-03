@@ -10,15 +10,11 @@ import os
 import posixpath
 import yaml
 
-try:
-    from ruamel.yaml.constructor import DuplicateKeyError
-except ImportError:
-    from ruamel_yaml.constructor import DuplicateKeyError
-
 from jinja2 import Template
 import six
 from dask.bytes import open_files
 
+from intake.catalog.exceptions import DuplicateKeyError
 from .. import __version__
 from .base import Catalog
 from . import exceptions
@@ -562,11 +558,8 @@ class YAMLFileCatalog(Catalog):
         if "!template " in text:
             logger.warning("Use of '!template' deprecated - fixing")
             text = text.replace('!template ', '')
-        try:
-            data = yaml.load(text)
-        except DuplicateKeyError as e:
-            # Wrap internal exception with our own exception
-            raise exceptions.DuplicateKeyError(e)
+
+        data = yaml.load(text)
 
         if data is None:
             raise exceptions.CatalogException('No YAML data in file')

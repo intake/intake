@@ -36,8 +36,10 @@ Intake is a Python library for accessing data in a simple and uniform way.  It c
 
 1. A lightweight plugin system for adding data loader :term:`drivers<Driver>` for new file formats and servers
 (like databases, REST endpoints or other cataloging services)
+
 2. A cataloging system for specifying these sources in simple :term:`YAML` syntax, or with plugins that read source specs
 from some external data service
+
 3. A server-client architecture that can share data catalog metadata over the network, or even stream the data directly
 to clients if needed
 
