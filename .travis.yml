@@ -24,6 +24,8 @@ matrix:
       script: scripts/ci/build.sh
     # PYTHON
     - language: python
+      sudo: required
+      dist: xenial
       python:
         - "3.7"
       install:
