@@ -79,6 +79,15 @@ class UserParameter(object):
             self.allowed = [coerce(self.type, item)
                             for item in self.allowed]
 
+    def __repr__(self):
+        return ('UserParameter(name={self.name!r}, '
+                'description={self.description!r}, '
+                'type={self.type!r}, '
+                'default={self.default!r}, '
+                'min={self.min!r}, '
+                'max={self.max!r}, '
+                'allowed={self.allowed!r})'.format(self=self))
+
     def describe(self):
         """Information about this parameter"""
         desc = {
