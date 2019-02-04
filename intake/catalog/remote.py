@@ -114,6 +114,7 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
             if container == 'catalog':
                 # Propagate the page_size setting into nested Catalogs.
                 response['page_size'] = page_size
+                response.pop('container')
             source = container_map[container](
                 url, http_args, parameters=user_parameters,
                 name=entry, **response)

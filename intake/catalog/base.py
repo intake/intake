@@ -339,7 +339,7 @@ class RemoteCatalog(Catalog):
     def __init__(self, url, http_args=None, page_size=None,
                  name=None, source_id=None, metadata=None, auth=None, ttl=1,
                  getenv=True, getshell=True,
-                 storage_options=None):
+                 storage_options=None, parameters=None):
         """Connect to remote Intake Server as a catalog
 
         Parameters
@@ -373,6 +373,8 @@ class RemoteCatalog(Catalog):
             parameters to pass to requests when issuing http commands; otherwise
             parameters to pass to remote backend file-system. Ignored for
             normal local files.
+        parameters: dict
+            To pass to the server when it instantiates the data source
         """
         if http_args is None:
             http_args = {}
@@ -392,6 +394,7 @@ class RemoteCatalog(Catalog):
         self.http_args['headers'] = self.http_args.get('headers', {})
         self._page_size = page_size
         self._source_id = source_id
+        self._parameters = parameters
         self._len = None
         if self._source_id is None:
             name = urlparse(url).netloc.replace(
@@ -445,15 +448,19 @@ class RemoteCatalog(Catalog):
                 "Failed to fetch page of entries {}-{}."
                 "".format(page_offset, page_offset + self._page_size)), err)
         info = msgpack.unpackb(response.content, **unpack_kwargs)
-        page = {source['name']: RemoteCatalogEntry(
-            url=self.url,
-            getenv=self.getenv,
-            getshell=self.getshell,
-            auth=self.auth,
-            http_args=self.http_args,
-            page_size=self._page_size,
-            **source)
-            for source in info['sources']}
+        page = {}
+        for source in info['sources']:
+            user_parameters = source.get('user_parameters', [])
+            # TODO Do something with self._parameters.
+            page[source['name']] = RemoteCatalogEntry(
+                url=self.url,
+                getenv=self.getenv,
+                getshell=self.getshell,
+                auth=self.auth,
+                http_args=self.http_args,
+                page_size=self._page_size,
+                # user_parameters=user_parameters,
+                **source)
         return page
 
     def fetch_by_name(self, name):
