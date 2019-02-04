@@ -1,7 +1,6 @@
 # This file is also processed by conda-build, so keep spaces as "pkg >=1.2"
 appdirs
-cloudpickle
-dask >=0.17.0
+dask[bag] >=0.17.0
 holoviews
 jinja2
 msgpack-numpy
@@ -12,5 +11,4 @@ python-snappy
 pyyaml
 requests
 six
-toolz
 tornado >=4.5.1
