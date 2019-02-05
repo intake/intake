@@ -79,7 +79,7 @@ class UserParameter(object):
             self.allowed = [coerce(self.type, item)
                             for item in self.allowed]
 
-    def __repr__(self):
+    def __str__(self):
         return ('UserParameter(name={self.name!r}, '
                 'description={self.description!r}, '
                 'type={self.type!r}, '
