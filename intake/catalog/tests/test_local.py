@@ -220,6 +220,7 @@ def test_user_parameter_validation_allowed():
     "data_source_non_dict",
     "data_source_value_non_dict",
     "params_missing_required",
+    "params_missing_default",
     "params_name_non_string",
     "params_non_dict",
     "params_value_bad_choice",

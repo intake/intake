@@ -390,7 +390,7 @@ class CatalogParser(object):
             'name': name,
             'description': self._getitem(data, 'description', str),
             'type': self._getitem(data, 'type', str, choices=valid_types),
-            'default': self._getitem(data, 'default', object, required=False),
+            'default': self._getitem(data, 'default', object),
             'min': self._getitem(data, 'min', object, required=False),
             'max': self._getitem(data, 'max', object, required=False),
             'allowed': self._getitem(data, 'allowed', object, required=False)
