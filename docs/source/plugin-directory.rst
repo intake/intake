@@ -27,9 +27,12 @@ This is a list of known projects which install driver plugins for Intake:
 * `intake-splunk <https://github.com/ContinuumIO/intake-splunk>`_: Splunk machine data query
 * `intake-xarray <https://github.com/ContinuumIO/intake-xarray>`_: load netCDF, Zarr and other multi-dimensional data
 
+The status of these projects is available at `Status Dashboard <https://continuumio.github.io/intake-dashboard/status.html>`_.
+
 Don't see your favorite format?  See :doc:`making-plugins` for how to create new plugins.
 
 Note that if you want your plugin listed here, open an issue in the `Intake
-issue repository <https://github.com/ContinuumIO/intake>`_. We also have a
+issue repository <https://github.com/ContinuumIO/intake>`_ and add an entry to the
+`status dashboard repository <https://github.com/ContinuumIO/intake-dashboard>`_. We also have a
 `plugin wishlist Github issue <https://github.com/ContinuumIO/intake/issues/58>`_
 that shows the breadth of plugins we hope to see for Intake.

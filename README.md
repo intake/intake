@@ -4,7 +4,7 @@
 
 [![Build Status](https://travis-ci.org/ContinuumIO/intake.svg?branch=master)](https://travis-ci.org/ContinuumIO/intake)  [![Documentation Status](https://readthedocs.org/projects/intake/badge/?version=latest)](http://intake.readthedocs.io/en/latest/?badge=latest) [![Join the chat at https://gitter.im/ContinuumIO/intake](https://badges.gitter.im/ContinuumIO/intake.svg)](https://gitter.im/ContinuumIO/intake?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Waffle.io - Columns and their card count](https://badge.waffle.io/ContinuumIO/intake.svg?columns=all)](https://waffle.io/ContinuumIO/intake)
 
-Intake is a lightweight set of tools for loading and sharing data in data science projects.  
+Intake is a lightweight set of tools for loading and sharing data in data science projects.
 Intake helps you:
 
 * Load data from a variety of formats (see the [current list of known plugins](http://intake.readthedocs.io/en/latest/plugin-directory.html)) into containers you already know, like Pandas dataframes, Python lists, NumPy arrays, and more.
@@ -13,6 +13,8 @@ Intake helps you:
 * Share catalog information (and data sets) over the network with the Intake server
 
 Documentation is available at [Read the Docs](http://intake.readthedocs.io/en/latest).
+
+Status of intake and related packages is available at [Status Dashboard](https://continuumio.github.io/intake-dashboard/status.html)
 
 Install
 -------
