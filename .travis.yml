@@ -34,7 +34,10 @@ matrix:
         - pip install -e .
         - pip install pytest
       script:
-        - pytest
+        - pytest --cov=intake --cov-config .ci-coveragerc --cov-report term-missing
+
+after_success:
+  - coveralls
 
 notifications:
   email: false
