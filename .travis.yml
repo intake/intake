@@ -22,6 +22,8 @@ matrix:
         - export CONDA_PY=36
       install: scripts/ci/install.sh
       script: scripts/ci/build.sh
+      after_success:
+        - coveralls
     # PYTHON
     - language: python
       sudo: required
@@ -34,10 +36,7 @@ matrix:
         - pip install -e .
         - pip install pytest
       script:
-        - pytest --cov=intake --cov-config .ci-coveragerc --cov-report term-missing
-
-after_success:
-  - coveralls
+        - pytest
 
 notifications:
   email: false
