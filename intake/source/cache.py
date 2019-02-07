@@ -91,11 +91,15 @@ class BaseCache(object):
     def _munge_path(self, cache_subdir, urlpath):
         import re
 
-        regex = sanitize_path(self._spec['regex'])
         path = sanitize_path(urlpath)
 
+        if 'regex' in self._spec:
+            regex = r'%s' % sanitize_path(self._spec['regex'])
+        else:
+            regex = r'^'  # if no regex provided, use full path
+
         cache_path = re.sub(
-            r"%s" % regex,
+            regex,
             posixpath.join(self._cache_dir, cache_subdir),
             path
         )

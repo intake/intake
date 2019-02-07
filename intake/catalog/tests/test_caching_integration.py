@@ -8,6 +8,7 @@
 import os
 import pytest
 import shutil
+import string
 import time
 
 import intake
@@ -32,7 +33,6 @@ def test_load_csv(catalog_cache):
     assert os.path.isfile(cache_path)
 
     cache_id = os.path.basename(os.path.dirname(cache_path))
-    import string
     # Checking for md5 hash
     assert all(c in string.hexdigits for c in cache_id)
     cache.clear_all()
@@ -49,7 +49,6 @@ def test_bad_type_cache(catalog_cache):
     assert os.path.isfile(cache_path)
 
     cache_id = os.path.basename(os.path.dirname(cache_path))
-    import string
     # Checking for md5 hash
     assert all(c in string.hexdigits for c in cache_id)
     cache.clear_all()
@@ -66,7 +65,6 @@ def test_load_textfile(catalog_cache):
     assert os.path.isfile(cache_path)
 
     cache_id = os.path.basename(os.path.dirname(cache_path))
-    import string
     # Checking for md5 hash
     assert all(c in string.hexdigits for c in cache_id)
     cache.clear_all()
@@ -83,9 +81,21 @@ def test_load_arr(catalog_cache):
     assert os.path.isfile(cache_path)
 
     cache_id = os.path.basename(os.path.dirname(cache_path))
-    import string
     # Checking for md5 hash
     assert all(c in string.hexdigits for c in cache_id)
+    cache.clear_all()
+
+
+def test_no_regex(catalog_cache):
+    cat = catalog_cache['test_no_regex']
+    cache = cat.cache[0]
+
+    cache_paths = cache.load(cat._urlpath, output=False)
+    cache_path = cache_paths[-1]
+
+    assert cache._cache_dir in cache_path
+    assert os.path.isfile(cache_path)
+
     cache.clear_all()
 
 
@@ -207,7 +217,6 @@ def test_second_load_refresh(catalog_cache):
 
 def test_multiple_cache(catalog_cache):
     cat = catalog_cache['test_multiple_cache']
-    cache = cat.cache[0]
 
     assert len(cat.cache) == 2
 
@@ -242,7 +251,6 @@ def test_disable_caching(catalog_cache):
     assert os.path.isfile(cache_path)
 
     cache_id = os.path.basename(os.path.dirname(cache_path))
-    import string
     # Checking for md5 hash
     assert all(c in string.hexdigits for c in cache_id)
     cache.clear_all()
@@ -266,7 +274,6 @@ def test_ds_set_cache_dir(catalog_cache):
     assert os.path.isfile(cache_path)
 
     cache_id = os.path.basename(os.path.dirname(cache_path))
-    import string
     # Checking for md5 hash
     assert all(c in string.hexdigits for c in cache_id)
     cache.clear_all()

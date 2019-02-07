@@ -259,12 +259,11 @@ the value when accessing the data.
 Caching Source Files Locally
 ''''''''''''''''''''''''''''
 
-To enable caching on the first read of remote data source files, ``cache`` specifications have the following attributes
-in the catalog.
+To enable caching on the first read of remote data source files, add the ``cache`` section with the
+following attributes:
 
-- ``argkey``: Of the keys in the args section in this same data source, which contains the URL(s) of the data to be cached.
-- ``regex``: A regular expression to match against the URL path, where the matching portion will be replaced by a path in the local cache directory.
-- ``type``: One of the keys in the cache registry [`intake.source.cache.registry`], referring to an implementation of caching behaviour. The default if "file" for the caching of one or more specific remote files.
+- ``argkey``: The args section key which contains the URL(s) of the data to be cached.
+- ``type``: One of the keys in the cache registry [`intake.source.cache.registry`], referring to an implementation of caching behaviour. The default is "file" for the caching of one or more files.
 
 Example:
 
@@ -275,7 +274,6 @@ Example:
     driver: csv
     cache:
       - argkey: urlpath
-        regex: '{{ CATALOG_DIR }}/cache_data'
         type: file
     args:
       urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
@@ -286,6 +284,11 @@ environment variable, or at runtime using the ``"cache_dir"`` key of the configu
 The special value ``"catdir"`` implies that cached files will appear in the same directory as the
 catalog file in which the data source is defined, within a directory named "intake_cache". These will
 not appear in the cache usage reported by the CLI.
+
+Optionally, the cache section can have a ``regex`` attribute, that modifies the path of the cache on
+the disk. By default, the cache path is made by concatenating ``cache_dir``, dataset name, hash of
+the url, and the url itself (without the protocol). ``regex`` attribute allows to remove part of the
+url (the matching part).
 
 Caching can be disabled at runtime for all sources regardless of the catalog specificiation::
 

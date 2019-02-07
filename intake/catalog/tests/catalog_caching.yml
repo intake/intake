@@ -54,3 +54,11 @@ sources:
     args:
       path: "{{ CATALOG_DIR }}/small.npy"
       chunks: 5
+  test_no_regex:
+    description: cache a csv file from the local filesystem
+    driver: csv
+    cache:
+      - argkey: urlpath
+        type: file
+    args:
+      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
