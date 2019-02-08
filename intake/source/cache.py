@@ -24,7 +24,7 @@ logger = logging.getLogger('intake')
 
 
 def sanitize_path(path):
-    "Utility for cleaning up paths."
+    """Utility for cleaning up paths."""
 
     storage_option = infer_storage_options(path)
 

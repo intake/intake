@@ -246,7 +246,10 @@ class LocalCatalogEntry(CatalogEntry):
         open_args = self._create_open_args(user_parameters)
         plugin = user_parameters.get('plugin', None)
         if len(self._plugin) == 0:
-            raise ValueError('No plugins loaded for this entry: %s'
+            raise ValueError('No plugins loaded for this entry: %s\n'
+                             'A listing of installable plugins can be found ' 
+                             'at https://intake.readthedocs.io/en/latest/plugin'
+                             '-directory.html.'
                              % self._driver)
         elif isinstance(self._plugin, list):
             plugin = self._plugin[0]

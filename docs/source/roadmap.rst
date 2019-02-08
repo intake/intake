@@ -59,3 +59,8 @@ We are experimenting with reflecting external catalog-like data servers as Intak
 familiar API can be used for all the disparate services. See for example `this discussion`_.
 
 .. _this discussion: https://github.com/ContinuumIO/intake/issues/224
+
+Use DAT as a cache service
+--------------------------
+
+The [DAT protocol](https://datproject.org/)

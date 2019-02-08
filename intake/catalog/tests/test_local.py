@@ -478,11 +478,14 @@ def test_no_plugins():
     fn = abspath('multi_plugins.yaml')
     cat = open_catalog(fn)
     s = cat.tables6
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as e:
         s()
+    assert 'doesnotexist' in str(e.value)
+    assert 'plugin-directory' in str(e.value)
     s = cat.tables7
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as e:
         s()
+    assert 'doesnotexist' in str(e.value)
 
 
 def test_getitem_and_getattr():
