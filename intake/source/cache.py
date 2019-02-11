@@ -34,8 +34,10 @@ def sanitize_path(path):
         # it to match properly.
         path = os.path.normpath(path.replace("{}://".format(protocol), ''))
     elif protocol == 'file':
-        # Just removing trailing slashes from file paths.
+        # Remove trailing slashes from file paths.
         path = os.path.normpath(path)
+        # Remove colons
+        path = path.replace(':', '')
     # Otherwise we just make sure that path is posix
     return make_path_posix(path)
 
