@@ -10,15 +10,11 @@ import os
 import posixpath
 import yaml
 
-try:
-    from ruamel.yaml.constructor import DuplicateKeyError
-except ImportError:
-    from ruamel_yaml.constructor import DuplicateKeyError
-
 from jinja2 import Template
 import six
 from dask.bytes import open_files
 
+from intake.catalog.exceptions import DuplicateKeyError
 from .. import __version__
 from .base import Catalog
 from . import exceptions
@@ -82,6 +78,15 @@ class UserParameter(object):
         if self.allowed:
             self.allowed = [coerce(self.type, item)
                             for item in self.allowed]
+
+    def __str__(self):
+        return ('UserParameter(name={self.name!r}, '
+                'description={self.description!r}, '
+                'type={self.type!r}, '
+                'default={self.default!r}, '
+                'min={self.min!r}, '
+                'max={self.max!r}, '
+                'allowed={self.allowed!r})'.format(self=self))
 
     def describe(self):
         """Information about this parameter"""
@@ -227,7 +232,10 @@ class LocalCatalogEntry(CatalogEntry):
 
         plugin = user_parameters.get('plugin', None)
         if len(self._plugin) == 0:
-            raise ValueError('No plugins loaded for this entry: %s'
+            raise ValueError('No plugins loaded for this entry: %s\n'
+                             'A listing of installable plugins can be found ' 
+                             'at https://intake.readthedocs.io/en/latest/plugin'
+                             '-directory.html.'
                              % self._driver)
         elif isinstance(self._plugin, list):
             plugin = self._plugin[0]
@@ -572,11 +580,8 @@ class YAMLFileCatalog(Catalog):
         if "!template " in text:
             logger.warning("Use of '!template' deprecated - fixing")
             text = text.replace('!template ', '')
-        try:
-            data = yaml.load(text)
-        except DuplicateKeyError as e:
-            # Wrap internal exception with our own exception
-            raise exceptions.DuplicateKeyError(e)
+
+        data = yaml.load(text)
 
         if data is None:
             raise exceptions.CatalogException('No YAML data in file')

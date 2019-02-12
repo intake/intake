@@ -136,6 +136,13 @@ def test_user_parameter_default_value(dtype, expected):
     assert p.validate(None) == expected
 
 
+def test_user_parameter_str_method():
+    p = local.UserParameter('a', 'a desc', 'str')
+    expected = ("UserParameter(name='a', description='a desc', type='str', "
+                "default='', min=None, max=None, allowed=None)")
+    assert str(p) == expected
+
+
 @pytest.mark.parametrize("dtype,given,expected", [
     ("bool", "true", True),
     ("bool", 0, False),
@@ -478,11 +485,14 @@ def test_no_plugins():
     fn = abspath('multi_plugins.yaml')
     cat = open_catalog(fn)
     s = cat.tables6
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as e:
         s()
+    assert 'doesnotexist' in str(e.value)
+    assert 'plugin-directory' in str(e.value)
     s = cat.tables7
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as e:
         s()
+    assert 'doesnotexist' in str(e.value)
 
 
 def test_getitem_and_getattr():

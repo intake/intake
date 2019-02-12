@@ -15,9 +15,9 @@ dependencies:
   - requests
   - tornado
   - jinja2
-  - ruamel_yaml >=0.15.0
   - dask >=0.17.0
   - python-snappy
+  - pyyaml
   - holoplot
   - pip:
     - sphinx

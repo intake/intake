@@ -10,6 +10,7 @@ import logging
 import os
 import posixpath
 import yaml
+
 from .utils import make_path_posix
 logger = logging.getLogger('intake')
 

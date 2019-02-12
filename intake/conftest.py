@@ -104,22 +104,24 @@ def intake_server(request):
 
 @pytest.fixture(scope='module')
 def http_server():
+    port_as_str = str(pick_port())
     if PY2:
-        cmd = ['python', '-m', 'SimpleHTTPServer', '8000']
+        cmd = ['python', '-m', 'SimpleHTTPServer', port_as_str]
     else:
-        cmd = ['python', '-m', 'http.server', '8000']
+        cmd = ['python', '-m', 'http.server', port_as_str]
     p = subprocess.Popen(cmd, cwd=os.path.join(here, 'catalog', 'tests'))
+    url = 'http://localhost:{}/'.format(port_as_str)
     timeout = 5
     while True:
         try:
-            requests.get('http://localhost:8000/')
+            requests.get(url)
             break
         except:
             time.sleep(0.1)
             timeout -= 0.1
             assert timeout > 0, "timeout waiting for http server"
     try:
-        yield 'http://localhost:8000/'
+        yield url
     finally:
         p.terminate()
         p.communicate()

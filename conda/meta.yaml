@@ -30,15 +30,12 @@ requirements:
     {% endif %}
     {% endfor %}
 
-    # There is an unfortunate name difference for this package in the main
-    # conda repo. This can be removed when/if ruamel.yaml becomes available
-    - ruamel_yaml >=0.15.0
-
 test:
   requires:
     - pytest
     - pytest-cov
     - coverage
+    - coveralls
   commands:
     - intake list -h
     - intake-server -h

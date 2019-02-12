@@ -199,10 +199,7 @@ class DataSource(object):
             is created with a plugin not expected to be in the global Intake
             registry.
         """
-        try:
-            from ruamel.yaml import dump
-        except (ImportError, NameError, AttributeError):
-            from ruamel_yaml import dump
+        from yaml import dump
         data = self._yaml(with_plugin=with_plugin)
         return dump(data, default_flow_style=False)
 
