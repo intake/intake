@@ -52,9 +52,12 @@ def main(argv=None):
         logger.info('  - %s' % arg)
 
     catargs = args.catalog_args
-    catargs = catargs[0] if len(catargs) == 1 else catargs
-    logger.info("catalog_args: %s" % catargs)
-    catalog = open_catalog(catargs, flatten=args.flatten)
+    if len(catargs) == 1:
+        catalog = open_catalog(catargs[0])
+        logger.info("catalog_args: %s" % catargs[0])
+    else:
+        catalog = open_catalog(catargs, flatten=args.flatten)
+        logger.info("catalog_args: %s" % catargs)
     if args.list_entries:
         # This is not a good idea if the Catalog is huge.
         logger.info('Entries:' + ','.join(list(catalog)))

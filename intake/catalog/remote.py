@@ -18,7 +18,10 @@ from ..compat import unpack_kwargs
 
 class RemoteCatalogEntry(CatalogEntry):
     """An entry referring to a remote data definition"""
-    def __init__(self, url, auth, *args, **kwargs):
+    def __init__(self, url, auth, name=None, user_parameters=None,
+                 container=None, description='', metadata=None,
+                 http_args=None, page_size=None, direct_access=False,
+                 getenv=True, getshell=True):
         """
 
         Parameters
@@ -33,19 +36,26 @@ class RemoteCatalogEntry(CatalogEntry):
         """
         self.url = url
         self.auth = auth
-        self.args = args
-        self.kwargs = kwargs
-        self.container = self.kwargs.get('container', None)
-        self._description = self.kwargs.get('description', "")
-        self._metadata = self.kwargs.get('metatata', {})
-        self._page_size = self.kwargs.get('page_size', None)
-        getenv = kwargs.pop('getenv', True)
-        getshell = kwargs.pop('getshell', True)
-        self.http_args = kwargs.pop('http_args', {}).copy()
+        self.container = container
+        self.name = name
+        self.description = description
+        self.metadata = metadata or {}
+        self._page_size = page_size
+        self._user_parameters = user_parameters or []
+        self._direct_access = direct_access
+        self.http_args = (http_args or {}).copy()
         if 'headers' not in self.http_args:
             self.http_args['headers'] = {}
         super(RemoteCatalogEntry, self).__init__(getenv=getenv,
                                                  getshell=getshell)
+
+    @property
+    def kwargs(self):
+        return dict(name=self.name,
+                    container=self.container, description=self.description,
+                    direct_access=self._direct_access,
+                    user_parameters=self._user_parameters
+                    )
 
     def describe(self):
         return self.kwargs
@@ -55,27 +65,26 @@ class RemoteCatalogEntry(CatalogEntry):
             'container': self.container,
             'plugin': None,
             'description': self._description,
-            'direct_access': False,
+            'direct_access': self._direct_access,
             'metadata': self._metadata,
             'args': (self.url, )
         }
 
     def get(self, **user_parameters):
-        for par in self.kwargs['user_parameters']:
+        for par in self._user_parameters:
             if par['name'] not in user_parameters:
                 default = par['default']
                 if isinstance(default, six.string_types):
                     default = coerce(par['type'], expand_defaults(
                         par['default'], True, self.getenv, self.getshell))
                 user_parameters[par['name']] = default
-        entry = self.kwargs
 
         http_args = self.http_args.copy()
         http_args['headers'] = self.http_args['headers'].copy()
         http_args['headers'].update(self.auth.get_headers())
         return open_remote(
-            self.url, entry['name'], container=entry['container'],
-            user_parameters=user_parameters, description=entry['description'],
+            self.url, self.name, container=self.container,
+            user_parameters=user_parameters, description=self.description,
             http_args=http_args,
             page_size=self._page_size
             )
@@ -105,6 +114,7 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
             if container == 'catalog':
                 # Propagate the page_size setting into nested Catalogs.
                 response['page_size'] = page_size
+                response.pop('container')
             source = container_map[container](
                 url, http_args, parameters=user_parameters,
                 name=entry, **response)
