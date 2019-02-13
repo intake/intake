@@ -97,16 +97,9 @@ class BaseCache(object):
 
         if 'regex' in self._spec:
             regex = r'%s' % sanitize_path(self._spec['regex'])
-        else:
-            regex = r'^'  # if no regex provided, use full path
+            path = re.sub(regex, '', path)
 
-        cache_path = re.sub(
-            regex,
-            posixpath.join(self._cache_dir, cache_subdir),
-            path
-        )
-
-        return urlpath if path == cache_path else cache_path
+        return posixpath.join(self._cache_dir, cache_subdir, path.lstrip('/\\'))
 
     def _hash(self, urlpath):
         return md5(
