@@ -249,13 +249,14 @@ def test_disable_caching(catalog_cache):
 
 
 def test_ds_set_cache_dir(catalog_cache):
-    cat = catalog_cache['test_cache']
+    cat = catalog_cache['test_cache']()
     defaults = cat.cache_dirs
 
     new_cache_dir = os.path.join(os.getcwd(), 'test_cache_dir')
     cat.set_cache_dir(new_cache_dir)
 
     cache = cat.cache[0]
+    assert cache._cache_dir == new_cache_dir
 
     cache_paths = cache.load(cat._urlpath, output=False)
     cache_path = cache_paths[-1]

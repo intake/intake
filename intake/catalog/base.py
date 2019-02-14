@@ -50,7 +50,7 @@ class Catalog(DataSource):
     name = 'catalog'
 
     def __init__(self, *args, name=None, metadata=None, auth=None, ttl=1,
-                 getenv=True, getshell=True,
+                 getenv=True, getshell=True, persist_mode='default',
                  storage_options=None):
         """
         Parameters
@@ -71,6 +71,12 @@ class Catalog(DataSource):
             Can parameter default fields take values from the environment
         getshell: bool
             Can parameter default fields run shell commands
+        persist_mode: ['always', 'default', 'never']
+            Defines the use of persisted sources: if 'always', will use a
+            persisted version of a data source, if it exists, if 'never' will
+            always use the original source. If 'default', persisted sources
+            will be used if they have not expired, and re-persisted and used
+            if they have.
         storage_options : dict
             If using a URL beginning with 'intake://' (remote Intake server),
             parameters to pass to requests when issuing http commands; otherwise
@@ -84,6 +90,10 @@ class Catalog(DataSource):
         self.getenv = getenv
         self.getshell = getshell
         self.storage_options = storage_options
+        if persist_mode not in ['always', 'never', 'default']:
+            # should be True, False, None ?
+            raise ValueError('Persist mode (%s) not understood' % persist_mode)
+        self.pmode = persist_mode
 
         if auth is None:
             auth = BaseClientAuth()
@@ -184,6 +194,7 @@ class Catalog(DataSource):
     def _get_entry(self, name):
         entry = self._entries[name]
         entry._catalog = self
+        entry._pmode = self.pmode
         return entry
 
     @reload_on_change
@@ -229,15 +240,20 @@ class Catalog(DataSource):
         nested directories with cat.name1.name2, cat['name1.name2'] *or*
         cat['name1', 'name2']
         """
-        if key in self._get_entries():  # triggers reload_on_change
+        if not isinstance(key, list) and key in self._get_entries():
+            # triggers reload_on_change
             e = self._entries[key]
             e._catalog = self
+            e._pmode = self.pmode
             return e
         if isinstance(key, str) and '.' in key:
             key = key.split('.')
         if isinstance(key, (tuple, list)):
             if len(key) > 1 and key[0] in self._entries:
-                return self._entries[key[0]].__getitem__(*key[1:])
+                out = self._entries[key[0]].__getitem__(key[1:])
+                return out
+            if len(key) == 1:
+                return self[key[0]]
         else:
             raise KeyError(key)
 

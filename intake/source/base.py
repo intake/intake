@@ -307,6 +307,9 @@ class DataSource(object):
         from ..container import container_map
         from ..container.persist import PersistStore
         import time
+        if 'original_tok' in self.metadata:
+            raise ValueError('Cannot persist a source taken from the persist '
+                             'store')
         method = container_map[self.container]._persist
         store = PersistStore()
         out = method(self, path=store.getdir(self), **kwargs)
@@ -324,10 +327,24 @@ class DataSource(object):
         store.add(self._tok, out)
         return out
 
+    def get_persisted(self):
+        from ..container.persist import store
+        return store[self._tok]()
+
     @staticmethod
     def _persist(source, path, **kwargs):
         """To be implemented by 'container' sources for locally persisting"""
         raise NotImplementedError
+
+    @property
+    def has_been_persisted(self):
+        from ..container.persist import store
+        return self._tok in store
+
+    @property
+    def is_persisted(self):
+        from ..container.persist import store
+        return self.metadata.get('original_tok', None) in store
 
 
 class PatternMixin(object):

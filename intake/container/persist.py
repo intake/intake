@@ -70,7 +70,7 @@ class PersistStore(YAMLFileCatalog):
 
         if isinstance(source, DataSource):
             return source.metadata.get('original_tok', source._tok)
-        raise ValueError
+        raise IndexError
 
     def remove(self, source, delfiles=True):
         """Remove a dataset from the persist store
@@ -103,13 +103,13 @@ class PersistStore(YAMLFileCatalog):
         return sout
 
     def refresh(self, key):
-        """Recreate and re-persist the source for the given uniquey ID"""
+        """Recreate and re-persist the source for the given unique ID"""
         s0 = self[key]
         s = self.backtrack(key)
         s.persist(**s0.metadata['persist_kwargs'])
 
     def needs_refresh(self, source):
-        """Has the (original) source expired in the store
+        """Has the (persisted) source expired in the store
 
         Will return True if the source is not in the store at all, if it's
         TTL is set to None, or if more seconds have passed than the TTL.
@@ -123,3 +123,6 @@ class PersistStore(YAMLFileCatalog):
                     return True
             return False
         return True
+
+
+store = PersistStore()

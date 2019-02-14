@@ -5,6 +5,8 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import time
+
 
 class CatalogEntry(object):
     """A single item appearing in a catalog
@@ -16,6 +18,7 @@ class CatalogEntry(object):
         self._default_source = None
         self.getenv = getenv
         self.getshell = getshell
+        self._pmode = 'default'
 
     def describe(self):
         """Get a dictionary of attributes of this entry.
@@ -64,6 +67,10 @@ class CatalogEntry(object):
 
         Equivalent to calling the catalog entry like a function.
 
+        Note: ``entry()``, ``entry.attr``, ``entry[item]`` check for persisted
+        sources, but directly calling ``.get()`` will always ignore the
+        persisted store (equivalent to self._pmode=='never'``).
+
         Parameters
         ----------
           user_parameters : dict
@@ -73,15 +80,42 @@ class CatalogEntry(object):
         """
         raise NotImplementedError
 
-    # Convenience methods for configuring source and automatically
-    # creating a default source when needed.
-    def __call__(self, **kwargs):
-        return self.get(**kwargs)
+    def __call__(self, persist=None, **kwargs):
+        """Instantiate DataSource with given user arguments
+
+        Parameters
+        ----------
+        persist: str or None
+            Override persistence mode defined in the parent catalog. If not
+            None, must be one of ['always', 'never', 'default']. Has no
+            effect if the source has never been persisted, use source.persist()
+        """
+        from ..container.persist import store
+
+        if persist is not None and persist not in [
+                'always', 'never', 'default']:
+            raise ValueError('Persist value (%s) not understood' % persist)
+        persist = persist or self._pmode
+        s = self.get(**kwargs)
+        if s.has_been_persisted and persist is not 'never':
+            s2 = s.get_persisted()
+            met = s2.metadata
+            if persist is 'always' or not met['ttl']:
+                return s2
+            if met['ttl'] < time.time() - met['timestamp']:
+                return s2
+            else:
+                return store.refresh(s2)
+        return s
 
     def _get_default_source(self):
-        if self._default_source is None:
-            self._default_source = self.get()
-        return self._default_source
+        """Instantiate DataSource with default agruments"""
+        return self()
+
+    @property
+    def has_been_persisted(self, **kwargs):
+        """For the source created with the given args, has it been persisted?"""
+        return self.get(**kwargs).has_been_persisted
 
     @property
     def plots(self):

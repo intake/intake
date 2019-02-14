@@ -22,7 +22,7 @@ cpath = make_path_posix(
 
 @pytest.mark.skipif(sys.version_info[0] == 2,
                     reason="Py2 exists early on argparse")
-def test_help(env):
+def test_help(temp_cache, env):
     out = subprocess.check_output(['intake', 'cache'],
                                   env=env, universal_newlines=True)
     assert out.startswith('usage: ')
@@ -32,7 +32,7 @@ def test_help(env):
     assert out2 == out
 
 
-def test_list_keys(env):
+def test_list_keys(temp_cache, env):
     out = subprocess.check_output(['intake', 'cache', 'list-keys'],
                                   env=env, universal_newlines=True)
     assert out.startswith('[]')  # empty cache
@@ -43,7 +43,7 @@ def test_list_keys(env):
     assert 'states.csv' in out
 
 
-def test_precache(env):
+def test_precache(temp_cache, env):
     out = subprocess.check_output(['intake', 'cache', 'list-keys'],
                                   env=env, universal_newlines=True)
     assert out.startswith('[]')  # empty cache
@@ -56,7 +56,7 @@ def test_precache(env):
     assert 'small.npy' in out
 
 
-def test_clear_all(env):
+def test_clear_all(temp_cache, env):
     cat = intake.open_catalog(cpath)
     cat.test_cache.read()
     md = CacheMetadata()
@@ -67,7 +67,7 @@ def test_clear_all(env):
     assert len(md) == 0
 
 
-def test_clear_one(env):
+def test_clear_one(temp_cache, env):
     cat = intake.open_catalog(cpath)
     cat.test_cache.read()
     cat.arr_cache.read()
@@ -81,7 +81,7 @@ def test_clear_one(env):
     assert list(md)[0] == keys[1]
 
 
-def test_usage(env):
+def test_usage(temp_cache, env):
     from intake.source.cache import BaseCache
     BaseCache(None, None).clear_all()
     out = subprocess.check_output(['intake', 'cache', 'usage'],
