@@ -256,7 +256,7 @@ def test_ds_set_cache_dir(catalog_cache):
     cat.set_cache_dir(new_cache_dir)
 
     cache = cat.cache[0]
-    assert cache._cache_dir == new_cache_dir
+    assert make_path_posix(cache._cache_dir) == make_path_posix(new_cache_dir)
 
     cache_paths = cache.load(cat._urlpath, output=False)
     cache_path = cache_paths[-1]
