@@ -11,6 +11,7 @@ contains in parentheses:
 * `intake-accumulo <https://github.com/ContinuumIO/intake-accumulo>`_ Apache Accumulo clustered data storage (``accumulo``)
 * `intake-avro <https://github.com/ContinuumIO/intake-avro>`_: Apache Avro data serialization format (``avro_table``, ``avro_sequence``
 * `intake-cmip <https://github.com/NCAR/intake-cmip>`_:  load `CMIP <https://cmip.llnl.gov/>`_ (Coupled Model Intercomparison Project) data (``cmip5``)
+* `intake-bluesky <https://nsls-ii.github.io/intake-bluesky/>`_: search and retrieve data in the `bluesky <https://nsls-ii.github.io/bluesky>`_ data model
 * `intake-dynamodb <https://github.com/informatics-lab/intake-dynamodb>`_ link to Amazon DynamoDB (``dynamodb``)
 * `intake-elasticsearch <https://github.com/ContinuumIO/intake-elasticsearch>`_: Elasticsearch search and analytics engine (``elasticsearch_seq``, ``elasticsearch_table``)
 * `intake-geopandas <https://github.com/informatics-lab/intake_geopandas>`_: load ESRI Shape Files with geopandas (``shape``)
