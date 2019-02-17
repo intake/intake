@@ -81,7 +81,7 @@ class Cache(Subcommand):
         path = posixpath.join(conf['cache_dir'], 'cache')
         for dirpath, dirnames, filenames in os.walk(path):
             for f in filenames:
-                fp = os.path.join(dirpath, f)
+                fp = posixpath.join(dirpath, f)
                 total_size += os.path.getsize(fp)
         for unit in ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z']:
             # "human"

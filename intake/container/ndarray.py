@@ -63,3 +63,27 @@ class RemoteArray(RemoteSource):
 
     def _close(self):
         self.arr = None
+
+    @staticmethod
+    def _persist(source, path, component=None, storage_options=None,
+                 **kwargs):
+        """Save array to local persistent store
+
+        Makes a parquet dataset out of the data using zarr.
+        This then becomes a data entry in the persisted datasets catalog.
+        Only works locally for the moment.
+
+        Parameters
+        ----------
+        source: a DataSource instance to save
+        name: str or None
+            Key to refer to this persisted dataset by. If not given, will
+            attempt to get from the source's name
+        kwargs: passed on to zarr array creation, see
+        """
+        from dask.array import to_zarr
+        from ..source.zarr import ZarrArraySource
+        arr = source.to_dask()
+        to_zarr(arr, path, component=None, storage_options=None, **kwargs)
+        source = ZarrArraySource(path, storage_options, component)
+        return source

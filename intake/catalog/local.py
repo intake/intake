@@ -536,7 +536,7 @@ def get_dir(path):
     if '://' in path:
         return posixpath.dirname(path)
     path = make_path_posix(
-        os.path.join(os.getcwd(), os.path.dirname(path)))
+        posixpath.join(os.getcwd(), os.path.dirname(path)))
     if path[-1] != '/':
         path += '/'
     return path
