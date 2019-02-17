@@ -9,7 +9,8 @@
 from setuptools import setup, find_packages
 import versioneer
 
-requires = [line.strip() for line in open('requirements.txt').readlines() if not line.startswith("#")]
+requires = [line.strip() for line in open('requirements.txt').readlines()
+            if not line.startswith("#")]
 
 setup(
     name='intake',
@@ -20,7 +21,7 @@ setup(
     maintainer='Martin Durant',
     maintainer_email='mdurant@anaconda.com',
     license='BSD',
-    package_data={'': ['*.csv', '*.yml', '*.html']},
+    package_data={'': ['*.csv', '*.yml', '*.yaml', '*.html']},
     include_package_data=True,
     install_requires=requires,
     packages=find_packages(),
@@ -31,14 +32,12 @@ setup(
         ]
     },
     classifiers=[
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
     ],
-    python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
+    python_requires=">=3.5",
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
     zip_safe=False,

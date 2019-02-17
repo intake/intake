@@ -108,6 +108,10 @@ class PersistStore(YAMLFileCatalog):
             shutil.rmtree(posixpath.join(self.pdir, source))
         self._entries.pop(source)
 
+    def clear(self):
+        """Remove all persisted sources, files and catalog"""
+        shutil.rmtree(self.pdir)
+
     def backtrack(self, source):
         """Given a unique key in the store, recreate original source"""
         key = self.get_tok(source)

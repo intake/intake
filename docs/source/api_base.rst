@@ -14,6 +14,7 @@ This is a reference API class listing, useful mainly for developers.
    intake.auth.base.BaseAuth
    intake.source.cache.BaseCache
    intake.source.base.Schema
+   intake.container.persist.PersistStore
 
 .. autoclass:: intake.source.base.DataSource
    :members:
@@ -48,3 +49,6 @@ This is a reference API class listing, useful mainly for developers.
 
 .. autoclass:: intake.source.base.Schema
    :members:
+
+.. autoclass:: intake.container.persist.PersistStore
+   :members: add, get_tok, remove, backtrack, refresh, needs_refresh

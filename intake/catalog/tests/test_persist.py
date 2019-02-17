@@ -1,4 +1,11 @@
-import os
+#!/usr/bin/env python
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 import posixpath
 import pytest
 
@@ -9,6 +16,7 @@ path = posixpath.dirname(__file__)
 
 
 def test_idempotent(temp_cache):
+    pytest.importorskip('zarr')
     cat = intake.open_catalog(posixpath.abspath(
         posixpath.join(path, '..', '..', 'source', 'tests', 'sources.yaml')))
     s = cat.zarr1()

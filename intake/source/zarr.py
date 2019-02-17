@@ -1,8 +1,19 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 from .base import DataSource, Schema
 
 
 class ZarrArraySource(DataSource):
     """Read Zarr format files into an array
+
+    Zarr is an numerical array storage format which works particularly well
+    with remote and parallel access.
+    For specifics of the format, see https://zarr.readthedocs.io/en/stable/
     """
     container = 'ndarray'
     name = 'ndzarr'

@@ -69,7 +69,7 @@ class CatalogEntry(object):
 
         Note: ``entry()``, ``entry.attr``, ``entry[item]`` check for persisted
         sources, but directly calling ``.get()`` will always ignore the
-        persisted store (equivalent to self._pmode=='never'``).
+        persisted store (equivalent to ``self._pmode=='never'``).
 
         Parameters
         ----------

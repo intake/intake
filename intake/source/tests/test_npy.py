@@ -61,6 +61,7 @@ def test_multi_file(tempdir, shape):
 
 
 def test_zarr_minimal():
+    pytest.importorskip('zarr')
     cat = intake.open_catalog(posixpath.join(here, 'sources.yaml'))
     s = cat.zarr1()
     assert s.container == 'ndarray'
