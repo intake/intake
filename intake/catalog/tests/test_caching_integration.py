@@ -86,14 +86,17 @@ def test_load_arr(catalog_cache):
     cache.clear_all()
 
 
-def test_no_regex(catalog_cache):
-    cat = catalog_cache['test_no_regex']
+@pytest.mark.parametrize('section', ['test_no_regex',
+                                     'test_regex_no_match',
+                                     'test_regex_partial_match'])
+def test_regex(catalog_cache, section):
+    cat = catalog_cache[section]
     cache = cat.cache[0]
 
     cache_paths = cache.load(cat._urlpath, output=False)
     cache_path = cache_paths[-1]
 
-    assert cache._cache_dir in cache_path
+    assert cache_path.startswith(cache._cache_dir)
     assert os.path.isfile(cache_path)
 
     cache.clear_all()
