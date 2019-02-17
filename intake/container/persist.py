@@ -17,17 +17,34 @@ from ..source import import_name
 
 
 class PersistStore(YAMLFileCatalog):
+    """
+    Specialised catalog for persisted data-sources
+    """
+    _singleton = [None]
+
+    def __new__(cls, *args, **kwargs):
+        if cls._singleton[0] is None:
+            o = object.__new__(cls)
+            o._captured_init_args = args
+            o._captured_init_kwargs = kwargs
+            cls._singleton[0] = o
+        return cls._singleton[0]
+
     def __init__(self, path=None):
         self.pdir = path or conf.get('persist_path')
+        path = posixpath.join(self.pdir, 'cat.yaml')
+        super(PersistStore, self).__init__(path)
+
+    def _load(self):
+        # make sure there's always something to load from
         try:
             os.makedirs(self.pdir)
         except (OSError, IOError):
             pass
-        path = posixpath.join(self.pdir, 'cat.yaml')
-        if not os.path.exists(path):
-            with open(path, 'w') as f:
+        if not os.path.exists(self.path):
+            with open(self.path, 'w') as f:
                 f.write('sources: {}')
-        super(PersistStore, self).__init__(path)
+        super(PersistStore, self)._load()
 
     def getdir(self, source):
         """Clear/create a directory to store a persisted dataset into"""
