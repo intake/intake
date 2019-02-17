@@ -42,9 +42,10 @@ class ZarrArraySource(DataSource):
                                      storage_options=self.storage_options,
                                      **self.kwargs)
             self.chunks = self._arr.chunks
+            self.npartitions = self._arr.npartitions
         return Schema(dtype=str(self.dtype), shape=self.shape,
                       extra_metadata=self.metadata,
-                      npartitions=self._arr.npartitions,
+                      npartitions=self.npartitions,
                       chunks=self.chunks)
 
     def _get_partition(self, i):

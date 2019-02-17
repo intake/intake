@@ -24,12 +24,13 @@ from .gui import DataBrowser, InstanceMaker
 # Populate list of autodetected plugins
 registry.update(autodiscover())
 
-from .source import csv, textfiles, npy
+from .source import csv, textfiles, npy, zarr
 registry['csv'] = csv.CSVSource
 registry['textfiles'] = textfiles.TextFilesSource
 registry['catalog'] = Catalog
 registry['intake_remote'] = RemoteCatalog
 registry['numpy'] = npy.NPySource
+registry['ndzarr'] = zarr.ZarrArraySource
 
 
 def make_open_functions():

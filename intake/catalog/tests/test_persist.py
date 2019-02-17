@@ -1,7 +1,6 @@
 import os
+import posixpath
 import pytest
-import shutil
-import time
 
 import intake
 
@@ -9,12 +8,12 @@ import intake
 @pytest.fixture
 def cat():
     path = os.path.dirname(__file__)
-    return intake.open_catalog(os.path.join(path, 'catalog1.yml'))
+    return intake.open_catalog(posixpath.abspath(
+        posixpath.join(path, '..', '..', 'source', 'tests', 'sources.yaml')))
 
 
 def test_idempotent(cat, temp_cache):
-    from intake.container.persist import store
-    s = cat.entry1()
+    s = cat.zarr1()
     assert not s.has_been_persisted
     s2 = s.persist()
     assert s.has_been_persisted
