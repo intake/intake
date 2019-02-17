@@ -147,8 +147,8 @@ def open_catalog(uri=None, **kwargs):
             # empty cat
             driver = 'catalog'
     if driver not in registry:
-        raise ValueError('Unknown catalog driver, supply one of: %s'
-                         % list(registry))
+        raise ValueError('Unknown catalog driver (%s), supply one of: %s'
+                         % (driver, list(sorted(registry))))
     return registry[driver](uri, **kwargs)
 
 

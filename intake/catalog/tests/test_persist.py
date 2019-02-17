@@ -5,14 +5,12 @@ import pytest
 import intake
 
 
-@pytest.fixture
-def cat():
-    path = os.path.dirname(__file__)
-    return intake.open_catalog(posixpath.abspath(
+path = posixpath.dirname(__file__)
+
+
+def test_idempotent(temp_cache):
+    cat = intake.open_catalog(posixpath.abspath(
         posixpath.join(path, '..', '..', 'source', 'tests', 'sources.yaml')))
-
-
-def test_idempotent(cat, temp_cache):
     s = cat.zarr1()
     assert not s.has_been_persisted
     s2 = s.persist()
@@ -22,3 +20,12 @@ def test_idempotent(cat, temp_cache):
     assert s2.is_persisted
     s3 = s.persist()
     assert s3 == s2
+
+
+def test_parquet(temp_cache):
+    inp = pytest.importorskip('intake_parquet')
+    cat = intake.open_catalog(posixpath.abspath(
+        posixpath.join(path, 'catalog1.yml')))
+    s = cat.entry1()
+    s2 = s.persist()
+    assert isinstance(s2, inp.ParquetSource)
