@@ -14,6 +14,7 @@ from ..catalog.local import YAMLFileCatalog, CatalogEntry
 from .. import DataSource
 from ..config import conf
 from ..source import import_name
+from ..utils import make_path_posix
 
 
 class PersistStore(YAMLFileCatalog):
@@ -31,7 +32,7 @@ class PersistStore(YAMLFileCatalog):
         return cls._singleton[0]
 
     def __init__(self, path=None):
-        self.pdir = path or conf.get('persist_path')
+        self.pdir = make_path_posix(path or conf.get('persist_path'))
         path = posixpath.join(self.pdir, 'cat.yaml')
         super(PersistStore, self).__init__(path)
 

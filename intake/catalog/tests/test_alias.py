@@ -7,10 +7,9 @@
 
 import intake
 import os
-import posixpath
 
 here = os.path.abspath(os.path.dirname(__file__))
-fn = posixpath.join(here, 'catalog_alias.yml')
+fn = os.path.join(here, 'catalog_alias.yml')
 
 
 def test_simple():

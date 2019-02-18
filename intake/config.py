@@ -15,7 +15,7 @@ from .utils import make_path_posix
 logger = logging.getLogger('intake')
 
 confdir = make_path_posix(
-    os.getenv('INTAKE_CONF_DIR', posixpath.join(expanduser('~'), '.intake')))
+    os.getenv('INTAKE_CONF_DIR', os.path.join(expanduser('~'), '.intake')))
 
 
 defaults = {

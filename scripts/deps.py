@@ -19,4 +19,7 @@ sys.stderr = open(os.devnull, 'w')
 meta = render('conda')[0][0].meta
 
 sys.stdout = old_stdout
-print(' '.join(meta['test']['requires']))
+
+test_requires = [l.strip() for l in open('test_requrements.txt')]
+
+print(' '.join(meta['test']['requires'] + test_requires))

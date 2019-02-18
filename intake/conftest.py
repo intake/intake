@@ -150,7 +150,7 @@ def temp_cache(tempdir):
                                'cache_download_progress': False,
                                'cache_disabled': False})
     intake.config.save_conf()
-    store.__init__(posixpath.join(tempdir, 'persist'))
+    store.__init__(os.path.join(tempdir, 'persist'))
     try:
         yield
     finally:

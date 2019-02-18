@@ -14,8 +14,8 @@ import posixpath
 import intake
 
 
-here = posixpath.abspath(os.path.dirname(__file__))
-logo_file = posixpath.join(here, 'logo.png')
+here = os.path.abspath(os.path.dirname(__file__))
+logo_file = os.path.join(here, 'logo.png')
 logo = widgets.Box([widgets.Image.from_file(logo_file)],
                    layout=widgets.Layout(width='46px', height='35px',
                                          overflow_y='visible',
@@ -340,7 +340,7 @@ class FileSelector(Base):  # pragma: no cover
         if fn.endswith('/'):
             self.stop()
         else:
-            self.stop(posixpath.join(self.path, fn))
+            self.stop(os.path.join(self.path, fn))
 
     def make_options(self):
         self.ignore = True

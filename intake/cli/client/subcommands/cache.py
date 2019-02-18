@@ -25,6 +25,7 @@ import yaml
 
 # Intake imports
 from intake.cli.util import Subcommand
+from intake.utils import make_path_posix
 
 #-----------------------------------------------------------------------------
 # API
@@ -78,10 +79,10 @@ class Cache(Subcommand):
         from intake.config import conf
         import posixpath
         total_size = 0
-        path = posixpath.join(conf['cache_dir'], 'cache')
+        path = os.path.join(conf['cache_dir'], 'cache')
         for dirpath, dirnames, filenames in os.walk(path):
             for f in filenames:
-                fp = posixpath.join(dirpath, f)
+                fp = make_path_posix(os.path.join(dirpath, f))
                 total_size += os.path.getsize(fp)
         for unit in ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z']:
             # "human"

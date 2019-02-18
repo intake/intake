@@ -20,7 +20,8 @@ from .utils import make_path_posix
 
 ex = sys.executable
 here = os.path.dirname(__file__)
-defcat = posixpath.join(here, 'cli', 'server', 'tests', 'catalog1.yml')
+defcat = make_path_posix(os.path.join(
+    here, 'cli', 'server', 'tests', 'catalog1.yml'))
 PY2 = sys.version_info[0] == 2
 
 @contextmanager
