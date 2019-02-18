@@ -12,7 +12,7 @@ import time
 import yaml
 from ..catalog.local import YAMLFileCatalog, CatalogEntry
 from .. import DataSource
-from ..config import conf
+from ..config import conf, logger
 from ..source import import_name
 from ..utils import make_path_posix
 
@@ -101,12 +101,16 @@ class PersistStore(YAMLFileCatalog):
             Whether to remove the on-disc artifact
         """
         source = self.get_tok(source)
-        data = yaml.load(self.path)
+        data = yaml.load(open(self.path))
         del data['sources'][source]
         with open(self.path, 'w') as fo:
             fo.write(yaml.dump(data, default_flow_style=False))
         if delfiles:
-            shutil.rmtree(posixpath.join(self.pdir, source))
+            path = posixpath.join(self.pdir, source)
+            try:
+                shutil.rmtree(path)
+            except IOError as e:
+                logger.debug("Failed to delete persisted data dir %s" % path)
         self._entries.pop(source)
 
     def clear(self):

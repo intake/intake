@@ -25,3 +25,5 @@ def test_generic_dataframe():
     assert ddf.compute().x.unique() == [0]
     df = s.read()
     assert len(df) == len(ddf)
+
+

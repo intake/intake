@@ -11,7 +11,8 @@ import posixpath
 import pytest
 import intake
 from ..npy import NPySource
-here = posixpath.abspath(posixpath.dirname(__file__))
+
+here = os.path.abspath(os.path.dirname(__file__))
 
 
 @pytest.mark.parametrize('shape', [(1, ), (1, 1), (10, ), (5, 2), (3, 3, 3)])
