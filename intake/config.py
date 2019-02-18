@@ -10,6 +10,7 @@ import logging
 import os
 import posixpath
 import yaml
+from intake.utils import yaml_load
 
 from .utils import make_path_posix
 logger = logging.getLogger('intake')
@@ -68,7 +69,7 @@ def load_conf(fn=None):
     if os.path.isfile(fn):
         with open(fn) as f:
             try:
-                conf.update(yaml.load(f))
+                conf.update(yaml_load(f))
             except Exception as e:
                 logger.warning('Failure to load config file "{fn}": {e}'
                                ''.format(fn=fn, e=e))
