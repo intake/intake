@@ -77,12 +77,10 @@ class Cache(Subcommand):
 
     def _usage(self, args):
         from intake.config import conf
-        import posixpath
         total_size = 0
-        path = os.path.join(conf['cache_dir'], 'cache')
-        for dirpath, dirnames, filenames in os.walk(path):
+        for dirpath, dirnames, filenames in os.walk(conf['cache_dir']):
             for f in filenames:
-                fp = make_path_posix(os.path.join(dirpath, f))
+                fp = os.path.join(dirpath, f)
                 total_size += os.path.getsize(fp)
         for unit in ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z']:
             # "human"

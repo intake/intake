@@ -37,7 +37,7 @@ def tempdir():
 @contextmanager
 def temp_conf(conf):
     with tempdir() as d:
-        fn = make_path_posix(os.path.join(d, 'conf.yaml'))
+        fn = os.path.join(d, 'conf.yaml')
         with open(fn, 'w') as f:
             yaml.dump(conf, f)
         yield fn
