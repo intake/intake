@@ -54,3 +54,29 @@ sources:
     args:
       path: "{{ CATALOG_DIR }}/small.npy"
       chunks: 5
+  test_no_regex:
+    description: cache a csv file from the local filesystem
+    driver: csv
+    cache:
+      - argkey: urlpath
+        type: file
+    args:
+      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
+  test_regex_no_match:
+    description: regex does not match urlpath
+    driver: csv
+    cache:
+      - argkey: urlpath
+        regex: 'xxx'
+        type: file
+    args:
+      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
+  test_regex_partial_match:
+    description: regex matches some part of the url
+    driver: csv
+    cache:
+      - argkey: urlpath
+        regex: '_data'
+        type: file
+    args:
+      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'

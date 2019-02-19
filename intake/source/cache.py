@@ -34,8 +34,10 @@ def sanitize_path(path):
         # it to match properly.
         path = os.path.normpath(path.replace("{}://".format(protocol), ''))
     elif protocol == 'file':
-        # Just removing trailing slashes from file paths.
+        # Remove trailing slashes from file paths.
         path = os.path.normpath(path)
+        # Remove colons
+        path = path.replace(':', '')
     # Otherwise we just make sure that path is posix
     return make_path_posix(path)
 
@@ -91,16 +93,13 @@ class BaseCache(object):
     def _munge_path(self, cache_subdir, urlpath):
         import re
 
-        regex = sanitize_path(self._spec['regex'])
         path = sanitize_path(urlpath)
 
-        cache_path = re.sub(
-            r"%s" % regex,
-            posixpath.join(self._cache_dir, cache_subdir),
-            path
-        )
+        if 'regex' in self._spec:
+            regex = r'%s' % sanitize_path(self._spec['regex'])
+            path = re.sub(regex, '', path)
 
-        return urlpath if path == cache_path else cache_path
+        return posixpath.join(self._cache_dir, cache_subdir, path.lstrip('/\\'))
 
     def _hash(self, urlpath):
         return md5(
