@@ -17,5 +17,4 @@ def test_store(temp_cache):
     assert os.path.exists(store.pdir)
     store.clear()
     assert not os.path.exists(store.pdir)
-    list(store)
-    assert os.path.exists(store.pdir)  # recreates directory
+    assert list(store) == []

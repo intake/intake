@@ -430,7 +430,7 @@ class CompressedCache(BaseCache):
         return out
 
 
-class CacheMetadata(collections.MutableMapping):
+class CacheMetadata(collections.abc.MutableMapping):
     """
     Utility class for managing persistent metadata stored in the Intake config directory.
     """
