@@ -22,7 +22,7 @@ def unzip(f, outpath):
 def untargz(f, outpath):
     import tarfile
     tar = tarfile.open(f, "r:gz")
-    out = [make_path_posix(os.path.join(outpath, fn))
+    out = [make_path_posix(os.path.join(outpath, fn.name))
            for fn in tar.getmembers()]
     tar.extractall(outpath)
     tar.close()
@@ -32,7 +32,7 @@ def untargz(f, outpath):
 def untarbz(f, outpath):
     import tarfile
     tar = tarfile.open(f, "r:bz2")
-    out = [make_path_posix(os.path.join(outpath, fn))
+    out = [make_path_posix(os.path.join(outpath, fn.name))
            for fn in tar.getmembers()]
     tar.extractall(outpath)
     tar.close()
@@ -42,7 +42,7 @@ def untarbz(f, outpath):
 def untar(f, outpath):
     import tarfile
     tar = tarfile.open(f, "r:")
-    out = [make_path_posix(os.path.join(outpath, fn))
+    out = [make_path_posix(os.path.join(outpath, fn.name))
            for fn in tar.getmembers()]
     tar.extractall(outpath)
     tar.close()

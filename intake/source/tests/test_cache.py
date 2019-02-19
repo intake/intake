@@ -12,16 +12,16 @@ import shutil
 from intake.source.cache import FileCache, CacheMetadata
 import intake
 import intake.config
-here = os.path.dirname(os.path.abspath(__file__))
 import logging
+here = os.path.dirname(os.path.abspath(__file__))
 logger = logging.getLogger('intake')
 logging.basicConfig()
 
 
 @pytest.fixture
 def file_cache():
-    return FileCache('csv',
-                     {'argkey': 'urlpath', 'regex': 'test/path', 'type': 'file'})
+    return FileCache(
+        'csv', {'argkey': 'urlpath', 'regex': 'test/path', 'type': 'file'})
 
 
 def test_ensure_cache_dir(file_cache):
@@ -158,7 +158,6 @@ def test_cache_to_cat(tempdir):
         intake.config.conf.update(old)
 
 
-
 def test_compressed_cache_infer(temp_cache):
     cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
     s = cat.calvert_infer()
@@ -169,6 +168,40 @@ def test_compressed_cache_infer(temp_cache):
         assert len(df)
     finally:
         intake.config.conf['cache_download_progress'] = old
+
+
+@pytest.mark.skipif(os.name == 'nt', reason="No CLI tools on windows")
+@pytest.mark.parametrize('comp', ['tgz', 'tbz', 'tar', 'gz', 'bz'])
+def test_compressions(temp_cache, tempdir, comp):
+    from intake.source.cache import CompressedCache
+    import shlex
+    import subprocess
+    data = b'hello'
+    fn = os.path.join(tempdir, 'data')
+    with open(fn, 'wb') as f:
+        f.write(data)
+    if comp == 'tgz':
+        subprocess.call(shlex.split('tar -czf {fn}.tgz {fn} -C {d}'.format(
+            fn=fn, d=tempdir)))
+    elif comp == 'tbz':
+        subprocess.call(shlex.split('tar -cjf {fn}.tbz {fn} -C {d}'.format(
+            fn=fn, d=tempdir)))
+    elif comp == 'tar':
+        subprocess.call(shlex.split('tar -cf {fn}.tar {fn} -C {d}'.format(
+            fn=fn, d=tempdir)))
+    elif comp == 'gz':
+        subprocess.call(shlex.split('gzip ' + fn))
+    elif comp == 'bz':
+        subprocess.call(shlex.split('bzip2 ' + fn))
+    fn = os.path.join(
+        tempdir,
+        [f for f in os.listdir(tempdir) if f.startswith('data.')][0])
+    comp = CompressedCache(driver=None, spec={'decomp': comp})
+    comp.output = None
+    files_in, files_out = comp._make_files(fn)
+    out = comp._load(files_in, files_out, fn, meta=False)
+    with open(out[0], 'rb') as f:
+        assert f.read() == b'hello'
 
 
 def test_compressed_cache_bad(temp_cache):
