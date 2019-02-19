@@ -203,6 +203,13 @@ def test_compressions(temp_cache, tempdir, comp):
     with open(out[0], 'rb') as f:
         assert f.read() == b'hello'
 
+    comp = CompressedCache(driver=None, spec={'decomp': 'infer'})
+    comp.output = None
+    files_in, files_out = comp._make_files(fn)
+    out = comp._load(files_in, files_out, fn, meta=False)
+    with open(out[0], 'rb') as f:
+        assert f.read() == b'hello'
+
 
 def test_compressed_cache_bad(temp_cache):
     cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
