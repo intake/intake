@@ -5,6 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+
 class CatalogException(Exception):
     """Basic exception for errors raised by catalog"""
 

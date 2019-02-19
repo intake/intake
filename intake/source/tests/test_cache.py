@@ -85,13 +85,6 @@ def test_path(file_cache):
     file_cache.clear_all()
 
 
-def test_path_no_match(file_cache):
-    "No match should be a noop."
-    urlpath = 'https://example.com/foo.csv'
-    cache_path = file_cache._path(urlpath)
-    assert urlpath == cache_path
-
-
 def test_dir_cache(tempdir, temp_cache):
     [os.makedirs(os.path.join(tempdir, d)) for d in [
         'main', 'main/sub1', 'main/sub2']]

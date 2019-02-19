@@ -8,13 +8,11 @@
 import logging
 import os
 import posixpath
-import yaml
 
 from jinja2 import Template
 import six
 from dask.bytes import open_files
 
-from intake.catalog.exceptions import DuplicateKeyError
 from .. import __version__
 from .base import Catalog
 from . import exceptions
@@ -24,7 +22,7 @@ from ..source import get_plugin_class
 from ..source.discovery import load_plugins_from_module
 from ..utils import make_path_posix
 from .utils import expand_templates, expand_defaults, coerce, COERCION_RULES
-
+from ..utils import yaml_load
 
 logger = logging.getLogger('intake')
 
@@ -282,30 +280,6 @@ class LocalCatalogEntry(CatalogEntry):
         data_source.cat = self._catalog
 
         return data_source
-
-
-def no_duplicates_constructor(loader, node, deep=False):
-    """Check for duplicate keys while loading YAML
-
-    https://gist.github.com/pypt/94d747fe5180851196eb
-    """
-
-    mapping = {}
-    for key_node, value_node in node.value:
-        key = loader.construct_object(key_node, deep=deep)
-        value = loader.construct_object(value_node, deep=deep)
-        if key in mapping:
-            raise DuplicateKeyError("while constructing a mapping",
-                                    node.start_mark,
-                                    "found duplicate key (%s)" % key,
-                                    key_node.start_mark)
-        mapping[key] = value
-
-    return loader.construct_mapping(node, deep)
-
-
-yaml.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-                     no_duplicates_constructor)
 
 
 class CatalogParser(object):
@@ -581,7 +555,7 @@ class YAMLFileCatalog(Catalog):
             logger.warning("Use of '!template' deprecated - fixing")
             text = text.replace('!template ', '')
 
-        data = yaml.load(text)
+        data = yaml_load(text)
 
         if data is None:
             raise exceptions.CatalogException('No YAML data in file')
