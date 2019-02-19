@@ -39,7 +39,7 @@ class RemoteCatalogEntry(CatalogEntry):
         self.container = container
         self.name = name
         self.description = description
-        self.metadata = metadata or {}
+        self._metadata = metadata
         self._page_size = page_size
         self._user_parameters = user_parameters or []
         self._direct_access = direct_access

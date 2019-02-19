@@ -55,6 +55,12 @@ def test_metadata(intake_server):
     assert catalog.version == 1
 
 
+def test_entry_metadata(intake_server):
+    catalog = Catalog(intake_server)
+    entry = catalog['arr']
+    assert entry.metadata == entry().metadata
+
+
 def test_unknown_source(intake_server):
     catalog = Catalog(intake_server)
 
