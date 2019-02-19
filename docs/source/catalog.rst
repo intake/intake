@@ -369,6 +369,43 @@ These changes will not affect already-opened data sources.
 
 .. _remote-catalogs:
 
+Catalog Nesting
+---------------
+
+A catalog is just another type of data source for Intake. For example, you can print a YAML
+specification corresponding to a catalog as follows::
+
+    cat = intake.open_catalog('cat.yaml')
+    print(cat.yaml())
+
+results in::
+
+    sources:
+      cat:
+        args:
+          path: cat.yaml
+        description: ''
+        driver: intake.catalog.local.YAMLFileCatalog
+        metadata: {}
+
+The `point` here, is that this can be included in another catalog.
+For example, if the entry above were saved to another file, "root.yaml", and the
+original catalog contained an entry data, you could access it as::
+
+    root = intake.open_catalog('root.yaml')
+    root.cat.data
+
+It would, of course, be better to include a description and the full path of the catalog
+file here.
+
+It is, therefore, possible to build up a hierarchy of catalogs referencing each other. Since
+these can include remote URLs and indeed catalog sources other than simple files (all the
+tables on a SQL server, for instance). Plus, since the argument and parameter system also
+applies to entries such as the example above, it would be possible to give the user a runtime
+choice of multiple catalogs to pick between, or have this decision depend on an environment
+variable.
+
+
 Remote Catalogs
 ---------------
 

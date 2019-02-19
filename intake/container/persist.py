@@ -66,12 +66,20 @@ class PersistStore(YAMLFileCatalog):
             The thing to add to the persisted catalogue, referring to persisted
             data
         """
+        from intake.catalog.local import LocalCatalogEntry
         with open(self.path) as f:
             data = yaml.load(f)
-        data['sources'][key] = source._yaml()['sources'][source.name]
+        ds = source._yaml()['sources'][source.name]
+        data['sources'][key] = ds
         with open(self.path, 'w') as fo:
             fo.write(yaml.dump(data, default_flow_style=False))
-        self._entries[key] = source
+        self._entries[key] = LocalCatalogEntry(
+            name=ds['metadata']['original_name'],
+            direct_access=True,
+            cache=[],
+            parameters=[],
+            catalog_dir=None,
+            **data['sources'][key])
 
     def get_tok(self, source):
         """Get string token from object

@@ -6,7 +6,7 @@ from intake.source.base import DataSource
 
 def test_store(temp_cache):
     assert list(store) == []
-    s = DataSource()
+    s = DataSource(metadata={'original_name': 'blah'})
     store.add(s._tok, s)
     store.ttl = 0
     assert list(store) == [s._tok]

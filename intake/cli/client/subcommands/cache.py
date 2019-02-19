@@ -78,7 +78,8 @@ class Cache(Subcommand):
     def _usage(self, args):
         from intake.config import conf
         total_size = 0
-        for dirpath, dirnames, filenames in os.walk(conf['cache_dir']):
+        for dirpath, dirnames, filenames in os.walk(
+                os.path.join(conf['cache_dir'], 'cache')):
             for f in filenames:
                 fp = os.path.join(dirpath, f)
                 total_size += os.path.getsize(fp)

@@ -30,6 +30,10 @@ def test_idempotent(temp_cache):
     s3 = s.persist()
     assert s3 == s2
 
+    assert s.get_persisted() == cat.zarr1()
+    with pytest.raises(ValueError):
+        s2.persist()
+
 
 def test_parquet(temp_cache):
     inp = pytest.importorskip('intake_parquet')
