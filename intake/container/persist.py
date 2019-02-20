@@ -119,7 +119,7 @@ class PersistStore(YAMLFileCatalog):
                 shutil.rmtree(path)
             except IOError as e:
                 logger.debug("Failed to delete persisted data dir %s" % path)
-        self._entries.pop(source)
+        self._entries.pop(source, None)
 
     def clear(self):
         """Remove all persisted sources, files and catalog"""
