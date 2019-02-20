@@ -110,7 +110,7 @@ class PersistStore(YAMLFileCatalog):
         """
         source = self.get_tok(source)
         data = yaml.load(open(self.path))
-        del data['sources'][source]
+        data['sources'].pop(source, None)
         with open(self.path, 'w') as fo:
             fo.write(yaml.dump(data, default_flow_style=False))
         if delfiles:

@@ -256,6 +256,8 @@ elsewhere). Note that in the case of a remote catalog, the client cannot see the
 will be evaluated on the server side, the evaluation only happens if the user did not override
 the value when accessing the data.
 
+.. _caching:
+
 Caching Source Files Locally
 ''''''''''''''''''''''''''''
 

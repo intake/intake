@@ -25,7 +25,7 @@ To start with install hvplot using conda:
 
 .. code-block:: bash
 
-    conda install -c pyviz hvplot
+    conda install -c conda-forge hvplot
 
 or using pip:
 

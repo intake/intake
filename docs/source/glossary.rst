@@ -3,6 +3,11 @@ Glossary
 
 .. glossary::
 
+    Cache
+        Local copies of remote files. Intake allows for download-on-first-use for data-soruces,
+        so that subsequent access is much faster, see :ref:`caching`. The
+        format of the files is unchanged in this case, but may be decompressed.
+
     Catalog
         A collection of entries, each of which corresponds to a specific :term:`Data-set`. Within Intake, a catalog is
         most commonly defined in a :term:`YAML` file, but there are other possibilities, such as connecting to an Intake
@@ -75,6 +80,13 @@ Glossary
         exposing data for use by other colleagues. Commonly, IT has stronger policy enforcement requirements
         that other groups, for instance requiring all data-set copy actions to be logged centrally.
 
+    Persist
+        A process of making a local version of a data-source. One canonical format is used for each
+        of the container types, optimised for quick and parallel access. This is particularly useful
+        if the data takes a long time to acquire, perhaps because it is the result of a complex
+        query on a remote service. The resultant output can be set to expire and be automatically
+        refreshed, see :doc:`persisting`. Not to be confused with the :term:`cache`.
+
     Plugin
         Modular extra functionality for Intake, provided by a package that is installed separately. The most common type of
         plugin will be for a :term:`Driver` to load some particular data format; but other parts of Intake are
@@ -87,6 +99,9 @@ Glossary
         the data for security and monitoring purposes. The implementation of the server in Intake is accessible as the
         ``intake-server`` command, and acts as a reference: other implementations can easily be created for
         specific circumstances.
+
+    TTL
+        Time-to-live, how long before the give entity is considered to have expired. Usually in seconds.
 
     YAML
         A text-based format for expressing data with a dictionary (key-value) and list structure, with a limited
