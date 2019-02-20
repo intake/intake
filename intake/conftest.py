@@ -9,6 +9,7 @@ import os
 import subprocess
 import time
 
+import posixpath
 import pytest
 import requests
 
@@ -141,6 +142,7 @@ def tempdir():
 @pytest.fixture(scope='function')
 def temp_cache(tempdir):
     import intake
+    from intake.container.persist import store
     old = intake.config.conf.copy()
     olddir = intake.config.confdir
     intake.config.confdir = tempdir
@@ -148,11 +150,13 @@ def temp_cache(tempdir):
                                'cache_download_progress': False,
                                'cache_disabled': False})
     intake.config.save_conf()
+    store.__init__(os.path.join(tempdir, 'persist'))
     try:
         yield
     finally:
         intake.config.confdir = olddir
         intake.config.conf.update(old)
+        intake.config.save_conf()
 
 
 @pytest.fixture(scope='function')

@@ -24,4 +24,4 @@ conda config --set auto_update_conda off
 conda install --yes ${CONDA_REQS}
 
 echo "Installing test dependencies."
-conda install --yes `python scripts/deps.py`
+conda install --yes `python scripts/deps.py` -c defaults -c conda-forge

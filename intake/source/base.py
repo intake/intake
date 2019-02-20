@@ -8,6 +8,7 @@
 
 '''
 
+from dask.base import tokenize
 from .cache import make_caches
 from ..utils import make_path_posix
 import sys
@@ -86,22 +87,41 @@ class DataSource(object):
                         kwargs['storage_options'][key])
         return o
 
+    @property
+    def classname(self):
+        return '.'.join([self.__class__.__module__, self.__class__.__name__])
+
     def __getstate__(self):
-        return dict(args=self._captured_init_args,
+        return dict(cls=self.classname,
+                    args=self._captured_init_args,
                     kwargs=self._captured_init_kwargs)
+
+    @property
+    def _tok(self):
+        """String unique token for this source"""
+        return tokenize(self.__getstate__())
+
+    def __hash__(self):
+        return int(self._tok, 16)
+
+    def __eq__(self, other):
+        return hash(self) == hash(other)
 
     def __setstate__(self, state):
         self._captured_init_kwargs = state['kwargs']
         self._captured_init_args = state['args']
+        state.pop('cls', None)
         self.__init__(*state['args'], **state['kwargs'])
 
     def __init__(self, metadata=None):
         # default data
         self.metadata = metadata or {}
         if isinstance(self.metadata, dict):
-            storage_options = self._captured_init_kwargs.get('storage_options', {})
+            storage_options = self._captured_init_kwargs.get('storage_options',
+                                                             {})
             self.cache = make_caches(self.name, self.metadata.get('cache'),
-                                     catdir=self.metadata.get('catalog_dir', None),
+                                     catdir=self.metadata.get('catalog_dir',
+                                                              None),
                                      storage_options=storage_options)
         self.datashape = None
         self.dtype = None
@@ -110,6 +130,7 @@ class DataSource(object):
         self._schema = None
         self.catalog_object = None
         self.on_server = False
+        self.cat = None  # the cat from which this source was made
 
     def _get_cache(self, urlpath):
         if len(self.cache) == 0:
@@ -144,6 +165,27 @@ class DataSource(object):
             self.npartitions = self._schema.npartitions
             self.metadata.update(self._schema.extra_metadata)
 
+    def _yaml(self, with_plugin=False):
+        import inspect
+        kwargs = self._captured_init_kwargs.copy()
+        meta = kwargs.pop('metadata', self.metadata) or {}
+        if PY2:
+            kwargs.update(dict(zip(inspect.getargspec(self.__init__).args,
+                          self._captured_init_args)))
+        else:
+            kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
+                                   self._captured_init_args)))
+        data = {'sources': {self.name: {
+            'driver': self.classname,
+            'description': self.description or "",
+            'metadata': meta,
+            'args': kwargs
+        }}}
+        if with_plugin:
+            data['plugins'] = {
+                'source': [{'module': self.__module__}]}
+        return data
+
     def yaml(self, with_plugin=False):
         """Return YAML representation of this data-source
 
@@ -158,24 +200,7 @@ class DataSource(object):
             registry.
         """
         from yaml import dump
-        import inspect
-        kwargs = self._captured_init_kwargs.copy()
-        meta = kwargs.pop('metadata', self.metadata) or {}
-        if PY2:
-            kwargs.update(dict(zip(inspect.getargspec(self.__init__).args,
-                          self._captured_init_args)))
-        else:
-            kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
-                                   self._captured_init_args)))
-        data = {'sources': {self.name: {
-            'driver': self.__class__.name,
-            'description': self.description or "",
-            'metadata': meta,
-            'args': kwargs
-        }}}
-        if with_plugin:
-            data['plugins'] = {
-                'source': [{'module': self.__module__}]}
+        data = self._yaml(with_plugin=with_plugin)
         return dump(data, default_flow_style=False)
 
     @property
@@ -276,6 +301,50 @@ class DataSource(object):
         Returns a hvPlot object to provide a high-level plotting API.
         """
         return self.plot
+
+    def persist(self, ttl=None, **kwargs):
+        """Save data from this source to local persistent storage"""
+        from ..container import container_map
+        from ..container.persist import PersistStore
+        import time
+        if 'original_tok' in self.metadata:
+            raise ValueError('Cannot persist a source taken from the persist '
+                             'store')
+        method = container_map[self.container]._persist
+        store = PersistStore()
+        out = method(self, path=store.getdir(self), **kwargs)
+        out.description = self.description
+        metadata = {'timestamp': time.time(),
+                    'original_metadata': self.metadata,
+                    'original_source': self.__getstate__(),
+                    'original_name': self.name,
+                    'original_tok': self._tok,
+                    'persist_kwargs': kwargs,
+                    'ttl': ttl,
+                    'cat': {} if self.cat is None else self.cat.__getstate__()}
+        out.metadata = metadata
+        out.name = self.name
+        store.add(self._tok, out)
+        return out
+
+    def get_persisted(self):
+        from ..container.persist import store
+        return store[self._tok]()
+
+    @staticmethod
+    def _persist(source, path, **kwargs):
+        """To be implemented by 'container' sources for locally persisting"""
+        raise NotImplementedError
+
+    @property
+    def has_been_persisted(self):
+        from ..container.persist import store
+        return self._tok in store
+
+    @property
+    def is_persisted(self):
+        from ..container.persist import store
+        return self.metadata.get('original_tok', None) in store
 
 
 class PatternMixin(object):

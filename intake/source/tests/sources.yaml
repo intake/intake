@@ -1,0 +1,5 @@
+sources:
+  zarr1:
+    driver: ndzarr
+    args:
+      url: "{{CATALOG_DIR}}/data.zarr"

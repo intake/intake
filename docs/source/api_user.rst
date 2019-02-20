@@ -10,6 +10,7 @@ These are reference class and function definitions likely to be useful to everyo
    intake.source.csv.CSVSource
    intake.source.textfiles.TextFilesSource
    intake.source.npy.NPySource
+   intake.source.zarr.ZarrArraySource
    intake.catalog.local.YAMLFileCatalog
    intake.catalog.local.YAMLFilesCatalog
    intake.gui.DataBrowser
@@ -29,6 +30,9 @@ These are reference class and function definitions likely to be useful to everyo
    the plugins in the registry at import time.
 
 .. autoclass:: intake.source.csv.CSVSource
+   :members: __init__, discover, read_partition, read, to_dask
+
+.. autoclass:: intake.source.zarr.ZarrArraySource
    :members: __init__, discover, read_partition, read, to_dask
 
 .. autoclass:: intake.source.textfiles.TextFilesSource

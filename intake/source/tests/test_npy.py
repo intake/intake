@@ -7,8 +7,12 @@
 
 import os
 import numpy as np
+import posixpath
 import pytest
+import intake
 from ..npy import NPySource
+
+here = os.path.abspath(os.path.dirname(__file__))
 
 
 @pytest.mark.parametrize('shape', [(1, ), (1, 1), (10, ), (5, 2), (3, 3, 3)])
@@ -55,3 +59,13 @@ def test_multi_file(tempdir, shape):
     s = NPySource(os.path.join(tempdir, 'out*.npy'))
     out = s.read()
     assert (out == data).all()
+
+
+def test_zarr_minimal():
+    pytest.importorskip('zarr')
+    cat = intake.open_catalog(posixpath.join(here, 'sources.yaml'))
+    s = cat.zarr1()
+    assert s.container == 'ndarray'
+    assert s.read().tolist() == [73, 98, 46, 38, 20, 12, 31,  8, 89, 72]
+    assert s.npartitions == 1
+    assert (s.read_partition((0, )) == s.read()).all()

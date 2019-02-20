@@ -6,13 +6,14 @@
 #-----------------------------------------------------------------------------
 
 import os
+from intake.utils import make_path_posix
 
 
 def unzip(f, outpath):
     import zipfile
     z = zipfile.ZipFile(f, 'r')
     z.extractall(outpath)
-    out = [os.path.join(outpath, fn.filename)
+    out = [make_path_posix(os.path.join(outpath, fn.filename))
            for fn in z.filelist]
     z.close()
     return out
@@ -21,7 +22,7 @@ def unzip(f, outpath):
 def untargz(f, outpath):
     import tarfile
     tar = tarfile.open(f, "r:gz")
-    out = [os.path.join(outpath, fn)
+    out = [make_path_posix(os.path.join(outpath, fn.name))
            for fn in tar.getmembers()]
     tar.extractall(outpath)
     tar.close()
@@ -31,7 +32,7 @@ def untargz(f, outpath):
 def untarbz(f, outpath):
     import tarfile
     tar = tarfile.open(f, "r:bz2")
-    out = [os.path.join(outpath, fn)
+    out = [make_path_posix(os.path.join(outpath, fn.name))
            for fn in tar.getmembers()]
     tar.extractall(outpath)
     tar.close()
@@ -41,7 +42,7 @@ def untarbz(f, outpath):
 def untar(f, outpath):
     import tarfile
     tar = tarfile.open(f, "r:")
-    out = [os.path.join(outpath, fn)
+    out = [make_path_posix(os.path.join(outpath, fn.name))
            for fn in tar.getmembers()]
     tar.extractall(outpath)
     tar.close()
@@ -57,7 +58,7 @@ def ungzip(f, outpath):
         while data:
             data = z.read(2**15)
             fout.write(data)
-    return [os.path.join(outpath, fn)]
+    return [make_path_posix(os.path.join(outpath, fn))]
 
 
 def unbzip(f, outpath):
@@ -69,7 +70,7 @@ def unbzip(f, outpath):
         while data:
             data = z.read(2 ** 15)
             fout.write(data)
-    return [os.path.join(outpath, fn)]
+    return [make_path_posix(os.path.join(outpath, fn))]
 
 
 decomp = {'zip': unzip,

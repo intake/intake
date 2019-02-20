@@ -384,10 +384,10 @@ class CompressedCache(BaseCache):
         self._urlpath = urlpath
         files_in = open_files(urlpath, 'rb')
         files_out = [open_files(
-            [make_path_posix(
-                os.path.join(d, os.path.basename(f.path)))], 'wb',
-                                **self._storage_options)[0]
-             for f in files_in]
+            [make_path_posix(os.path.join(d, os.path.basename(f.path)))],
+            'wb', **self._storage_options)[0]
+            for f in files_in
+        ]
         super(CompressedCache, self)._load(files_in, files_out, urlpath,
                                            meta=False)
         return files_in, files_out
@@ -430,7 +430,7 @@ class CompressedCache(BaseCache):
         return out
 
 
-class CacheMetadata(collections.MutableMapping):
+class CacheMetadata(collections.abc.MutableMapping):
     """
     Utility class for managing persistent metadata stored in the Intake config directory.
     """

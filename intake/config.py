@@ -15,7 +15,7 @@ from intake.utils import yaml_load
 from .utils import make_path_posix
 logger = logging.getLogger('intake')
 
-confdir =  make_path_posix(
+confdir = make_path_posix(
     os.getenv('INTAKE_CONF_DIR', os.path.join(expanduser('~'), '.intake')))
 
 
@@ -26,7 +26,8 @@ defaults = {
     'cache_disabled': False,
     'cache_download_progress': True,
     'logging': 'INFO',
-    'catalog_path': []
+    'catalog_path': [],
+    'persist_path': posixpath.join(confdir, 'persisted')
     }
 conf = {}
 
@@ -83,20 +84,21 @@ def intake_path_dirs(path):
 
 reset_conf()
 load_conf(cfile())
+
 # environment variables take precedence over conf file
-if 'INTAKE_CACHE_DIR' in os.environ:
-    conf['cache_dir'] = make_path_posix(os.environ['INTAKE_CACHE_DIR'])
-if 'INTAKE_DISABLE_CACHING' in os.environ:
-    conf['cache_disabled'] = os.environ['INTAKE_DISABLE_CACHING'
-                                        ].lower() == 'true'
-if 'INTAKE_CACHE_PROGRESS' in os.environ:
-    conf['cache_download_progress'] = os.environ['INTAKE_CACHE_PROGRESS'
-                                      ].lower() == 'true'
+for key, envvar in [['cache_dir', 'INTAKE_CACHE_DIR'],
+                    ['catalog_path', 'INTAKE_PATH'],
+                    ['persist_path', 'INTAKE_PERSIST_PATH']]:
+    if envvar in os.environ:
+        conf[key] = make_path_posix(os.environ[envvar])
+for key, envvar in [['cache_disabled', 'INTAKE_DISABLE_CACHING'],
+                   ['cache_download_progress', 'INTAKE_CACHE_PROGRESS']]:
+    if envvar in os.environ:
+        conf[key] = os.environ[envvar].lower() in ['true', 't', 'y', 'yes']
 if 'INTAKE_LOG_LEVEL' in os.environ:
     conf['logging'] = os.environ['INTAKE_LOG_LEVEL']
-if 'INTAKE_PATH' in os.environ:
-    conf['catalog_path'] = make_path_posix(
-        intake_path_dirs(os.environ['INTAKE_PATH']))
+
+
 logger.setLevel(conf['logging'])
 ch = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s %(name)s:%(levelname)s, %(message)s')

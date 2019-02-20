@@ -74,6 +74,13 @@ def test_nested(catalog1):
     assert catalog1.entry1.read().equals(catalog1.nested.nested.entry1.read())
     assert 'nested.nested' not in catalog1.walk(depth=1)
     assert 'nested.nested' in catalog1.walk(depth=2)
+    assert catalog1.nested._catalog == catalog1
+    assert catalog1.nested().cat == catalog1
+    assert catalog1.nested.nested.nested().cat.cat.cat is catalog1
+
+
+def test_hash(catalog1):
+    assert catalog1.nested() == catalog1.nested.nested()
 
 
 def test_getitem(catalog1):

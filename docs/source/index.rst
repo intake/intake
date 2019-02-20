@@ -94,6 +94,7 @@ are defined in the :doc:`glossary`.
     api.rst
     catalog.rst
     tools.rst
+    persisting.rst
     making-plugins.rst
     auth-plugins.rst
     data-packages.rst

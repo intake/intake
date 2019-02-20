@@ -69,17 +69,21 @@ These are Intake-related articles that may be of interest.
 - `Caching Data on First Read Makes Future Analysis Faster`_
 - `Parsing Data from Filenames and Paths`_
 - `Intake for cataloguing Spark`_
+- `Intake released on Conda-Forge`_
 
 .. _Intake for cataloguing Spark: https://www.anaconda.com/intake-for-cataloging-spark/
 .. _Taking the Pain out of Data Access: https://www.anaconda.com/intake-taking-the-pain-out-of-data-access/
 .. _Caching Data on First Read Makes Future Analysis Faster: https://www.anaconda.com/intake-caching-data-on-first-read-makes-future-analysis-faster/
 .. _Parsing Data from Filenames and Paths: https://www.anaconda.com/intake-parsing-data-from-filenames-and-paths/
+.. _Intake released on Conda-Forge: https://www.anaconda.com/intake-released-on-conda-forge/
 
 Talks
 -----
 
 - `PyData DC (November 2018)`_
+- `PyData NYC (October 2018)`_
 - `ESIP tech dive (November 2018)`_
 
 .. _ESIP tech dive (November 2018): https://www.youtube.com/watch?v=PSD7r3JFml0&feature=youtu.be
 .. _PyData DC (November 2018): https://www.youtube.com/watch?v=OvZFtePHKXw
+.. _PyData NYC (October 2018): https://www.youtube.com/watch?v=pjkMmJQfTb8

@@ -7,6 +7,7 @@
 
 from contextlib import contextmanager
 import os
+import posixpath
 import requests
 import shutil
 import subprocess
@@ -19,7 +20,8 @@ from .utils import make_path_posix
 
 ex = sys.executable
 here = os.path.dirname(__file__)
-defcat = os.path.join(here, 'cli', 'server', 'tests', 'catalog1.yml')
+defcat = make_path_posix(os.path.join(
+    here, 'cli', 'server', 'tests', 'catalog1.yml'))
 PY2 = sys.version_info[0] == 2
 
 @contextmanager
@@ -35,7 +37,7 @@ def tempdir():
 @contextmanager
 def temp_conf(conf):
     with tempdir() as d:
-        fn = make_path_posix(os.path.join(d, 'conf.yaml'))
+        fn = os.path.join(d, 'conf.yaml')
         with open(fn, 'w') as f:
             yaml.dump(conf, f)
         yield fn
