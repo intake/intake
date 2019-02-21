@@ -34,3 +34,10 @@ sources:
         regex: '{{ CATALOG_DIR }}'
         argkey: urlpath
         depth: 2
+  dat_data:
+    driver: textfiles
+    args:
+      urlpath: 'dat://2c3bcbba714723fc95da82b17e3575627e98ed28da3f9815ec7e32245185c014/*.json'
+      decoder: !!python/name:json.loads
+    cache:
+      - type: dat

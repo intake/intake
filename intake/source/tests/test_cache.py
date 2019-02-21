@@ -221,3 +221,9 @@ def test_compressed_cache_bad(temp_cache):
             s.read()
     finally:
         intake.config.conf['cache_download_progress'] = old
+
+
+def test_dat(temp_cache):
+    cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
+    out = cat.dat_data.read()
+    assert out[0]['title'] == 'Dat command line demo'

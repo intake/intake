@@ -4,7 +4,7 @@ Glossary
 .. glossary::
 
     Cache
-        Local copies of remote files. Intake allows for download-on-first-use for data-soruces,
+        Local copies of remote files. Intake allows for download-on-first-use for data-sources,
         so that subsequent access is much faster, see :ref:`caching`. The
         format of the files is unchanged in this case, but may be decompressed.
 

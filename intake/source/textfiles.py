@@ -116,4 +116,4 @@ def get_file(f, decoder, read):
             return list(f)
         else:
             d = f.read() if read else f
-            return decoder(d)
+            return [decoder(d)]

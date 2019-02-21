@@ -298,8 +298,7 @@ def test_union_catalog():
 
     # Implied creation of data source
     assert union_cat.entry1.container == 'dataframe'
-    md = union_cat.entry1.metadata
-    md.pop('catalog_dir')
+    md = union_cat.entry1._metadata
     assert md == dict(foo='bar', bar=[1, 2, 3], cache=[])
 
     # Use default parameters in explict creation of data source
