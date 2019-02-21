@@ -6,10 +6,12 @@
 #-----------------------------------------------------------------------------
 
 import os
+import pytest
 here = os.path.abspath(os.path.dirname(__file__))
 
 
 def test_add_cat():
+    pytest.importorskip('ipywidgets')
     import intake
     intake.gui.add_cat(os.path.join(here, '..', '..', 'catalog', 'tests',
                                     'catalog1.yml'))
