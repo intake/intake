@@ -316,9 +316,9 @@ Remote Access
 
 (see also :ref:`remote_data` for the implementation details)
 
-Many drives support reading directly from remote data sources such as HTTP, S3 or GCS. In these cases,
+Many drivers support reading directly from remote data sources such as HTTP, S3 or GCS. In these cases,
 the path to read from is usually given with a protocol prefix such as ``gcs://``. Additional dependencies
-will typically be required (``requests``, ``s3fs``, ``gcsfs``, etc.), any any data conda package
+will typically be required (``requests``, ``s3fs``, ``gcsfs``, etc.), any data conda package
 should specify this.  Further parameters
 may be necessary for communicating with the storage backend and, by convention, the driver should take
 a parameter ``storage_options`` containing arguments to pass to the backend.
