@@ -2,7 +2,7 @@ import os
 import time
 
 from intake.container.persist import store
-from intake.source.base import DataSource
+from intake.source.textfiles import TextFilesSource
 
 
 def test_store(temp_cache):
@@ -29,5 +29,7 @@ def test_store(temp_cache):
 
 
 def test_backtrack(temp_cache):
-    s = DataSource()
+    s = TextFilesSource("*.py")
     s2 = s.persist()
+    s3 = store.backtrack(s2)
+    assert s3 == s
