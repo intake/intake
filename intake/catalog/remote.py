@@ -86,12 +86,14 @@ class RemoteCatalogEntry(CatalogEntry):
             self.url, self.name, container=self.container,
             user_parameters=user_parameters, description=self.description,
             http_args=http_args,
-            page_size=self._page_size
-            )
+            page_size=self._page_size,
+            auth=self.auth,
+            getenv=self.getenv,
+            getshell=self.getshell)
 
 
 def open_remote(url, entry, container, user_parameters, description, http_args,
-                page_size=None):
+                page_size=None, auth=None, getenv=None, getshell=None):
     """Create either local direct data source or remote streamed source"""
     from intake.container import container_map
     if url.startswith('intake://'):
@@ -109,16 +111,20 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
         if 'plugin' in response:
             # Direct access
             source = plugin_registry[response['plugin']](**response['args'])
+            source.description = description
         else:
             # Proxied access
+            response.pop('container')
+            response.update({'name': entry, 'parameters': user_parameters})
             if container == 'catalog':
-                # Propagate the page_size setting into nested Catalogs.
-                response['page_size'] = page_size
-                response.pop('container')
-            source = container_map[container](
-                url, http_args, parameters=user_parameters,
-                name=entry, **response)
-        source.description = response.get('description', description)
+                response.update({'auth': auth,
+                                 'getenv': getenv,
+                                 'getshell': getshell,
+                                 'page_size': page_size
+                                 # TODO ttl?
+                                 # TODO storage_options?
+                                 })
+            source = container_map[container](url, http_args, **response)
         return source
 
     else:
