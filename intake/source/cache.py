@@ -430,6 +430,44 @@ class CompressedCache(BaseCache):
         return out
 
 
+class DATCache(BaseCache):
+    """Use the DAT protocol to replicate data
+
+    For details of the protocol, see https://docs.datproject.org/
+    The executable ``dat`` must be available.
+
+    Since in this case, it is not possible to access the remote files
+    directly, this cache mechanism takes no parameters. The expectation
+    is that the url passed by the driver is of the form:
+
+        dat://<dat hash>/file_pattern
+
+    where the file pattern will typically be a glob string like "*.json".
+    """
+
+    def _make_files(self, urlpath, **kwargs):
+        self._ensure_cache_dir()
+        return None, None
+
+    def _load(self, _, __, urlpath, meta=True):
+        import subprocess
+        from dask.bytes import open_files
+
+        path = os.path.join(self._cache_dir, self._hash(urlpath))
+        dat, part = os.path.split(urlpath)
+        cmd = ['dat', 'clone', dat, path, '--no-watch']
+        try:
+            subprocess.call(cmd, stdout=subprocess.PIPE)
+        except (IOError, OSError):  # pragma: no cover
+            logger.info('Calling DAT failed')
+            raise
+        newpath = os.path.join(path, part)
+
+        if meta:
+            for of in open_files(newpath):
+                self._log_metadata(urlpath, urlpath, of.path)
+
+
 class CacheMetadata(collections.abc.MutableMapping):
     """
     Utility class for managing persistent metadata stored in the Intake config directory.
@@ -491,7 +529,8 @@ class CacheMetadata(collections.abc.MutableMapping):
 registry = {
     'file': FileCache,
     'dir': DirCache,
-    'compressed': CompressedCache
+    'compressed': CompressedCache,
+    'dat': DATCache
 }
 
 
