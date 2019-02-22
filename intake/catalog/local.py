@@ -397,6 +397,9 @@ class CatalogParser(object):
 
         return UserParameter(**params)
 
+    def yaml(self):
+
+
     def _parse_data_source(self, name, data):
         ds = {
             'name': name,

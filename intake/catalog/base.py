@@ -608,6 +608,13 @@ class RemoteCatalog(Catalog):
     def _persist(source, path, **kwargs):
         import yaml
         import os
-        with open(os.path.join(path, 'cat.yaml', 'w') as f:
+        with open(os.path.join(path, 'cat.yaml', 'w')) as f:
             for name in source:
                 entry = source[name]
+                if isinstance(entry, RemoteCatalogEntry)
+                    if not entry._direct_access):
+                        logger.warning("Cannot persist remote entry %s" % entry)
+                        continue
+                    else:
+                        out = entry().yaml()
+
