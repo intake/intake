@@ -50,3 +50,35 @@ class RemoteSequenceSource(RemoteSource):
 
     def _close(self):
         self.bag = None
+
+    @staticmethod
+    def _persist(source, path, encoder=None):
+        """Save list to files using encoding
+
+        encoder : None or one of str|json|pickle
+            None is equivalent to str
+        """
+        import os
+        from dask.bytes import open_files
+        import dask
+        import pickle
+        import json
+        from intake.source.textfiles import TextFilesSource
+        encoder = {None: str, 'str': str, 'json': json.dumps,
+                   'pickle': pickle.dumps}[encoder]
+        b = source.to_dask()
+        files = open_files(os.path.join(path, 'part.*'), mode='wt',
+                           num=b.npartitions)
+        dwrite = dask.delayed(write_file)
+        out = [dwrite(part, f, encoder)
+               for part, f in zip(b.to_delayed(), files)]
+        dask.compute(out)
+        s = TextFilesSource(os.path.join(path, 'part.*'))
+        return s
+
+
+def write_file(data, fo, encoder):
+    with fo as f:
+        for d in data:
+            f.write(encoder(d))
+

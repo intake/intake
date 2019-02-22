@@ -129,7 +129,10 @@ class PersistStore(YAMLFileCatalog):
         """Given a unique key in the store, recreate original source"""
         key = self.get_tok(source)
         s = self[key]()
-        cls, args, kwargs = s.metadata['original_source']
+        meta = s.metadata['original_source']
+        cls = meta['cls']
+        args = meta['args']
+        kwargs = meta['kwargs']
         cls = import_name(cls)
         sout = cls(*args, **kwargs)
         sout.metadata = s.metadata['original_metadata']

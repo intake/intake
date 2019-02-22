@@ -26,3 +26,8 @@ def test_store(temp_cache):
 
     assert not os.path.exists(store.pdir)
     assert list(store) == []
+
+
+def test_backtrack(temp_cache):
+    s = DataSource()
+    s2 = s.persist()

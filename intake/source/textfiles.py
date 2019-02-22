@@ -104,6 +104,7 @@ class TextFilesSource(base.DataSource):
     def to_dask(self):
         import dask.bag as db
         from dask import delayed
+        self._get_schema()
         dfile = delayed(get_file)
         return db.from_delayed([dfile(f, self.decoder, self._read)
                                 for f in self._files])
