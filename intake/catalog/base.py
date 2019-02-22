@@ -603,3 +603,11 @@ class RemoteCatalog(Catalog):
             return sum(1 for entry in self)
         else:
             return self._len
+
+    @staticmethod
+    def _persist(source, path, **kwargs):
+        import yaml
+        import os
+        with open(os.path.join(path, 'cat.yaml', 'w') as f:
+            for name in source:
+                entry = source[name]

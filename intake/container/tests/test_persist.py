@@ -3,6 +3,7 @@ import time
 
 from intake.container.persist import store
 from intake.source.textfiles import TextFilesSource
+from intake.source.base import DataSource
 
 
 def test_store(temp_cache):
