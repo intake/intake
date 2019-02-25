@@ -223,6 +223,7 @@ def test_compressed_cache_bad(temp_cache):
         intake.config.conf['cache_download_progress'] = old
 
 
+@pytest.mark.xfail
 def test_dat(temp_cache):
     import subprocess
     try:
