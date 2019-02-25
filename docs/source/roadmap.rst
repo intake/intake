@@ -49,7 +49,7 @@ Next-generation GUI
 
 The jupyter-widgets GUI is useful and simple, but we can do better. See the `long form proposal`_.
 
-.. _long form proposal: https://github.com/ContinuumIO/intake/issues/225
+.. _long form proposal: https://github.com/intake/intake/issues/225
 
 
 Catalog services
@@ -58,7 +58,7 @@ Catalog services
 We are experimenting with reflecting external catalog-like data servers as Intake catalogs, so that the
 familiar API can be used for all the disparate services. See for example `this discussion`_.
 
-.. _this discussion: https://github.com/ContinuumIO/intake/issues/224
+.. _this discussion: https://github.com/intake/intake/issues/224
 
 Use DAT as a cache service
 --------------------------

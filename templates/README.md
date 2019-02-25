@@ -8,19 +8,19 @@ To use these templates, install cookiecutter:
 ```
 conda install -c defaults -c conda-forge cookiecutter
 ```
-or 
+or
 ```
 pip install cookiecutter
 ```
 
 For a new plugin:
 ```
-cookiecutter gh:ContinuumIO/intake/templates/plugin
+cookiecutter gh:intake/intake/templates/plugin
 ```
 
 And for a new conda data package:
 ```
-cookiecutter gh:ContinuumIO/intake/templates/data_package
+cookiecutter gh:intake/intake/templates/data_package
 ```
 
 The template will prompt for parameters.
