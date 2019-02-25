@@ -12,7 +12,7 @@ It can take a while, sometimes, for Binder to come up, please have patience.
 See also the `example data`_ page, containing data-sets which can be built and installed
 as conda packages.
 
-.. _example data: https://github.com/ContinuumIO/intake/tree/master/examples
+.. _example data: https://github.com/intake/intake/tree/master/examples
 
 
 General
