@@ -67,7 +67,7 @@ smooth the progression of data from developers and providers to users.
 * Pluggable architecture of Intake allows for many points to add and improve
 * Open, simple code-base, come and get involved on `github`_!
 
-.. _github: https://github.com/ContinuumIO/intake
+.. _github: https://github.com/intake/intake
 
 
 First steps

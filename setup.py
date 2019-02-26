@@ -17,7 +17,7 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description='Data load and catalog system',
-    url='https://github.com/ContinuumIO/intake',
+    url='https://github.com/intake/intake',
     maintainer='Martin Durant',
     maintainer_email='mdurant@anaconda.com',
     license='BSD',
