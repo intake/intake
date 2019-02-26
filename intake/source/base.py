@@ -8,9 +8,8 @@
 
 '''
 
-from dask.base import tokenize
 from .cache import make_caches
-from ..utils import make_path_posix
+from ..utils import make_path_posix, DictSerialiseMixin
 import sys
 PY2 = sys.version_info[0] == 2
 
@@ -46,7 +45,7 @@ class Schema(dict):
         return self[item]
 
 
-class DataSource(object):
+class DataSource(DictSerialiseMixin):
     """An object which can produce data
 
     This is the base class for all Intake plugins, including catalogs and
@@ -69,49 +68,6 @@ class DataSource(object):
     def set_cache_dir(self, cache_dir):
         for c in self.cache:
             c._cache_dir = make_path_posix(cache_dir)
-
-    def __new__(cls, *args, **kwargs):
-        """Capture creation args when instantiating"""
-        o = object.__new__(cls)
-        # automatically capture __init__ arguments for pickling
-        o._captured_init_args = args
-        o._captured_init_kwargs = kwargs
-
-        # monkey for requests keywords
-        for key in ['auth', 'verify']:
-            if (kwargs and kwargs.get('storage_options', None)
-                    and key in kwargs['storage_options']):
-
-                if isinstance(kwargs['storage_options'][key], list):
-                    kwargs['storage_options'][key] = tuple(
-                        kwargs['storage_options'][key])
-        return o
-
-    @property
-    def classname(self):
-        return '.'.join([self.__class__.__module__, self.__class__.__name__])
-
-    def __getstate__(self):
-        return dict(cls=self.classname,
-                    args=self._captured_init_args,
-                    kwargs=self._captured_init_kwargs)
-
-    @property
-    def _tok(self):
-        """String unique token for this source"""
-        return tokenize(self.__getstate__())
-
-    def __hash__(self):
-        return int(self._tok, 16)
-
-    def __eq__(self, other):
-        return hash(self) == hash(other)
-
-    def __setstate__(self, state):
-        self._captured_init_kwargs = state['kwargs']
-        self._captured_init_args = state['args']
-        state.pop('cls', None)
-        self.__init__(*state['args'], **state['kwargs'])
 
     def __init__(self, metadata=None):
         # default data

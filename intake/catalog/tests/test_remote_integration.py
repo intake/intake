@@ -55,6 +55,31 @@ def test_metadata(intake_server):
     assert catalog.version == 1
 
 
+def test_nested_remote(intake_server):
+    from intake.catalog.local import LocalCatalogEntry
+    catalog = Catalog()
+    catalog._entries = {
+        'server': LocalCatalogEntry('server', 'remote test', 'intake_remote',
+                                    True, {'url': intake_server}, [],
+                                    [], {}, None)
+    }
+    assert 'entry1' in catalog.server()
+
+
+def test_remote_direct(intake_server):
+    from intake.container.dataframe import RemoteDataFrame
+    catalog = Catalog(intake_server)
+    s0 = catalog.entry1()
+    s0.discover()
+    s = RemoteDataFrame(intake_server.replace('intake', 'http'), {},
+                        name='entry1', parameters={},
+                        npartitions=s0.npartitions,
+                        shape=s0.shape,
+                        metadata=s0.metadata,
+                        dtype=s0.dtype)
+    assert s0.read().equals(s.read())
+
+
 def test_entry_metadata(intake_server):
     catalog = Catalog(intake_server)
     entry = catalog['arr']

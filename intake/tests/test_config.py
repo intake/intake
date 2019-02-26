@@ -63,7 +63,7 @@ def test_conf():
 
 def test_conf_auth():
     with temp_conf({'port': 5556,
-                    'auth': {'class': 'intake.auth.secret.SecretAuth',
+                    'auth': {'cls': 'intake.auth.secret.SecretAuth',
                              'kwargs': {'secret': 'test'}}}) as fn:
         env = os.environ.copy()
         env['INTAKE_CONF_FILE'] = fn

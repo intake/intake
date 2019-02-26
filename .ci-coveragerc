@@ -1,2 +1,2 @@
 [run]
-omit = intake/*, *tests/*, */_version.py
+omit = *tests/*, */_version.py

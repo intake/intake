@@ -52,5 +52,70 @@ def no_duplicate_yaml():
 
 
 def yaml_load(stream):
+    """Parse YAML in a context where duplicate keys raise exception"""
     with no_duplicate_yaml():
         return yaml.load(stream)
+
+
+def classname(ob):
+    """Get the object's class's name as package.module.Class"""
+    import inspect
+    if inspect.isclass(ob):
+        return '.'.join([ob.__module__, ob.__name__])
+    else:
+        return '.'.join([ob.__class__.__module__, ob.__class__.__name__])
+
+
+class DictSerialiseMixin(object):
+    def __new__(cls, *args, **kwargs):
+        """Capture creation args when instantiating"""
+        o = object.__new__(cls)
+        o._captured_init_args = args
+        o._captured_init_kwargs = kwargs
+        return o
+
+    @property
+    def classname(self):
+        return classname(self)
+
+    def __getstate__(self):
+        args = [arg.__getstate__() if isinstance(arg, DictSerialiseMixin)
+                else arg
+                for arg in self._captured_init_args]
+        kwargs = {k: arg.__getstate__() if isinstance(arg, DictSerialiseMixin)
+                  else arg
+                  for k, arg in self._captured_init_kwargs.items()}
+        return dict(cls=self.classname,
+                    args=args,
+                    kwargs=kwargs)
+
+    def __setstate__(self, state):
+        # reconstitute instances here
+        self._captured_init_kwargs = state['kwargs']
+        self._captured_init_args = state['args']
+        state.pop('cls', None)
+        self.__init__(*state['args'], **state['kwargs'])
+
+    @property
+    def _tok(self):
+        """String unique token for this source"""
+        from dask.base import tokenize
+        return tokenize(self.__getstate__())
+
+    def __hash__(self):
+        return int(self._tok, 16)
+
+    def __eq__(self, other):
+        return hash(self) == hash(other)
+
+
+def remake_instance(data):
+    import importlib
+    if isinstance(data, str):
+        data = {'cls': data}
+    else:
+        data = data.copy()
+    mod, klass = data.pop('cls').rsplit('.', 1)
+    module = importlib.import_module(mod)
+    cl = getattr(module, klass)
+    return cl(*data.get('args', ()), **data.get('kwargs', {}))

@@ -307,6 +307,19 @@ def test_union_catalog():
     assert union_cat.entry1_part(part='2').container == 'dataframe'
 
 
+def test_persist_local_cat(temp_cache):
+    # when persisted, multiple cat become one
+    from intake.catalog.local import YAMLFileCatalog
+    path = os.path.dirname(__file__)
+    uri1 = os.path.join(path, 'catalog_union_1.yml')
+    uri2 = os.path.join(path, 'catalog_union_2.yml')
+
+    s = Catalog([uri1, uri2])
+    s2 = s.persist()
+    assert isinstance(s2, YAMLFileCatalog)
+    assert set(s) == set(s2)
+
+
 def test_empty_catalog():
     cat = Catalog()
     assert list(cat) == []

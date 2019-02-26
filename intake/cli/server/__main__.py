@@ -69,7 +69,12 @@ def main(argv=None):
     server.start_periodic_functions(close_idle_after=3600.0)
 
     app.listen(args.port)
-    tornado.ioloop.IOLoop.current().start()
+    try:
+        tornado.ioloop.IOLoop.current().start()
+    except KeyboardInterrupt:
+        logger.critical("Exiting")
+    except Exception as e:
+        logger.critical("Exiting due to %s" % e)
 
 
 if __name__ == "__main__":

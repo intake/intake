@@ -20,7 +20,7 @@ confdir = make_path_posix(
 
 
 defaults = {
-    'auth': {'class': 'intake.auth.base.BaseAuth'},
+    'auth': {'cls': 'intake.auth.base.BaseAuth'},
     'port': 5000,
     'cache_dir': posixpath.join(confdir, 'cache'),
     'cache_disabled': False,

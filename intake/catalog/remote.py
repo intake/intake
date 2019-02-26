@@ -14,6 +14,7 @@ from ..source import registry as plugin_registry
 from .entry import CatalogEntry
 from .utils import expand_defaults, coerce
 from ..compat import unpack_kwargs
+from ..utils import remake_instance
 
 
 class RemoteCatalogEntry(CatalogEntry):
@@ -35,13 +36,18 @@ class RemoteCatalogEntry(CatalogEntry):
             container,
         """
         self.url = url
+        if isinstance(auth, dict):
+            auth = remake_instance(auth)
         self.auth = auth
         self.container = container
         self.name = name
         self.description = description
         self._metadata = metadata or {}
         self._page_size = page_size
-        self._user_parameters = user_parameters or []
+        self._user_parameters = [remake_instance(up)
+                                 if (isinstance(up, dict) and 'cls' in up)
+                                 else up
+                                 for up in user_parameters or []]
         self._direct_access = direct_access
         self.http_args = (http_args or {}).copy()
         if 'headers' not in self.http_args:
@@ -64,7 +70,7 @@ class RemoteCatalogEntry(CatalogEntry):
         return {
             'container': self.container,
             'plugin': None,
-            'description': self._description,
+            'description': self.description,
             'direct_access': self._direct_access,
             'metadata': self._metadata,
             'args': (self.url, )
@@ -111,7 +117,6 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
         if 'plugin' in response:
             # Direct access
             source = plugin_registry[response['plugin']](**response['args'])
-            source.description = description
         else:
             # Proxied access
             response.pop('container')
@@ -125,6 +130,7 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
                                  # TODO storage_options?
                                  })
             source = container_map[container](url, http_args, **response)
+        source.description = description
         return source
 
     else:

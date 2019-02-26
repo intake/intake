@@ -85,7 +85,7 @@ class Catalog(DataSource):
         """
         super(Catalog, self).__init__()
         self.name = name
-        self.metadata = metadata
+        self.metadata = metadata or {}
         self.ttl = ttl
         self.getenv = getenv
         self.getshell = getshell
@@ -359,6 +359,8 @@ class Entries(dict):
 
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
+    name = 'intake_remote'
+
     def __init__(self, url, http_args=None, page_size=None,
                  name=None, source_id=None, metadata=None, auth=None, ttl=1,
                  getenv=True, getshell=True,
@@ -606,15 +608,14 @@ class RemoteCatalog(Catalog):
 
     @staticmethod
     def _persist(source, path, **kwargs):
-        import yaml
+        from intake.catalog.local import YAMLFileCatalog
         import os
-        with open(os.path.join(path, 'cat.yaml', 'w')) as f:
-            for name in source:
-                entry = source[name]
-                if isinstance(entry, RemoteCatalogEntry)
-                    if not entry._direct_access):
-                        logger.warning("Cannot persist remote entry %s" % entry)
-                        continue
-                    else:
-                        out = entry().yaml()
-
+        import yaml
+        out = {}
+        for name in source:
+            entry = source[name]
+            out[name] = entry.__getstate__()
+        fn = os.path.join(path, 'cat.yaml')
+        with open(fn, 'w') as f:
+            yaml.dump({'sources': out}, f)
+        return YAMLFileCatalog(fn)

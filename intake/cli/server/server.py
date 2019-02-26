@@ -18,7 +18,7 @@ import tornado.web
 
 from intake.config import conf
 from intake.container import serializer
-from intake.auth import get_auth_class
+from intake.utils import remake_instance
 from intake import __version__
 from intake.compat import unpack_kwargs
 logger = logging.getLogger('intake')
@@ -32,8 +32,8 @@ class IntakeServer(object):
         self._periodic_callbacks = []
         auth = conf.get('auth', 'intake.auth.base.BaseAuth')
         logger.debug('auth: %s' % auth)
-        self._auth = get_auth_class(auth['class'], *auth.get('args', tuple()),
-                                    **auth.get('kwargs', {}))
+        print(auth)
+        self._auth = remake_instance(auth)
 
     def get_handlers(self):
         return [
