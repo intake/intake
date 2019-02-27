@@ -32,7 +32,6 @@ class IntakeServer(object):
         self._periodic_callbacks = []
         auth = conf.get('auth', 'intake.auth.base.BaseAuth')
         logger.debug('auth: %s' % auth)
-        print(auth)
         self._auth = remake_instance(auth)
 
     def get_handlers(self):

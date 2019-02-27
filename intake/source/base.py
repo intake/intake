@@ -283,6 +283,31 @@ class DataSource(DictSerialiseMixin):
         store.add(self._tok, out)
         return out
 
+    def export(self, path, **kwargs):
+        """Save this data for sharing with other people
+
+        Creates a copy of the data in a format appropriate for its container,
+        in the location specified (which can be remote, e.g., s3). Returns
+        a YAML representation of this saved dataset, so that it can be put
+        into a catalog file.
+        """
+        from ..container import container_map
+        import time
+        method = container_map[self.container]._persist
+        # may need to create path - access file-system method
+        out = method(self, path=path, **kwargs)
+        out.description = self.description
+        metadata = {'timestamp': time.time(),
+                    'original_metadata': self.metadata,
+                    'original_source': self.__getstate__(),
+                    'original_name': self.name,
+                    'original_tok': self._tok,
+                    'persist_kwargs': kwargs}
+        out.metadata = metadata
+        out.name = self.name
+        return out.yaml()
+
+
     def get_persisted(self):
         from ..container.persist import store
         return store[self._tok]()

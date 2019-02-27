@@ -87,3 +87,17 @@ def test_text_persist(temp_cache):
     s = cat.sometext()
     s2 = s.persist()
     assert s.read() == s2.read()
+
+
+def test_text_export(temp_cache):
+    import tempfile
+    outdir = tempfile.mkdtemp()
+    cat = intake.open_catalog(os.path.join(here, 'sources.yaml'))
+    s = cat.sometext()
+    out = s.export(outdir)
+    fn = os.path.join(outdir, 'cat.yaml')
+    with open(fn, 'w') as f:
+        f.write(out)
+    cat = intake.open_catalog(fn)
+    s2 = cat[s.name]()
+    assert s.read() == s2.read()
