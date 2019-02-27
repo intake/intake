@@ -5,6 +5,16 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+
+try:
+    import panel
+    from .panel import CatalogBrowser
+except:
+    class CatalogBrowser(object):
+        def __repr__(self):
+            raise RuntimeError("Please install panel to use the Catalog "
+                               "Browser")
+
 try:
     import ipywidgets
     from .widgets import DataBrowser
