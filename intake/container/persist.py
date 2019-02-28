@@ -135,10 +135,10 @@ class PersistStore(YAMLFileCatalog):
             Whether to remove the on-disc artifact
         """
         source = self.get_tok(source)
-        with open(self.path, 'rb') as f:
+        with self.fs.open(self.path, 'rb') as f:
             data = yaml.load(f.read().decode())
         data['sources'].pop(source, None)
-        with open(self.path, 'wb') as fo:
+        with self.fs.open(self.path, 'wb') as fo:
             fo.write(yaml.dump(data, default_flow_style=False).encode())
         if delfiles:
             path = posixpath.join(self.pdir, source)
