@@ -603,19 +603,20 @@ class RemoteCatalog(Catalog):
             # The server is running an old version of intake and did not
             # provide a length, so we have no choice but to do this the
             # expensive way.
-            return sum(1 for entry in self)
+            return sum(1 for _ in self)
         else:
             return self._len
 
     @staticmethod
     def _persist(source, path, **kwargs):
         from intake.catalog.local import YAMLFileCatalog
+        from dask.bytes.core import open_files
         import yaml
         out = {}
         for name in source:
             entry = source[name]
             out[name] = entry.__getstate__()
         fn = posixpath.join(path, 'cat.yaml')
-        with open(fn, 'w') as f:
+        with open_files([fn], 'wt')[0] as f:
             yaml.dump({'sources': out}, f)
         return YAMLFileCatalog(fn)
