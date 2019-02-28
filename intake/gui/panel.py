@@ -359,13 +359,9 @@ class GUI(Base):
         self.watchers.append(
             self.remove.param.watch(self.browser.cat.del_selected, 'clicks'))
 
-        self.selector = CatSelector()
-        self.add_cat_from_selector(self.selector.cat)
-        self.watchers.append(
-            self.selector.add.param.watch(self.add_cat_from_selector, 'clicks'))
+        self.setup_selector()
 
         self.control = pn.Column(logo_file, self.search, self.open, self.remove)
-        self.select_panel = pn.Row(self.selector.panel(), self.close)
         self.panel = pn.Column(
             pn.Row(self.control, *self.browser.panel()),
             self.select_panel
@@ -375,15 +371,26 @@ class GUI(Base):
         self.watchers.append(
             self.close.param.watch(self.close_selector, 'clicks'))
 
+    def setup_selector(self):
+        self.selector = CatSelector()
+        self.add_cat_from_selector(self.selector.cat)
+        self.selector.watchers.append(
+            self.selector.add.param.watch(self.add_cat_from_selector, 'clicks'))
+
+        self.select_panel = pn.Row(self.selector.panel(), self.close)
+
     def add_cat_from_selector(self, arg=None):
         cat = self.selector.cat
         if cat is not None:
             self.browser.cat.add(cat)
 
     def close_selector(self, arg=None):
+        self.selector.unwatch()
         if self.select_panel in self.panel:
             self.panel.pop(self.select_panel)
+            self.select_panel = None
 
     def open_selector(self, arg=None):
-        if self.select_panel not in self.panel:
+        if not self.select_panel:
+            self.setup_selector()
             self.panel.append(self.select_panel)
