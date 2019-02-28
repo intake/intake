@@ -128,13 +128,13 @@ class PersistStore(YAMLFileCatalog):
             path = posixpath.join(self.pdir, source)
             try:
                 self.fs.rm(path, True)
-            except IOError as e:
+            except Exception as e:
                 logger.debug("Failed to delete persisted data dir %s" % path)
         self._entries.pop(source, None)
 
     def clear(self):
         """Remove all persisted sources, files and catalog"""
-        shutil.rmtree(self.pdir)
+        self.fs.rm(self.pdir, True)
 
     def backtrack(self, source):
         """Given a unique key in the store, recreate original source"""
