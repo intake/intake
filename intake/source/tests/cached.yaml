@@ -37,7 +37,7 @@ sources:
   dat_data:
     driver: textfiles
     args:
-      urlpath: 'dat://2c3bcbba714723fc95da82b17e3575627e98ed28da3f9815ec7e32245185c014/*.json'
-      decoder: !!python/name:json.loads
+      urlpath: 'dat://66ef52101a2543e1721c901e84d2dd7a758c94283b8501d34a691abefe3fb3d6/*.json'
+      decoder: json.loads
     cache:
       - type: dat

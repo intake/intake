@@ -222,13 +222,19 @@ def test_compressed_cache_bad(temp_cache):
         intake.config.conf['cache_download_progress'] = old
 
 
-@pytest.mark.xfail
 def test_dat(temp_cache):
     import subprocess
+    import time
     try:
         subprocess.call(['dat', '-v'])
     except Exception:
         pytest.skip("DAT not avaiable")
-    cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
-    out = cat.dat_data.read()
-    assert out[0]['title'] == 'Dat command line demo'
+    P = subprocess.Popen(['dat', 'share', '-d',
+                          os.path.join(here, 'test_dat/')])
+    time.sleep(1.5)
+    try:
+        cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
+        out = cat.dat_data.read()
+        assert out[0]['title'] == 'intake test copy'
+    finally:
+        P.terminate()
