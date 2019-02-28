@@ -60,8 +60,8 @@ class PersistStore(YAMLFileCatalog):
         try:
             self.fs.rm(subdir, True)
             self.fs.mkdirs(subdir)
-        except (IOError, OSError):
-            pass
+        except Exception as e:
+            logger.debug("Directory clear failed: %s" % e)
         return subdir
 
     def add(self, key, source):
