@@ -17,6 +17,21 @@ from ..source import import_name
 from ..utils import make_path_posix
 
 
+def _maybe_add_rm(fs):
+    # monkey-path local filesystem
+    # this goes away if we can use fsspec's local file-system
+    from dask.bytes.local import LocalFileSystem
+    if isinstance(fs, LocalFileSystem):
+        def rm(path, recursive=False):
+            if recursive:
+                import shutil
+                shutil.rmtree(path)
+            else:
+                import os
+                os.remove(path)
+        fs.rm = rm
+
+
 class PersistStore(YAMLFileCatalog):
     """
     Specialised catalog for persisted data-sources
@@ -39,6 +54,7 @@ class PersistStore(YAMLFileCatalog):
         protocol = (self.pdir.split('://', 1)[0]
                     if "://" in self.pdir else 'file')
         self.fs = get_fs(protocol)[0]
+        _maybe_add_rm(self.fs)
         super(PersistStore, self).__init__(path)
 
     def _load(self):
@@ -59,9 +75,9 @@ class PersistStore(YAMLFileCatalog):
         subdir = posixpath.join(self.pdir, source._tok)
         try:
             self.fs.rm(subdir, True)
-            self.fs.mkdirs(subdir)
         except Exception as e:
             logger.debug("Directory clear failed: %s" % e)
+        self.fs.mkdirs(subdir)
         return subdir
 
     def add(self, key, source):
