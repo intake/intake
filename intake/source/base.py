@@ -307,7 +307,6 @@ class DataSource(DictSerialiseMixin):
         out.name = self.name
         return out.yaml()
 
-
     def get_persisted(self):
         from ..container.persist import store
         return store[self._tok]()

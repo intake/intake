@@ -58,7 +58,7 @@ class RemoteSequenceSource(RemoteSource):
         encoder : None or one of str|json|pickle
             None is equivalent to str
         """
-        import os
+        import posixpath
         from dask.bytes import open_files
         import dask
         import pickle
@@ -67,13 +67,13 @@ class RemoteSequenceSource(RemoteSource):
         encoder = {None: str, 'str': str, 'json': json.dumps,
                    'pickle': pickle.dumps}[encoder]
         b = source.to_dask()
-        files = open_files(os.path.join(path, 'part.*'), mode='wt',
+        files = open_files(posixpath.join(path, 'part.*'), mode='wt',
                            num=b.npartitions)
         dwrite = dask.delayed(write_file)
         out = [dwrite(part, f, encoder)
                for part, f in zip(b.to_delayed(), files)]
         dask.compute(out)
-        s = TextFilesSource(os.path.join(path, 'part.*'))
+        s = TextFilesSource(posixpath.join(path, 'part.*'))
         return s
 
 

@@ -15,7 +15,6 @@ import intake.config
 import logging
 here = os.path.dirname(os.path.abspath(__file__))
 logger = logging.getLogger('intake')
-logging.basicConfig()
 
 
 @pytest.fixture

@@ -9,6 +9,7 @@ import collections
 import copy
 import keyword
 import logging
+import posixpath
 import re
 import six
 import time
@@ -609,13 +610,12 @@ class RemoteCatalog(Catalog):
     @staticmethod
     def _persist(source, path, **kwargs):
         from intake.catalog.local import YAMLFileCatalog
-        import os
         import yaml
         out = {}
         for name in source:
             entry = source[name]
             out[name] = entry.__getstate__()
-        fn = os.path.join(path, 'cat.yaml')
+        fn = posixpath.join(path, 'cat.yaml')
         with open(fn, 'w') as f:
             yaml.dump({'sources': out}, f)
         return YAMLFileCatalog(fn)

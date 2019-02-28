@@ -101,7 +101,9 @@ if 'INTAKE_LOG_LEVEL' in os.environ:
 
 logger.setLevel(conf['logging'])
 ch = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s %(name)s:%(levelname)s, %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - '
+                              '%(filename)s:%(funcName)s:L%(lineno)d - '
+                              '%(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.debug('Intake logger set to debug')
