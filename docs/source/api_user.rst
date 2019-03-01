@@ -30,22 +30,22 @@ These are reference class and function definitions likely to be useful to everyo
    the plugins in the registry at import time.
 
 .. autoclass:: intake.source.csv.CSVSource
-   :members: __init__, discover, read_partition, read, to_dask
+   :members: __init__, discover, read_partition, read, to_dask, persist, export
 
 .. autoclass:: intake.source.zarr.ZarrArraySource
-   :members: __init__, discover, read_partition, read, to_dask
+   :members: __init__, discover, read_partition, read, to_dask, persist, export
 
 .. autoclass:: intake.source.textfiles.TextFilesSource
-   :members: __init__, discover, read_partition, read, to_dask
+   :members: __init__, discover, read_partition, read, to_dask, persist, export
 
 .. autoclass:: intake.source.npy.NPySource
-   :members: __init__, discover, read_partition, read, to_dask
+   :members: __init__, discover, read_partition, read, to_dask, persist, export
 
 .. autoclass:: intake.catalog.local.YAMLFileCatalog
-   :members: __init__, reload, search, walk
+   :members: __init__, reload, search, walk, persist, export
 
 .. autoclass:: intake.catalog.local.YAMLFilesCatalog
-   :members: __init__, reload, search, walk
+   :members: __init__, reload, search, walk, persist, export
 
 .. autoclass:: intake.gui.DataBrowser
    :members:
