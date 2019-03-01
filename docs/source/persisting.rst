@@ -51,6 +51,34 @@ Note that after persisting, the original source will have ``source.has_been_pers
 and the persisted source (i.e., the one loaded from local files) will have
 ``source.is_persisted == True``.
 
+Export
+------
+
+A similar concept to Persist, Export allows you to make a copy of some data source, in the
+format appropriate for its container, and place this data-set in whichever location suits you,
+including remote locations. This functionality (``source.export()``) does *not* touch the persist
+store; instead, it returns a YAML text representation of the output, so that you can put it into
+a catalog of your own. It woulld be this catalog that you share with other people.
+
+Note that "exported" data-sources like this do contain the information of the original source they
+were made from in their metadata, so you can recreate the original source, if you want to, and
+read from there.
+
+Persisting to Remote
+--------------------
+
+If you are typically running your code inside of ethemaral containers, then persisting data-sets may
+be something that you want to do (because the original source is slow, or parsing is CPU/memory intensive),
+but the local storage is not useful. In some cases you may have access to some shared network storage
+mounted on the instance, but in other cases you will want to persist to a remote store.
+
+The config value ``'persist_path'``, which can also be set by the environment variable
+``INTAKE_PERSIST_PATH`` can be a remote location such as ``s3://mybucket/intake-persist``. You will
+need to install the appropriate package to talk to the external storage (e.g., ``s3fs``, ``gcsfs``,
+``pyarrow``), but otherwise everything should work as before, and you can access the persisted data
+from any container.
+
+
 The Persist Store
 -----------------
 
@@ -70,21 +98,16 @@ The sources use the "token" of the original
 data source as their key in the store, a value which can be found by ``source._tok``
 for the original source, or can be taken from the metadata of a persisted source.
 
+Note that all of the information about persisted sources is held in a single YAML file in
+the persist directory (typically ``/persisted/cat.yaml`` within the config directory, but
+see ``intake.config.conf['persist_path']``). This file can be edited by hand if you wanted to,
+for example, set some persisted source not to expire. This is only recommended for experts.
+
 Future Enhancements
 -------------------
 
-- Implement persist for all data types, including catalogs, which have a natural representation
-  as YAML files - fetching or querying a remote service to create a catalog can be slow too.
-
 - CLI functionality to investigate and alter the state of the persist store, similar to the
   cache commands.
-
-- Being able to set the persist store to a remote URL, such that outputs can be shared between
-  users and the nodes of a Dask cluster. Currently, the only way to achieve this would be to
-  use a shared network file-system.
-
-- An "export" function much like persist, but producing a standalone version of the data together
-  with a catalog spec for it, so that it can be easily shared.
 
 - Time check-pointing of persisted data, such that you can not only get the "most recent" but
   any version in the time-series.

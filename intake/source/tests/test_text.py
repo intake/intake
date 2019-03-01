@@ -5,12 +5,13 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-import glob
 import os
 import pytest
+import intake
 from intake.source.textfiles import TextFilesSource
 from intake.source import import_name
 from dask.bytes import open_files
+here = os.path.abspath(os.path.dirname(__file__))
 
 
 def test_textfiles(tempdir):
@@ -79,3 +80,24 @@ def test_complex_bytes(tempdir, comp, pars):
     out = t.read()
     assert isinstance(out, list)
     assert out[0] == data[0]
+
+
+def test_text_persist(temp_cache):
+    cat = intake.open_catalog(os.path.join(here, 'sources.yaml'))
+    s = cat.sometext()
+    s2 = s.persist()
+    assert s.read() == s2.read()
+
+
+def test_text_export(temp_cache):
+    import tempfile
+    outdir = tempfile.mkdtemp()
+    cat = intake.open_catalog(os.path.join(here, 'sources.yaml'))
+    s = cat.sometext()
+    out = s.export(outdir)
+    fn = os.path.join(outdir, 'cat.yaml')
+    with open(fn, 'w') as f:
+        f.write(out)
+    cat = intake.open_catalog(fn)
+    s2 = cat[s.name]()
+    assert s.read() == s2.read()

@@ -5,7 +5,10 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-class BaseAuth(object):
+from ..utils import DictSerialiseMixin
+
+
+class BaseAuth(DictSerialiseMixin):
     """Base class for authorization
 
     Subclass this and override the methods to implement a new type of auth.

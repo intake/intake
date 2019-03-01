@@ -3,3 +3,7 @@ sources:
     driver: ndzarr
     args:
       url: "{{CATALOG_DIR}}/data.zarr"
+  sometext:
+    driver: textfiles
+    args:
+      urlpath: "{{CATALOG_DIR}}/*.py"

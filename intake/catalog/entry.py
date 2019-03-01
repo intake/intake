@@ -6,9 +6,10 @@
 #-----------------------------------------------------------------------------
 
 import time
+from ..utils import DictSerialiseMixin
 
 
-class CatalogEntry(object):
+class CatalogEntry(DictSerialiseMixin):
     """A single item appearing in a catalog
 
     This is the base class, used by local entries (i.e., read from a YAML file)

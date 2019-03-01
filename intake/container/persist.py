@@ -17,6 +17,21 @@ from ..source import import_name
 from ..utils import make_path_posix
 
 
+def _maybe_add_rm(fs):
+    # monkey-path local filesystem
+    # this goes away if we can use fsspec's local file-system
+    from dask.bytes.local import LocalFileSystem
+    if isinstance(fs, LocalFileSystem):
+        def rm(path, recursive=False):
+            if recursive:
+                import shutil
+                shutil.rmtree(path)
+            else:
+                import os
+                os.remove(path)
+        fs.rm = rm
+
+
 class PersistStore(YAMLFileCatalog):
     """
     Specialised catalog for persisted data-sources
@@ -32,29 +47,37 @@ class PersistStore(YAMLFileCatalog):
         return cls._singleton[0]
 
     def __init__(self, path=None):
+        # from fsspec.registry import filesystem
+        from dask.bytes.core import get_fs
         self.pdir = make_path_posix(path or conf.get('persist_path'))
         path = posixpath.join(self.pdir, 'cat.yaml')
+        protocol = (self.pdir.split('://', 1)[0]
+                    if "://" in self.pdir else 'file')
+        self.fs = get_fs(protocol)[0]
+        _maybe_add_rm(self.fs)
         super(PersistStore, self).__init__(path)
 
     def _load(self):
-        # make sure there's always something to load from
+        # try to make sure there's always something to load from
         try:
-            os.makedirs(self.pdir)
+            self.fs.mkdirs(self.pdir)
         except (OSError, IOError):
             pass
-        if not os.path.exists(self.path):
-            with open(self.path, 'w') as f:
-                f.write('sources: {}')
-        super(PersistStore, self)._load()
+        try:
+            super(PersistStore, self)._load()
+        except:
+            # if destination doesn't load, we have no entries
+            # likely will get exceptions if try to persist
+            self._entries = {}
 
     def getdir(self, source):
         """Clear/create a directory to store a persisted dataset into"""
         subdir = posixpath.join(self.pdir, source._tok)
         try:
-            shutil.rmtree(subdir, ignore_errors=True)
-            os.makedirs(subdir)
-        except (IOError, OSError):
-            pass
+            self.fs.rm(subdir, True)
+        except Exception as e:
+            logger.debug("Directory clear failed: %s" % e)
+        self.fs.mkdirs(subdir)
         return subdir
 
     def add(self, key, source):
@@ -67,12 +90,15 @@ class PersistStore(YAMLFileCatalog):
             data
         """
         from intake.catalog.local import LocalCatalogEntry
-        with open(self.path) as f:
-            data = yaml.load(f)
+        try:
+            with self.fs.open(self.path, 'rb') as f:
+                data = yaml.load(f.read().decode())
+        except IOError:
+            data = {'sources': {}}
         ds = source._yaml()['sources'][source.name]
         data['sources'][key] = ds
-        with open(self.path, 'w') as fo:
-            fo.write(yaml.dump(data, default_flow_style=False))
+        with self.fs.open(self.path, 'wb') as fo:
+            fo.write(yaml.dump(data, default_flow_style=False).encode())
         self._entries[key] = LocalCatalogEntry(
             name=ds['metadata']['original_name'],
             direct_access=True,
@@ -109,27 +135,31 @@ class PersistStore(YAMLFileCatalog):
             Whether to remove the on-disc artifact
         """
         source = self.get_tok(source)
-        data = yaml.load(open(self.path))
+        with self.fs.open(self.path, 'rb') as f:
+            data = yaml.load(f.read().decode())
         data['sources'].pop(source, None)
-        with open(self.path, 'w') as fo:
-            fo.write(yaml.dump(data, default_flow_style=False))
+        with self.fs.open(self.path, 'wb') as fo:
+            fo.write(yaml.dump(data, default_flow_style=False).encode())
         if delfiles:
             path = posixpath.join(self.pdir, source)
             try:
-                shutil.rmtree(path)
-            except IOError as e:
+                self.fs.rm(path, True)
+            except Exception as e:
                 logger.debug("Failed to delete persisted data dir %s" % path)
         self._entries.pop(source, None)
 
     def clear(self):
         """Remove all persisted sources, files and catalog"""
-        shutil.rmtree(self.pdir)
+        self.fs.rm(self.pdir, True)
 
     def backtrack(self, source):
         """Given a unique key in the store, recreate original source"""
         key = self.get_tok(source)
         s = self[key]()
-        cls, args, kwargs = s.metadata['original_source']
+        meta = s.metadata['original_source']
+        cls = meta['cls']
+        args = meta['args']
+        kwargs = meta['kwargs']
         cls = import_name(cls)
         sout = cls(*args, **kwargs)
         sout.metadata = s.metadata['original_metadata']

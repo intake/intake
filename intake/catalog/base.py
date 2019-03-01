@@ -9,6 +9,7 @@ import collections
 import copy
 import keyword
 import logging
+import posixpath
 import re
 import six
 import time
@@ -85,7 +86,7 @@ class Catalog(DataSource):
         """
         super(Catalog, self).__init__()
         self.name = name
-        self.metadata = metadata
+        self.metadata = metadata or {}
         self.ttl = ttl
         self.getenv = getenv
         self.getshell = getshell
@@ -359,6 +360,8 @@ class Entries(dict):
 
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
+    name = 'intake_remote'
+
     def __init__(self, url, http_args=None, page_size=None,
                  name=None, source_id=None, metadata=None, auth=None, ttl=1,
                  getenv=True, getshell=True,
@@ -600,6 +603,20 @@ class RemoteCatalog(Catalog):
             # The server is running an old version of intake and did not
             # provide a length, so we have no choice but to do this the
             # expensive way.
-            return sum(1 for entry in self)
+            return sum(1 for _ in self)
         else:
             return self._len
+
+    @staticmethod
+    def _persist(source, path, **kwargs):
+        from intake.catalog.local import YAMLFileCatalog
+        from dask.bytes.core import open_files
+        import yaml
+        out = {}
+        for name in source:
+            entry = source[name]
+            out[name] = entry.__getstate__()
+        fn = posixpath.join(path, 'cat.yaml')
+        with open_files([fn], 'wt')[0] as f:
+            yaml.dump({'sources': out}, f)
+        return YAMLFileCatalog(fn)

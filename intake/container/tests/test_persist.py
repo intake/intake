@@ -1,7 +1,15 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 import os
 import time
 
 from intake.container.persist import store
+from intake.source.textfiles import TextFilesSource
 from intake.source.base import DataSource
 
 
@@ -26,3 +34,10 @@ def test_store(temp_cache):
 
     assert not os.path.exists(store.pdir)
     assert list(store) == []
+
+
+def test_backtrack(temp_cache):
+    s = TextFilesSource("*.py")
+    s2 = s.persist()
+    s3 = store.backtrack(s2)
+    assert s3 == s

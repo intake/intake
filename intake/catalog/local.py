@@ -22,12 +22,12 @@ from ..source import get_plugin_class
 from ..source.discovery import load_plugins_from_module
 from ..utils import make_path_posix
 from .utils import expand_templates, expand_defaults, coerce, COERCION_RULES
-from ..utils import yaml_load
+from ..utils import yaml_load, DictSerialiseMixin
 
 logger = logging.getLogger('intake')
 
 
-class UserParameter(object):
+class UserParameter(DictSerialiseMixin):
     """
     A user-settable item that is passed to a DataSource upon instantiation.
 
@@ -398,6 +398,17 @@ class CatalogParser(object):
         return UserParameter(**params)
 
     def _parse_data_source(self, name, data):
+        if data.pop('remote', False):
+            from intake.catalog.remote import RemoteCatalogEntry
+            return RemoteCatalogEntry(getenv=self.getenv,
+                                      getshell=self.getshell, **data)
+        elif 'cls' in data:
+            from intake.utils import remake_instance
+            return remake_instance(data)
+        else:
+            return self._parse_data_source_local(name, data)
+
+    def _parse_data_source_local(self, name, data):
         ds = {
             'name': name,
             'description': self._getitem(data, 'description', str,
@@ -585,7 +596,7 @@ global_registry['yaml_file_cat'] = YAMLFileCatalog
 class YAMLFilesCatalog(Catalog):
     """Catalog as described by a multiple YAML files"""
     version = __version__,
-    container = 'catalog',
+    container = 'catalog'
     partition_access = None
     name = 'yaml_files_cat'
 

@@ -7,13 +7,13 @@
 
 from intake.auth.base import BaseAuth, BaseClientAuth
 from intake.auth.secret import SecretAuth,SecretClientAuth
-from intake.auth import get_auth_class
+from intake.utils import remake_instance
 
 
 def test_get():
-    auth = get_auth_class('intake.auth.base.BaseAuth')
+    auth = remake_instance('intake.auth.base.BaseAuth')
     assert isinstance(auth, BaseAuth)
-    auth= get_auth_class('intake.auth.secret.SecretAuth')
+    auth = remake_instance('intake.auth.secret.SecretAuth')
     assert isinstance(auth, SecretAuth)
 
 

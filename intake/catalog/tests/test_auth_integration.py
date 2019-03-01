@@ -29,7 +29,7 @@ YAML_FILENAME = 'intake_test_catalog.yml'
 TEST_SERVER_CONF = os.path.join(CONF_DIR, 'config.yaml')
 conf = '''
 auth:
-  class: intake.auth.secret.SecretAuth
+  cls: intake.auth.secret.SecretAuth
   kwargs:
     secret: test_secret
 '''
