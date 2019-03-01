@@ -58,7 +58,7 @@ A similar concept to Persist, Export allows you to make a copy of some data sour
 format appropriate for its container, and place this data-set in whichever location suits you,
 including remote locations. This functionality (``source.export()``) does *not* touch the persist
 store; instead, it returns a YAML text representation of the output, so that you can put it into
-a catalog of your own. It woulld be this catalog that you share with other people.
+a catalog of your own. It would be this catalog that you share with other people.
 
 Note that "exported" data-sources like this do contain the information of the original source they
 were made from in their metadata, so you can recreate the original source, if you want to, and
@@ -67,7 +67,7 @@ read from there.
 Persisting to Remote
 --------------------
 
-If you are typically running your code inside of ethemaral containers, then persisting data-sets may
+If you are typically running your code inside of ephemoral containers, then persisting data-sets may
 be something that you want to do (because the original source is slow, or parsing is CPU/memory intensive),
 but the local storage is not useful. In some cases you may have access to some shared network storage
 mounted on the instance, but in other cases you will want to persist to a remote store.
