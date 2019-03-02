@@ -11,10 +11,10 @@ contains in parentheses:
 * `intake-astro <https://github.com/intake/intake-astro>`_ Table and array loading of FITS astronomical data (``fits_array``, ``fits_table``)
 * `intake-accumulo <https://github.com/intake/intake-accumulo>`_ Apache Accumulo clustered data storage (``accumulo``)
 * `intake-avro <https://github.com/intake/intake-avro>`_: Apache Avro data serialization format (``avro_table``, ``avro_sequence``
-* `intake-cmip <https://github.com/NCAR/intake-cmip>`_:  load `CMIP <https://cmip.llnl.gov/>`_ (Coupled Model Intercomparison Project) data (``cmip5``)
 * `intake-bluesky <https://nsls-ii.github.io/intake-bluesky/>`_: search and retrieve data in the `bluesky <https://nsls-ii.github.io/bluesky>`_ data model
 * `intake-dynamodb <https://github.com/informatics-lab/intake-dynamodb>`_ link to Amazon DynamoDB (``dynamodb``)
 * `intake-elasticsearch <https://github.com/intake/intake-elasticsearch>`_: Elasticsearch search and analytics engine (``elasticsearch_seq``, ``elasticsearch_table``)
+* `intake-esm <https://github.com/NCAR/intake-esm>`_:  Plugin for building and loading intake catalogs for earth system data sets holdings, such as `CMIP <https://cmip.llnl.gov/>`_ (Coupled Model Intercomparison Project) and CESM Large Ensemble datasets.
 * `intake-geopandas <https://github.com/informatics-lab/intake_geopandas>`_: load ESRI Shape Files with geopandas (``shape``)
 * `intake-hbase <https://github.com/intake/intake-hbase>`_: Apache HBase database (``hbase``)
 * `intake-iris <https://github.com/informatics-lab/intake-iris>`_ load netCDF and GRIB files with IRIS (``grib``, ``netcdf``)
