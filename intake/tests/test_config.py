@@ -21,7 +21,7 @@ from intake.util_tests import temp_conf, server
 ])
 def test_load_conf(conf):
     # This test will only work if your config is set to default
-    inconf = config.conf.copy()
+    inconf = config.defaults.copy()
     expected = inconf.copy()
     with temp_conf(conf) as fn:
         config.load_conf(fn)
@@ -38,6 +38,18 @@ def test_basic():
     with temp_conf({}) as fn:
         env = os.environ.copy()
         env['INTAKE_CONF_FILE'] = fn
+        with server(env=env, wait=5000):
+            r = requests.get('http://localhost:5000/v1/info')
+            assert r.ok
+    with temp_conf({}) as fn:
+        env = os.environ.copy()
+        env['INTAKE_CONF'] = os.path.dirname(fn)
+        with server(env=env, wait=5000):
+            r = requests.get('http://localhost:5000/v1/info')
+            assert r.ok
+    with temp_conf({}) as fn:
+        env = os.environ.copy()
+        env['INTAKE_CONF'] = os.path.dirname(fn) + ":/nonexistent"
         with server(env=env, wait=5000):
             r = requests.get('http://localhost:5000/v1/info')
             assert r.ok
@@ -83,3 +95,13 @@ def test_conf_auth():
                                  storage_options={'headers':
                                                   {'intake-secret': 'test'}})
             assert 'entry1' in cat
+
+
+@pytest.mark.skipif(os.name == 'nt', reason="Paths are different on win")
+def test_pathdirs():
+    assert config.intake_path_dirs([]) == []
+    assert config.intake_path_dirs(['paths']) == ['paths']
+    assert config.intake_path_dirs("") == [""]
+    assert config.intake_path_dirs("path1:path2") == ['path1', 'path2']
+    assert config.intake_path_dirs("s3://path1:s3://path2") == [
+        's3://path1', 's3://path2']

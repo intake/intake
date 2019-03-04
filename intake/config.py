@@ -77,27 +77,43 @@ def load_conf(fn=None):
 
 
 def intake_path_dirs(path):
-    """Return a list of directories from the intake path."""
-    separator = ';' if os.name == 'nt' else ':'
-    return path.split(separator)
+    """Return a list of directories from the intake path.
+
+    If a string, perhaps taken from an environment variable, then the
+    list of paths will be split on the character ":" for posix of ";" for
+    windows. Protocol indicators ("protocol://") will be ignored.
+    """
+    if isinstance(path, (list, tuple)):
+        return path
+    import re
+    pattern = re.compile(";" if os.name == 'nt' else r"(?<!:):(?![:/])")
+    return pattern.split(path)
 
 
-reset_conf()
-load_conf(cfile())
+def load_env():
+    """Analyse enviroment variables and update conf accordingly"""
+    # environment variables take precedence over conf file
+    for key, envvar in [['cache_dir', 'INTAKE_CACHE_DIR'],
+                        ['catalog_path', 'INTAKE_PATH'],
+                        ['persist_path', 'INTAKE_PERSIST_PATH']]:
+        if envvar in os.environ:
+            conf[key] = make_path_posix(os.environ[envvar])
+    conf['catalog_path'] = intake_path_dirs(conf['catalog_path'])
+    for key, envvar in [['cache_disabled', 'INTAKE_DISABLE_CACHING'],
+                        ['cache_download_progress', 'INTAKE_CACHE_PROGRESS']]:
+        if envvar in os.environ:
+            conf[key] = os.environ[envvar].lower() in ['true', 't', 'y', 'yes']
+    if 'INTAKE_LOG_LEVEL' in os.environ:
+        conf['logging'] = os.environ['INTAKE_LOG_LEVEL']
 
-# environment variables take precedence over conf file
-for key, envvar in [['cache_dir', 'INTAKE_CACHE_DIR'],
-                    ['catalog_path', 'INTAKE_PATH'],
-                    ['persist_path', 'INTAKE_PERSIST_PATH']]:
-    if envvar in os.environ:
-        conf[key] = make_path_posix(os.environ[envvar])
-for key, envvar in [['cache_disabled', 'INTAKE_DISABLE_CACHING'],
-                   ['cache_download_progress', 'INTAKE_CACHE_PROGRESS']]:
-    if envvar in os.environ:
-        conf[key] = os.environ[envvar].lower() in ['true', 't', 'y', 'yes']
-if 'INTAKE_LOG_LEVEL' in os.environ:
-    conf['logging'] = os.environ['INTAKE_LOG_LEVEL']
 
+def reload_all():
+    reset_conf()
+    load_conf(cfile())
+    load_env()
+
+
+reload_all()
 
 logger.setLevel(conf['logging'])
 ch = logging.StreamHandler()
