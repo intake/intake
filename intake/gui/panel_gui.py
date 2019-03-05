@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 import os
+from collections import OrderedDict
 
 import intake
 import panel as pn
@@ -26,48 +27,24 @@ class DataBrowser(Base):
         self.cat = CatSelector(cats)
 
         self.source_selector = SourceSelector()
-        self.update_sources_from_cats(self.cats)
+        self.source_selector.from_cats(self.cats)
         self.watchers.append(
             self.cat.widget.param.watch(self.cats_to_sources, ['value']))
 
         self.description = Description()
-        self.update_description_from_sources(self.sources)
+        self.description.from_sources(self.sources)
         self.watchers.append(
             self.source_selector.widget.param.watch(self.sources_to_description, ['value']))
-
-    def update_sources_from_cats(self, cats):
-        """
-        When selected cat changes:
-          - remove all sources
-          - replace with ones from selected catalogs
-          - Select first item
-        """
-        self.source_selector.remove(list(self.source_selector.options.values()))
-
-        sources = []
-        for cat in cats:
-            sources.extend(list(cat._entries.values()))
-
-        self.source_selector.add(sources, autoselect=False)
-        if len(sources) > 0:
-            self.source_selector.select([sources[0]])
-
-    def update_description_from_sources(self, sources):
-        if len(sources) > 0:
-            source = sources[0]
-            self.description.source = source
-        else:
-            self.description.source = None
 
     def cats_to_sources(self, *events):
         for event in events:
             if event.name == 'value':
-                self.update_sources_from_cats(event.new)
+                self.source_selector.from_cats(event.new)
 
     def sources_to_description(self, *events):
         for event in events:
             if event.name == 'value':
-                self.update_description_from_sources(event.new)
+                self.description.from_sources(event.new)
 
     @property
     def cats(self):
@@ -85,6 +62,8 @@ class DataBrowser(Base):
         )
 
 class GUI(Base):
+    select_panel = None
+
     def __init__(self):
         self.search = pn.widgets.Button(name='🔍', width=30)
         self.open = pn.widgets.Button(name='+', width=30)
@@ -95,12 +74,9 @@ class GUI(Base):
         self.watchers.append(
             self.remove.param.watch(self.browser.cat.remove_selected, 'clicks'))
 
-        self.setup_selector()
-
         self.control = pn.Column(logo_file, self.search, self.open, self.remove)
         self.panel = pn.Column(
             pn.Row(self.control, *self.browser.panel()),
-            self.select_panel
         )
         self.watchers.append(
             self.open.param.watch(self.open_selector, 'clicks'))
@@ -130,3 +106,9 @@ class GUI(Base):
         if not self.select_panel:
             self.setup_selector()
             self.panel.append(self.select_panel)
+
+    @property
+    def item(self):
+        if len(self.browser.sources) == 0:
+            return None
+        return self.browser.sources[0]
