@@ -13,12 +13,7 @@ class BaseSelector(Base):
     def callback(self, *events):
         print(events)
         for event in events:
-            if event.name == 'options' and event.new != self.options:
-                if len(event.new) < len(self.options):
-                    self.remove(event.new)
-                else:
-                    self.add(event.new)
-            elif event.name == 'value' and event.new != self.selected:
+            if event.name == 'value' and event.new != self.selected:
                 self.select(event.new)
 
     def update_selected(self):
@@ -30,7 +25,7 @@ class BaseSelector(Base):
             self.widget.options = self.options.copy()
 
     def add(self, items, autoselect=True):
-        """Add items to the options and select then new ones"""
+        """Add items to the options and select the new ones"""
         if isinstance(items, OrderedDict):
             options = items
         elif isinstance(items, dict):
@@ -58,8 +53,9 @@ class BaseSelector(Base):
         """Select one item by name"""
         if isinstance(new, str):
             new = [self.options[new]]
-        self.selected = new
-        self.update_selected()
+        if new != self.selected:
+            self.selected = new
+            self.update_selected()
 
     def unselect(self, old=None):
         """Unselect provided items or selected items"""
@@ -84,7 +80,7 @@ class CatSelector(BaseSelector):
         self.widget = pn.widgets.MultiSelect(size=9)
         self.add(cats)
         self.watchers.append(
-            self.widget.param.watch(self.callback, ['options', 'value']))
+            self.widget.param.watch(self.callback, ['value']))
 
     def preprocess(self, cat):
         if isinstance(cat, str):
@@ -94,8 +90,7 @@ class CatSelector(BaseSelector):
     def remove_selected(self, *args):
         """Remove the selected catalog - allow the passing of arbitrary
         args so that buttons work"""
-        old = self.selected
-        self.remove(old)
+        self.remove(self.selected)
 
 
 class SourceSelector(BaseSelector):
@@ -108,4 +103,16 @@ class SourceSelector(BaseSelector):
         if sources is not None:
             self.add(sources)
         self.watchers.append(
-            self.widget.param.watch(self.callback, ['options', 'value']))
+            self.widget.param.watch(self.callback, ['value']))
+
+    def from_cats(self, cats):
+        options = {}
+        for cat in cats:
+            options.update(OrderedDict([(s, cat[s]) for s in cat]))
+        self.options = options
+        self.update_options()
+
+        if list(options.values()):
+            self.select([list(options.values())[0]])
+        else:
+            self.select([])
