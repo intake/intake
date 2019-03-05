@@ -1,4 +1,6 @@
 import panel as pn
+from base import Base
+
 
 def pretty_describe(object, nestedness=0, indent=2):
     """Maintain dict ordering - but make string version prettier"""
@@ -8,10 +10,15 @@ def pretty_describe(object, nestedness=0, indent=2):
     return sep.join((f'{k}: {pretty_describe(v, nestedness + 1)}' for k, v in object.items()))
 
 
-class Description(object):
+class Description(Base):
     def __init__(self, source=None):
         self._source = source
+        self.setup()
+        self.panel = pn.Column(*self.children)
+
+    def setup(self):
         self.pane = pn.pane.Str(self.contents, sizing_mode='stretch_width')
+        self.children = [self.pane]
 
     @property
     def source(self):
@@ -43,6 +50,3 @@ class Description(object):
         except ValueError:
             warning = f'Need additional plugin to use {self.source._driver} driver'
             return pretty_describe(contents) + '\n' + warning
-
-    def panel(self):
-        return pn.Column(self.pane)

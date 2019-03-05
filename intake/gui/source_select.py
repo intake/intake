@@ -6,8 +6,6 @@ import panel as pn
 from .base import Base
 
 class BaseSelector(Base):
-    selected = []
-    options = {}
     preprocess = None
 
     def callback(self, *events):
@@ -73,14 +71,23 @@ class BaseSelector(Base):
 class CatSelector(BaseSelector):
     selected = []
     options = {}
+    children = []
 
     def __init__(self, cats=None):
         if cats is None:
             cats = [intake.cat]
-        self.widget = pn.widgets.MultiSelect(size=9)
-        self.add(cats)
+        self.cats = cats
+        self.setup()
+        self.panel = pn.Column(*self.children)
+
+    def setup(self):
+        self.watchers = []
+        self.widget = pn.widgets.MultiSelect(size=9, width=200)
+        self.add(self.cats)
         self.watchers.append(
             self.widget.param.watch(self.callback, ['value']))
+        self.children = [self.widget]
+
 
     def preprocess(self, cat):
         if isinstance(cat, str):
@@ -97,13 +104,21 @@ class SourceSelector(BaseSelector):
     selected = []
     options = {}
     preprocess = None
+    children = []
 
     def __init__(self, sources=None):
-        self.widget = pn.widgets.MultiSelect(size=9)
-        if sources is not None:
-            self.add(sources)
+        self.sources = sources
+        self.setup()
+        self.panel = pn.Column(*self.children)
+
+    def setup(self):
+        self.watchers = []
+        self.widget = pn.widgets.MultiSelect(size=9, width=200)
+        if self.sources is not None:
+            self.add(self.sources)
         self.watchers.append(
             self.widget.param.watch(self.callback, ['value']))
+        self.children = [self.widget]
 
     def from_cats(self, cats):
         options = {}
