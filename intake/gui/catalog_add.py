@@ -5,7 +5,6 @@ import panel as pn
 
 from .base import Base
 
-
 class FileSelector(Base):
     """
     Panel interface for picking files
@@ -15,6 +14,11 @@ class FileSelector(Base):
     """
     def __init__(self, filters=['yaml', 'yml']):
         self.filters = filters
+        self.setup()
+        self.panel = pn.Column(*self.children, name='Local')
+
+    def setup(self):
+        self.watchers = []
         self.path = os.getcwd() + '/'
         self.main = pn.widgets.MultiSelect(size=15)
 
@@ -27,6 +31,9 @@ class FileSelector(Base):
 
         self.watchers.append(
             self.main.param.watch(self.move_down, ['value']))
+        self.children = [
+            pn.Row(self.up, self.path_pane),
+            self.main]
 
     @property
     def url(self):
@@ -59,13 +66,6 @@ class FileSelector(Base):
                     self.path = self.path + fn
                     self.make_options()
 
-    def panel(self):
-        return pn.Column(
-            pn.Row(self.up, self.path_pane),
-            self.main,
-            name='Local'
-        )
-
 class URLSelector(Base):
     """
     Panel interface for inputting a URL to a remote catalog
@@ -73,35 +73,44 @@ class URLSelector(Base):
     The inputted URL is stored in .url.
     """
     def __init__(self):
+        self.setup()
+        self.panel = pn.Row(*self.children, name='Remote')
+
+    def setup(self):
+        self.watchers = []
         self.label = 'URL:'
         self.widget = pn.widgets.TextInput(
             placeholder="Full URL with protocol",
             width=600)
+        self.children = ['URL:', self.widget]
 
     @property
     def url(self):
         return self.widget.value
-
-    def panel(self):
-        return pn.Row(self.label, self.widget, name='Remote')
 
 
 class CatAdder(Base):
     """Sub-widget for adding new cats from file or remote"""
     cat = None
 
-    def __init__(self):
+    def __init__(self, state='open', done_callback=None):
+        self.panel = pn.Column()
+        self.state = state
+        self.done_callback = done_callback
+
+    def setup(self):
+        self.watchers = []
         self.fs = FileSelector()
         self.url = URLSelector()
-        self.tabs = [self.fs, self.url]
-        self.widget = pn.Tabs(*map(lambda x: x.panel(), self.tabs))
-        self.add = pn.widgets.Button(name='Add Catalog')
+        self.selectors = [self.fs, self.url]
+        self.tabs = pn.Tabs(*map(lambda x: x.panel, self.selectors))
+        self.widget = pn.widgets.Button(name='Add Catalog')
         self.watchers.append(
-            self.add.param.watch(self.add_cat, 'clicks'))
+            self.widget.param.watch(self.add_cat, 'clicks'))
+        self.children = [self.tabs, self.widget]
 
     def add_cat(self, arg=None):
-        self.cat_url = self.tabs[self.widget.active].url
+        self.cat_url = self.selectors[self.tabs.active].url
         self.cat = intake.open_catalog(self.cat_url)
-
-    def panel(self):
-        return pn.Column(self.widget, self.add)
+        if self.done_callback:
+            self.done_callback(self.cat)
