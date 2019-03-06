@@ -15,11 +15,13 @@ from .base import Base
 from .catalog_add import CatAdder
 from .source_select import CatSelector, SourceSelector
 from .source_view import Description
+from .catalog_search import Search
 
 
 here = os.path.abspath(os.path.dirname(__file__))
 logo_file = os.path.join(here, 'logo.png')
 logo = pn.Column(logo_file)
+
 
 class DataBrowser(Base):
     def __init__(self, cats=None):
@@ -65,10 +67,8 @@ class DataBrowser(Base):
         return self.source.selected
 
 
-class GUI(Base):
-
+class GUI(object):
     def __init__(self):
-        self.watchers = []
         self.remove = pn.widgets.Button(name='-', width=30)
         self.search = pn.widgets.RadioButtonGroup(
             options={'🔍': 'open', 'x': 'shut'},
@@ -87,14 +87,16 @@ class GUI(Base):
         self.browser = DataBrowser()
         self.selector = CatAdder(state=self.cat_add.value,
                                  done_callback=self.browser.cat.add)
-        self.searcher = Search(state=self.search.value,
-                               done_callback=self.browser.source.add)
+        self.searcher = Search(cats=self.browser.cats,
+                               state=self.search.value,
+                               done_callback=self.browser.cat.add)
 
-        self.remove.param.watch(self.browser.cat.remove_selected, 'clicks'))
-        self.cat_add.link(self.selector, value='state'))
-        self.search.link(self.searcher, value='state'))
+        self.remove.param.watch(self.browser.cat.remove_selected, 'clicks')
+        self.cat_add.link(self.selector, value='state')
+        self.search.link(self.searcher, value='state')
+        self.browser.cat.widget.link(self.searcher, value='cats')
 
-        self.children = [
+        self.panel = pn.Column(
             pn.Row(
                 pn.Column(
                     logo_file,
@@ -103,10 +105,9 @@ class GUI(Base):
                     self.cat_add,
                     self.plot),
                 self.browser.panel),
-            self.selector.panel,
             self.searcher.panel,
-        ]
-        self.panel = pn.Column(*self.children)
+            self.selector.panel,
+        )
 
     @property
     def item(self):
