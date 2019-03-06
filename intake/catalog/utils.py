@@ -7,7 +7,7 @@
 
 import functools
 import itertools
-from jinja2 import Environment, meta, Template
+from jinja2 import Environment, meta, Undefined
 import os
 import re
 import shlex
@@ -52,21 +52,62 @@ def clamp(value, lower=0, upper=sys.maxsize):
     return max(lower, min(upper, value))
 
 
-def _expand(p, context, all_vars):
+def _j_getenv(x):
+    if isinstance(x, Undefined):
+        x = x._undefined_name
+    return os.getenv(x, '')
+
+
+def _j_getshell(x):
+    if isinstance(x, Undefined):
+        x = x._undefined_name
+    try:
+        return subprocess.check_output(x).decode()
+    except (IOError, OSError):
+        return ""
+
+
+def _j_passthrough(x, funcname):
+    if isinstance(x, Undefined):
+        x = x._undefined_name
+    return "{{%s(%s)}}" % (funcname, x)
+
+
+def _expand(p, context, all_vars, client, getenv, getshell):
     if isinstance(p, dict):
-        return {k: _expand(v, context, all_vars) for k, v in p.items()}
+        return {k: _expand(v, context, all_vars, client, getenv, getshell)
+                for k, v in p.items()}
     elif isinstance(p, (list, tuple, set)):
-        return type(p)(_expand(v, context, all_vars) for v in p)
+        return type(p)(_expand(v, context, all_vars, client, getenv, getshell)
+                       for v in p)
     elif isinstance(p, six.string_types):
-        ast = Environment().parse(p)
+        jinja = Environment()
+        if getenv and not client:
+            jinja.globals['env'] = _j_getenv
+        else:
+            jinja.globals['env'] = lambda x: _j_passthrough(x, funcname='env')
+        if getenv and client:
+            jinja.globals['client_env'] = _j_getenv
+        else:
+            jinja.globals['client_env'] = lambda x: _j_passthrough(x, funcname='client_env')
+        if getshell and not client:
+            jinja.globals['shell'] = _j_getshell
+        else:
+            jinja.globals['shell'] = lambda x: _j_passthrough(x, funcname='shell')
+        if getshell and client:
+            jinja.globals['client_shell'] = _j_getshell
+        else:
+            jinja.globals['client_shell'] = lambda x: _j_passthrough(x, funcname='client_shell')
+        ast = jinja.parse(p)
         all_vars -= meta.find_undeclared_variables(ast)
-        return Template(p).render(context)
+        return jinja.from_string(p).render(context)
     else:
         # no expansion
         return p
 
 
-def expand_templates(pars, context, return_left=False):
+def expand_templates(pars, context, return_left=False, client=False,
+                     getenv=True, getshell=True):
     """
     Render variables in context into the set of parameters with jinja2.
 
@@ -88,7 +129,7 @@ def expand_templates(pars, context, return_left=False):
     return set of unused parameter names.
     """
     all_vars = set(context)
-    out = _expand(pars, context, all_vars)
+    out = _expand(pars, context, all_vars, client, getenv, getshell)
     if return_left:
         return out, all_vars
     return out
@@ -139,11 +180,13 @@ def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True,
     for par in spec_pars:
         val = user_inputs.get(par.name, par.default)
         if val is not None:
-            val = expand_defaults(val, getenv=getenv, getshell=getshell,
-                                  client=client)
+            if isinstance(val, six.string_types):
+                val = expand_defaults(val, getenv=getenv, getshell=getshell,
+                                      client=client)
             context[par.name] = par.validate(val)
     context.update({k: v for k, v in user_inputs.items() if k not in context})
-    out, left = expand_templates(params, context, True)
+    out, left = expand_templates(params, context, True, client, getenv,
+                                 getshell)
     context = {k: v for k, v in context.items() if k in left}
     for par in spec_pars:
         if par.name in context:
@@ -152,8 +195,15 @@ def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True,
             left.remove(par.name)
 
     params.update(out)
+    user_inputs = expand_templates(user_inputs, context, False, client, getenv,
+                                   getshell)
     params.update({k: v for k, v in user_inputs.items() if k in left})
     params.pop('CATALOG_DIR')
+    for k, v in params.copy().items():
+        # final validation/coersion
+        for sp in [p for p in spec_pars if p.name == k]:
+            params[k] = sp.validate(params[k])
+
     return params
 
 

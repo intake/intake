@@ -130,9 +130,10 @@ class UserParameter(DictSerialiseMixin):
 class LocalCatalogEntry(CatalogEntry):
     """A catalog entry on the local system
     """
-    def __init__(self, name, description, driver, direct_access, args, cache,
-                 parameters, metadata, catalog_dir, getenv=True,
-                 getshell=True, catalog=None):
+
+    def __init__(self, name, description, driver, direct_access=True, args={},
+                 cache=[], parameters=[], metadata={}, catalog_dir='',
+                 getenv=True, getshell=True, catalog=None):
         """
 
         Parameters
@@ -222,7 +223,9 @@ class LocalCatalogEntry(CatalogEntry):
                   'CATALOG_DIR': self._catalog_dir}
         params.update(self._open_args)
 
-        open_args = merge_pars(params, user_parameters, self._user_parameters)
+        open_args = merge_pars(params, user_parameters, self._user_parameters,
+                               getshell=self.getshell, getenv=self.getenv,
+                               client=False)
 
         if len(self._plugin) == 0:
             raise ValueError('No plugins loaded for this entry: %s\n'
