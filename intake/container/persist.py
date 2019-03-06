@@ -39,6 +39,7 @@ class PersistStore(YAMLFileCatalog):
     _singleton = [None]
 
     def __new__(cls, *args, **kwargs):
+        # singleton pattern: only one instance will ever exist
         if cls._singleton[0] is None:
             o = object.__new__(cls)
             o._captured_init_args = args

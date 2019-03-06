@@ -115,7 +115,7 @@ class TestServerV1Source(TestServerV1Base):
         self.assertEqual(resp_msg['npartitions'], 2)
         md = resp_msg['metadata']
         md.pop('catalog_dir', None)
-        self.assertEqual(md, dict(foo='bar', bar=[1, 2, 3], cache=[]))
+        self.assertEqual(md, dict(foo='bar', bar=[1, 2, 3]))
 
         self.assertTrue(isinstance(resp_msg['source_id'], str))
 
@@ -130,7 +130,7 @@ class TestServerV1Source(TestServerV1Base):
         self.assertTrue(args['urlpath'].endswith('/entry1_2.csv'))
         md = args['metadata']
         md.pop('catalog_dir', None)
-        self.assertEqual(md, dict(foo='baz', bar=[2, 4, 6], cache=[]))
+        self.assertEqual(md, dict(foo='baz', bar=[2, 4, 6]))
         self.assertEqual(resp_msg['description'], 'entry1 part')
 
     def test_read_part_compressed(self):

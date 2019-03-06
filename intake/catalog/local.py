@@ -21,7 +21,8 @@ from ..source import registry as global_registry
 from ..source import get_plugin_class
 from ..source.discovery import load_plugins_from_module
 from ..utils import make_path_posix
-from .utils import expand_templates, expand_defaults, coerce, COERCION_RULES
+from .utils import (expand_templates, expand_defaults, coerce, COERCION_RULES,
+                    merge_pars)
 from ..utils import yaml_load, DictSerialiseMixin
 
 logger = logging.getLogger('intake')
@@ -51,8 +52,8 @@ class UserParameter(DictSerialiseMixin):
     allowed: list of type
         for validation of user input
     """
-    def __init__(self, name, description, type, default=None, min=None,
-                 max=None, allowed=None):
+    def __init__(self, name, description=None, type=None, default=None,
+                 min=None, max=None, allowed=None):
         self.name = name
         self.description = description
         self.type = type
@@ -91,10 +92,9 @@ class UserParameter(DictSerialiseMixin):
         desc = {
             'name': self.name,
             'description': self.description,
-            'type': self.type,
-            'default': self.default
+            'type': self.type or 'unknown',
         }
-        for attr in ['min', 'max', 'allowed']:
+        for attr in ['min', 'max', 'allowed', 'default']:
             v = getattr(self, attr)
             if v is not None:
                 desc[attr] = v
@@ -104,13 +104,15 @@ class UserParameter(DictSerialiseMixin):
         """Compile env, client_env, shell and client_shell commands
         """
         if not isinstance(self._default, six.string_types):
-            return
-        self.expanded_default = coerce(self.type, expand_defaults(
-            self._default, client, getenv, getshell))
+            self.expanded_default = self._default
+        else:
+            self.expanded_default = coerce(self.type, expand_defaults(
+                self._default, client, getenv, getshell))
 
     def validate(self, value):
         """Does value meet parameter requirements?"""
-        value = coerce(self.type, value)
+        if self.type is not None:
+            value = coerce(self.type, value)
 
         if self.min is not None and value < self.min:
             raise ValueError('%s=%s is less than %s' % (self.name, value,
@@ -210,25 +212,18 @@ class LocalCatalogEntry(CatalogEntry):
         }
 
     def _create_open_args(self, user_parameters):
-        params = {'CATALOG_DIR': self._catalog_dir}
-        for parameter in self._user_parameters:
-            if (parameter.name in user_parameters
-                    and user_parameters[parameter.name] != parameter.default):
-                params[parameter.name] = parameter.validate(
-                    user_parameters[parameter.name])
-            else:
-                parameter.expand_defaults(getenv=self.getenv,
-                                          getshell=self.getshell)
-                params[parameter.name] = parameter.expanded_default
+        plugin = user_parameters.pop('plugin', None)
 
-        self._open_args['cache'] = self._cache
-        open_args = expand_templates(self._open_args, params)
-        self._metadata['cache'] = open_args.pop('cache', [])
         md = self._metadata.copy() if self._metadata is not None else {}
         md['catalog_dir'] = self._catalog_dir
-        open_args['metadata'] = md
+        if user_parameters.pop('cache', None) or self._cache:
+            md['cache'] = user_parameters.pop('cache', None) or self._cache
+        params = {'metadata': md,
+                  'CATALOG_DIR': self._catalog_dir}
+        params.update(self._open_args)
 
-        plugin = user_parameters.get('plugin', None)
+        open_args = merge_pars(params, user_parameters, self._user_parameters)
+
         if len(self._plugin) == 0:
             raise ValueError('No plugins loaded for this entry: %s\n'
                              'A listing of installable plugins can be found ' 
@@ -249,7 +244,6 @@ class LocalCatalogEntry(CatalogEntry):
             except KeyError:
                 raise ValueError('Attempt to select not available plugin %s, '
                                  'perhaps import of plugin failed' % plugin)
-
         return plugin, open_args
 
     def describe_open(self, **user_parameters):

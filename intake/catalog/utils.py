@@ -133,6 +133,30 @@ def expand_defaults(default, client=False, getenv=True, getshell=True):
     return default
 
 
+def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True,
+               getshell=True):
+    context = params.copy()
+    for par in spec_pars:
+        val = user_inputs.get(par.name, par.default)
+        if val is not None:
+            val = expand_defaults(val, getenv=getenv, getshell=getshell,
+                                  client=client)
+            context[par.name] = par.validate(val)
+    context.update({k: v for k, v in user_inputs.items() if k not in context})
+    out, left = expand_templates(params, context, True)
+    context = {k: v for k, v in context.items() if k in left}
+    for par in spec_pars:
+        if par.name in context:
+            # coerces to type
+            context[par.name] = par.validate(context[par.name])
+            left.remove(par.name)
+
+    params.update(out)
+    params.update({k: v for k, v in user_inputs.items() if k in left})
+    params.pop('CATALOG_DIR')
+    return params
+
+
 def coerce_datetime(v=None):
     import pandas
     return pandas.to_datetime(v) if v else pandas.to_datetime(0)
@@ -158,6 +182,8 @@ def coerce(dtype, value):
     type constructor is returned. Otherwise, the type constructor converts
     and returns the value.
     """
+    if dtype is None:
+        return value
     if type(value).__name__ == dtype:
         return value
     op = COERCION_RULES[dtype]
