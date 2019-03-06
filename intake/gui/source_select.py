@@ -7,6 +7,7 @@ from .base import Base
 
 class BaseSelector(Base):
     preprocess = None
+    options = None
 
     def callback(self, *events):
         print(events)
@@ -86,8 +87,9 @@ class CatSelector(BaseSelector):
         self.add(self.cats)
         self.watchers.append(
             self.widget.param.watch(self.callback, ['value']))
-        self.children = [self.widget]
-
+        self.remove_button = pn.widgets.Button(name='Remove Selected Catalog')
+        self.remove_button.param.watch(self.remove_selected, 'clicks')
+        self.children = [self.widget, self.remove_button]
 
     def preprocess(self, cat):
         if isinstance(cat, str):

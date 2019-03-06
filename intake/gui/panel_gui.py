@@ -69,7 +69,6 @@ class DataBrowser(Base):
 
 class GUI(object):
     def __init__(self):
-        self.remove = pn.widgets.Button(name='-', width=30)
         self.search = pn.widgets.RadioButtonGroup(
             options={'🔍': 'open', 'x': 'shut'},
             value='shut',
@@ -91,7 +90,6 @@ class GUI(object):
                                state=self.search.value,
                                done_callback=self.browser.cat.add)
 
-        self.remove.param.watch(self.browser.cat.remove_selected, 'clicks')
         self.cat_add.link(self.selector, value='state')
         self.search.link(self.searcher, value='state')
         self.browser.cat.widget.link(self.searcher, value='cats')
@@ -100,7 +98,6 @@ class GUI(object):
             pn.Row(
                 pn.Column(
                     logo_file,
-                    self.remove,
                     self.search,
                     self.cat_add,
                     self.plot),
