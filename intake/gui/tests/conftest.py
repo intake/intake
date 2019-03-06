@@ -3,15 +3,22 @@ import pytest
 import intake
 
 here = os.path.abspath(os.path.dirname(__file__))
-cat1_url = os.path.join(here, '..', '..', 'catalog', 'tests', 'catalog1.yml')
-cat2_url = os.path.join(here, '..', '..', 'catalog', 'tests', 'catalog_union_2.yml')
 
 @pytest.fixture
-def cat1():
+def cat1_url():
+    return os.path.join(here, '..', '..', 'catalog', 'tests', 'catalog1.yml')
+
+@pytest.fixture
+def cat2_url():
+    return os.path.join(here, '..', '..', 'catalog', 'tests', 'catalog_union_2.yml')
+
+
+@pytest.fixture
+def cat1(cat1_url):
     return intake.open_catalog(cat1_url)
 
 @pytest.fixture
-def cat2():
+def cat2(cat2_url):
     return intake.open_catalog(cat2_url)
 
 @pytest.fixture
@@ -23,7 +30,11 @@ def cat_browser(cat1):
 
 @pytest.fixture
 def sources(cat1):
-    return list(cat1.values())
+    return list(cat1._entries.values())
+
+@pytest.fixture
+def source1(sources):
+    return sources[0]
 
 @pytest.fixture
 def source_browser(sources):
