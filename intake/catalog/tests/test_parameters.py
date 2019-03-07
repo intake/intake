@@ -28,6 +28,7 @@ def test_parameter_default():
 
 
 def test_maybe_par_env():
+    # maybe fill in parameter default from the env, depending on getenv
     up = UserParameter('name', default='env(INTAKE_TEST_VAR)')
     e = LocalCatalogEntry('', '', driver, args={'arg1': "{{name}}"},
                           parameters=[up], getenv=False)
@@ -35,9 +36,12 @@ def test_maybe_par_env():
     assert s.kwargs['arg1'] == 'env(INTAKE_TEST_VAR)'
 
     os.environ['INTAKE_TEST_VAR'] = 'oi'
+    s = e()
+    assert s.kwargs['arg1'] == 'env(INTAKE_TEST_VAR)'
+
     up = UserParameter('name', default='env(INTAKE_TEST_VAR)')
     e = LocalCatalogEntry('', '', driver, args={'arg1': "{{name}}"},
-                          parameters=[up])
+                          parameters=[up], getenv=True)
     s = e()
     assert s.kwargs['arg1'] == 'oi'
 
@@ -47,7 +51,7 @@ def test_maybe_par_env():
     assert s.kwargs['arg1'] == ''
 
 
-def test_up_averride():
+def test_up_override():
     up = UserParameter('name', default='env(INTAKE_TEST_VAR)')
     e = LocalCatalogEntry('', '', driver, args={'arg1': "{{name}}"},
                           parameters=[up], getenv=False)
@@ -87,7 +91,8 @@ def test_validate_up():
     up = UserParameter('name', default=1, type='int')
     e = LocalCatalogEntry('', '', driver, args={'arg1': "{{name}}"},
                           parameters=[up], getenv=False)
-    e()  # OK
+    s = e()  # OK
+    assert s.kwargs['arg1'] == '1'
     with pytest.raises(ValueError):
         e(name='oi')
 
@@ -96,6 +101,8 @@ def test_validate_up():
                           parameters=[up], getenv=False)
     s = e()  # OK
     assert s.kwargs['arg1'] == '0'  # default default for int
+    s = e(arg1='something')
+    assert s.kwargs['arg1'] == 'something'
 
 
 def test_validate_par():
@@ -124,7 +131,7 @@ def test_overrides():
     assert s.kwargs['arg1'] == 'hi'
 
     os.environ['INTAKE_TEST_VAR'] = 'another'
-    e = LocalCatalogEntry('', '', driver, args={'arg1': "oi"})
+    e = LocalCatalogEntry('', '', driver, args={'arg1': "oi"}, getenv=True)
     s = e(arg1='{{env(INTAKE_TEST_VAR)}}')
     assert s.kwargs['arg1'] == 'another'
 

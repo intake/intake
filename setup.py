@@ -37,7 +37,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
     ],
-    python_requires=">=3.5",
+    python_requires=">=2.5",
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
     zip_safe=False,
