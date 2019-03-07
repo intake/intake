@@ -41,6 +41,8 @@ class BaseSelector(Base):
 
     def remove(self, items):
         """Unselect items from options and remove them"""
+        if not isinstance(items, list):
+            items = [items]
         if len(list(filter(lambda x: x.name in self.options, items))) == 0:
             return
         self.unselect(items)
@@ -49,9 +51,11 @@ class BaseSelector(Base):
         self.update_options()
 
     def select(self, new):
-        """Select one item by name"""
+        """Select one item by name or object"""
         if isinstance(new, str):
             new = [self.options[new]]
+        elif hasattr(new, "name") and new in self.options.values():
+            new = [new]
         if new != self.selected:
             self.selected = new
             self.update_selected()
@@ -63,7 +67,7 @@ class BaseSelector(Base):
             self.selected = []
         elif isinstance(old, list):
             self.selected = [s for s in self.selected if s not in old]
-        elif isinstance(old, str):
+        else:
             self.selected = [s for s in self.selected if s != old]
         self.update_selected()
         return old
@@ -87,8 +91,12 @@ class CatSelector(BaseSelector):
         self.add(self.cats)
         self.watchers.append(
             self.widget.param.watch(self.callback, ['value']))
-        self.remove_button = pn.widgets.Button(name='Remove Selected Catalog')
+
+        self.remove_button = pn.widgets.Button(
+            name='Remove Selected Catalog',
+            width=200)
         self.remove_button.param.watch(self.remove_selected, 'clicks')
+
         self.children = [self.widget, self.remove_button]
 
     def preprocess(self, cat):

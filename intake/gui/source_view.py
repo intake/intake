@@ -1,5 +1,5 @@
 import panel as pn
-from base import Base
+from .base import Base
 
 
 def pretty_describe(object, nestedness=0, indent=2):
