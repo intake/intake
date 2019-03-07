@@ -27,7 +27,7 @@ def test_parameter_default():
     assert s.kwargs['arg1'] == 'oi'
 
 
-def test_maybe_par_env():
+def test_maybe_default_from_env():
     # maybe fill in parameter default from the env, depending on getenv
     up = UserParameter('name', default='env(INTAKE_TEST_VAR)')
     e = LocalCatalogEntry('', '', driver, args={'arg1': "{{name}}"},
@@ -51,7 +51,7 @@ def test_maybe_par_env():
     assert s.kwargs['arg1'] == ''
 
 
-def test_up_override():
+def test_up_override_and_render():
     up = UserParameter('name', default='env(INTAKE_TEST_VAR)')
     e = LocalCatalogEntry('', '', driver, args={'arg1': "{{name}}"},
                           parameters=[up], getenv=False)
@@ -59,18 +59,34 @@ def test_up_override():
     assert s.kwargs['arg1'] == 'other'
 
 
-def test_override():
+def test_user_explicit_override():
     up = UserParameter('name', default='env(INTAKE_TEST_VAR)')
     e = LocalCatalogEntry('', '', driver, args={'arg1': "{{name}}"},
                           parameters=[up], getenv=False)
+    # override wins over up
     s = e(arg1='other')
     assert s.kwargs['arg1'] == 'other'
 
 
-def test_auto_env():
+def test_auto_env_expansion():
     os.environ['INTAKE_TEST_VAR'] = 'oi'
     e = LocalCatalogEntry('', '', driver,
                           args={'arg1': "{{env(INTAKE_TEST_VAR)}}"},
+                          parameters=[], getenv=False)
+    s = e()
+
+    # when getenv is False, you pass through the text
+    assert s.kwargs['arg1'] == '{{env(INTAKE_TEST_VAR)}}'
+
+    e = LocalCatalogEntry('', '', driver,
+                          args={'arg1': "{{env(INTAKE_TEST_VAR)}}"},
+                          parameters=[], getenv=True)
+    s = e()
+    assert s.kwargs['arg1'] == 'oi'
+
+    # same, but with quoted environment name
+    e = LocalCatalogEntry('', '', driver,
+                          args={'arg1': '{{env("INTAKE_TEST_VAR")}}'},
                           parameters=[], getenv=True)
     s = e()
     assert s.kwargs['arg1'] == 'oi'
@@ -100,6 +116,7 @@ def test_validate_up():
     e = LocalCatalogEntry('', '', driver, args={'arg1': "{{name}}"},
                           parameters=[up], getenv=False)
     s = e()  # OK
+    # arg1 is a string: real int gets rendered by jinja
     assert s.kwargs['arg1'] == '0'  # default default for int
     s = e(arg1='something')
     assert s.kwargs['arg1'] == 'something'
@@ -121,7 +138,7 @@ def test_validate_par():
     assert s.kwargs['arg1'] == 1  # a number, not str
 
 
-def test_overrides():
+def test_explicit_overrides():
     e = LocalCatalogEntry('', '', driver, args={'arg1': "oi"})
     s = e(arg1='hi')
     assert s.kwargs['arg1'] == 'hi'
@@ -143,3 +160,9 @@ def test_overrides():
 
     s = e(arg1='1')
     assert s.kwargs['arg1'] == 1
+
+
+def test_extra_arg():
+    e = LocalCatalogEntry('', '', driver, args={'arg1': "oi"})
+    s = e(arg2='extra')
+    assert s.kwargs['arg2'] == 'extra'

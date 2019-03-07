@@ -92,6 +92,7 @@ class UserParameter(DictSerialiseMixin):
         desc = {
             'name': self.name,
             'description': self.description,
+            # the Parameter might not have a type at all
             'type': self.type or 'unknown',
         }
         for attr in ['min', 'max', 'allowed', 'default']:

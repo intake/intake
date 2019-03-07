@@ -176,6 +176,56 @@ def expand_defaults(default, client=False, getenv=True, getshell=True):
 
 def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True,
                getshell=True):
+    """Produce open arguments by merging various inputs
+
+    This function is called in the context of a catalog entry, when finalising
+    the arguments for instantiating the corresponding data source.
+
+    The three sets of inputs to be considered are:
+    - the arguments section of the original spec (params)
+    - UserParameters associated with the entry (spec_pars)
+    - explicit arguments provided at instantiation time, like entry(arg=value)
+      (user_inputs)
+
+    Both spec_pars and user_inputs can be considered as template variables and
+    used in expanding string values in params.
+
+    The default value of a spec_par, if given, may have embedded env and shell
+    functions, which will be evaluated before use, if the default is used and
+    the corresponding getenv/getsgell are set. Similarly, string value params
+    will also have access to these functions within jinja template groups,
+    as well as full jinja processing.
+
+    Where a key exists in both the spec_pars and the user_inputs, the
+    user_input wins. Where user_inputs contains keys not seen elsewhere, they
+    are regarded as extra kwargs to pass to the data source.
+
+    Where spec pars have the same name as keys in params, their type, max/min
+    and allowed fields are used to validate the final values of the
+    corresponding arguments.
+
+    Parameters
+    ----------
+    params : dict
+        From the entry's original spec
+    user_inputs : dict
+        Provided by the user/calling function
+    spec_pars : list of UserParameters
+        Default and validation instances
+    client : bool
+        Whether this is all running on a client to a remote server - sets
+        which of the env/shell functions are in operation.
+    getenv : bool
+        Whether to allow pulling environment variables. If False, the
+        template blocks will pass through unevaluated
+    getshell : bool
+        Whether or not to allow executing of shell commands. If False, the
+        template blocks will pass through unevaluated
+
+    Returns
+    -------
+    Final parameter dict
+    """
     context = params.copy()
     for par in spec_pars:
         val = user_inputs.get(par.name, par.default)
