@@ -23,14 +23,14 @@ def cat2(cat2_url):
 @pytest.fixture
 def cat_browser(cat1):
     from ..source_select import CatSelector
-    return CatSelector(cats=cat1)
+    return CatSelector(cats=[cat1])
 
 @pytest.fixture
 def sources1(cat1):
     return list(cat1._entries.values())
 
 @pytest.fixture
-def source2(cat1):
+def sources2(cat1):
     return list(cat1._entries.values())
 
 @pytest.fixture
