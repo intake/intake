@@ -42,14 +42,14 @@ def test_catalog_browser_unselect_cat(cat_browser, cat1):
     assert_widget_matches(cat_browser)
 
 
-def test_catalog_browser_remove_selected_cat(cat_browser):
+def test_catalog_browser_remove_selected_cat(cat_browser, cat1):
     cat_browser.remove_selected()
-    assert cat_browser.options == []
+    assert cat1 not in cat_browser.options
     assert cat_browser.selected == []
     assert_widget_matches(cat_browser)
 
 
-def test_source_browser_from_cats(cat1, cat2):
+def test_source_browser_from_cats(cat1, cat2, sources1):
     from ..source_select import SourceSelector
     source_browser = SourceSelector()
     source_browser.from_cats([cat1, cat2])
@@ -78,12 +78,12 @@ def test_source_browser_add_list(source_browser, sources2):
 def test_source_browser_remove(source_browser, sources1):
     source_browser.remove(sources1[0])
     assert sources1[0].name not in source_browser.options
-    assert source_browser.selected == [sources1[1:]]
+    assert source_browser.selected == sources1[1:]
     assert_widget_matches(source_browser)
 
 def test_source_browser_remove_list(source_browser, sources1):
-    source_browser.add(sources1)
-    assert source_browser.options == []
+    source_browser.remove(sources1)
+    assert source_browser.options == {}
     assert source_browser.selected == []
     assert_widget_matches(source_browser)
 
@@ -98,19 +98,22 @@ def test_source_browser_select_by_name(source_browser, sources1):
     assert_widget_matches(source_browser)
 
 def test_source_browser_unselect(source_browser, sources1):
+    before = source_browser.options
     source_browser.unselect()
     assert source_browser.selected == []
-    assert list(source_browser.options.values()) == sources1
+    assert source_browser.options == before
     assert_widget_matches(source_browser)
 
 def test_source_browser_unselect_object(source_browser, sources1):
+    before = source_browser.options
     source_browser.unselect(sources1[0])
-    assert source_browser.selected == [sources1[1:]]
-    assert list(source_browser.options.values()) == sources1
+    assert source_browser.selected == sources1[1:]
+    assert source_browser.options == before
     assert_widget_matches(source_browser)
 
 def test_source_browser_unselect_list_of_objects(source_browser, sources1):
+    before = source_browser.options
     source_browser.unselect(sources1)
     assert source_browser.selected == []
-    assert list(source_browser.options.values()) == sources1
+    assert source_browser.options == before
     assert_widget_matches(source_browser)
