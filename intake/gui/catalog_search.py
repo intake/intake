@@ -5,9 +5,9 @@ from .base import Base
 
 class Search(Base):
     """Input is a list of catalogs and output is a list of sources"""
-    def __init__(self, cats, state='open', done_callback=None):
+    def __init__(self, cats, visible=True, done_callback=None):
         self.panel = pn.Row()
-        self.state = state
+        self.visible = visible
         self.done_callback = done_callback
         self.cats = cats
 

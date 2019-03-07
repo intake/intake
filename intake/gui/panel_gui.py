@@ -70,28 +70,29 @@ class DataBrowser(Base):
 class GUI(object):
     def __init__(self):
         self.search = pn.widgets.RadioButtonGroup(
-            options={'🔍': 'open', 'x': 'shut'},
-            value='shut',
-            width=50)
+            options={'🔍': True, 'x': False},
+            value=False,
+            width=80)
 
         self.cat_add = pn.widgets.RadioButtonGroup(
-            options={'+': 'open', 'x': 'shut'},
-            value='shut',
-            width=50)
+            options={'＋': True, 'x': False},
+            value=False,
+            width=80)
 
         self.plot = pn.widgets.RadioButtonGroup(
-            options={'📊': 'open', 'x': 'shut'}, width=50,
+            options={'📊': True, 'x': False},
+            width=80,
             disabled=True)
 
         self.browser = DataBrowser()
-        self.selector = CatAdder(state=self.cat_add.value,
+        self.selector = CatAdder(visible=self.cat_add.value,
                                  done_callback=self.browser.cat.add)
         self.searcher = Search(cats=self.browser.cats,
-                               state=self.search.value,
+                               visible=self.search.value,
                                done_callback=self.browser.cat.add)
 
-        self.cat_add.link(self.selector, value='state')
-        self.search.link(self.searcher, value='state')
+        self.cat_add.link(self.selector, value='visible')
+        self.search.link(self.searcher, value='visible')
         self.browser.cat.widget.link(self.searcher, value='cats')
 
         self.panel = pn.Column(

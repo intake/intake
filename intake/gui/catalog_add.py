@@ -93,9 +93,9 @@ class CatAdder(Base):
     """Sub-widget for adding new cats from file or remote"""
     cat = None
 
-    def __init__(self, state='open', done_callback=None):
+    def __init__(self, visible=True, done_callback=None):
         self.panel = pn.Column()
-        self.state = state
+        self.visible = visible
         self.done_callback = done_callback
 
     def setup(self):
