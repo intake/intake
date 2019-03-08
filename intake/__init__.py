@@ -19,7 +19,7 @@ from .catalog import local
 from .catalog.default import load_combo_catalog
 from .source import registry
 from .source.discovery import autodiscover
-from .gui import GUI
+from .gui import InstanceMaker, GUI
 
 # Populate list of autodetected plugins
 registry.update(autodiscover())
@@ -153,4 +153,4 @@ def open_catalog(uri=None, **kwargs):
 
 
 Catalog = open_catalog
-# gui = InstanceMaker(GUI)
+gui = InstanceMaker(GUI)
