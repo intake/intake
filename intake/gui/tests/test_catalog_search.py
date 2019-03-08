@@ -30,8 +30,8 @@ def test_search_widget_click_tries_to_run_callback(search):
         search.widget.clicks = 1
 
 
-def test_search_teardown_watchers_get_cleaned_up(search):
-    search.teardown()
+def test_search_unwatch_watchers_get_cleaned_up(search):
+    search.unwatch()
     assert len(search.watchers) == 0
     search.text.value = 'entry'
 

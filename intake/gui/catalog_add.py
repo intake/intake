@@ -19,25 +19,23 @@ class FileSelector(Base):
     The current path is stored in .path and the current selection is stored in
     .url. Currently does not support windows style paths
     """
-    def __init__(self, filters=['yaml', 'yml']):
+    def __init__(self, filters=['yaml', 'yml'], visible=True):
         self.filters = filters
-        self.setup()
-        self.panel = pn.Column(*self.children, name='Local')
+        self.panel = pn.Column(name='Local')
+        self.visible = visible
+
 
     def setup(self):
-        self.watchers = []
         self.path = os.getcwd() + '/'
         self.main = pn.widgets.MultiSelect(size=15)
 
         self.up = pn.widgets.Button(name='‹', width=30, height=30)
-        self.watchers.append(
-            self.up.param.watch(self.move_up, 'clicks'))
+        self.up.param.watch(self.move_up, 'clicks')
 
         self.path_pane = pn.pane.Markdown(self.path)
         self.make_options()
 
-        self.watchers.append(
-            self.main.param.watch(self.move_down, ['value']))
+        self.main.param.watch(self.move_down, ['value'])
         self.children = [
             pn.Row(self.up, self.path_pane),
             self.main]
@@ -79,9 +77,9 @@ class URLSelector(Base):
 
     The inputted URL is stored in .url.
     """
-    def __init__(self):
-        self.setup()
-        self.panel = pn.Row(*self.children, name='Remote')
+    def __init__(self, visible=True):
+        self.panel = pn.Row(name='Remote')
+        self.visible = visible
 
     def setup(self):
         self.watchers = []
@@ -98,12 +96,11 @@ class URLSelector(Base):
 
 class CatAdder(Base):
     """Sub-widget for adding new cats from file or remote"""
-    cat = None
 
     def __init__(self, visible=True, done_callback=None):
-        self.panel = pn.Column()
-        self.visible = visible
         self.done_callback = done_callback
+        self.panel = pn.Column(name='Add Catalog')
+        self.visible = visible
 
     def setup(self):
         self.watchers = []
@@ -116,8 +113,15 @@ class CatAdder(Base):
             self.widget.param.watch(self.add_cat, 'clicks'))
         self.children = [self.tabs, self.widget]
 
+    @property
+    def cat_url(self):
+        return self.selectors[self.tabs.active].url
+
+    @property
+    def cat(self):
+        # might want to do some validation in here
+        return intake.open_catalog(self.cat_url)
+
     def add_cat(self, arg=None):
-        self.cat_url = self.selectors[self.tabs.active].url
-        self.cat = intake.open_catalog(self.cat_url)
-        if self.done_callback:
+        if self.cat.name is not None:
             self.done_callback(self.cat)

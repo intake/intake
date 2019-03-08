@@ -24,10 +24,11 @@ logo = pn.Column(logo_file)
 
 
 class DataBrowser(Base):
-    def __init__(self, cats=None):
+    def __init__(self, cats=None, visible=True):
         self._cats = cats
-        self.setup()
-        self.panel = pn.Row(*self.children)
+        self.panel = pn.Row(name='Data Browser')
+        self.visible = visible
+
 
     def setup(self):
         self.cat = CatSelector(self._cats)
@@ -55,8 +56,12 @@ class DataBrowser(Base):
         return self.source.selected
 
 
-class GUI(object):
-    def __init__(self):
+class GUI(Base):
+    def __init__(self, visible=True):
+        self.panel = pn.Column(name='GUI')
+        self.visible = visible
+
+    def setup(self):
         self.search = pn.widgets.RadioButtonGroup(
             options={'🔍': True, 'x': False},
             value=False,
@@ -84,7 +89,7 @@ class GUI(object):
         self.browser.cat.watchers.append(
             self.browser.cat.widget.link(self.searcher, value='cats'))
 
-        self.panel = pn.Column(
+        self.children = [
             pn.Row(
                 pn.Column(
                     logo_file,
@@ -94,7 +99,7 @@ class GUI(object):
                 self.browser.panel),
             self.searcher.panel,
             self.selector.panel,
-        )
+        ]
 
     @property
     def item(self):

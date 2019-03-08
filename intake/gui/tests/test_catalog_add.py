@@ -4,5 +4,92 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
+import os
 import pytest
 pn = pytest.importorskip('panel')
+
+def callback(args):
+    """Raises an error if called"""
+    raise ValueError('Callback provided:', args)
+
+@pytest.fixture
+def file_selector():
+    from ..catalog_add import FileSelector
+    return FileSelector()
+
+
+@pytest.fixture
+def url_selector():
+    from ..catalog_add import URLSelector
+    return URLSelector()
+
+@pytest.fixture
+def cat_adder():
+    from ..catalog_add import CatAdder
+    return CatAdder()
+
+
+def test_file_selector(file_selector):
+    assert file_selector.path == os.getcwd() + '/'
+
+
+def test_file_selector_raises_error_if_no_file_selected(file_selector):
+    with pytest.raises(IndexError, match='list index out of range'):
+        file_selector.url
+
+def test_file_selector_move_up(file_selector):
+    assert file_selector.path == os.getcwd() + '/'
+    file_selector.move_up()
+    expected = os.path.abspath('..') + '/'
+    assert file_selector.path == expected
+    assert file_selector.path_pane.object == expected
+
+
+def test_file_selector_move_down(file_selector):
+    expected = os.getcwd() + '/'
+    dirname = expected.split('/')[-2] + '/'
+
+    # move up so that we know we will be able to move down into
+    # intial dir
+    file_selector.move_up()
+
+    # setting the value on main widget will trigger move down
+    file_selector.main.value = [dirname]
+    assert file_selector.path == expected
+    assert file_selector.path_pane.object == expected
+
+    # should empty the selection on main
+    assert file_selector.main.value == []
+
+def test_url_selector(url_selector):
+    assert url_selector.url == ''
+    assert url_selector.visible
+    assert len(url_selector.panel.objects) == 2
+
+def test_url_selector_set_visible_to_false(url_selector):
+    url_selector.visible = False
+    assert url_selector.visible is False
+    assert len(url_selector.panel.objects) == 0
+
+
+def test_cat_adder(cat_adder):
+    assert cat_adder.visible
+    assert len(cat_adder.panel.objects) == 2
+
+    cat_adder.tabs.active = 1
+    assert cat_adder.cat_url == ''
+    assert cat_adder.cat.name is None
+
+    cat_adder.done_callback = callback
+    cat_adder.add_cat()  # does not trigger callback
+
+def test_cat_adder_add_real_cat(cat_adder, cat1_url, cat1):
+    cat_adder.tabs.active = 1
+    cat_adder.url.widget.value = cat1_url
+
+    assert cat_adder.cat_url == cat1_url
+    assert cat_adder.cat == cat1
+
+    cat_adder.done_callback = callback
+    with pytest.raises(ValueError, match=str(cat1)):
+        cat_adder.add_cat()

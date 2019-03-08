@@ -13,6 +13,7 @@ except ImportError:
     class GUI(object):
         def __repr__(self):
             raise RuntimeError("Please install panel to use the GUI")
+
 except Exception as e:
 
     class GUI(object):
