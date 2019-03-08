@@ -23,12 +23,10 @@ class BaseSelector(Base):
                 self.select(event.new)
 
     def update_selected(self):
-        if self.widget.value != self.selected:
-            self.widget.value = self.selected
+        self.widget.value = self.selected
 
     def update_options(self):
-        if self.widget.options != self.options:
-            self.widget.options = self.options.copy()
+        self.widget.options = self.options.copy()
 
     def add(self, items, autoselect=True):
         """Add items to the options and select the new ones"""

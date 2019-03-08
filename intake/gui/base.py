@@ -20,6 +20,13 @@ class Base(object):  # pragma: no cover
         except:
             raise RuntimeError("Panel does not seem to be set up properly")
 
+
+    def _repr_mimebundle_(self, *args, **kwargs):
+        try:
+            return self.panel._repr_mimebundle_(*args, **kwargs)
+        except:
+            raise RuntimeError("Panel does not seem to be set up properly")
+
     def setup(self):
         """This method should set self.children"""
         raise NotImplementedError
