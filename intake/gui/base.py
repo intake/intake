@@ -1,3 +1,10 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 import panel as pn
 
 class Base(object):  # pragma: no cover
@@ -35,3 +42,4 @@ class Base(object):  # pragma: no cover
         if self.widget:
             for watcher in self.watchers:
                 self.widget.param.unwatch(watcher)
+                self.watchers.remove(watcher)

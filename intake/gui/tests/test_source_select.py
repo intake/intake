@@ -1,3 +1,10 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 import intake
 import pytest
 
@@ -49,11 +56,21 @@ def test_catalog_browser_remove_selected_cat(cat_browser, cat1):
     assert_widget_matches(cat_browser)
 
 
-def test_source_browser_from_cats(cat1, cat2, sources1):
+def test_source_browser_init_with_cats(cat1, cat2, sources1, sources2):
+    from ..source_select import SourceSelector
+    source_browser = SourceSelector(cats=[cat1, cat2])
+    assert sources1[0].name in source_browser.options
+    assert sources2[0].name in source_browser.options
+    assert sources1[0] in source_browser.selected
+    assert_widget_matches(source_browser)
+
+
+def test_source_browser_set_cats(cat1, cat2, sources1, sources2):
     from ..source_select import SourceSelector
     source_browser = SourceSelector()
-    source_browser.from_cats([cat1, cat2])
+    source_browser.cats = [cat1, cat2]
     assert sources1[0].name in source_browser.options
+    assert sources2[0].name in source_browser.options
     assert sources1[0] in source_browser.selected
     assert_widget_matches(source_browser)
 
@@ -62,6 +79,7 @@ def test_source_browser(source_browser, sources1):
     assert sources1[0].name in source_browser.options
     assert source_browser.selected == sources1
     assert_widget_matches(source_browser)
+
 
 def test_source_browser_add(source_browser, sources2):
     source_browser.add(sources2[0])

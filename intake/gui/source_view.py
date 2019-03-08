@@ -1,3 +1,10 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 import panel as pn
 from .base import Base
 
@@ -11,10 +18,10 @@ def pretty_describe(object, nestedness=0, indent=2):
 
 
 class Description(Base):
-    def __init__(self, source=None):
+    def __init__(self, source=None, visible=True):
         self._source = source
-        self.setup()
-        self.panel = pn.Column(*self.children)
+        self.panel = pn.Column()
+        self.visible = visible
 
     def setup(self):
         self.pane = pn.pane.Str(self.contents, sizing_mode='stretch_width')
@@ -27,22 +34,18 @@ class Description(Base):
     @source.setter
     def source(self, source):
         """When the source gets updated, update the pane object"""
+        if isinstance(source, list):
+            # if source is a list, get first item or None
+            source = source[0] if len(source) > 0 else None
         if source != self._source:
             self._source = source
             self.pane.object = self.contents
         return self._source
 
-    def from_sources(self, sources):
-        if len(sources) > 0:
-            source = sources[0]
-            self.source = source
-        else:
-            self.source = None
-
     @property
     def contents(self):
         if not self._source:
-            return ' '
+            return ''
         contents = self.source.describe().copy()
         try:
             contents.update(self.source.describe_open())

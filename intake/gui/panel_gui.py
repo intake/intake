@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
+# Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
@@ -32,31 +32,19 @@ class DataBrowser(Base):
     def setup(self):
         self.cat = CatSelector(self._cats)
 
-        self.source = SourceSelector()
-        self.source.from_cats(self.cats)
+        self.source = SourceSelector(cats=self.cats)
         self.cat.watchers.append(
-            self.cat.widget.param.watch(self.cats_to_sources, ['value']))
+            self.cat.widget.link(self.source, value='cats'))
 
-        self.description = Description()
-        self.description.from_sources(self.sources)
+        self.description = Description(source=self.sources)
         self.source.watchers.append(
-            self.source.widget.param.watch(self.sources_to_description, ['value']))
+            self.source.widget.link(self.description, value='source'))
 
         self.children = [
             self.cat.panel,
             self.source.panel,
             self.description.panel,
         ]
-
-    def cats_to_sources(self, *events):
-        for event in events:
-            if event.name == 'value':
-                self.source.from_cats(event.new)
-
-    def sources_to_description(self, *events):
-        for event in events:
-            if event.name == 'value':
-                self.description.from_sources(event.new)
 
     @property
     def cats(self):
@@ -93,7 +81,8 @@ class GUI(object):
 
         self.cat_add.link(self.selector, value='visible')
         self.search.link(self.searcher, value='visible')
-        self.browser.cat.widget.link(self.searcher, value='cats')
+        self.browser.cat.watchers.append(
+            self.browser.cat.widget.link(self.searcher, value='cats'))
 
         self.panel = pn.Column(
             pn.Row(
