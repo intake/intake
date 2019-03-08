@@ -17,7 +17,7 @@ class BaseSelector(Base):
     options = None
 
     def callback(self, *events):
-        print(events)
+        print(self.panel.name, events)
         for event in events:
             if event.name == 'value' and event.new != self.selected:
                 self.select(event.new)
@@ -32,16 +32,11 @@ class BaseSelector(Base):
 
     def add(self, items, autoselect=True):
         """Add items to the options and select the new ones"""
-        if isinstance(items, OrderedDict):
-            options = items
-        elif isinstance(items, dict):
-            options = OrderedDict(items.items())
-        else:
-            if not isinstance(items, list):
-                items = [items]
-            if self.preprocess:
-                items = map(self.preprocess, items)
-            options = OrderedDict(map(lambda x: (x.name, x), items))
+        if not isinstance(items, list):
+            items = [items]
+        if self.preprocess:
+            items = map(self.preprocess, items)
+        options = OrderedDict(map(lambda x: (x.name, x), items))
         self.options.update(options)
         self.update_options()
         self.select(list(options.values()))
@@ -50,8 +45,6 @@ class BaseSelector(Base):
         """Unselect items from options and remove them"""
         if not isinstance(items, list):
             items = [items]
-        if len(list(filter(lambda x: x.name in self.options, items))) == 0:
-            return
         self.unselect(items)
         for item in items:
             self.options.pop(item.name)
@@ -82,18 +75,18 @@ class BaseSelector(Base):
 
 class CatSelector(BaseSelector):
     selected = []
-    options = {}
     children = []
 
     def __init__(self, cats=None, visible=True):
         if cats is None:
             cats = [intake.cat]
         self.cats = cats
-        self.panel = pn.Column()
+        self.panel = pn.Column(name='Select Catalog')
         self.visible = visible
 
     def setup(self):
         self.watchers = []
+        self.options = {}
         self.widget = pn.widgets.MultiSelect(size=9, width=200)
         self.add(self.cats)
         self.watchers.append(
@@ -119,7 +112,6 @@ class CatSelector(BaseSelector):
 
 class SourceSelector(BaseSelector):
     selected = []
-    options = {}
     preprocess = None
     children = []
 
@@ -127,12 +119,13 @@ class SourceSelector(BaseSelector):
         self.sources = sources
         if sources is None and cats is not None:
             self.cats = cats
-        self.panel = pn.Column()
+        self.panel = pn.Column(name='Select Data Source')
         self.visible = visible
 
 
     def setup(self):
         self.watchers = []
+        self.options = {}
         self.widget = pn.widgets.MultiSelect(size=9, width=200)
         if self.sources is not None:
             self.add(self.sources)
@@ -142,7 +135,7 @@ class SourceSelector(BaseSelector):
 
     @property
     def cats(self):
-        return [source._catalog for source in self.options.values()]
+        return set(source._catalog for source in self.options.values())
 
     @cats.setter
     def cats(self, cats):

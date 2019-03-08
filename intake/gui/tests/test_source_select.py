@@ -15,6 +15,12 @@ def assert_widget_matches(browser):
     assert browser.selected == browser.widget.value
 
 
+def test_catalog_browser_init_emtpy():
+    from ..source_select import CatSelector
+    cat_browser = CatSelector()
+    assert cat_browser.selected == [intake.cat]
+    assert_widget_matches(cat_browser)
+
 def test_catalog_browser(cat_browser, cat1):
     assert cat1.name in cat_browser.options
     assert cat_browser.selected == [cat1]
@@ -41,6 +47,14 @@ def test_catalog_browser_add_cat_as_str(cat_browser, cat2, cat2_url):
     assert cat_browser.selected == [cat2]
     assert_widget_matches(cat_browser)
 
+def test_catalog_browser_select_cat_by_widget(cat_browser, cat1):
+    cat_browser.unselect()
+    assert cat_browser.selected == []
+    assert_widget_matches(cat_browser)
+
+    cat_browser.widget.value = [cat1]
+    assert cat_browser.selected == [cat1]
+    assert_widget_matches(cat_browser)
 
 def test_catalog_browser_unselect_cat(cat_browser, cat1):
     cat_browser.unselect()
@@ -54,6 +68,12 @@ def test_catalog_browser_remove_selected_cat(cat_browser, cat1):
     assert cat1 not in cat_browser.options
     assert cat_browser.selected == []
     assert_widget_matches(cat_browser)
+
+
+def test_catalog_browser_remove_cat_that_is_not_in_options(cat_browser, cat2):
+    assert cat2.name not in cat_browser.options
+    with pytest.raises(KeyError, match='catalog_union_2'):
+        cat_browser.remove(cat2)
 
 
 def test_source_browser_init_with_cats(cat1, cat2, sources1, sources2):
@@ -75,7 +95,9 @@ def test_source_browser_set_cats(cat1, cat2, sources1, sources2):
     assert_widget_matches(source_browser)
 
 
-def test_source_browser(source_browser, sources1):
+def test_source_browser(source_browser, cat1, sources1):
+    assert len(source_browser.cats) == 1
+    assert cat1 in source_browser.cats
     assert sources1[0].name in source_browser.options
     assert source_browser.selected == sources1
     assert_widget_matches(source_browser)
@@ -98,6 +120,7 @@ def test_source_browser_remove(source_browser, sources1):
     assert sources1[0].name not in source_browser.options
     assert source_browser.selected == sources1[1:]
     assert_widget_matches(source_browser)
+
 
 def test_source_browser_remove_list(source_browser, sources1):
     source_browser.remove(sources1)

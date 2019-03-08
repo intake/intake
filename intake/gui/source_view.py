@@ -20,7 +20,7 @@ def pretty_describe(object, nestedness=0, indent=2):
 class Description(Base):
     def __init__(self, source=None, visible=True):
         self._source = source
-        self.panel = pn.Column()
+        self.panel = pn.Column(name='Description')
         self.visible = visible
 
     def setup(self):

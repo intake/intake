@@ -13,10 +13,10 @@ from .base import Base
 class Search(Base):
     """Input is a list of catalogs and output is a list of sources"""
     def __init__(self, cats, visible=True, done_callback=None):
-        self.panel = pn.Row()
-        self.visible = visible
-        self.done_callback = done_callback
         self.cats = cats
+        self.done_callback = done_callback
+        self.panel = pn.Row(name='Search')
+        self.visible = visible
 
     def setup(self):
         self.watchers = []

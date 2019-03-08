@@ -15,9 +15,10 @@ class Base(object):  # pragma: no cover
     _visible = True
 
     def __repr__(self):
-        return ("Intake GUI instance: to get widget to display, you must "
-                "install panel. If running from within jupyterlab, "
-                "install the jlab extension.")
+        try:
+            return self.panel.__repr__()
+        except:
+            raise RuntimeError("Panel does not seem to be set up properly")
 
     def setup(self):
         """This method should set self.children"""
@@ -33,11 +34,11 @@ class Base(object):  # pragma: no cover
             self.setup()
             self.panel.extend(self.children)
         elif not visible and len(self.panel.objects) > 0:
-            self.teardown()
+            self.unwatch()
             self.panel.clear()
         self._visible = visible
 
-    def teardown(self):
+    def unwatch(self):
         """This method should get rid of any lingering watchers"""
         if self.widget:
             for watcher in self.watchers:
