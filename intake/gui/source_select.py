@@ -1,3 +1,10 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 from collections import OrderedDict
 
 import intake
@@ -78,12 +85,12 @@ class CatSelector(BaseSelector):
     options = {}
     children = []
 
-    def __init__(self, cats=None):
+    def __init__(self, cats=None, visible=True):
         if cats is None:
             cats = [intake.cat]
         self.cats = cats
-        self.setup()
-        self.panel = pn.Column(*self.children)
+        self.panel = pn.Column()
+        self.visible = visible
 
     def setup(self):
         self.watchers = []
@@ -116,10 +123,13 @@ class SourceSelector(BaseSelector):
     preprocess = None
     children = []
 
-    def __init__(self, sources=None):
+    def __init__(self, sources=None, cats=None, visible=True):
         self.sources = sources
-        self.setup()
-        self.panel = pn.Column(*self.children)
+        if sources is None and cats is not None:
+            self.cats = cats
+        self.panel = pn.Column()
+        self.visible = visible
+
 
     def setup(self):
         self.watchers = []
@@ -130,14 +140,22 @@ class SourceSelector(BaseSelector):
             self.widget.param.watch(self.callback, ['value']))
         self.children = [self.widget]
 
-    def from_cats(self, cats):
+    @property
+    def cats(self):
+        return [source._catalog for source in self.options.values()]
+
+    @cats.setter
+    def cats(self, cats):
+        """Set options from a list of cats"""
         options = {}
         for cat in cats:
             options.update(OrderedDict([(s, cat[s]) for s in cat]))
-        self.options = options
-        self.update_options()
+        self.sources = list(options.values())
+        if self.widget:
+            self.options = options
+            self.update_options()
 
-        if list(options.values()):
-            self.select([list(options.values())[0]])
-        else:
-            self.select([])
+            if list(options.values()):
+                self.select([list(options.values())[0]])
+            else:
+                self.select([])

@@ -1,3 +1,10 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
 import os
 import pytest
 import intake
@@ -37,3 +44,8 @@ def sources2(cat1):
 def source_browser(sources1):
     from ..source_select import SourceSelector
     return SourceSelector(sources=sources1)
+
+@pytest.fixture
+def description(sources1):
+    from ..source_view import Description
+    return Description(source=sources1[0])
