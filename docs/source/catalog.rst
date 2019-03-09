@@ -8,12 +8,14 @@ datasets, called *catalog entries*.  A catalog entry for a dataset includes info
 * Arguments to the ``__init__()`` method of the driver
 * Metadata provided by the catalog author (such as field descriptions and types, or data provenance)
 
-In addition, Intake allows datasets to be *parameterized* in the catalog.  This is most commonly used to allow the
-user to filter down datasets at load time, rather than having to bring everything into memory first.  The data
-parameters are defined by the catalog author, then templated into the arguments for ``__init__()`` to modify the data
-being loaded.  This approach is less flexible for the end user than something like the
-`Blaze expression system <https://blaze.readthedocs.io/en/latest/expr-compute-dev.html>`_, but also significantly
-reduces the implementation burden for driver authors.
+In addition, Intake allows the arguments to data sources to be templated, with the variables explicitly
+expressed as "user parameters". The given arguments are rendered using ``jinja2`` and the named user
+parameters, and validation is also provided for the allowed types and values for both the template
+values and the final arguments passed to the data source. The parameters are named and described, to
+indicate to the user what they are for.
+This kind of structure can be used to, for example,
+choose between two parts of a given data source, like "latest" and "stable".
+
 
 YAML Format
 -----------
@@ -41,7 +43,7 @@ Intake catalogs are typically described with YAML files.  Here is an example:
 
       entry1_part:
         description: entry1 part
-        parameters: # User defined parameters
+        parameters: # User parameters
           part:
             description: part of filename
             type: str
@@ -51,15 +53,6 @@ Intake catalogs are typically described with YAML files.  Here is an example:
         args:
           urlpath: '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'
 
-Templating
-''''''''''
-
-Intake catalog files support Jinja2 templating for driver arguments. Any occurrence of
-a substring like ``{{field}}`` will be replaced by the value of the user parameters with
-that same name. Some additional values are always available:
-
-- ``CATALOG_DIR``: The full path to the directory containing the YAML catalog file.  This is especially useful
-  for constructing paths relative to the catalog directory to locate data files and custom drivers.
 
 Metadata
 ''''''''
@@ -68,6 +61,8 @@ Arbitrary extra descriptive information can go into the metadata section. Some f
 claimed for internal use and some fields may be restricted to local reading; but for now the only
 field that is expected is ``version``, which will be updated when a breaking change is made to the
 file format. Any catalog will have ``.metadata`` and ``.version`` attributes available.
+
+Note that each source also has its own metadata.
 
 Extra drivers
 '''''''''''''
@@ -125,7 +120,7 @@ returned data.  Each data source has several attributes:
 - ``driver``: Name of the Intake :term:`Driver` to use with this source.  Must either already be installed in the current
   Python environment (i.e. with conda or pip) or loaded in the ``plugin`` section of the file.
 
-- ``args``: Keyword arguments to the ``open()`` method of the driver.  Arguments may use template expansion.
+- ``args``: Keyword arguments to the init method of the driver.  Arguments may use template expansion.
 
 - ``metadata``: Any metadata keys that should be attached to the data source when opened.  These will be supplemented
   by additional metadata provided by the driver.  Catalog authors can use whatever key names they would like, with the
@@ -136,11 +131,88 @@ returned data.  Each data source has several attributes:
 
 - ``parameters``: A dictionary of data source parameters.  See below for more details.
 
-Parameters allow the user to customize the data returned by a data source.  Most often, parameters are used to filter
-or reduce the data in specific ways defined by the catalog author.  The parameters defined for a given data source are
-available for use in template strings, which can be used to alter the arguments provided to the driver.  For example,
-a data source might accept a "postal_code" argument which is used to alter a database query, or select a particular
-group within a file.  Users set parameters with keyword arguments to the ``get()`` method on the catalog object.
+
+Templating
+''''''''''
+
+Intake catalog files support Jinja2 templating for driver arguments. Any occurrence of
+a substring like ``{{field}}`` will be replaced by the value of the user parameters with
+that same name, or explicitly provided by the user. For how to specify these user parameters,
+see the next section.
+
+Some additional values are available for templating. The following is always available:
+
+- ``CATALOG_DIR``: The full path to the directory containing the YAML catalog file.  This is especially useful
+  for constructing paths relative to the catalog directory to locate data files and custom drivers.
+
+so that the search for CSV files for the two "entry1" blocks, above, will happen in the same directory as
+where the catalog file was found.
+
+The following functions `may` be available. Since these execute code, the user of a catalog may decide
+whether they trust those functions or not.
+
+- ``env("USER")``: look in the environment for the named variable
+- ``client_env("USER")``: exactly the same, except that when using a client-server topology, the
+  value will come from the environment of the client.
+- ``shell("get_login thisuser -t")``: execute the command, and use the output as the value. The
+  output will be trimmed of any trailing whitespace.
+- ``client_shell("get_login thisuser -t")``: exactly the same, except that when using a client-server
+  topology, the value will come from the system of the client.
+
+The reason for the "client" versions of the functions is to prevent leakage of potentially sensitive
+information between client and server by controlling where lookups happen. When working without a server,
+only the ones without "client" are used.
+
+An example:
+
+.. code-block:: yaml
+
+    sources:
+      personal_source:
+        description: This source needs your username
+        args:
+          url: "http://server:port/user/{{env(USER)}}"
+
+Here, if the user is named "blogs", the ``url`` argument will resolve to
+``"http://server:port/user/blogs"``; if the environment variable is not defined, it will
+resolve to ``"http://server:port/user/"``
+
+.. _paramdefs:
+
+Parameter Definition
+''''''''''''''''''''
+
+A source definition can contain a "parameters" block.
+A parameter may look as follows:
+
+.. code-block:: yaml
+
+    parameters:
+      name:
+        description: human-readable text for what this parameter means
+        type: optional, one of bool, str, int, float, list[str], list[int], list[float], datetime
+        default: optional, value to assume if user does not override
+        allowed: optional, list of values that are OK, for validation
+        min: optional, minimum allowed, for validation
+        max: optional, maximum allowed, for validation
+
+A parameter, not to be confused with an :term:`argument`,
+can have one of two uses:
+
+- to provide values for variables to be used in templating the arguments. *If* the pattern "{{name}}" exists in
+  any of the source arguments, it will be replaced by the value of the parameter. If the user provides
+  a value (e.g., ``source = cat.entry(name='something")``), that will be used, otherwise the default value. If
+  there is no user input or default, the empty value appropriate for type is used. The ``default`` field allows
+  for the same function expansion as listed for arguments, above.
+
+- *If* an argument with the same name as the parameter exists, its value, after any templating, will be
+  coerced to the given type of the parameter and validated against the allowed/max/min. It is therefore possible
+  to use the string templating system (e.g., to get a value from the environment), but pass the final value as,
+  for example, an integer. It makes no sense to provide a default for this case (the argument already has a value),
+  but will no raise an exception.
+
+Note: the ``datetime`` type accepts multiple values:
+Python datetime, ISO8601 string,  Unix timestamp int, "now" and  "today".
 
 Driver Selection
 ''''''''''''''''
@@ -204,57 +276,6 @@ same global arguments will be passed to all of the drivers listed.
           second:
             class: another_package.PluginClass2
         args: {}
-
-.. _paramdefs:
-
-Parameter Definition
-''''''''''''''''''''
-
-To enable users to discover parameters on data sources, and to allow UIs to generate interfaces automatically,
-parameters have the following attributes in the catalog.
-
-- ``description``: Human-readable Markdown description of what the parameter means.
-- ``type``: The type of the parameter.  Currently, this may be ``bool``, ``str``, ``int``, ``float``, ``list[str]``,
-  ``list[int]``, ``list[float]``, ``datetime``.
-
-- ``default``: The default value for this parameter.  Every parameter must have a default to ensure a catalog user can
-  quickly see some sample data.
-
-- ``allowed`` (optional): A list of allowed values for this parameter
-- ``min`` (optional): Minimum value (inclusive) for the parameter
-- ``max`` (optional): Maximum value (inclusive) for the parameter
-
-Note both ``allowed`` and ``min``/``max`` should not be set for the same parameter.
-
-Also the ``datetime`` type accepts multiple values:
-
-* a Python datetime object
-* an ISO8601 timestamp string
-* an integer representing a Unix timestamp
-* ``now``, a string representing the current timestamp
-* ``today``, a string representing today at midnight UTC
-
-The ``default`` field allows for special syntax to get information from the system. This is
-particularly useful for user credentials, which may be defined by environment variables or
-fetched by running some external command. The special syntax are:
-
-- ``env(USER)``: look in the environment for the named variable; in the example, this will
-  be the username.
-- ``client_env(USER)``: exactly the same, except that when using a client-server topology, the
-  value will come from the environment of the client.
-- ``shell(get_login thisuser -t)``: execute the command, and use the output as the value. The
-  output will be trimmed of any trailing whitespace.
-- ``client_shell(get_login thisuser -t)``: exactly the same, except that when using a client-server
-  topology, the value will come from the system of the client.
-
-Since it may not be desirable to have the access of
-a catalog get information from the system, the keywords ``getenv`` and ``getshell`` (passed to
-``Catalog``) allow these
-mechanisms to by turned off, in which case the value of the default will still appear as the
-original template string (and so the user should override with a value they have obtained
-elsewhere). Note that in the case of a remote catalog, the client cannot see the values that
-will be evaluated on the server side, the evaluation only happens if the user did not override
-the value when accessing the data.
 
 .. _caching:
 

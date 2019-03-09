@@ -166,3 +166,16 @@ def test_extra_arg():
     e = LocalCatalogEntry('', '', driver, args={'arg1': "oi"})
     s = e(arg2='extra')
     assert s.kwargs['arg2'] == 'extra'
+
+
+def test_unknown():
+    e = LocalCatalogEntry('', '', driver, args={'arg1': "{{name}}"})
+    s = e()
+    assert s.kwargs['arg1'] == ""
+
+    # parameter has no default
+    up = UserParameter('name')
+    e = LocalCatalogEntry('', '', driver, args={'arg1': "{{name}}"},
+                          parameters=[up])
+    s = e()
+    assert s.kwargs['arg1'] == ""

@@ -3,6 +3,11 @@ Glossary
 
 .. glossary::
 
+    Argument
+        One of a set of values passed to a function or class. In the Intake sense, this usually is the
+        set of key-value pairs defined in the "args" section of a source definition; unless the user
+        overrides, these will be used for instantiating the source.
+
     Cache
         Local copies of remote files. Intake allows for download-on-first-use for data-sources,
         so that subsequent access is much faster, see :ref:`caching`. The
@@ -102,6 +107,11 @@ Glossary
 
     TTL
         Time-to-live, how long before the give entity is considered to have expired. Usually in seconds.
+
+    User Parameter
+        A data source definition can contain a "parameters" section, which can act as explicit decision indicators
+        for the user, or as validation and type coersion for the definition's :term:`Argument` s. See
+        :ref:`paramdefs`.
 
     YAML
         A text-based format for expressing data with a dictionary (key-value) and list structure, with a limited
