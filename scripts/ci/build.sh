@@ -14,5 +14,5 @@ else
     conda install -y --use-local intake
 
     echo "Running unit tests."
-    py.test
+    py.test --cov=intake
 fi
