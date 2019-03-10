@@ -13,6 +13,7 @@ import json
 import logging
 import os
 import posixpath
+import re
 import shutil
 import warnings
 
@@ -63,7 +64,7 @@ class BaseCache(object):
         ----------
         driver: str
             Name of the plugin that can load catalog entry
-        spec: list
+        spec: dict
             Specification for caching the data source.
         cache_dir: str or None
             Explicit location of cache root directory
@@ -420,7 +421,8 @@ class CompressedCache(BaseCache):
             if d not in decomp:
                 raise ValueError('Unknown compression for "%s"' % f)
             out2 = decomp[d](f, subdir)
-            for fn in out2:
+            out3 = filter(re.compile(self._spec.get('regex_filter', '.*')).search, out2)
+            for fn in out3:
                 logger.debug("Caching file: {}".format(f))
                 logger.debug("Original path: {}".format(orig.path))
                 logger.debug("Cached at: {}".format(fn))

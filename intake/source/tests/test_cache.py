@@ -129,6 +129,24 @@ def test_compressed_cache(temp_cache):
         intake.config.conf['cache_download_progress'] = old
 
 
+def test_filtered_compressed_cache(temp_cache):
+    cat = intake.open_catalog(os.path.join(here, 'cached.yaml'))
+    s = cat.calvert_filter()
+    old, intake.config.conf['cache_download_progress'] = intake.config.conf['cache_download_progress'], False
+    try:
+        df = s.read()
+        assert len(df)
+        md = CacheMetadata()
+        assert len(md[s._urlpath]) == 1  # we gained exactly one CSV
+        intake.config.conf['cache_download_progress'] = False
+        df = s.read()
+        assert len(df)
+        md = CacheMetadata()
+        assert len(md[s._urlpath]) == 1  # we still have exactly one CSV
+    finally:
+        intake.config.conf['cache_download_progress'] = old
+
+
 def test_cache_to_cat(tempdir):
     old = intake.config.conf.copy()
     olddir = intake.config.confdir
