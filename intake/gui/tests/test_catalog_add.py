@@ -37,12 +37,34 @@ def test_file_selector_raises_error_if_no_file_selected(file_selector):
     with pytest.raises(IndexError, match='list index out of range'):
         file_selector.url
 
+
+def test_file_selector_edit_path(file_selector):
+    expected = os.getcwd() + '/'
+    file_selector.move_up()
+    file_selector.path_text.value = os.getcwd()
+    assert 'check' in file_selector.validator.object
+    assert file_selector.path == expected
+
+
+def test_file_selector_edit_path_bad_value(file_selector):
+    with pytest.raises(FileNotFoundError, match='No such file or directory'):
+        file_selector.path_text.value = 'blah/foo/blah'
+        assert 'error' in file_selector.validator.object
+
+
+def test_file_selector_go_home(file_selector):
+    expected = os.getcwd() + '/'
+    assert file_selector.path == expected
+    file_selector.move_up()
+    file_selector.go_home()
+    assert file_selector.path == expected
+
+
 def test_file_selector_move_up(file_selector):
     assert file_selector.path == os.getcwd() + '/'
     file_selector.move_up()
     expected = os.path.abspath('..') + '/'
     assert file_selector.path == expected
-    assert file_selector.path_pane.object == expected
 
 
 def test_file_selector_move_down(file_selector):
@@ -56,7 +78,6 @@ def test_file_selector_move_down(file_selector):
     # setting the value on main widget will trigger move down
     file_selector.main.value = [dirname]
     assert file_selector.path == expected
-    assert file_selector.path_pane.object == expected
 
     # should empty the selection on main
     assert file_selector.main.value == []

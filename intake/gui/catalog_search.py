@@ -36,7 +36,7 @@ class Search(Base):
 
     def do_search(self, arg=None):
         search_text = self.text.value
-        depth = int(self.depth.value) if len(self.depth.value) != "All" else 99
+        depth = int(self.depth.value) if self.depth.value != "All" else 99
 
         new_cats = []
         for cat in self.cats:
