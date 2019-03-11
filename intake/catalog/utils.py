@@ -7,7 +7,7 @@
 
 import functools
 import itertools
-from jinja2 import Environment, meta, Template
+from jinja2 import Environment, meta, Undefined
 import os
 import re
 import shlex
@@ -52,21 +52,62 @@ def clamp(value, lower=0, upper=sys.maxsize):
     return max(lower, min(upper, value))
 
 
-def _expand(p, context, all_vars):
+def _j_getenv(x):
+    if isinstance(x, Undefined):
+        x = x._undefined_name
+    return os.getenv(x, '')
+
+
+def _j_getshell(x):
+    if isinstance(x, Undefined):
+        x = x._undefined_name
+    try:
+        return subprocess.check_output(x).decode()
+    except (IOError, OSError):
+        return ""
+
+
+def _j_passthrough(x, funcname):
+    if isinstance(x, Undefined):
+        x = x._undefined_name
+    return "{{%s(%s)}}" % (funcname, x)
+
+
+def _expand(p, context, all_vars, client, getenv, getshell):
     if isinstance(p, dict):
-        return {k: _expand(v, context, all_vars) for k, v in p.items()}
+        return {k: _expand(v, context, all_vars, client, getenv, getshell)
+                for k, v in p.items()}
     elif isinstance(p, (list, tuple, set)):
-        return type(p)(_expand(v, context, all_vars) for v in p)
+        return type(p)(_expand(v, context, all_vars, client, getenv, getshell)
+                       for v in p)
     elif isinstance(p, six.string_types):
-        ast = Environment().parse(p)
+        jinja = Environment()
+        if getenv and not client:
+            jinja.globals['env'] = _j_getenv
+        else:
+            jinja.globals['env'] = lambda x: _j_passthrough(x, funcname='env')
+        if getenv and client:
+            jinja.globals['client_env'] = _j_getenv
+        else:
+            jinja.globals['client_env'] = lambda x: _j_passthrough(x, funcname='client_env')
+        if getshell and not client:
+            jinja.globals['shell'] = _j_getshell
+        else:
+            jinja.globals['shell'] = lambda x: _j_passthrough(x, funcname='shell')
+        if getshell and client:
+            jinja.globals['client_shell'] = _j_getshell
+        else:
+            jinja.globals['client_shell'] = lambda x: _j_passthrough(x, funcname='client_shell')
+        ast = jinja.parse(p)
         all_vars -= meta.find_undeclared_variables(ast)
-        return Template(p).render(context)
+        return jinja.from_string(p).render(context)
     else:
         # no expansion
         return p
 
 
-def expand_templates(pars, context, return_left=False):
+def expand_templates(pars, context, return_left=False, client=False,
+                     getenv=True, getshell=True):
     """
     Render variables in context into the set of parameters with jinja2.
 
@@ -88,7 +129,7 @@ def expand_templates(pars, context, return_left=False):
     return set of unused parameter names.
     """
     all_vars = set(context)
-    out = _expand(pars, context, all_vars)
+    out = _expand(pars, context, all_vars, client, getenv, getshell)
     if return_left:
         return out, all_vars
     return out
@@ -133,6 +174,89 @@ def expand_defaults(default, client=False, getenv=True, getshell=True):
     return default
 
 
+def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True,
+               getshell=True):
+    """Produce open arguments by merging various inputs
+
+    This function is called in the context of a catalog entry, when finalising
+    the arguments for instantiating the corresponding data source.
+
+    The three sets of inputs to be considered are:
+    - the arguments section of the original spec (params)
+    - UserParameters associated with the entry (spec_pars)
+    - explicit arguments provided at instantiation time, like entry(arg=value)
+      (user_inputs)
+
+    Both spec_pars and user_inputs can be considered as template variables and
+    used in expanding string values in params.
+
+    The default value of a spec_par, if given, may have embedded env and shell
+    functions, which will be evaluated before use, if the default is used and
+    the corresponding getenv/getsgell are set. Similarly, string value params
+    will also have access to these functions within jinja template groups,
+    as well as full jinja processing.
+
+    Where a key exists in both the spec_pars and the user_inputs, the
+    user_input wins. Where user_inputs contains keys not seen elsewhere, they
+    are regarded as extra kwargs to pass to the data source.
+
+    Where spec pars have the same name as keys in params, their type, max/min
+    and allowed fields are used to validate the final values of the
+    corresponding arguments.
+
+    Parameters
+    ----------
+    params : dict
+        From the entry's original spec
+    user_inputs : dict
+        Provided by the user/calling function
+    spec_pars : list of UserParameters
+        Default and validation instances
+    client : bool
+        Whether this is all running on a client to a remote server - sets
+        which of the env/shell functions are in operation.
+    getenv : bool
+        Whether to allow pulling environment variables. If False, the
+        template blocks will pass through unevaluated
+    getshell : bool
+        Whether or not to allow executing of shell commands. If False, the
+        template blocks will pass through unevaluated
+
+    Returns
+    -------
+    Final parameter dict
+    """
+    context = params.copy()
+    for par in spec_pars:
+        val = user_inputs.get(par.name, par.default)
+        if val is not None:
+            if isinstance(val, six.string_types):
+                val = expand_defaults(val, getenv=getenv, getshell=getshell,
+                                      client=client)
+            context[par.name] = par.validate(val)
+    context.update({k: v for k, v in user_inputs.items() if k not in context})
+    out, left = expand_templates(params, context, True, client, getenv,
+                                 getshell)
+    context = {k: v for k, v in context.items() if k in left}
+    for par in spec_pars:
+        if par.name in context:
+            # coerces to type
+            context[par.name] = par.validate(context[par.name])
+            left.remove(par.name)
+
+    params.update(out)
+    user_inputs = expand_templates(user_inputs, context, False, client, getenv,
+                                   getshell)
+    params.update({k: v for k, v in user_inputs.items() if k in left})
+    params.pop('CATALOG_DIR')
+    for k, v in params.copy().items():
+        # final validation/coersion
+        for sp in [p for p in spec_pars if p.name == k]:
+            params[k] = sp.validate(params[k])
+
+    return params
+
+
 def coerce_datetime(v=None):
     import pandas
     return pandas.to_datetime(v) if v else pandas.to_datetime(0)
@@ -158,6 +282,8 @@ def coerce(dtype, value):
     type constructor is returned. Otherwise, the type constructor converts
     and returns the value.
     """
+    if dtype is None:
+        return value
     if type(value).__name__ == dtype:
         return value
     op = COERCION_RULES[dtype]

@@ -128,7 +128,7 @@ def test_read(intake_server):
 
     md = d.metadata.copy()
     md.pop('catalog_dir', None)
-    assert md == dict(foo='bar', bar=[1, 2, 3], cache=[])
+    assert md == dict(foo='bar', bar=[1, 2, 3])
 
     df = d.read()
 
@@ -153,11 +153,11 @@ def test_read_direct(intake_server):
     assert info['shape'] == (None, 3)  # Do not know CSV size ahead of time
     md = info['metadata'].copy()
     md.pop('catalog_dir', None)
-    assert md == {'bar': [2, 4, 6], 'foo': 'baz', 'cache': []}
+    assert md == {'bar': [2, 4, 6], 'foo': 'baz'}
 
     md = d.metadata.copy()
     md.pop('catalog_dir', None)
-    assert md == dict(foo='baz', bar=[2, 4, 6], cache=[])
+    assert md == dict(foo='baz', bar=[2, 4, 6])
     assert d.description == 'entry1 part'
     df = d.read()
 

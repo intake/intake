@@ -146,6 +146,22 @@ and not having to use boilerplate code in each notebook/script that makes use of
 reference one-another, be stored remotely, and include extra metadata such as a set of named quick-look plots that
 are appropriate for the particular data source.
 
+Many catalog entries will also contain "user_parameter" blocks, which are indications of options explicitly
+allowed by the catalog author, or for validation or the values passed. The user can customise how a data
+source is accessed by providing values for the user_parameters, overriding the arguments specified in
+the entry, or passing extra keyword arguments to be passed to the driver. The keywords that should
+be passed are limited to the user_parameters defined and the inputs expected by the specific
+driver - such usage is expected only from those already familiar with the specifics of the given
+format. In the following example, the user overrides the "csv_kwargs" keyword, which is described
+in the documentation for :func:`CSVSource`_ and gets passed down to the CSV reader::
+
+    # pass extra kwargs understood by the csv driver
+    >>> intake.cat.states(csv_kwargs={'header': None, 'skiprows': 1}).read().head()
+               0           1   ...                                17
+    0     Alabama     alabama  ...    https://twitter.com/alabamagov
+    1      Alaska      alaska  ...        https://twitter.com/alaska
+
+
 Note that, if you are *creating* such catalogs, you may well start by trying the ``open_csv`` command,
 above, and then use ``print(ds.yaml())``. If you do this now, you will see that the output is very
 similar to the catalog file we have provided.

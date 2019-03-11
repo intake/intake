@@ -436,7 +436,7 @@ class RemoteCatalog(Catalog):
         # Include (cached) tab-completable entries and normal attributes.
         return (
             [key for key in self._ipython_key_completions_() if
-             re.match("[_A-Za-z][_a-zA-Z0-9]*$", key)  # valid Python identifer
+             re.match("[_A-Za-z][_a-zA-Z0-9]*$", key)  # valid Python identifier
              and not keyword.iskeyword(key)]  # not a Python keyword
             + list(self.__dict__.keys()))
 

@@ -60,7 +60,7 @@ def test_local_catalog(catalog1):
     assert catalog1['entry1'].get().container == 'dataframe'
     md = catalog1['entry1'].get().metadata
     md.pop('catalog_dir')
-    assert md == dict(foo='bar', bar=[1, 2, 3], cache=[])
+    assert md == dict(foo='bar', bar=[1, 2, 3])
 
     # Use default parameters
     assert catalog1['entry1_part'].get().container == 'dataframe'
@@ -290,16 +290,16 @@ def test_union_catalog():
     desc_open['args']['metadata'].pop('catalog_dir')
     assert 'csv' in str(desc_open.pop('plugin'))
     assert desc_open == {
-        'args': {'metadata': {'bar': [2, 4, 6], 'cache': [], 'foo': 'baz'}},
+        'args': {'metadata': {'bar': [2, 4, 6], 'foo': 'baz'}},
         'description': 'entry1 part',
         'direct_access': 'allow',
-        'metadata': {'bar': [2, 4, 6], 'cache': [], 'foo': 'baz'},
+        'metadata': {'bar': [2, 4, 6], 'foo': 'baz'},
     }
 
     # Implied creation of data source
     assert union_cat.entry1.container == 'dataframe'
     md = union_cat.entry1._metadata
-    assert md == dict(foo='bar', bar=[1, 2, 3], cache=[])
+    assert md == dict(foo='bar', bar=[1, 2, 3])
 
     # Use default parameters in explict creation of data source
     assert union_cat.entry1_part().container == 'dataframe'
