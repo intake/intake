@@ -2,3 +2,4 @@ intake-parquet
 zarr
 notebook
 ipywidgets
+panel
