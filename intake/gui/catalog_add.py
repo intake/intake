@@ -12,6 +12,12 @@ import panel as pn
 
 from .base import Base
 
+here = os.path.abspath(os.path.dirname(__file__))
+ICONS = {
+    'check': os.path.join(here, 'icons', 'baseline-check-24px.svg'),
+    'error': os.path.join(here, 'icons', 'baseline-error-24px.svg'),
+}
+
 class FileSelector(Base):
     """
     Panel interface for picking files
@@ -26,32 +32,50 @@ class FileSelector(Base):
 
 
     def setup(self):
-        self.path = os.getcwd() + '/'
-        self.main = pn.widgets.MultiSelect(size=15)
+        self.path_text = pn.widgets.TextInput(value=os.getcwd() + '/')
+        self.validator = pn.pane.SVG(ICONS['check'])
+        self.path_text.param.watch(self.validate, ['value'])
 
+        self.main = pn.widgets.MultiSelect(size=15)
+        self.path_text.param.watch(self.make_options, ['value'])
+
+        self.home = pn.widgets.Button(name='🏠', width=40, height=30)
+        self.home.param.watch(self.go_home, 'clicks')
         self.up = pn.widgets.Button(name='‹', width=30, height=30)
         self.up.param.watch(self.move_up, 'clicks')
 
-        self.path_pane = pn.pane.Markdown(self.path)
         self.make_options()
-
         self.main.param.watch(self.move_down, ['value'])
+
         self.children = [
-            pn.Row(self.up, self.path_pane),
-            self.main]
+            pn.Row(self.home, self.up, self.path_text, self.validator),
+            self.main
+        ]
+
+    @property
+    def path(self):
+        return self.path_text.value
 
     @property
     def url(self):
         return os.path.join(self.path, self.main.value[0])
 
     def move_up(self, arg=None):
-        self.path = os.path.dirname(self.path.rstrip('/')).rstrip('/') + '/'
-        self.make_options()
+        self.path_text.value = os.path.dirname(self.path.rstrip('/')).rstrip('/') + '/'
 
-    def make_options(self):
-        self.path_pane.object = self.path
+    def go_home(self, arg=None):
+        self.path_text.value = os.getcwd() + '/'
+
+    def validate(self, arg=None):
+        if not self.path_text.value.endswith('/'):
+            self.path_text.value += '/'
+        if os.path.isdir(self.path_text.value):
+            self.validator.object = ICONS['check']
+        else:
+            self.validator.object = ICONS['error']
+
+    def make_options(self, arg=None):
         out = []
-
         for f in sorted(os.listdir(self.path)):
             if f.startswith('.'):
                 continue
@@ -68,7 +92,7 @@ class FileSelector(Base):
             if event.name == 'value' and len(event.new) > 0:
                 fn = event.new[0]
                 if fn.endswith('/'):
-                    self.path = self.path + fn
+                    self.path_text.value = self.path + fn
                     self.make_options()
 
 class URLSelector(Base):
