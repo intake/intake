@@ -25,11 +25,12 @@ class FileSelector(Base):
     The current path is stored in .path and the current selection is stored in
     .url. Currently does not support windows style paths
     """
-    def __init__(self, filters=['yaml', 'yml'], visible=True):
+    def __init__(self, allow_next,
+                 filters=['yaml', 'yml'], visible=True):
         self.filters = filters
+        self.allow_next = allow_next
         self.panel = pn.Column(name='Local')
         self.visible = visible
-
 
     def setup(self):
         self.path_text = pn.widgets.TextInput(value=os.getcwd() + '/')
@@ -54,32 +55,41 @@ class FileSelector(Base):
 
     @property
     def path(self):
-        return self.path_text.value
+        path = self.path_text.value
+        return path if path.endswith('/') else path + '/'
 
     @property
     def url(self):
         return os.path.join(self.path, self.main.value[0])
 
     def move_up(self, arg=None):
-        self.path_text.value = os.path.dirname(self.path.rstrip('/')).rstrip('/') + '/'
+        self.path_text.value = os.path.dirname(self.path.rstrip('/')) + '/'
 
     def go_home(self, arg=None):
         self.path_text.value = os.getcwd() + '/'
 
+    @property
+    def is_valid(self):
+        return os.path.isdir(self.path)
+
     def validate(self, arg=None):
-        if not self.path_text.value.endswith('/'):
-            self.path_text.value += '/'
-        if os.path.isdir(self.path_text.value):
+        if self.is_valid:
             self.validator.object = ICONS['check']
         else:
             self.validator.object = ICONS['error']
 
     def make_options(self, arg=None):
+        self.allow_next(False)
+        if not self.is_valid:
+            self.main.value = []
+            self.main.options = {}
+            return
+
         out = []
         for f in sorted(os.listdir(self.path)):
             if f.startswith('.'):
                 continue
-            elif os.path.isdir(self.path + f):
+            elif os.path.isdir(os.path.join(self.path, f)):
                 out.append(f + '/')
             elif any(f.endswith(ext) for ext in self.filters):
                 out.append(f)
@@ -94,6 +104,8 @@ class FileSelector(Base):
                 if fn.endswith('/'):
                     self.path_text.value = self.path + fn
                     self.make_options()
+                elif os.path.isfile(self.url):
+                    self.allow_next(True)
 
 class URLSelector(Base):
     """
@@ -101,7 +113,8 @@ class URLSelector(Base):
 
     The inputted URL is stored in .url.
     """
-    def __init__(self, visible=True):
+    def __init__(self, allow_next, visible=True):
+        self.allow_next = allow_next
         self.panel = pn.Row(name='Remote')
         self.visible = visible
 
@@ -112,6 +125,7 @@ class URLSelector(Base):
             placeholder="Full URL with protocol",
             width=600)
         self.children = ['URL:', self.widget]
+        self.widget.param.watch(self.allow_next, ['value'])
 
     @property
     def url(self):
@@ -128,14 +142,19 @@ class CatAdder(Base):
 
     def setup(self):
         self.watchers = []
-        self.fs = FileSelector()
-        self.url = URLSelector()
+        self.fs = FileSelector(allow_next=self.enable_widget)
+        self.url = URLSelector(allow_next=self.enable_widget)
         self.selectors = [self.fs, self.url]
         self.tabs = pn.Tabs(*map(lambda x: x.panel, self.selectors))
-        self.widget = pn.widgets.Button(name='Add Catalog')
+        self.widget = pn.widgets.Button(name='Add Catalog',
+                                        disabled=True, max_width=300)
         self.watchers.append(
             self.widget.param.watch(self.add_cat, 'clicks'))
         self.children = [self.tabs, self.widget]
+
+    def enable_widget(self, value=True):
+        if self.widget:
+            self.widget.disabled = not value
 
     @property
     def cat_url(self):

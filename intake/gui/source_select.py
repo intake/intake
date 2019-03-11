@@ -15,12 +15,15 @@ from .base import Base
 class BaseSelector(Base):
     preprocess = None
     options = None
+    allow_next = None
 
     def callback(self, *events):
         print(self.panel.name, events)
         for event in events:
             if event.name == 'value' and event.new != self.selected:
                 self.select(event.new)
+            if self.allow_next is not None:
+                self.allow_next(self.selected)
 
     def update_selected(self):
         self.widget.value = self.selected
@@ -96,6 +99,9 @@ class CatSelector(BaseSelector):
         self.remove_button.param.watch(self.remove_selected, 'clicks')
 
         self.children = [self.widget, self.remove_button]
+
+    def allow_next(self, allow):
+        self.remove_button.disabled = not allow
 
     def preprocess(self, cat):
         if isinstance(cat, str):
