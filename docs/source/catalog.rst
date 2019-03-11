@@ -10,11 +10,11 @@ datasets, called *catalog entries*.  A catalog entry for a dataset includes info
 
 In addition, Intake allows the arguments to data sources to be templated, with the variables explicitly
 expressed as "user parameters". The given arguments are rendered using ``jinja2`` and the named user
-parameters, and validation is also provided for the allowed types and values for both the template
+parameters. Those parameters are also offer validation of the allowed types and values, for both the template
 values and the final arguments passed to the data source. The parameters are named and described, to
-indicate to the user what they are for.
-This kind of structure can be used to, for example,
-choose between two parts of a given data source, like "latest" and "stable".
+indicate to the user what they are for. This kind of structure can be used to, for example,
+choose between two parts of a given data source, like "latest" and "stable", see the `entry1_part` entry in
+the example below.
 
 
 YAML Format
@@ -45,10 +45,10 @@ Intake catalogs are typically described with YAML files.  Here is an example:
         description: entry1 part
         parameters: # User parameters
           part:
-            description: part of filename
+            description: section of the data
             type: str
-            default: "1"
-            allowed: ["1", "2"]
+            default: "stable"
+            allowed: ["latest", "stable"]
         driver: csv
         args:
           urlpath: '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'
@@ -137,21 +137,19 @@ Templating
 
 Intake catalog files support Jinja2 templating for driver arguments. Any occurrence of
 a substring like ``{{field}}`` will be replaced by the value of the user parameters with
-that same name, or explicitly provided by the user. For how to specify these user parameters,
+that same name, or the value explicitly provided by the user. For how to specify these user parameters,
 see the next section.
 
 Some additional values are available for templating. The following is always available:
-
-- ``CATALOG_DIR``: The full path to the directory containing the YAML catalog file.  This is especially useful
-  for constructing paths relative to the catalog directory to locate data files and custom drivers.
-
-so that the search for CSV files for the two "entry1" blocks, above, will happen in the same directory as
+``CATALOG_DIR``, the full path to the directory containing the YAML catalog file.  This is especially useful
+for constructing paths relative to the catalog directory to locate data files and custom drivers.
+For example, the search for CSV files for the two "entry1" blocks, above, will happen in the same directory as
 where the catalog file was found.
 
 The following functions `may` be available. Since these execute code, the user of a catalog may decide
 whether they trust those functions or not.
 
-- ``env("USER")``: look in the environment for the named variable
+- ``env("USER")``: look in the set environment variables for the named variable
 - ``client_env("USER")``: exactly the same, except that when using a client-server topology, the
   value will come from the environment of the client.
 - ``shell("get_login thisuser -t")``: execute the command, and use the output as the value. The
@@ -189,12 +187,12 @@ A parameter may look as follows:
 
     parameters:
       name:
-        description: human-readable text for what this parameter means
-        type: optional, one of bool, str, int, float, list[str], list[int], list[float], datetime
-        default: optional, value to assume if user does not override
-        allowed: optional, list of values that are OK, for validation
-        min: optional, minimum allowed, for validation
-        max: optional, maximum allowed, for validation
+        description: name to use  # human-readable text for what this parameter means
+        type: str  # optional, one of bool, str, int, float, list[str], list[int], list[float], datetime
+        default: normal  # optional, value to assume if user does not override
+        allowed: ["normal", "strange"]  # optional, list of values that are OK, for validation
+        min: "n"  # optional, minimum allowed, for validation
+        max: "t"  # optional, maximum allowed, for validation
 
 A parameter, not to be confused with an :term:`argument`,
 can have one of two uses:
@@ -209,7 +207,7 @@ can have one of two uses:
   coerced to the given type of the parameter and validated against the allowed/max/min. It is therefore possible
   to use the string templating system (e.g., to get a value from the environment), but pass the final value as,
   for example, an integer. It makes no sense to provide a default for this case (the argument already has a value),
-  but will no raise an exception.
+  but providing a default will not raise an exception.
 
 Note: the ``datetime`` type accepts multiple values:
 Python datetime, ISO8601 string,  Unix timestamp int, "now" and  "today".
