@@ -113,8 +113,7 @@ def test_datasource_discover(source_dataframe):
         'dtype': row_dtype,
         'shape': (6,),
         'npartitions': 2,
-        'metadata': dict(a=1, b=2),
-        'extra_metadata': {'c': 3, 'd': 4}
+        'metadata': dict(a=1, b=2, c=3, d=4),
     }
 
     # check attributes have been set
@@ -122,7 +121,7 @@ def test_datasource_discover(source_dataframe):
     assert source_dataframe.dtype == row_dtype
     assert source_dataframe.shape == (6,)
     assert source_dataframe.npartitions == 2
-    assert source_dataframe.metadata == dict(a=1, b=2)
+    assert source_dataframe.metadata == dict(a=1, b=2, c=3, d=4)
 
     # check that _get_schema is only called once
     assert source_dataframe.call_count['_get_schema'] == 1
@@ -279,8 +278,7 @@ def test_datasource_python_discover(source_python):
         'dtype': None,
         'shape': (4,),
         'npartitions': 2,
-        'metadata': dict(a=1, b=2),
-        'extra_metadata': {'c': 3, 'd': 4}
+        'metadata': dict(a=1, b=2, c=3, d=4),
     }
 
     # check attributes have been set
@@ -288,7 +286,7 @@ def test_datasource_python_discover(source_python):
     assert source_python.dtype is None
     assert source_python.shape == (4,)
     assert source_python.npartitions == 2
-    assert source_python.metadata == dict(a=1, b=2)
+    assert source_python.metadata == dict(a=1, b=2, c=3, d=4)
 
     # check that _get_schema is only called once
     assert source_python.call_count['_get_schema'] == 1

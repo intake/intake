@@ -119,6 +119,7 @@ class DataSource(DictSerialiseMixin):
             self.dtype = self._schema.dtype
             self.shape = self._schema.shape
             self.npartitions = self._schema.npartitions
+            self.metadata.update(self._schema.extra_metadata)
 
     def _yaml(self, with_plugin=False):
         import inspect
@@ -171,8 +172,7 @@ class DataSource(DictSerialiseMixin):
                     dtype=self.dtype,
                     shape=self.shape,
                     npartitions=self.npartitions,
-                    metadata=self.metadata,
-                    extra_metadata=self._schema.extra_metadata)
+                    metadata=self.metadata)
 
     def read(self):
         """Load entire dataset into a container and return it"""
