@@ -25,6 +25,15 @@ sources:
         argkey: urlpath
         regex: '{{ CATALOG_DIR }}'
         decomp: unknown
+  calvert_filter:
+    driver: csv
+    args:
+      urlpath: '{{ CATALOG_DIR }}/calvert_uk_filter.tar.gz'
+    cache:
+      - type: compressed
+        argkey: urlpath
+        regex: '{{ CATALOG_DIR }}'
+        regex_filter: '.*calvert_uk_research2017_nodes.csv'
   dirs:
     driver: textfiles
     args:

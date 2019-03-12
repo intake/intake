@@ -13,6 +13,7 @@ import json
 import logging
 import os
 import posixpath
+import re
 import shutil
 import warnings
 
@@ -63,7 +64,7 @@ class BaseCache(object):
         ----------
         driver: str
             Name of the plugin that can load catalog entry
-        spec: list
+        spec: dict
             Specification for caching the data source.
         cache_dir: str or None
             Explicit location of cache root directory
@@ -365,14 +366,15 @@ class DirCache(BaseCache):
 
 
 class CompressedCache(BaseCache):
-    """Download and decompress cacher
+    """Cache files extracted from downloaded compressed source
 
-    For one or more remote compressed files, downloads to local temporary and
+    For one or more remote compressed files, downloads to local temporary dir and
     extracts all contained files to local cache. Input is URL(s) (including
     globs) pointing to remote compressed files, plus optional ``decomp``,
     which is "infer" by default (guess from file extension) or one of the
-    key strings in ``intake.source.decompress.decomp``. Output is the list
-    of extracted files.
+    key strings in ``intake.source.decompress.decomp``. Optional ``regex_filter``
+    parameter is used to load only the extracted files that match the pattern.
+    Output is the list of extracted files.
     """
 
     def _make_files(self, urlpath, **kwargs):
@@ -420,7 +422,8 @@ class CompressedCache(BaseCache):
             if d not in decomp:
                 raise ValueError('Unknown compression for "%s"' % f)
             out2 = decomp[d](f, subdir)
-            for fn in out2:
+            out3 = filter(re.compile(self._spec.get('regex_filter', '.*')).search, out2)
+            for fn in out3:
                 logger.debug("Caching file: {}".format(f))
                 logger.debug("Original path: {}".format(orig.path))
                 logger.debug("Cached at: {}".format(fn))

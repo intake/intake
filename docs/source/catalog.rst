@@ -330,6 +330,33 @@ The "types" of caching are that supported are listed in ``intake.source.cache.re
 the docstrings of each for specific parameters that should appear in the cache block.
 
 
+Compressed Files
+''''''''''''''''
+
+It is possible to work with compressed source files by setting ``type: compression`` in the cache specification.
+By default the compression type is inferred from the file extension, otherwise it can be set by assigning the ``decomp``
+variable to any of the options listed in ``intake.source.decompress.decomp``.
+This will extract all the file(s) in the compressed file referenced by urlpath and store them in the cache directory.
+
+In cases where miscellaneous files are present in the compressed file, a ``regex_filter`` parameter can be used. Only
+the extracted filenames that match the pattern will be loaded. The cache path is appended to the filename so it is
+necessary to include a wildcard to the beginning of the pattern.
+
+Example:
+
+.. code-block:: yaml
+
+  test_compressed:
+    driver: csv
+    args:
+      urlpath: 'compressed_file.tar.gz'
+    cache:
+      - type: compressed
+        decomp: tgz
+        argkey: urlpath
+        regex_filter: '.*data.csv'
+
+
 Remote Access
 -------------
 
