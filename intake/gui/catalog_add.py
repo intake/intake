@@ -33,7 +33,6 @@ class FileSelector(Base):
         self.visible = visible
 
     def setup(self):
-        self.watchers = []
         self.path_text = pn.widgets.TextInput(value=os.getcwd() + '/')
         self.validator = pn.pane.SVG(ICONS['check'])
         self.main = pn.widgets.MultiSelect(size=15)
@@ -42,13 +41,14 @@ class FileSelector(Base):
 
         self.make_options()
 
-        self.watchers.extend([
+        self.watchers = [
             self.path_text.param.watch(self.validate, ['value']),
             self.path_text.param.watch(self.make_options, ['value']),
             self.home.param.watch(self.go_home, 'clicks'),
             self.up.param.watch(self.move_up, 'clicks'),
             self.main.param.watch(self.move_down, ['value'])
-        ])
+        ]
+
         self.children = [
             pn.Row(self.home, self.up, self.path_text, self.validator),
             self.main
@@ -112,14 +112,15 @@ class URLSelector(Base):
         self.visible = visible
 
     def setup(self):
-        self.watchers = []
         self.label = 'URL:'
         self.widget = pn.widgets.TextInput(
             placeholder="Full URL with protocol",
             width=600)
-        self.watchers.extend([
+
+        self.watchers = [
             self.widget.param.watch(self.allow_next, ['value'])
-        ])
+        ]
+
         self.children = ['URL:', self.widget]
 
     @property
@@ -136,20 +137,18 @@ class CatAdder(Base):
         self.visible = visible
 
     def setup(self):
-        self.watchers = []
         self.fs = FileSelector(allow_next=self.enable_widget)
         self.url = URLSelector(allow_next=self.enable_widget)
         self.selectors = [self.fs, self.url]
         self.tabs = pn.Tabs(*map(lambda x: x.panel, self.selectors))
         self.widget = pn.widgets.Button(name='Add Catalog',
                                         disabled=True, max_width=300)
-        self.watchers.append(
-            self.widget.param.watch(self.add_cat, 'clicks'))
-        self.children = [self.tabs, self.widget]
 
-    def enable_widget(self, value=True):
-        if self.widget:
-            self.widget.disabled = not value
+        self.watchers = [
+            self.widget.param.watch(self.add_cat, 'clicks')
+        ]
+
+        self.children = [self.tabs, self.widget]
 
     @property
     def cat_url(self):
