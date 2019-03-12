@@ -31,6 +31,11 @@ class Base(object):  # pragma: no cover
         """This method should set self.children"""
         raise NotImplementedError
 
+
+    def enable_widget(self, enable=True):
+        if self.widget is not None:
+            self.widget.disabled = not enable
+
     @property
     def visible(self):
         return self._visible

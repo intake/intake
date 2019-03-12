@@ -89,17 +89,17 @@ class CatSelector(BaseSelector):
         self.visible = visible
 
     def setup(self):
-        self.watchers = []
         self.options = {}
         self.widget = pn.widgets.MultiSelect(size=9, width=200)
         self.add(self.cats)
-        self.watchers.append(
-            self.widget.param.watch(self.callback, ['value']))
-
         self.remove_button = pn.widgets.Button(
             name='Remove Selected Catalog',
             width=200)
-        self.remove_button.param.watch(self.remove_selected, 'clicks')
+
+        self.watchers = [
+            self.widget.param.watch(self.callback, ['value']),
+            self.remove_button.param.watch(self.remove_selected, 'clicks')
+        ]
 
         self.children = [self.widget, self.remove_button]
 
@@ -131,13 +131,15 @@ class SourceSelector(BaseSelector):
 
 
     def setup(self):
-        self.watchers = []
         self.options = {}
         self.widget = pn.widgets.MultiSelect(size=9, width=200)
         if self.sources is not None:
             self.add(self.sources)
-        self.watchers.append(
-            self.widget.param.watch(self.callback, ['value']))
+
+        self.watchers = [
+            self.widget.param.watch(self.callback, ['value'])
+        ]
+
         self.children = [self.widget]
 
     @property

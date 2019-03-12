@@ -45,11 +45,12 @@ class Search(Base):
         self.visible = visible
 
     def setup(self):
-        self.watchers = []
         self.search_inputs = SearchInputs(visible=self.visible)
         self.widget = pn.widgets.Button(name='🔍', width=30)
-        self.watchers.append(
-            self.widget.param.watch(self.do_search, 'clicks'))
+
+        self.watchers = [
+            self.widget.param.watch(self.do_search, 'clicks')
+        ]
 
         self.children = [self.search_inputs.panel, self.widget]
 
