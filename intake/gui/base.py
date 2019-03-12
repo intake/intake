@@ -47,7 +47,7 @@ class Base(object):  # pragma: no cover
 
     def unwatch(self):
         """This method should get rid of any lingering watchers"""
-        if self.widget:
+        if self.watchers is not None:
             for watcher in self.watchers:
-                self.widget.param.unwatch(watcher)
+                watcher.inst.param.unwatch(watcher)
                 self.watchers.remove(watcher)

@@ -5,7 +5,32 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 import pytest
-pn = pytest.importorskip('panel')
+pytest.importorskip('panel')
+
+
+@pytest.fixture
+def search_inputs(cat1, cat2):
+    from ..catalog_search import SearchInputs
+    return SearchInputs()
+
+
+def test_search_inputs(search_inputs):
+    assert search_inputs.visible
+    assert len(search_inputs.children) == 4
+    assert len(search_inputs.panel.objects) == 4
+
+
+def test_search_inputs_text_prop_equal_to_widget_value(search_inputs):
+    search_inputs.text_input.value = 'entry'
+    assert search_inputs.text == 'entry'
+
+
+def test_search_inputs_depth_prop_parses_to_int(search_inputs):
+    search_inputs.depth_input.value = '2'
+    assert search_inputs.depth == 2
+
+    search_inputs.depth_input.value = 'All'
+    assert search_inputs.depth == 99
 
 
 @pytest.fixture
@@ -16,8 +41,8 @@ def search(cat1, cat2):
 
 def test_search(search):
     assert search.visible
-    assert len(search.children) == 5
-    assert len(search.panel.objects) == 5
+    assert len(search.children) == 2
+    assert len(search.panel.objects) == 2
 
 
 def test_search_watchers_gets_populated(search):
@@ -25,7 +50,7 @@ def test_search_watchers_gets_populated(search):
 
 
 def test_search_widget_click_tries_to_run_callback(search):
-    search.text.value = 'entry'
+    search.search_inputs.text_input.value = 'entry'
     with pytest.raises(TypeError, match="'NoneType' object is not callable"):
         search.widget.clicks = 1
 
@@ -33,7 +58,7 @@ def test_search_widget_click_tries_to_run_callback(search):
 def test_search_unwatch_watchers_get_cleaned_up(search):
     search.unwatch()
     assert len(search.watchers) == 0
-    search.text.value = 'entry'
+    search.search_inputs.text_input.value = 'entry'
 
     # does not try to run callback
     search.widget.clicks = 2
@@ -44,7 +69,7 @@ def test_callback_gets_right_input(search):
         """Raises an error if called"""
         raise ValueError('New catalogs', new_cats)
 
-    search.text.value = 'entry'
+    search.search_inputs.text_input.value = 'entry'
     search.done_callback = callback
     with pytest.raises(ValueError, match='<Intake catalog: catalog1_search>'):
         search.widget.clicks = 3
