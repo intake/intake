@@ -69,9 +69,11 @@ def classname(ob):
 class DictSerialiseMixin(object):
     def __new__(cls, *args, **kwargs):
         """Capture creation args when instantiating"""
+        from dask.base import tokenize
         o = object.__new__(cls)
         o._captured_init_args = args
         o._captured_init_kwargs = kwargs
+        o.__dict__['_tok'] = tokenize(o.__getstate__())
         return o
 
     @property
@@ -95,12 +97,6 @@ class DictSerialiseMixin(object):
         self._captured_init_args = state['args']
         state.pop('cls', None)
         self.__init__(*state['args'], **state['kwargs'])
-
-    @property
-    def _tok(self):
-        """String unique token for this source"""
-        from dask.base import tokenize
-        return tokenize(self.__getstate__())
 
     def __hash__(self):
         return int(self._tok, 16)
