@@ -312,7 +312,7 @@ the docstrings of each for specific parameters that should appear in the cache b
 
 
 Compressed Files
-----------------
+''''''''''''''''
 
 It is possible to work with compressed source files by setting ``type: compression`` in the cache specification.
 By default the compression type is inferred from the file extension, otherwise it can be set by assigning the ``decomp``
