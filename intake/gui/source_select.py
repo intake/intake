@@ -13,6 +13,9 @@ import panel as pn
 from .base import Base
 
 class BaseSelector(Base):
+    """
+    CHANGE
+    """
     preprocess = None
     options = None
     allow_next = None

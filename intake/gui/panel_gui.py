@@ -29,8 +29,8 @@ class DataBrowser(Base):
         self.panel = pn.Row(name='Data Browser')
         self.visible = visible
 
-
     def setup(self):
+        self.watchers = []
         self.cat = CatSelector(self._cats)
 
         self.source = SourceSelector(cats=self.cats)
@@ -62,6 +62,7 @@ class GUI(Base):
         self.visible = visible
 
     def setup(self):
+        self.watchers = []
         self.search = pn.widgets.RadioButtonGroup(
             options={'🔍': True, 'x': False},
             value=False,
@@ -84,9 +85,9 @@ class GUI(Base):
                                visible=self.search.value,
                                done_callback=self.browser.cat.add)
 
-        self.cat_add.link(self.selector, value='visible')
-        self.search.link(self.searcher, value='visible')
-        self.browser.cat.watchers.append(
+        self.watchers.append(self.cat_add.link(self.selector, value='visible'))
+        self.watchers.append(self.search.link(self.searcher, value='visible'))
+        self.watchers.append(
             self.browser.cat.widget.link(self.searcher, value='cats'))
 
         self.children = [

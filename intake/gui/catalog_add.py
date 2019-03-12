@@ -33,21 +33,22 @@ class FileSelector(Base):
         self.visible = visible
 
     def setup(self):
+        self.watchers = []
         self.path_text = pn.widgets.TextInput(value=os.getcwd() + '/')
         self.validator = pn.pane.SVG(ICONS['check'])
-        self.path_text.param.watch(self.validate, ['value'])
-
         self.main = pn.widgets.MultiSelect(size=15)
-        self.path_text.param.watch(self.make_options, ['value'])
-
         self.home = pn.widgets.Button(name='🏠', width=40, height=30)
-        self.home.param.watch(self.go_home, 'clicks')
         self.up = pn.widgets.Button(name='‹', width=30, height=30)
-        self.up.param.watch(self.move_up, 'clicks')
 
         self.make_options()
-        self.main.param.watch(self.move_down, ['value'])
 
+        self.watchers.extend([
+            self.path_text.param.watch(self.validate, ['value']),
+            self.path_text.param.watch(self.make_options, ['value']),
+            self.home.param.watch(self.go_home, 'clicks'),
+            self.up.param.watch(self.move_up, 'clicks'),
+            self.main.param.watch(self.move_down, ['value'])
+        ])
         self.children = [
             pn.Row(self.home, self.up, self.path_text, self.validator),
             self.main
@@ -68,31 +69,23 @@ class FileSelector(Base):
     def go_home(self, arg=None):
         self.path_text.value = os.getcwd() + '/'
 
-    @property
-    def is_valid(self):
-        return os.path.isdir(self.path)
-
     def validate(self, arg=None):
-        if self.is_valid:
+        if os.path.isdir(self.path):
             self.validator.object = ICONS['check']
         else:
             self.validator.object = ICONS['error']
 
     def make_options(self, arg=None):
         self.allow_next(False)
-        if not self.is_valid:
-            self.main.value = []
-            self.main.options = {}
-            return
-
         out = []
-        for f in sorted(os.listdir(self.path)):
-            if f.startswith('.'):
-                continue
-            elif os.path.isdir(os.path.join(self.path, f)):
-                out.append(f + '/')
-            elif any(f.endswith(ext) for ext in self.filters):
-                out.append(f)
+        if os.path.isdir(self.path):
+            for f in sorted(os.listdir(self.path)):
+                if f.startswith('.'):
+                    continue
+                elif os.path.isdir(os.path.join(self.path, f)):
+                    out.append(f + '/')
+                elif any(f.endswith(ext) for ext in self.filters):
+                    out.append(f)
 
         self.main.value = []
         self.main.options = dict(zip(out, out))
@@ -124,8 +117,10 @@ class URLSelector(Base):
         self.widget = pn.widgets.TextInput(
             placeholder="Full URL with protocol",
             width=600)
+        self.watchers.extend([
+            self.widget.param.watch(self.allow_next, ['value'])
+        ])
         self.children = ['URL:', self.widget]
-        self.widget.param.watch(self.allow_next, ['value'])
 
     @property
     def url(self):
