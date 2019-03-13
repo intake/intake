@@ -232,7 +232,7 @@ class LocalCatalogEntry(CatalogEntry):
             raise ValueError('No plugins loaded for this entry: %s\n'
                              'A listing of installable plugins can be found ' 
                              'at https://intake.readthedocs.io/en/latest/plugin'
-                             '-directory.html.'
+                             '-directory.html .'
                              % self._driver)
         elif isinstance(self._plugin, list):
             plugin = self._plugin[0]

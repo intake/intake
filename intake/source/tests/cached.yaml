@@ -6,7 +6,6 @@ sources:
     cache:
       - type: compressed
         argkey: urlpath
-        regex: '{{ CATALOG_DIR }}'
   calvert_infer:
     driver: csv
     args:
@@ -14,7 +13,6 @@ sources:
     cache:
       - type: compressed
         argkey: urlpath
-        regex: '{{ CATALOG_DIR }}'
         decomp: infer
   calvert_badkey:
     driver: csv
@@ -23,7 +21,6 @@ sources:
     cache:
       - type: compressed
         argkey: urlpath
-        regex: '{{ CATALOG_DIR }}'
         decomp: unknown
   calvert_filter:
     driver: csv
@@ -32,7 +29,6 @@ sources:
     cache:
       - type: compressed
         argkey: urlpath
-        regex: '{{ CATALOG_DIR }}'
         regex_filter: '.*calvert_uk_research2017_nodes.csv'
   dirs:
     driver: textfiles
@@ -40,7 +36,6 @@ sources:
       urlpath: '{{ CATALOG_DIR }}/main'
     cache:
       - type: dir
-        regex: '{{ CATALOG_DIR }}'
         argkey: urlpath
         depth: 2
   dat_data:
