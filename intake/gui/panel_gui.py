@@ -23,36 +23,6 @@ logo_file = os.path.join(here, 'logo.png')
 logo = pn.Column(logo_file)
 
 
-class DataBrowser(Base):
-    def __init__(self, cats=None, visible=True):
-        self._cats = cats
-        self.panel = pn.Row(name='Data Browser')
-        self.visible = visible
-
-    def setup(self):
-        self.cat = CatSelector(self._cats)
-        self.source = SourceSelector(cats=self.cats)
-        self.description = Description(source=self.sources)
-
-        self.watchers = [
-            self.cat.widget.link(self.source, value='cats'),
-            self.source.widget.link(self.description, value='source')
-        ]
-        self.children = [
-            self.cat.panel,
-            self.source.panel,
-            self.description.panel,
-        ]
-
-    @property
-    def cats(self):
-        return self.cat.selected
-
-    @property
-    def sources(self):
-        return self.source.selected
-
-
 class GUI(Base):
     def __init__(self, visible=True):
         self.panel = pn.Column(name='GUI')
@@ -71,20 +41,25 @@ class GUI(Base):
 
         self.plot = pn.widgets.RadioButtonGroup(
             options={'📊': True, 'x': False},
+            value=False,
             width=80,
             disabled=True)
 
-        self.browser = DataBrowser()
-        self.selector = CatAdder(visible=self.cat_add.value,
-                                 done_callback=self.browser.cat.add)
-        self.searcher = Search(cats=self.browser.cats,
+        self.cat_browser = CatSelector()
+        self.source_browser = SourceSelector(cats=self.cats)
+        self.description = Description(source=self.sources)
+        self.cat_adder = CatAdder(visible=self.cat_add.value,
+                                  done_callback=self.cat_browser.add)
+        self.searcher = Search(cats=self.cats,
                                visible=self.search.value,
-                               done_callback=self.browser.cat.add)
+                               done_callback=self.cat_browser.add)
 
         self.watchers = [
-            self.cat_add.link(self.selector, value='visible'),
+            self.cat_add.link(self.cat_adder, value='visible'),
             self.search.link(self.searcher, value='visible'),
-            self.browser.cat.widget.link(self.searcher, value='cats')
+            self.cat_browser.widget.link(self.searcher, value='cats'),
+            self.cat_browser.widget.link(self.source_browser, value='cats'),
+            self.source_browser.widget.link(self.description, value='source'),
         ]
 
         self.children = [
@@ -94,13 +69,23 @@ class GUI(Base):
                     self.search,
                     self.cat_add,
                     self.plot),
-                self.browser.panel),
+                self.cat_browser.panel,
+                self.source_browser.panel,
+                self.description.panel),
             self.searcher.panel,
-            self.selector.panel,
+            self.cat_adder.panel,
         ]
 
     @property
+    def cats(self):
+        return self.cat_browser.selected
+
+    @property
+    def sources(self):
+        return self.source_browser.selected
+
+    @property
     def item(self):
-        if len(self.browser.sources) == 0:
+        if len(self.sources) == 0:
             return None
-        return self.browser.sources[0]
+        return self.sources[0]

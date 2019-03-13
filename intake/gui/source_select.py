@@ -12,104 +12,123 @@ import panel as pn
 
 from .base import Base
 
+
 class BaseSelector(Base):
     """
     CHANGE
     """
     preprocess = None
-    options = None
-    allow_next = None
 
-    def callback(self, *events):
-        print(self.panel.name, events)
-        for event in events:
-            if event.name == 'value' and event.new != self.selected:
-                self.select(event.new)
-            if self.allow_next is not None:
-                self.allow_next(self.selected)
-
-    def update_selected(self):
-        self.widget.value = self.selected
-
-    def update_options(self):
-        self.widget.options = self.options.copy()
-
-    def add(self, items, autoselect=True):
-        """Add items to the options and select the new ones"""
+    def _create_options(self, items):
         if not isinstance(items, list):
             items = [items]
         if self.preprocess:
             items = map(self.preprocess, items)
-        options = OrderedDict(map(lambda x: (x.name, x), items))
-        self.options.update(options)
-        self.update_options()
-        self.select(list(options.values()))
+        return OrderedDict(map(lambda x: (x.name, x), items))
+
+    @property
+    def options(self):
+        return self.widget.options
+
+    @options.setter
+    def options(self, new):
+        print('setting options', new)
+        options = self._create_options(new)
+        print('new options', options)
+        self.widget.options = options
+        self.widget.value = list(options.values())[:1]
+
+    def add(self, items):
+        """Add items to options"""
+        print('adding', items)
+        options = self._create_options(items)
+        new_options = self.widget.options
+        if isinstance(new_options, dict):
+            new_options.update(options)
+        else:
+            new_options = options
+        print('new options', new_options)
+        self.widget.options = new_options
+        self.widget.value = list(options.values())[:1]
 
     def remove(self, items):
-        """Unselect items from options and remove them"""
+        """Remove items from options"""
+        print('removing', items)
         if not isinstance(items, list):
             items = [items]
-        self.unselect(items)
+        new_options = self.widget.options
         for item in items:
-            self.options.pop(item.name)
-        self.update_options()
+            new_options.popitem(item)
+        print('new options', new_options)
+        self.widget.value = []
+        self.widget.options = new_options if len(new_options) > 0 else []
 
-    def select(self, new):
-        """Select one item by name or object"""
+    @property
+    def selected(self):
+        return self.widget.value
+
+    @selected.setter
+    def selected(self, new):
+        print('selecting', new)
         if isinstance(new, str):
             new = [self.options[new]]
         elif hasattr(new, "name") and new in self.options.values():
             new = [new]
-        if new != self.selected:
-            self.selected = new
-            self.update_selected()
-
-    def unselect(self, old=None):
-        """Unselect provided items or selected items"""
-        if not old:
-            old = self.selected
-            self.selected = []
-        elif isinstance(old, list):
-            self.selected = [s for s in self.selected if s not in old]
-        else:
-            self.selected = [s for s in self.selected if s != old]
-        self.update_selected()
-        return old
+        print('new', new)
+        self.widget.value = new
 
 
 class CatSelector(BaseSelector):
-    selected = []
+    """
+    The cat selector takes a variety of inputs such as a catalog instance,
+    a path to a catalog, or a list of either of those.
+
+    Once the cat selector is populated with these options, the user can
+    select which catalog(s) are of interest. These catalogs are stored on
+    the selected property of the class.
+    """
     children = []
 
     def __init__(self, cats=None, visible=True):
         if cats is None:
             cats = [intake.cat]
-        self.cats = cats
+        self._cats = cats
         self.panel = pn.Column(name='Select Catalog')
         self.visible = visible
 
     def setup(self):
-        self.options = {}
         self.widget = pn.widgets.MultiSelect(size=9, width=200)
-        self.add(self.cats)
+        self.options = self._cats
         self.remove_button = pn.widgets.Button(
             name='Remove Selected Catalog',
             width=200)
 
         self.watchers = [
-            self.widget.param.watch(self.callback, ['value']),
-            self.remove_button.param.watch(self.remove_selected, 'clicks')
+            self.remove_button.param.watch(self.remove_selected, 'clicks'),
+            self.widget.param.watch(self.allow_next, 'value'),
         ]
 
         self.children = [self.widget, self.remove_button]
 
-    def allow_next(self, allow):
-        self.remove_button.disabled = not allow
+    def allow_next(self, event):
+        self.remove_button.disabled = len(event.new) == 0
 
     def preprocess(self, cat):
         if isinstance(cat, str):
             cat = intake.open_catalog(cat)
         return cat
+
+    @property
+    def cats(self):
+        return list(self.options.values()) or self._cats
+
+    @cats.setter
+    def cats(self, cats):
+        self._cats = cats
+        print('cats', self._cats)
+        if cats is not None and self.widget is not None:
+            self.options = cats
+            print(self.widget.options, self.widget.value)
 
     def remove_selected(self, *args):
         """Remove the selected catalog - allow the passing of arbitrary
@@ -118,46 +137,42 @@ class CatSelector(BaseSelector):
 
 
 class SourceSelector(BaseSelector):
-    selected = []
     preprocess = None
     children = []
 
     def __init__(self, sources=None, cats=None, visible=True):
-        self.sources = sources
+        self._sources = sources
         if sources is None and cats is not None:
             self.cats = cats
         self.panel = pn.Column(name='Select Data Source')
         self.visible = visible
 
-
     def setup(self):
-        self.options = {}
         self.widget = pn.widgets.MultiSelect(size=9, width=200)
-        if self.sources is not None:
-            self.add(self.sources)
-
-        self.watchers = [
-            self.widget.param.watch(self.callback, ['value'])
-        ]
-
+        self.options = self._sources
         self.children = [self.widget]
 
     @property
     def cats(self):
-        return set(source._catalog for source in self.options.values())
+        return set(source._catalog for source in self.sources)
 
     @cats.setter
     def cats(self, cats):
         """Set options from a list of cats"""
-        options = {}
+        print('setting cats', cats)
+        sources = []
         for cat in cats:
-            options.update(OrderedDict([(s, cat[s]) for s in cat]))
-        self.sources = list(options.values())
-        if self.widget:
-            self.options = options
-            self.update_options()
+            sources.extend(list(cat._entries.values()))
+        self.sources = sources
 
-            if list(options.values()):
-                self.select([list(options.values())[0]])
-            else:
-                self.select([])
+    @property
+    def sources(self):
+        return list(self.options.values()) or self._sources
+
+    @sources.setter
+    def sources(self, sources):
+        self._sources = sources
+        print('setting sources', self._sources)
+        if sources is not None and self.widget is not None:
+            self.options = sources
+            print(self.widget.options, self.widget.value)
