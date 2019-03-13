@@ -32,34 +32,34 @@ class BaseSelector(Base):
 
     @options.setter
     def options(self, new):
-        print('setting options', new)
+        # print('setting options', new)
         options = self._create_options(new)
-        print('new options', options)
+        # print('new options', options)
         self.widget.options = options
         self.widget.value = list(options.values())[:1]
 
     def add(self, items):
         """Add items to options"""
-        print('adding', items)
+        # print('adding', items)
         options = self._create_options(items)
         new_options = self.widget.options
         if isinstance(new_options, dict):
             new_options.update(options)
         else:
             new_options = options
-        print('new options', new_options)
+        # print('new options', new_options)
         self.widget.options = new_options
         self.widget.value = list(options.values())[:1]
 
     def remove(self, items):
         """Remove items from options"""
-        print('removing', items)
+        # print('removing', items)
         if not isinstance(items, list):
             items = [items]
         new_options = self.widget.options
         for item in items:
             new_options.popitem(item)
-        print('new options', new_options)
+        # print('new options', new_options)
         self.widget.value = []
         self.widget.options = new_options if len(new_options) > 0 else []
 
@@ -69,12 +69,12 @@ class BaseSelector(Base):
 
     @selected.setter
     def selected(self, new):
-        print('selecting', new)
+        # print('selecting', new)
         if isinstance(new, str):
             new = [self.options[new]]
         elif hasattr(new, "name") and new in self.options.values():
             new = [new]
-        print('new', new)
+        # print('new', new)
         self.widget.value = new
 
 
@@ -125,10 +125,10 @@ class CatSelector(BaseSelector):
     @cats.setter
     def cats(self, cats):
         self._cats = cats
-        print('cats', self._cats)
+        # print('cats', self._cats)
         if cats is not None and self.widget is not None:
             self.options = cats
-            print(self.widget.options, self.widget.value)
+            # print(self.widget.options, self.widget.value)
 
     def remove_selected(self, *args):
         """Remove the selected catalog - allow the passing of arbitrary
@@ -159,7 +159,7 @@ class SourceSelector(BaseSelector):
     @cats.setter
     def cats(self, cats):
         """Set options from a list of cats"""
-        print('setting cats', cats)
+        # print('setting cats', cats)
         sources = []
         for cat in cats:
             sources.extend(list(cat._entries.values()))
@@ -172,7 +172,7 @@ class SourceSelector(BaseSelector):
     @sources.setter
     def sources(self, sources):
         self._sources = sources
-        print('setting sources', self._sources)
+        # print('setting sources', self._sources)
         if sources is not None and self.widget is not None:
             self.options = sources
-            print(self.widget.options, self.widget.value)
+            # print(self.widget.options, self.widget.value)

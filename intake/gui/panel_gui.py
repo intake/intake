@@ -14,7 +14,7 @@ import panel as pn
 from .base import Base
 from .catalog_add import CatAdder
 from .source_select import CatSelector, SourceSelector
-from .source_view import Description
+from .source_view import Description, Plot
 from .catalog_search import Search
 
 
@@ -42,8 +42,7 @@ class GUI(Base):
         self.plot = pn.widgets.RadioButtonGroup(
             options={'📊': True, 'x': False},
             value=False,
-            width=80,
-            disabled=True)
+            width=80)
 
         self.cat_browser = CatSelector()
         self.source_browser = SourceSelector(cats=self.cats)
@@ -53,13 +52,17 @@ class GUI(Base):
         self.searcher = Search(cats=self.cats,
                                visible=self.search.value,
                                done_callback=self.cat_browser.add)
+        self.plotter = Plot(source=self.sources,
+                            visible=self.plot.value)
 
         self.watchers = [
             self.cat_add.link(self.cat_adder, value='visible'),
             self.search.link(self.searcher, value='visible'),
+            self.plot.link(self.plotter, value='visible'),
             self.cat_browser.widget.link(self.searcher, value='cats'),
             self.cat_browser.widget.link(self.source_browser, value='cats'),
             self.source_browser.widget.link(self.description, value='source'),
+            self.source_browser.widget.link(self.plotter, value='source'),
         ]
 
         self.children = [
@@ -72,6 +75,7 @@ class GUI(Base):
                 self.cat_browser.panel,
                 self.source_browser.panel,
                 self.description.panel),
+            self.plotter.panel,
             self.searcher.panel,
             self.cat_adder.panel,
         ]
