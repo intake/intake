@@ -14,7 +14,7 @@ def callback(args):
 
 def allow_next(allow=True):
     """Raises an error if called"""
-    # print('Allow next got:', allow)
+    print('Allow next got:', allow)
 
 @pytest.fixture
 def file_selector():
