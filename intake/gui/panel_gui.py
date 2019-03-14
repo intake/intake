@@ -43,7 +43,6 @@ class GUI(Base):
             options={'📊': True, 'x': False},
             value=False,
             width=80)
-        self.plotter_watcher = None
 
         self.cat_browser = CatSelector()
         self.source_browser = SourceSelector(cats=self.cats)
@@ -58,9 +57,8 @@ class GUI(Base):
 
         self.watchers = [
             self.cat_add.link(self.cat_adder, value='visible'),
-            self.search.link(self.searcher, value='visible'),
+            self.search.param.watch(self.on_click_search, 'value'),
             self.plot.param.watch(self.on_click_plot, 'value'),
-            self.cat_browser.widget.link(self.searcher, value='cats'),
             self.cat_browser.widget.link(self.source_browser, value='cats'),
             self.source_browser.widget.link(self.description, value='source'),
         ]
@@ -75,22 +73,28 @@ class GUI(Base):
                 self.cat_browser.panel,
                 self.source_browser.panel,
                 self.description.panel,
-                background='#eeeeee'),
-            self.plotter.panel,
+                background='#eeeeee',
+                sizing_mode='stretch_width'),
             self.searcher.panel,
             self.cat_adder.panel,
+            self.plotter.panel,
         ]
 
     def on_click_plot(self, event):
-        self.plotter.source = self.source_browser.sources
-        if self.plotter.visible:
-            self.plotter_watcher = self.source_browser.widget.link(self.plotter, value='source')
-        else:
-            if self.plotter_watcher:
-                self.plotter_watcher.inst.param.unwatch(self.plotter_watcher)
-            self.plotter_watcher = None
-        print('ON CLICK PLOT', event.new)
+        """ When the plot control is toggled, set visibility and hand down source"""
+        self.plotter.source = self.sources
         self.plotter.visible = event.new
+        if self.plotter.visible:
+            self.plotter.watchers.append(
+                self.source_browser.widget.link(self.plotter, value='source'))
+
+    def on_click_search(self, event):
+        """ When the search control is toggled, set visibility and hand down cats"""
+        self.searcher.cats = self.cats
+        self.searcher.visible = event.new
+        if self.searcher.visible:
+            self.searcher.watchers.append(
+                self.cat_browser.widget.link(self.searcher, value='cats'))
 
     @property
     def cats(self):

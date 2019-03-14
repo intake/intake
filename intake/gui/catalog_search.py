@@ -13,7 +13,7 @@ from .base import Base
 class SearchInputs(Base):
     """Input areas to control search parameters"""
     def __init__(self, visible=True):
-        self.panel = pn.Row(name='Search Inputs', background='#eeeeee')
+        self.panel = pn.Row(name='Search Inputs')
         self.visible = visible
 
     def setup(self):
@@ -49,12 +49,12 @@ class Search(Base):
     def __init__(self, cats, visible=True, done_callback=None):
         self.cats = cats
         self.done_callback = done_callback
-        self.panel = pn.Row(name='Search')
+        self.panel = pn.Row(name='Search', background='#eeeeee')
         self.visible = visible
 
     def setup(self):
         self.inputs = SearchInputs()
-        self.widget = pn.widgets.Button(name='🔍', width=30)
+        self.widget = pn.widgets.Button(name='🔍', width=50)
 
         self.watchers = [
             self.widget.param.watch(self.do_search, 'clicks')
