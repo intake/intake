@@ -19,8 +19,10 @@ def pretty_describe(object, nestedness=0, indent=2):
 
 
 class Description(Base):
+    pane = None
+
     def __init__(self, source=None, visible=True):
-        self._source = source
+        self.source = source
         self.panel = pn.Column(name='Description')
         self.visible = visible
 
@@ -38,10 +40,9 @@ class Description(Base):
         if isinstance(source, list):
             # if source is a list, get first item or None
             source = source[0] if len(source) > 0 else None
-        if source != self._source:
-            self._source = source
+        self._source = source
+        if self.pane:
             self.pane.object = self.contents
-        return self._source
 
     @property
     def contents(self):
@@ -70,8 +71,6 @@ class DefinedPlots(Base):
     select = None
 
     def __init__(self, source=None, visible=True):
-        self.watchers = []
-        self.children = []
         self.source = source
         self.panel = pn.Row(name='Plot')
         self.visible = visible
