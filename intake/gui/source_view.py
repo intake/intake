@@ -62,20 +62,25 @@ class Description(Base):
 
 
 class DefinedPlots(Base):
-    plot = None
+    """
+    Panel for displaying pre-defined plots from catalog.
+
+    Set ``source`` to update the available plots.
+    """
     select = None
 
     def __init__(self, source=None, visible=True):
+        self.watchers = []
+        self.children = []
         self.source = source
         self.panel = pn.Row(name='Plot')
         self.visible = visible
-        if not visible:
-            self.setup()
 
     def setup(self):
+        self.instructions = pn.pane.Markdown(self.instructions_contents)
         self.select = pn.widgets.Select(options=self.options)
-        self.plot_desc = pn.pane.Str(self.plot_desc_contents)
-        self.update_plot()
+        self.desc = pn.pane.Str(self.desc_contents(self.selected))
+        self.pane = pn.pane.HoloViews(self.plot_object(self.selected))
 
         self.watchers = [
             self.select.param.watch(self.callback, 'value')
@@ -85,8 +90,8 @@ class DefinedPlots(Base):
             pn.Column(
                 self.instructions,
                 self.select,
-                self.plot_desc),
-            self.plot
+                self.desc),
+            self.pane
         ]
 
     @property
@@ -102,14 +107,13 @@ class DefinedPlots(Base):
         self._source = source
         if self.select:
             self.select.options = self.options
-            self.select.value = None
 
     @property
     def has_plots(self):
         return self.source is not None and len(self._source.plots) > 0
 
     @property
-    def instructions(self):
+    def instructions_contents(self):
         if self.has_plots:
             return '**Select from the predefined plots:**'
         return '*No predefined plots found - declare these in the catalog*'
@@ -118,35 +122,27 @@ class DefinedPlots(Base):
     def options(self):
         return self.source.plots if self.source is not None else []
 
+    @property
+    def selected(self):
+        return self.select.value if self.select is not None else None
+
+    @selected.setter
+    def selected(self, selected):
+        self.select.value = selected
+
     def callback(self, event):
         print('EVENT:', event)
-        self.plot_desc.object = self.plot_desc_contents
-        self.update_plot()
-        if self.children[-1] != self.plot:
-            self.children[-1] = self.plot
-            if self.visible:
-                self.panel.objects = self.children
+        self.instructions.object = self.instructions_contents
+        self.desc.object = self.desc_contents(event.new)
+        self.pane.object = self.plot_object(event.new)
 
-    def update_plot(self):
-        if isinstance(self.plot, pn.pane.HoloViews):
-            self.plot.object = self.plot_object
-        elif self.select.value:
-            self.plot = pn.pane.HoloViews(self.plot_object)
-        else:
-            self.plot = pn.pane.Pane('')
-
-    @property
-    def plot_desc_contents(self):
-        if not self.select.value:
-            return ''
-        if self.select.value:
-            contents = self.source.metadata['plots'][self.select.value]
-            return pretty_describe(contents)
-
-    @property
-    def plot_object(self):
-        if self.select.value:
-            plot_method = getattr(self.source.plot, self.select.value)
+    def plot_object(self, selected):
+        if selected:
+            plot_method = getattr(self.source.plot, selected)
             if plot_method:
                 return plot_method()
 
+    def desc_contents(self, selected):
+        if selected:
+            contents = self.source.metadata['plots'][selected]
+            return pretty_describe(contents)

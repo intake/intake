@@ -81,3 +81,101 @@ def test_description_source_with_plots(sources2):
         '  metadata: cache: []\n'
         '    catalog_dir: /Users/jsignell/intake/intake/gui/tests/catalogs/')
     assert_panel_matches_contents(description)
+
+
+def assert_is_empty(plots, visible=True):
+    assert plots.source is None
+    assert plots.has_plots is False
+    assert plots.instructions == '*No predefined plots found - declare these in the catalog*'
+    assert plots.options == []
+    assert plots.selected is None
+    if visible:
+        assert plots.desc.object == None
+        assert len(plots.children) == 2
+        assert isinstance(plots.children[1], pn.pane.Markdown)
+        assert plots.children[1].object == ''
+        assert plots.panel.objects == plots.children
+    else:
+        assert plots.watchers == []
+        assert plots.panel.objects == []
+
+
+def assert_plotting_source2_0_line(plots, visible=True):
+    assert plots.has_plots is True
+    assert plots.instructions == '**Select from the predefined plots:**'
+    assert plots.options == ['line_example', 'violin_example']
+    if visible:
+        assert plots.selected == 'line_example'
+        assert plots.desc.object == ("kind: line\n"
+                                     "y: ['Robbery', 'Burglary']\n"
+                                     "x: Year")
+        assert len(plots.children) == 2
+        assert isinstance(plots.children[1], pn.pane.HoloViews)
+        assert str(plots.children[1].object) == str(plots.pane.object)
+        assert plots.panel.objects == plots.children
+    else:
+        assert plots.selected is None
+        assert plots.watchers == []
+        assert plots.panel.objects == []
+
+
+@pytest.fixture
+def defined_plots(sources2):
+    from ..source_view import DefinedPlots
+    return DefinedPlots(source=sources2[0])
+
+
+def test_defined_plots(defined_plots, sources2):
+    assert defined_plots.source == sources2[0]
+    assert_plotting_source2_0_line(defined_plots, visible=True)
+
+
+def test_defined_plots_init_empty_and_not_visible_set_source(sources2):
+    from ..source_view import DefinedPlots
+    defined_plots = DefinedPlots(source=[], visible=False)
+    defined_plots.source = sources2
+    assert defined_plots.source == sources2[0]
+    assert_plotting_source2_0_line(defined_plots, visible=False)
+
+
+def test_defined_plots_init_with_source_not_visible_make_visible(sources2):
+    from ..source_view import DefinedPlots
+    defined_plots = DefinedPlots(source=sources2, visible=False)
+    defined_plots.source = sources2
+    assert defined_plots.source == sources2[0]
+    assert_plotting_source2_0_line(defined_plots, visible=False)
+
+    defined_plots.visible = True
+    assert_plotting_source2_0_line(defined_plots, visible=True)
+
+
+def test_defined_plots_init_empty_and_visible():
+    from ..source_view import DefinedPlots
+    defined_plots = DefinedPlots()
+    assert_is_empty(defined_plots, visible=True)
+
+
+def test_defined_plots_init_empty_and_not_visible():
+    from ..source_view import DefinedPlots
+    defined_plots = DefinedPlots(visible=False)
+    assert_is_empty(defined_plots, visible=False)
+
+
+def test_defined_plots_set_source_to_empty_list(defined_plots):
+    defined_plots.source = []
+    assert_is_empty(defined_plots, visible=True)
+
+
+def test_defined_plots_set_source_to_empty_list_and_visible_to_false(defined_plots):
+    defined_plots.visible = False
+    defined_plots.source = []
+    assert_is_empty(defined_plots, visible=False)
+
+
+def test_defined_plots_select_a_different_plot(defined_plots):
+    defined_plots.selected = 'violin_example'
+    assert "kind: violin" in defined_plots.desc.object
+    assert len(defined_plots.children) == 2
+    assert isinstance(defined_plots.children[1], pn.pane.HoloViews)
+    assert str(defined_plots.children[1].object) == str(defined_plots.pane.object)
+    assert defined_plots.panel.objects == defined_plots.children
