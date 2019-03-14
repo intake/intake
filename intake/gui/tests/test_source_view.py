@@ -45,7 +45,7 @@ def test_description_set_source_from_list(sources2):
 def test_description_set_source_from_empty_list(description):
     description.source = []
     assert description.source == None
-    assert description.contents == ''
+    assert description.contents == ' ' * 100
     assert_panel_matches_contents(description)
 
 
@@ -77,7 +77,7 @@ def test_description_source_with_plots(sources2):
         'user_parameters: []\n'
         'plugin: csv\n'
         'metadata: cache: []\n'
-        'args: urlpath: /Users/jsignell/intake/intake/gui/tests/catalogs//data/crime.csv\n'
+        'args: urlpath: /Users/jsignell/intake/intake/gui/tests/catalogs/../data/crime.csv\n'
         '  metadata: cache: []\n'
         '    catalog_dir: /Users/jsignell/intake/intake/gui/tests/catalogs/')
     assert_panel_matches_contents(description)
@@ -86,15 +86,17 @@ def test_description_source_with_plots(sources2):
 def assert_is_empty(plots, visible=True):
     assert plots.source is None
     assert plots.has_plots is False
-    assert plots.instructions == '*No predefined plots found - declare these in the catalog*'
+    assert plots.instructions_contents == '*No predefined plots found - declare these in the catalog*'
     assert plots.options == []
     assert plots.selected is None
     if visible:
-        assert plots.desc.object == None
+        assert plots.instructions.object == plots.instructions_contents
+        assert plots.desc.object is None
+        assert plots.pane.object is None
         assert len(plots.children) == 2
-        assert isinstance(plots.children[1], pn.pane.Markdown)
-        assert plots.children[1].object == ''
+        assert isinstance(plots.children[1], pn.pane.HoloViews)
         assert plots.panel.objects == plots.children
+        assert len(plots.watchers) == 1
     else:
         assert plots.watchers == []
         assert plots.panel.objects == []
@@ -102,17 +104,20 @@ def assert_is_empty(plots, visible=True):
 
 def assert_plotting_source2_0_line(plots, visible=True):
     assert plots.has_plots is True
-    assert plots.instructions == '**Select from the predefined plots:**'
+    assert plots.instructions_contents == '**Select from the predefined plots:**'
     assert plots.options == ['line_example', 'violin_example']
     if visible:
         assert plots.selected == 'line_example'
+        assert plots.instructions.object == plots.instructions_contents
         assert plots.desc.object == ("kind: line\n"
                                      "y: ['Robbery', 'Burglary']\n"
                                      "x: Year")
+        assert plots.pane.object is not None
         assert len(plots.children) == 2
         assert isinstance(plots.children[1], pn.pane.HoloViews)
         assert str(plots.children[1].object) == str(plots.pane.object)
         assert plots.panel.objects == plots.children
+        assert len(plots.watchers) == 1
     else:
         assert plots.selected is None
         assert plots.watchers == []
@@ -173,8 +178,9 @@ def test_defined_plots_set_source_to_empty_list_and_visible_to_false(defined_plo
 
 
 def test_defined_plots_select_a_different_plot(defined_plots):
+    """ This one is a genuine failure """
     defined_plots.selected = 'violin_example'
-    assert "kind: violin" in defined_plots.desc.object
+    assert defined_plots.desc.object.startswith("kind: violin")
     assert len(defined_plots.children) == 2
     assert isinstance(defined_plots.children[1], pn.pane.HoloViews)
     assert str(defined_plots.children[1].object) == str(defined_plots.pane.object)

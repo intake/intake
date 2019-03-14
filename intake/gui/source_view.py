@@ -46,7 +46,7 @@ class Description(Base):
     @property
     def contents(self):
         if not self._source:
-            return ''
+            return ' ' * 100  # HACK - make sure that area is big
         contents = deepcopy(self.source.describe())
         try:
             extra = deepcopy(self.source.describe_open())
@@ -83,7 +83,7 @@ class DefinedPlots(Base):
         self.pane = pn.pane.HoloViews(self.plot_object(self.selected))
 
         self.watchers = [
-            self.select.param.watch(self.callback, 'value')
+            self.select.param.watch(self.callback, ['options','value'])
         ]
 
         self.children = [
@@ -130,11 +130,14 @@ class DefinedPlots(Base):
     def selected(self, selected):
         self.select.value = selected
 
-    def callback(self, event):
-        print('EVENT:', event)
-        self.instructions.object = self.instructions_contents
-        self.desc.object = self.desc_contents(event.new)
-        self.pane.object = self.plot_object(event.new)
+    def callback(self, *events):
+        for event in events:
+            print('EVENT:', event)
+            if event.name == 'value':
+                self.desc.object = self.desc_contents(event.new)
+                self.pane.object = self.plot_object(event.new)
+            if event.name == 'options':
+                self.instructions.object = self.instructions_contents
 
     def plot_object(self, selected):
         if selected:

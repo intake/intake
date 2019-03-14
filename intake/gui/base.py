@@ -53,6 +53,8 @@ class Base(object):  # pragma: no cover
     def unwatch(self):
         """This method should get rid of any lingering watchers"""
         if self.watchers is not None:
+            unwatched = []
             for watcher in self.watchers:
                 watcher.inst.param.unwatch(watcher)
-                self.watchers.remove(watcher)
+                unwatched.append(watcher)
+            self.watchers = [w for w in self.watchers if w not in unwatched]
