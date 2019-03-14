@@ -52,20 +52,17 @@ class BaseSelector(Base):
     def add(self, items):
         """Add items to options"""
         options = self._create_options(items)
-        new_options = self.widget.options
-        new_options.update(options)
-        self.widget.options = new_options
+        self.widget.options.update(options)
+        self.widget.param.trigger('options')
         self.widget.value = list(options.values())[:1]
 
     def remove(self, items):
         """Remove items from options"""
         values = coerce_to_list(items)
         print(values, self.options)
-        new_options = self.widget.options
         for value in values:
-            new_options.pop(value.name)
-        self.widget.value = []
-        self.widget.options = new_options
+            self.widget.options.pop(value.name)
+        self.widget.param.trigger('options')
 
     @property
     def selected(self):

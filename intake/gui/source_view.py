@@ -61,7 +61,7 @@ class Description(Base):
             return pretty_describe(contents) + '\n' + warning
 
 
-class Plot(Base):
+class DefinedPlots(Base):
     plot = None
     select = None
 
