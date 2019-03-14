@@ -14,7 +14,7 @@ import panel as pn
 from .base import Base
 from .catalog_add import CatAdder
 from .source_select import CatSelector, SourceSelector
-from .source_view import Description, Plot
+from .source_view import Description, DefinedPlots
 from .catalog_search import Search
 
 
@@ -52,7 +52,7 @@ class GUI(Base):
         self.searcher = Search(cats=self.cats,
                                visible=self.search.value,
                                done_callback=self.cat_browser.add)
-        self.plotter = Plot(source=self.sources,
+        self.plotter = DefinedPlots(source=self.sources,
                             visible=self.plot.value)
 
         self.watchers = [
