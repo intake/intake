@@ -133,7 +133,7 @@ class CatAdder(Base):
 
     def __init__(self, visible=True, done_callback=None):
         self.done_callback = done_callback
-        self.panel = pn.Column(name='Add Catalog')
+        self.panel = pn.Column(name='Add Catalog', background='#eeeeee')
         self.visible = visible
 
     def setup(self):

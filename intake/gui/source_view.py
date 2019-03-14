@@ -82,7 +82,10 @@ class Plot(Base):
         ]
 
         self.children = [
-            pn.Column(self.select, self.plot_desc),
+            pn.Column(
+                self.instructions,
+                self.select,
+                self.plot_desc),
             self.plot
         ]
 
@@ -100,6 +103,16 @@ class Plot(Base):
         if self.select:
             self.select.options = self.options
             self.select.value = None
+
+    @property
+    def has_plots(self):
+        return self.source is not None and len(self._source.plots) > 0
+
+    @property
+    def instructions(self):
+        if self.has_plots:
+            return '**Select from the predefined plots:**'
+        return '*No predefined plots found - declare these in the catalog*'
 
     @property
     def options(self):
