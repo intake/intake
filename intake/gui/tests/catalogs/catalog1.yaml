@@ -1,0 +1,12 @@
+sources:
+  airline_flights:
+    description: Airline Flight data
+    driver: parquet
+    args:
+      urlpath: 's3://assets.holoviews.org/data/airline_flights.parq'
+      storage_options: {'anon': True}
+
+  fake1:
+    driver: fake
+    args:
+      urlpath: ''
