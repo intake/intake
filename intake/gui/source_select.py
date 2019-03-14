@@ -12,19 +12,28 @@ import panel as pn
 
 from .base import Base
 
+def coerce_to_list(items, preprocess=None):
+    """Given an instance or list, coerce to list.
+    With optional preprocessing.
+    """
+    if not isinstance(items, list):
+        items = [items]
+    if preprocess:
+        items = list(map(preprocess, items))
+    return items
+
 
 class BaseSelector(Base):
-    """
-    CHANGE
-    """
     preprocess = None
 
     def _create_options(self, items):
-        if not isinstance(items, list):
-            items = [items]
-        if self.preprocess:
-            items = map(self.preprocess, items)
-        return OrderedDict(map(lambda x: (x.name, x), items))
+        """Helper method to create options from list, or instance.
+
+        Applies preprocess method if available to create a uniform
+        output
+        """
+        return OrderedDict(map(lambda x: (x.name, x),
+                           coerce_to_list(items, self.preprocess)))
 
     @property
     def options(self):
@@ -32,36 +41,31 @@ class BaseSelector(Base):
 
     @options.setter
     def options(self, new):
-        # print('setting options', new)
+        """Set options from list, or instance of named item
+
+        Over-writes old options
+        """
         options = self._create_options(new)
-        # print('new options', options)
         self.widget.options = options
         self.widget.value = list(options.values())[:1]
 
     def add(self, items):
         """Add items to options"""
-        # print('adding', items)
         options = self._create_options(items)
         new_options = self.widget.options
-        if isinstance(new_options, dict):
-            new_options.update(options)
-        else:
-            new_options = options
-        # print('new options', new_options)
+        new_options.update(options)
         self.widget.options = new_options
         self.widget.value = list(options.values())[:1]
 
     def remove(self, items):
         """Remove items from options"""
-        # print('removing', items)
-        if not isinstance(items, list):
-            items = [items]
+        values = coerce_to_list(items)
+        print(values, self.options)
         new_options = self.widget.options
-        for item in items:
-            new_options.popitem(item)
-        # print('new options', new_options)
+        for value in values:
+            new_options.pop(value.name)
         self.widget.value = []
-        self.widget.options = new_options if len(new_options) > 0 else []
+        self.widget.options = new_options
 
     @property
     def selected(self):
@@ -69,13 +73,16 @@ class BaseSelector(Base):
 
     @selected.setter
     def selected(self, new):
-        # print('selecting', new)
-        if isinstance(new, str):
-            new = [self.options[new]]
-        elif hasattr(new, "name") and new in self.options.values():
-            new = [new]
-        # print('new', new)
-        self.widget.value = new
+        """Set selected from list or instance of object or name.
+
+        Over-writes existing selection
+        """
+        def preprocess(item):
+            if isinstance(item, str):
+                return self.options[item]
+            return item
+        items = coerce_to_list(new, preprocess)
+        self.widget.value = items
 
 
 class CatSelector(BaseSelector):
@@ -98,7 +105,7 @@ class CatSelector(BaseSelector):
 
     def setup(self):
         self.widget = pn.widgets.MultiSelect(size=9, width=200)
-        self.options = self._cats
+        self.cats = self._cats
         self.remove_button = pn.widgets.Button(
             name='Remove Selected Catalog',
             width=200)
@@ -125,10 +132,8 @@ class CatSelector(BaseSelector):
     @cats.setter
     def cats(self, cats):
         self._cats = cats
-        # print('cats', self._cats)
         if cats is not None and self.widget is not None:
             self.options = cats
-            # print(self.widget.options, self.widget.value)
 
     def remove_selected(self, *args):
         """Remove the selected catalog - allow the passing of arbitrary
@@ -149,7 +154,7 @@ class SourceSelector(BaseSelector):
 
     def setup(self):
         self.widget = pn.widgets.MultiSelect(size=9, width=200)
-        self.options = self._sources
+        self.sources = self._sources
         self.children = [self.widget]
 
     @property
@@ -159,7 +164,6 @@ class SourceSelector(BaseSelector):
     @cats.setter
     def cats(self, cats):
         """Set options from a list of cats"""
-        # print('setting cats', cats)
         sources = []
         for cat in cats:
             sources.extend(list(cat._entries.values()))
@@ -172,7 +176,5 @@ class SourceSelector(BaseSelector):
     @sources.setter
     def sources(self, sources):
         self._sources = sources
-        # print('setting sources', self._sources)
         if sources is not None and self.widget is not None:
             self.options = sources
-            # print(self.widget.options, self.widget.value)
