@@ -13,7 +13,7 @@ from .base import Base
 class SearchInputs(Base):
     """Input areas to control search parameters"""
     def __init__(self, visible=True):
-        self.panel = pn.Row(name='Search Inputs')
+        self.panel = pn.Row(name='Search Inputs', background='#eeeeee')
         self.visible = visible
 
     def setup(self):
