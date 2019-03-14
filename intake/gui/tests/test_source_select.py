@@ -70,7 +70,7 @@ def test_catalog_browser_remove_selected_cat(cat_browser, cat1):
 
 def test_catalog_browser_remove_cat_that_is_not_in_options(cat_browser, cat2):
     assert cat2.name not in cat_browser.options
-    with pytest.raises(KeyError, match='catalog_union_2'):
+    with pytest.raises(KeyError, match='catalog2'):
         cat_browser.remove(cat2)
 
 
@@ -145,8 +145,9 @@ def test_source_browser_select_name(source_browser, sources1):
 
 
 def test_source_browser_select_list_of_names(source_browser, sources1):
-    source_browser.selected = [sources1[1].name, sources1[2].name]
-    assert source_browser.selected == [sources1[1], sources1[2]]
+    source_browser.selected = []
+    source_browser.selected = [source.name for source in sources1]
+    assert source_browser.selected == sources1
     assert_widget_matches(source_browser)
 
 

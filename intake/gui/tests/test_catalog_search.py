@@ -21,8 +21,8 @@ def test_search_inputs(search_inputs):
 
 
 def test_search_inputs_text_prop_equal_to_widget_value(search_inputs):
-    search_inputs.text = 'entry'
-    assert search_inputs.text == 'entry'
+    search_inputs.text = 'some text'
+    assert search_inputs.text_widget.value == 'some text'
 
 
 def test_search_inputs_depth_prop_parses_to_int(search_inputs):
@@ -50,7 +50,7 @@ def test_search_watchers_gets_populated(search):
 
 
 def test_search_widget_click_tries_to_run_callback(search):
-    search.inputs.text = 'entry'
+    search.inputs.text = 'flight'
     with pytest.raises(TypeError, match="'NoneType' object is not callable"):
         search.widget.clicks = 1
 
@@ -58,7 +58,7 @@ def test_search_widget_click_tries_to_run_callback(search):
 def test_search_unwatch_watchers_get_cleaned_up(search):
     search.unwatch()
     assert len(search.watchers) == 0
-    search.inputs.text = 'entry'
+    search.inputs.text = 'flight'
 
     # does not try to run callback
     search.widget.clicks = 2
@@ -69,7 +69,7 @@ def test_callback_gets_right_input(search):
         """Raises an error if called"""
         raise ValueError('New catalogs', new_cats)
 
-    search.inputs.text = 'entry'
+    search.inputs.text = 'flight'
     search.done_callback = callback
     with pytest.raises(ValueError, match='<Intake catalog: catalog1_search>'):
         search.widget.clicks = 3

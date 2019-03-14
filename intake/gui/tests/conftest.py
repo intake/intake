@@ -13,11 +13,11 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 @pytest.fixture
 def cat1_url():
-    return os.path.join(here, '..', '..', 'catalog', 'tests', 'catalog1.yml')
+    return os.path.join(here, 'catalogs', 'catalog1.yaml')
 
 @pytest.fixture
 def cat2_url():
-    return os.path.join(here, '..', '..', 'catalog', 'tests', 'catalog_union_2.yml')
+    return os.path.join(here, 'catalogs', 'catalog2.yaml')
 
 @pytest.fixture
 def cat1(cat1_url):
@@ -37,15 +37,10 @@ def sources1(cat1):
     return list(cat1._entries.values())
 
 @pytest.fixture
-def sources2(cat1):
-    return list(cat1._entries.values())
+def sources2(cat2):
+    return list(cat2._entries.values())
 
 @pytest.fixture
 def source_browser(sources1):
     from ..source_select import SourceSelector
     return SourceSelector(sources=sources1)
-
-@pytest.fixture
-def description(sources1):
-    from ..source_view import Description
-    return Description(source=sources1[0])
