@@ -6,7 +6,7 @@
 #-----------------------------------------------------------------------------
 try:
     import panel
-    from .panel_gui import *
+    from .gui import *
 
 except ImportError:
 

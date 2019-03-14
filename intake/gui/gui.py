@@ -24,8 +24,9 @@ logo = pn.Column(logo_file)
 
 
 class GUI(Base):
-    def __init__(self, visible=True):
+    def __init__(self, cats=None, visible=True):
         self.panel = pn.Column(name='GUI')
+        self._cats = cats
         self.visible = visible
 
     def setup(self):
@@ -44,7 +45,7 @@ class GUI(Base):
             value=False,
             width=80)
 
-        self.cat_browser = CatSelector()
+        self.cat_browser = CatSelector(cats=self._cats)
         self.source_browser = SourceSelector(cats=self.cats)
         self.description = Description(source=self.sources)
         self.cat_adder = CatAdder(visible=self.cat_add.value,
