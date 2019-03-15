@@ -266,6 +266,11 @@ class Catalog(DataSource):
         # TODO: maybe close all entries?
         pass
 
+    @property
+    def gui(self):
+        from .gui import GUI
+        return GUI(self)
+
 
 class Entries(dict):
     """Fetches entries from server on item lookup and iteration.
