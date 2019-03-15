@@ -411,6 +411,11 @@ class Catalog(DataSource):
         # TODO: maybe close all entries?
         pass
 
+    @property
+    def gui(self):
+        from .gui import GUI
+        return GUI(self)
+
 
 class Entries(collections.abc.Mapping):
     """Fetches entries from server on item lookup and iteration.

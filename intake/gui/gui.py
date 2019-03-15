@@ -48,8 +48,8 @@ class GUI(Base):
         self.cat_browser = CatSelector(cats=self._cats)
         self.source_browser = SourceSelector(cats=self.cats)
         self.description = Description(source=self.sources)
-        self.cat_adder = CatAdder(visible=self.cat_add.value,
-                                  done_callback=self.cat_browser.add)
+        self.cat_adder = CatAdder(done_callback=self.cat_browser.add,
+                                  control_widget=self.cat_add)
         self.searcher = Search(cats=self.cats,
                                done_callback=self.cat_browser.add,
                                control_widget=self.search)
