@@ -21,10 +21,10 @@ def pretty_describe(object, nestedness=0, indent=2):
 class Description(Base):
     pane = None
 
-    def __init__(self, source=None, visible=True):
+    def __init__(self, source=None, **kwargs):
         self.source = source
         self.panel = pn.Column(name='Description')
-        self.visible = visible
+        super().__init__(**kwargs)
 
     def setup(self):
         self.pane = pn.pane.Str(self.contents, sizing_mode='stretch_width')
@@ -70,10 +70,10 @@ class DefinedPlots(Base):
     """
     select = None
 
-    def __init__(self, source=None, visible=True):
+    def __init__(self, source=None, **kwargs):
         self.source = source
         self.panel = pn.Row(name='Plot')
-        self.visible = visible
+        super().__init__(**kwargs)
 
     def setup(self):
         self.instructions = pn.pane.Markdown(self.instructions_contents)
@@ -104,6 +104,9 @@ class DefinedPlots(Base):
             # if source is a list, get first item or None
             source = source[0] if len(source) > 0 else None
         self._source = source
+        if self.control_widget is not None:
+            if self.visible and not self.has_plots:
+                self.visible = False
         if self.select:
             self.select.options = self.options
 

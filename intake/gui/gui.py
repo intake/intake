@@ -24,10 +24,10 @@ logo = pn.Column(logo_file)
 
 
 class GUI(Base):
-    def __init__(self, cats=None, visible=True):
-        self.panel = pn.Column(name='GUI')
+    def __init__(self, cats=None, **kwargs):
         self._cats = cats
-        self.visible = visible
+        self.panel = pn.Column(name='GUI')
+        super().__init__(**kwargs)
 
     def setup(self):
         self.search = pn.widgets.RadioButtonGroup(
@@ -51,10 +51,10 @@ class GUI(Base):
         self.cat_adder = CatAdder(visible=self.cat_add.value,
                                   done_callback=self.cat_browser.add)
         self.searcher = Search(cats=self.cats,
-                               visible=self.search.value,
-                               done_callback=self.cat_browser.add)
+                               done_callback=self.cat_browser.add,
+                               control_widget=self.search)
         self.plotter = DefinedPlots(source=self.sources,
-                                    visible=self.plot.value)
+                                    control_widget=self.plot)
 
         self.watchers = [
             self.cat_add.link(self.cat_adder, value='visible'),

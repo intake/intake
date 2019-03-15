@@ -13,6 +13,11 @@ class Base(object):  # pragma: no cover
     panel = None
     watchers  = None
     _visible = True
+    control_widget = None
+
+    def __init__(self, visible=True, control_widget=None):
+        self.control_widget = control_widget
+        self.visible = visible if control_widget is None else control_widget.value
 
     def __repr__(self):
         try:
@@ -49,6 +54,8 @@ class Base(object):  # pragma: no cover
             self.unwatch()
             self.panel.clear()
         self._visible = visible
+        if self.control_widget:
+            self.control_widget.value = visible
 
     def unwatch(self):
         """This method should get rid of any lingering watchers"""

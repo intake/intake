@@ -12,9 +12,9 @@ from .base import Base
 
 class SearchInputs(Base):
     """Input areas to control search parameters"""
-    def __init__(self, visible=True):
+    def __init__(self, **kwargs):
         self.panel = pn.Row(name='Search Inputs')
-        self.visible = visible
+        super().__init__(**kwargs)
 
     def setup(self):
         self.text_widget = pn.widgets.TextInput(
@@ -46,11 +46,11 @@ class SearchInputs(Base):
 
 class Search(Base):
     """Input is a list of catalogs and output is a list of new search catalogs"""
-    def __init__(self, cats, visible=True, done_callback=None):
+    def __init__(self, cats, done_callback=None, **kwargs):
         self.cats = cats
         self.done_callback = done_callback
         self.panel = pn.Row(name='Search', background='#eeeeee')
-        self.visible = visible
+        super().__init__(**kwargs)
 
     def setup(self):
         self.inputs = SearchInputs()
