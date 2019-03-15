@@ -25,12 +25,11 @@ class FileSelector(Base):
     The current path is stored in .path and the current selection is stored in
     .url. Currently does not support windows style paths
     """
-    def __init__(self, allow_next,
-                 filters=['yaml', 'yml'], visible=True):
+    def __init__(self, allow_next, filters=['yaml', 'yml'], **kwargs):
         self.filters = filters
         self.allow_next = allow_next
         self.panel = pn.Column(name='Local')
-        self.visible = visible
+        super().__init__(**kwargs)
 
     def setup(self):
         self.path_text = pn.widgets.TextInput(value=os.getcwd() + '/')
@@ -106,10 +105,10 @@ class URLSelector(Base):
 
     The inputted URL is stored in .url.
     """
-    def __init__(self, allow_next, visible=True):
+    def __init__(self, allow_next, **kwargs):
         self.allow_next = allow_next
         self.panel = pn.Row(name='Remote')
-        self.visible = visible
+        super().__init__(**kwargs)
 
     def setup(self):
         self.label = 'URL:'
@@ -131,10 +130,10 @@ class URLSelector(Base):
 class CatAdder(Base):
     """Sub-widget for adding new cats from file or remote"""
 
-    def __init__(self, visible=True, done_callback=None):
+    def __init__(self, done_callback=None, **kwargs):
         self.done_callback = done_callback
         self.panel = pn.Column(name='Add Catalog', background='#eeeeee')
-        self.visible = visible
+        super().__init__(**kwargs)
 
     def setup(self):
         self.fs = FileSelector(allow_next=self.enable_widget)

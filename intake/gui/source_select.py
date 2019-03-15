@@ -93,12 +93,12 @@ class CatSelector(BaseSelector):
     """
     children = []
 
-    def __init__(self, cats=None, visible=True):
+    def __init__(self, cats=None, **kwargs):
         if cats is None:
             cats = [intake.cat]
         self._cats = cats
         self.panel = pn.Column(name='Select Catalog')
-        self.visible = visible
+        super().__init__(**kwargs)
 
     def setup(self):
         self.widget = pn.widgets.MultiSelect(size=9, width=200)
@@ -142,12 +142,12 @@ class SourceSelector(BaseSelector):
     preprocess = None
     children = []
 
-    def __init__(self, sources=None, cats=None, visible=True):
+    def __init__(self, sources=None, cats=None, **kwargs):
         self._sources = sources
         if sources is None and cats is not None:
             self.cats = cats
         self.panel = pn.Column(name='Select Data Source')
-        self.visible = visible
+        super().__init__(**kwargs)
 
     def setup(self):
         self.widget = pn.widgets.MultiSelect(size=9, width=200)
