@@ -31,7 +31,7 @@ class FileSelector(Base):
         super().__init__(**kwargs)
 
     def setup(self):
-        self.path_text = pn.widgets.TextInput(value=os.getcwd() + '/')
+        self.path_text = pn.widgets.TextInput(value=os.getcwd() + os.path.sep)
         self.validator = pn.pane.SVG(ICONS['check'])
         self.main = pn.widgets.MultiSelect(size=15)
         self.home = pn.widgets.Button(name='🏠', width=40, height=30)
@@ -55,17 +55,17 @@ class FileSelector(Base):
     @property
     def path(self):
         path = self.path_text.value
-        return path if path.endswith('/') else path + '/'
+        return path if path.endswith(os.path.sep) else path + os.path.sep
 
     @property
     def url(self):
         return os.path.join(self.path, self.main.value[0])
 
     def move_up(self, arg=None):
-        self.path_text.value = os.path.dirname(self.path.rstrip('/')) + '/'
+        self.path_text.value = os.path.dirname(self.path.rstrip(os.path.sep)) + os.path.sep
 
     def go_home(self, arg=None):
-        self.path_text.value = os.getcwd() + '/'
+        self.path_text.value = os.getcwd() + os.path.sep
 
     def validate(self, arg=None):
         if os.path.isdir(self.path):
@@ -81,7 +81,7 @@ class FileSelector(Base):
                 if f.startswith('.'):
                     continue
                 elif os.path.isdir(os.path.join(self.path, f)):
-                    out.append(f + '/')
+                    out.append(f + os.path.sep)
                 elif any(f.endswith(ext) for ext in self.filters):
                     out.append(f)
 
@@ -92,7 +92,7 @@ class FileSelector(Base):
         for event in events:
             if event.name == 'value' and len(event.new) > 0:
                 fn = event.new[0]
-                if fn.endswith('/'):
+                if fn.endswith(os.path.sep):
                     self.path_text.value = self.path + fn
                     self.make_options()
                 elif os.path.isfile(self.url):
