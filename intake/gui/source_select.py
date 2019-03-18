@@ -59,7 +59,6 @@ class BaseSelector(Base):
     def remove(self, items):
         """Remove items from options"""
         values = coerce_to_list(items)
-        print(values, self.options)
         for value in values:
             self.widget.options.pop(value.name)
         self.widget.param.trigger('options')
@@ -94,28 +93,27 @@ class CatSelector(BaseSelector):
     children = []
 
     def __init__(self, cats=None, **kwargs):
-        if cats is None:
-            cats = [intake.cat]
-        self._cats = cats
         self.panel = pn.Column(name='Select Catalog')
+        self.widget = pn.widgets.MultiSelect(size=9, width=200)
         super().__init__(**kwargs)
 
+        self.cats = cats if cats is not None else [intake.cat]
+
     def setup(self):
-        self.widget = pn.widgets.MultiSelect(size=9, width=200)
-        self.cats = self._cats
         self.remove_button = pn.widgets.Button(
             name='Remove Selected Catalog',
             width=200)
+        self.dependent_widgets.append(self.remove_button)
 
         self.watchers = [
             self.remove_button.param.watch(self.remove_selected, 'clicks'),
-            self.widget.param.watch(self.allow_next, 'value'),
+            self.widget.param.watch(self.enable_dependents, 'value'),
         ]
 
         self.children = [self.widget, self.remove_button]
 
-    def allow_next(self, event):
-        self.remove_button.disabled = len(event.new) == 0
+    def teardown(self):
+        self.dependent_widgets.remove(self.remove_button)
 
     def preprocess(self, cat):
         if isinstance(cat, str):
@@ -124,13 +122,14 @@ class CatSelector(BaseSelector):
 
     @property
     def cats(self):
-        return list(self.options.values()) or self._cats
+        return list(self.options.values())
 
     @cats.setter
     def cats(self, cats):
-        self._cats = cats
-        if cats is not None and self.widget is not None:
+        print('CATS', cats)
+        if cats is not None:
             self.options = cats
+        self.enable_dependents(cats)
 
     def remove_selected(self, *args):
         """Remove the selected catalog - allow the passing of arbitrary
@@ -143,15 +142,20 @@ class SourceSelector(BaseSelector):
     children = []
 
     def __init__(self, sources=None, cats=None, **kwargs):
-        self._sources = sources
-        if sources is None and cats is not None:
-            self.cats = cats
         self.panel = pn.Column(name='Select Data Source')
+        self.widget = pn.widgets.MultiSelect(size=9, width=200)
         super().__init__(**kwargs)
 
+        if sources is not None:
+            self.sources = sources
+        elif cats is not None:
+            self.cats = cats
+
     def setup(self):
-        self.widget = pn.widgets.MultiSelect(size=9, width=200)
-        self.sources = self._sources
+        self.watchers = [
+            self.widget.param.watch(self.enable_dependents, 'value'),
+        ]
+
         self.children = [self.widget]
 
     @property
@@ -168,10 +172,11 @@ class SourceSelector(BaseSelector):
 
     @property
     def sources(self):
-        return list(self.options.values()) or self._sources
+        return list(self.options.values())
 
     @sources.setter
     def sources(self, sources):
-        self._sources = sources
-        if sources is not None and self.widget is not None:
+        print('SOURCES', sources)
+        if sources is not None:
             self.options = sources
+        self.enable_dependents(sources)

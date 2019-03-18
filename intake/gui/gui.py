@@ -33,6 +33,7 @@ class GUI(Base):
         self.search = pn.widgets.RadioButtonGroup(
             options={'🔍': True, 'x': False},
             value=False,
+            disabled=True,
             width=80)
 
         self.cat_add = pn.widgets.RadioButtonGroup(
@@ -43,10 +44,13 @@ class GUI(Base):
         self.plot = pn.widgets.RadioButtonGroup(
             options={'📊': True, 'x': False},
             value=False,
+            disabled=True,
             width=80)
 
-        self.cat_browser = CatSelector(cats=self._cats)
-        self.source_browser = SourceSelector(cats=self.cats)
+        self.cat_browser = CatSelector(cats=self._cats,
+                                       dependent_widgets=[self.search])
+        self.source_browser = SourceSelector(cats=self.cats,
+                                             dependent_widgets=[self.plot])
         self.description = Description(source=self.sources)
         self.cat_adder = CatAdder(done_callback=self.cat_browser.add,
                                   control_widget=self.cat_add)
