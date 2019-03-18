@@ -47,7 +47,7 @@ Intake reads data into memory using :term:`containers<Container>` you are alread
 
   * Tables: Pandas DataFrames
   * Multidimensional arrays: NumPy arrays
-  * Semistructred data: Python lists of objects (usually dictionaries)
+  * Semistructured data: Python lists of objects (usually dictionaries)
 
 To find out what kind of container a data source will produce, inspect the ``container`` attribute::
 
