@@ -126,7 +126,6 @@ class CatSelector(BaseSelector):
 
     @cats.setter
     def cats(self, cats):
-        print('CATS', cats)
         if cats is not None:
             self.options = cats
         self.enable_dependents(cats)
@@ -176,7 +175,6 @@ class SourceSelector(BaseSelector):
 
     @sources.setter
     def sources(self, sources):
-        print('SOURCES', sources)
         if sources is not None:
             self.options = sources
         self.enable_dependents(sources)
