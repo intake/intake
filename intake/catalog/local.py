@@ -20,10 +20,8 @@ from .entry import CatalogEntry
 from ..source import registry as global_registry
 from ..source import get_plugin_class
 from ..source.discovery import load_plugins_from_module
-from ..utils import make_path_posix
-from .utils import (expand_templates, expand_defaults, coerce, COERCION_RULES,
-                    merge_pars)
-from ..utils import yaml_load, DictSerialiseMixin
+from .utils import expand_defaults, coerce, COERCION_RULES, merge_pars
+from ..utils import yaml_load, DictSerialiseMixin, make_path_posix
 
 logger = logging.getLogger('intake')
 

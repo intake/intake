@@ -115,7 +115,7 @@ def reload_all():
 
 reload_all()
 
-logger.setLevel(conf['logging'])
+logger.setLevel(conf['logging'].upper())
 ch = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - '
                               '%(filename)s:%(funcName)s:L%(lineno)d - '

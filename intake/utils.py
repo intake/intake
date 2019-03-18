@@ -5,6 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import collections
 from contextlib import contextmanager
 import yaml
 
@@ -40,12 +41,13 @@ def no_duplicates_constructor(loader, node, deep=False):
 
 @contextmanager
 def no_duplicate_yaml():
-    yaml.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-                         no_duplicates_constructor)
+    yaml.SafeLoader.add_constructor(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+        no_duplicates_constructor)
     try:
         yield
     finally:
-        yaml.add_constructor(
+        yaml.SafeLoader.add_constructor(
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
             yaml.constructor.SafeConstructor.construct_yaml_map
         )
@@ -54,7 +56,7 @@ def no_duplicate_yaml():
 def yaml_load(stream):
     """Parse YAML in a context where duplicate keys raise exception"""
     with no_duplicate_yaml():
-        return yaml.load(stream)
+        return yaml.safe_load(stream)
 
 
 def classname(ob):
