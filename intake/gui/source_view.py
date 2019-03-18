@@ -104,9 +104,6 @@ class DefinedPlots(Base):
             # if source is a list, get first item or None
             source = source[0] if len(source) > 0 else None
         self._source = source
-        if self.control_widget is not None:
-            if self.visible and not self.has_plots:
-                self.visible = False
         if self.select:
             self.select.options = self.options
 

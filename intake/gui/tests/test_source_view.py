@@ -98,8 +98,9 @@ def assert_is_empty(plots, visible=True):
         assert plots.panel.objects == plots.children
         assert len(plots.watchers) == 1
     else:
-        assert plots.watchers == []
-        assert plots.panel.objects == []
+        assert not plots.selected
+        assert not plots.watchers
+        assert not plots.panel.objects
 
 
 def assert_plotting_source2_0_line(plots, visible=True):
@@ -119,9 +120,9 @@ def assert_plotting_source2_0_line(plots, visible=True):
         assert plots.panel.objects == plots.children
         assert len(plots.watchers) == 1
     else:
-        assert plots.selected is None
-        assert plots.watchers == []
-        assert plots.panel.objects == []
+        assert not plots.selected
+        assert not plots.watchers
+        assert not plots.panel.objects
 
 
 @pytest.fixture

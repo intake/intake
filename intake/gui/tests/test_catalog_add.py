@@ -12,20 +12,18 @@ def callback(args):
     """Raises an error if called"""
     raise ValueError('Callback provided:', args)
 
-def allow_next(allow=True):
-    """Raises an error if called"""
-    print('Allow next got:', allow)
 
 @pytest.fixture
 def file_selector():
     from ..catalog_add import FileSelector
-    return FileSelector(allow_next=allow_next)
+    return FileSelector()
 
 
 @pytest.fixture
 def url_selector():
     from ..catalog_add import URLSelector
-    return URLSelector(allow_next=allow_next)
+    return URLSelector()
+
 
 @pytest.fixture
 def cat_adder():
@@ -51,7 +49,7 @@ def test_file_selector_edit_path(file_selector):
 
 
 def test_file_selector_edit_path_bad_value(file_selector):
-    file_selector.allow_next = callback
+    file_selector.enable_dependents = callback
     with pytest.raises(ValueError, match='False'):
         file_selector.path_text.value = 'blah/foo/blah'
         assert 'error' in file_selector.validator.object
@@ -114,7 +112,7 @@ def test_cat_adder(cat_adder):
 
 def test_cat_adder_add_real_cat(cat_adder, cat1_url, cat1):
     cat_adder.tabs.active = 1
-    cat_adder.url.widget.value = cat1_url
+    cat_adder.url.main.value = cat1_url
 
     assert cat_adder.cat_url == cat1_url
     assert cat_adder.cat == cat1

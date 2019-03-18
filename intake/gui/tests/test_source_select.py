@@ -30,6 +30,18 @@ def test_catalog_browser(cat_browser, cat1):
     assert_widget_matches(cat_browser)
 
 
+def test_catalog_browser_set_to_visible_and_back(cat_browser, cat1):
+    cat_browser.visible = False
+    assert len(cat_browser.watchers) == 0
+
+    cat_browser.visible = True
+    assert len(cat_browser.watchers) == 2
+    assert cat_browser.cats == [cat1]
+    assert cat1.name in cat_browser.options
+    assert cat_browser.selected == [cat1]
+    assert_widget_matches(cat_browser)
+
+
 def test_catalog_browser_add(cat_browser, cat2):
     cat_browser.add(cat2)
     assert cat2.name in cat_browser.options

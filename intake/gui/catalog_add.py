@@ -25,9 +25,8 @@ class FileSelector(Base):
     The current path is stored in .path and the current selection is stored in
     .url. Currently does not support windows style paths
     """
-    def __init__(self, allow_next, filters=['yaml', 'yml'], **kwargs):
+    def __init__(self, filters=['yaml', 'yml'], **kwargs):
         self.filters = filters
-        self.allow_next = allow_next
         self.panel = pn.Column(name='Local')
         super().__init__(**kwargs)
 
@@ -75,7 +74,7 @@ class FileSelector(Base):
             self.validator.object = ICONS['error']
 
     def make_options(self, arg=None):
-        self.allow_next(False)
+        self.enable_dependents(False)
         out = []
         if os.path.isdir(self.path):
             for f in sorted(os.listdir(self.path)):
@@ -97,7 +96,7 @@ class FileSelector(Base):
                     self.path_text.value = self.path + fn
                     self.make_options()
                 elif os.path.isfile(self.url):
-                    self.allow_next(True)
+                    self.enable_dependents(True)
 
 class URLSelector(Base):
     """
@@ -105,26 +104,20 @@ class URLSelector(Base):
 
     The inputted URL is stored in .url.
     """
-    def __init__(self, allow_next, **kwargs):
-        self.allow_next = allow_next
+    def __init__(self, **kwargs):
         self.panel = pn.Row(name='Remote')
         super().__init__(**kwargs)
 
     def setup(self):
         self.label = 'URL:'
-        self.widget = pn.widgets.TextInput(
+        self.main = pn.widgets.TextInput(
             placeholder="Full URL with protocol",
             width=600)
-
-        self.watchers = [
-            self.widget.param.watch(self.allow_next, ['value'])
-        ]
-
-        self.children = ['URL:', self.widget]
+        self.children = ['URL:', self.main]
 
     @property
     def url(self):
-        return self.widget.value
+        return self.main.value
 
 
 class CatAdder(Base):
@@ -136,15 +129,16 @@ class CatAdder(Base):
         super().__init__(**kwargs)
 
     def setup(self):
-        self.fs = FileSelector(allow_next=self.enable_widget)
-        self.url = URLSelector(allow_next=self.enable_widget)
-        self.selectors = [self.fs, self.url]
-        self.tabs = pn.Tabs(*map(lambda x: x.panel, self.selectors))
         self.widget = pn.widgets.Button(name='Add Catalog',
                                         disabled=True, max_width=300)
+        self.fs = FileSelector(dependent_widgets=[self.widget])
+        self.url = URLSelector()
+        self.selectors = [self.fs, self.url]
+        self.tabs = pn.Tabs(*map(lambda x: x.panel, self.selectors))
 
         self.watchers = [
-            self.widget.param.watch(self.add_cat, 'clicks')
+            self.widget.param.watch(self.add_cat, 'clicks'),
+            self.tabs.param.watch(self.tab_change, 'active'),
         ]
 
         self.children = [self.tabs, self.widget]
@@ -161,3 +155,7 @@ class CatAdder(Base):
     def add_cat(self, arg=None):
         if self.cat.name is not None:
             self.done_callback(self.cat)
+
+    def tab_change(self, event):
+        if event.new == 1:
+            self.widget.disabled = False
