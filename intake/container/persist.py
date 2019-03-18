@@ -93,7 +93,7 @@ class PersistStore(YAMLFileCatalog):
         from intake.catalog.local import LocalCatalogEntry
         try:
             with self.fs.open(self.path, 'rb') as f:
-                data = yaml.load(f.read().decode())
+                data = yaml.safe_load(f)
         except IOError:
             data = {'sources': {}}
         ds = source._yaml()['sources'][source.name]
@@ -137,7 +137,7 @@ class PersistStore(YAMLFileCatalog):
         """
         source = self.get_tok(source)
         with self.fs.open(self.path, 'rb') as f:
-            data = yaml.load(f.read().decode())
+            data = yaml.safe_load(f.read().decode())
         data['sources'].pop(source, None)
         with self.fs.open(self.path, 'wb') as fo:
             fo.write(yaml.dump(data, default_flow_style=False).encode())

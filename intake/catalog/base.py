@@ -616,6 +616,9 @@ class RemoteCatalog(Catalog):
         for name in source:
             entry = source[name]
             out[name] = entry.__getstate__()
+            out[name]['parameters'] = [up._captured_init_kwargs for up
+                                       in entry._user_parameters]
+            out[name]['kwargs'].pop('parameters')
         fn = posixpath.join(path, 'cat.yaml')
         with open_files([fn], 'wt')[0] as f:
             yaml.dump({'sources': out}, f)
