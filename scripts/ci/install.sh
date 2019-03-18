@@ -24,6 +24,6 @@ conda config --set auto_update_conda off
 conda install --yes ${CONDA_REQS}
 
 echo "Installing test dependencies."
-conda install --yes `python scripts/deps.py` -c defaults -c conda-forge
+conda install --yes `python scripts/deps.py` -c defaults -c conda-forge -c pyviz/label/dev -c bokeh/label/dev
 conda install -y -c conda-forge nodejs
 npm install -g dat
