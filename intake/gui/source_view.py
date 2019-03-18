@@ -131,7 +131,6 @@ class DefinedPlots(Base):
 
     def callback(self, *events):
         for event in events:
-            print('EVENT:', event)
             if event.name == 'value':
                 self.desc.object = self.desc_contents(event.new)
                 self.pane.object = self.plot_object(event.new)
