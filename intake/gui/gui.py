@@ -11,7 +11,7 @@ from collections import OrderedDict
 import intake
 import panel as pn
 
-from .base import Base
+from .base import Base, MAX_WIDTH, BACKGROUND
 from .catalog_add import CatAdder
 from .source_select import CatSelector, SourceSelector
 from .source_view import Description, DefinedPlots
@@ -20,13 +20,34 @@ from .catalog_search import Search
 
 here = os.path.abspath(os.path.dirname(__file__))
 logo_file = os.path.join(here, 'logo.png')
-logo = pn.Column(logo_file)
 
 
 class GUI(Base):
+    """
+    Top level GUI panel that contains controls and all visible sub-panels
+
+    This class is responsible for coordinating the inputs and outputs
+    of various sup-panels and their effects on each other.
+
+    Parameters
+    ----------
+    cats: list of catalogs
+        catalogs used to initalize the cat_browser
+
+    Attributes
+    ----------
+    children: list of panel objects
+        children that will be used to populate the panel when visible
+    panel: panel layout object
+        instance of a panel layout (row or column) that contains children
+        when visible
+    watchers: list of param watchers
+        watchers that are set on children - cleaned up when visible
+        is set to false.
+    """
     def __init__(self, cats=None, **kwargs):
         self._cats = cats
-        self.panel = pn.Column(name='GUI')
+        self.panel = pn.Column(name='GUI', width_policy='max')
         super().__init__(**kwargs)
 
     def setup(self):
@@ -74,12 +95,15 @@ class GUI(Base):
                     logo_file,
                     self.search,
                     self.cat_add,
-                    self.plot),
+                    self.plot
+                ),
                 self.cat_browser.panel,
                 self.source_browser.panel,
                 self.description.panel,
-                background='#eeeeee',
-                sizing_mode='stretch_width'),
+                background=BACKGROUND,
+                width_policy='max',
+                max_width=MAX_WIDTH,
+            ),
             self.searcher.panel,
             self.cat_adder.panel,
             self.plotter.panel,
@@ -103,14 +127,17 @@ class GUI(Base):
 
     @property
     def cats(self):
+        """Cats that have been selected from the cat_browser"""
         return self.cat_browser.selected
 
     @property
     def sources(self):
+        """Sources that have been selected from the source_browser"""
         return self.source_browser.selected
 
     @property
     def item(self):
+        """Item that is selected"""
         if len(self.sources) == 0:
             return None
         return self.sources[0]

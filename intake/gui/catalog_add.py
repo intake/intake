@@ -10,7 +10,7 @@ import os
 import intake
 import panel as pn
 
-from .base import Base
+from .base import Base, MAX_WIDTH, BACKGROUND
 
 here = os.path.abspath(os.path.dirname(__file__))
 ICONS = {
@@ -23,7 +23,13 @@ class FileSelector(Base):
     Panel interface for picking files
 
     The current path is stored in .path and the current selection is stored in
-    .url. Currently does not support windows style paths
+    .url.
+
+    Parameters
+    ----------
+    filters: list of string
+        extentions that are included in the list of files - correspond to
+        catalog extensions.
     """
     def __init__(self, filters=['yaml', 'yml'], **kwargs):
         self.filters = filters
@@ -31,9 +37,10 @@ class FileSelector(Base):
         super().__init__(**kwargs)
 
     def setup(self):
-        self.path_text = pn.widgets.TextInput(value=os.getcwd() + os.path.sep)
-        self.validator = pn.pane.SVG(ICONS['check'])
-        self.main = pn.widgets.MultiSelect(size=15)
+        self.path_text = pn.widgets.TextInput(value=os.getcwd() + os.path.sep,
+                                              width_policy='max')
+        self.validator = pn.pane.SVG(ICONS['check'], width=25)
+        self.main = pn.widgets.MultiSelect(size=15, width_policy='max')
         self.home = pn.widgets.Button(name='🏠', width=40, height=30)
         self.up = pn.widgets.Button(name='‹', width=30, height=30)
 
@@ -68,6 +75,7 @@ class FileSelector(Base):
         self.path_text.value = os.getcwd() + os.path.sep
 
     def validate(self, arg=None):
+        """Check that inputted path is valid - set validator accordingly"""
         if os.path.isdir(self.path):
             self.validator.object = ICONS['check']
         else:
@@ -105,14 +113,14 @@ class URLSelector(Base):
     The inputted URL is stored in .url.
     """
     def __init__(self, **kwargs):
-        self.panel = pn.Row(name='Remote')
+        self.panel = pn.Row(name='Remote',
+                            width_policy='max')
         super().__init__(**kwargs)
 
     def setup(self):
-        self.label = 'URL:'
         self.main = pn.widgets.TextInput(
             placeholder="Full URL with protocol",
-            width=600)
+            width_policy='max')
         self.children = ['URL:', self.main]
 
     @property
@@ -121,16 +129,24 @@ class URLSelector(Base):
 
 
 class CatAdder(Base):
-    """Sub-widget for adding new cats from file or remote"""
+    """Panel for adding new cats from file or remote
+
+    Parameters
+    ----------
+    done_callback: function with cat as input
+        function that is called when the "Add Catalog" button is clicked.
+    """
 
     def __init__(self, done_callback=None, **kwargs):
         self.done_callback = done_callback
-        self.panel = pn.Column(name='Add Catalog', background='#eeeeee')
+        self.panel = pn.Column(name='Add Catalog', background=BACKGROUND,
+                               width_policy='max', max_width=MAX_WIDTH)
         super().__init__(**kwargs)
 
     def setup(self):
         self.widget = pn.widgets.Button(name='Add Catalog',
-                                        disabled=True, max_width=300)
+                                        disabled=True,
+                                        width_policy='min')
         self.fs = FileSelector(dependent_widgets=[self.widget])
         self.url = URLSelector()
         self.selectors = [self.fs, self.url]
@@ -157,5 +173,6 @@ class CatAdder(Base):
             self.done_callback(self.cat)
 
     def tab_change(self, event):
+        """Enable widget when on URL tab"""
         if event.new == 1:
             self.widget.disabled = False

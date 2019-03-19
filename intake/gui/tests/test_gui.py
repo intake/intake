@@ -78,18 +78,18 @@ def test_gui_close_and_open_cat_browser(gui, cat2, sources2):
     assert gui.search.disabled is False
 
     gui.cat_browser.selected = [cat2]
-    assert gui.source_browser.sources == sources2
+    assert gui.source_browser.items == sources2
     assert gui.search.disabled is False
 
     gui.cat_browser.visible = False
-    assert gui.source_browser.sources == sources2
+    assert gui.source_browser.items == sources2
     assert not gui.cat_browser.watchers
     assert gui.search.disabled is False
 
     gui.cat_browser.visible = True
     assert len(gui.cat_browser.watchers) == 2
     assert gui.cat_browser.selected == [cat2]
-    assert gui.source_browser.sources == sources2
+    assert gui.source_browser.items == sources2
     assert gui.search.disabled is False
 
 

@@ -7,22 +7,22 @@
 
 import panel as pn
 
-from .base import Base
+from .base import Base, MAX_WIDTH, BACKGROUND
 
 
 class SearchInputs(Base):
     """Input areas to control search parameters"""
     def __init__(self, **kwargs):
-        self.panel = pn.Row(name='Search Inputs')
+        self.panel = pn.Row(name='Search Inputs', height_policy='min')
         super().__init__(**kwargs)
 
     def setup(self):
         self.text_widget = pn.widgets.TextInput(
             placeholder="Set of words",
-            width=400)
+            width_policy='max')
         self.depth_widget = pn.widgets.Select(
             options=['1', '2', '3', '4', '5', 'All'],
-            width=80)
+            width=80, height=30)
 
         self.children = ['Search Text:', self.text_widget,
                          'Depth:', self.depth_widget]
@@ -45,11 +45,21 @@ class SearchInputs(Base):
 
 
 class Search(Base):
-    """Input is a list of catalogs and output is a list of new search catalogs"""
+    """Search panel for searching a list of catalogs
+
+    Parameters
+    ----------
+    cats: list of catalogs
+        catalogs that will be searched
+    done_callback: function with cats as input
+        function that is called when new cats have been generated
+        via the search functionality
+    """
     def __init__(self, cats, done_callback=None, **kwargs):
         self.cats = cats
         self.done_callback = done_callback
-        self.panel = pn.Row(name='Search', background='#eeeeee')
+        self.panel = pn.Row(name='Search', background=BACKGROUND,
+                            width_policy='max', max_width=MAX_WIDTH)
         super().__init__(**kwargs)
 
     def setup(self):
