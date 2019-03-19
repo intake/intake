@@ -19,6 +19,11 @@ def pretty_describe(object, nestedness=0, indent=2):
 
 
 class Description(Base):
+    """
+    Panel for displaying a textual description of a data source.
+
+    Set ``source`` to update the output.
+    """
     pane = None
 
     def __init__(self, source=None, **kwargs):
@@ -89,7 +94,8 @@ class DefinedPlots(Base):
             pn.Column(
                 self.instructions,
                 self.select,
-                self.desc),
+                self.desc,
+                max_width=400),
             self.pane
         ]
 
@@ -123,10 +129,12 @@ class DefinedPlots(Base):
 
     @property
     def selected(self):
+        """Name of selected plot"""
         return self.select.value if self.select is not None else None
 
     @selected.setter
     def selected(self, selected):
+        """When plot is selected set, make sure widget stays uptodate"""
         self.select.value = selected
 
     def callback(self, *events):

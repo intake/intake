@@ -100,12 +100,15 @@ def test_url_selector_set_visible_to_false(url_selector):
 
 
 def test_cat_adder(cat_adder):
-    assert cat_adder.visible
+    assert cat_adder.visible is True
+    assert cat_adder.tabs.active == 0
+    assert cat_adder.widget.disabled is True
     assert len(cat_adder.panel.objects) == 2
 
     cat_adder.tabs.active = 1
     assert cat_adder.cat_url == ''
     assert cat_adder.cat.name is None
+    assert cat_adder.widget.disabled is False
 
     cat_adder.done_callback = callback
     cat_adder.add_cat()  # does not trigger callback
