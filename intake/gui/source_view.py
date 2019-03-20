@@ -24,7 +24,8 @@ class Description(Base):
 
     Set ``source`` to update the output.
     """
-    pane = None
+    main_pane = None
+    label_pane = None
 
     def __init__(self, source=None, **kwargs):
         self.source = source
@@ -32,8 +33,9 @@ class Description(Base):
         super().__init__(**kwargs)
 
     def setup(self):
-        self.pane = pn.pane.Str(self.contents, sizing_mode='stretch_width')
-        self.children = [self.pane]
+        self.main_pane = pn.pane.Str(self.contents, sizing_mode='stretch_width')
+        self.label_pane = pn.pane.Markdown(self.label)
+        self.children = [self.label_pane, self.main_pane]
 
     @property
     def source(self):
@@ -46,8 +48,9 @@ class Description(Base):
             # if source is a list, get first item or None
             source = source[0] if len(source) > 0 else None
         self._source = source
-        if self.pane:
-            self.pane.object = self.contents
+        if self.main_pane:
+            self.main_pane.object = self.contents
+            self.label_pane.object = self.label
 
     @property
     def contents(self):
@@ -65,6 +68,10 @@ class Description(Base):
         except ValueError:
             warning = f'Need additional plugin to use {self.source._driver} driver'
             return pretty_describe(contents) + '\n' + warning
+
+    @property
+    def label(self):
+        return f'####Entry: {self.source.name}' if self.source else None
 
 
 class DefinedPlots(Base):

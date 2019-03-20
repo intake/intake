@@ -142,7 +142,7 @@ class CatSelector(BaseSelector):
             self.widget.param.watch(self.enable_dependents, 'value'),
         ]
 
-        self.children = [self.widget, self.remove_button]
+        self.children = ['####Catalogs', self.widget, self.remove_button]
 
     def teardown(self):
         self.dependent_widgets.remove(self.remove_button)
@@ -191,8 +191,8 @@ class SourceSelector(BaseSelector):
         self.watchers = [
             self.widget.param.watch(self.enable_dependents, 'value'),
         ]
-
-        self.children = [self.widget]
+        self.label = '####Entries'
+        self.children = [self.label, self.widget]
 
     @property
     def cats(self):

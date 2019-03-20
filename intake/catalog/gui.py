@@ -6,9 +6,9 @@
 #-----------------------------------------------------------------------------
 try:
     import panel as pn
-    from ..gui import Base, SourceSelector, Description, DefinedPlots, logo_file
+    from ..gui import *
 
-    class GUI(Base):
+    class CatalogGUI(Base):
         def __init__(self, cat, **kwargs):
             self.cat = cat
             self.panel = pn.Column(name='GUI')
@@ -35,11 +35,14 @@ try:
                 pn.Row(
                     pn.Column(
                         logo_file,
-                        self.plot),
+                        self.plot
+                    ),
                     self.source_browser.panel,
                     self.description.panel,
-                    background='#eeeeee',
-                    sizing_mode='stretch_width'),
+                    background=BACKGROUND,
+                    width_policy='max',
+                    max_width=MAX_WIDTH,
+                ),
                 self.plotter.panel,
             ]
 
@@ -61,19 +64,61 @@ try:
                 return None
             return self.sources[0]
 
+    class EntryGUI(Base):
+        def __init__(self, source, **kwargs):
+            self.source = source
+            self.panel = pn.Column(name='GUI')
+            super().__init__(**kwargs)
+
+        def setup(self):
+            self.plot = pn.widgets.RadioButtonGroup(
+                options={'📊': True, 'x': False},
+                value=False,
+                disabled=len(self.source.plots) == 0,
+                width=80)
+
+            self.description = Description(source=self.source)
+            self.plotter = DefinedPlots(source=self.source,
+                                        control_widget=self.plot)
+
+            self.watchers = [
+                self.plot.link(self.plotter, value='visible'),
+            ]
+
+            self.children = [
+                pn.Row(
+                    pn.Column(
+                        logo_file,
+                        self.plot
+                    ),
+                    self.description.panel,
+                    background=BACKGROUND,
+                    width_policy='max',
+                    max_width=MAX_WIDTH,
+                ),
+                self.plotter.panel,
+            ]
+
+        @property
+        def item(self):
+            return self.source
+
 except ImportError:
 
     class GUI(object):
         def __repr__(self):
             raise RuntimeError("Please install panel to use the GUI")
 
+    EntryGui = GUI
+    CatalogGUI = GUI
+
+
 except Exception as e:
 
     class GUI(object):
         def __repr__(self):
-            raise RuntimeError("Initialisation of GUI failed, even though "
+            raise RuntimeError("Initialization of GUI failed, even though "
                                "panel is installed. Please update it "
                                "to a more recent version.")
-
-
-
+    EntryGui = GUI
+    CatalogGUI = GUI
