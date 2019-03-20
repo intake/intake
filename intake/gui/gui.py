@@ -93,8 +93,8 @@ class GUI(Base):
             pn.Row(
                 pn.Column(
                     logo_file,
-                    self.search,
                     self.cat_add,
+                    self.search,
                     self.plot
                 ),
                 self.cat_browser.panel,

@@ -73,6 +73,7 @@ class Search(Base):
         self.children = [self.inputs.panel, self.widget]
 
     def do_search(self, arg=None):
+        """Do search and close panel"""
         new_cats = []
         for cat in self.cats:
             new_cat = cat.search(self.inputs.text,
@@ -81,3 +82,4 @@ class Search(Base):
                 new_cats.append(new_cat)
         if len(new_cats) > 0:
             self.done_callback(new_cats)
+            self.visible = False
