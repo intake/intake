@@ -21,7 +21,7 @@ class CatalogEntry(DictSerialiseMixin):
         self.getenv = getenv
         self.getshell = getshell
         self._pmode = 'default'
-        self.gui = EntryGUI(source=self)
+        self._gui = EntryGUI(source=self)
 
     def describe(self):
         """Get a dictionary of attributes of this entry.
@@ -144,3 +144,8 @@ class CatalogEntry(DictSerialiseMixin):
 
     def __repr__(self):
         return "<Catalog Entry: %s>" % self.name
+
+    @property
+    def gui(self):
+        self._gui.visible = True
+        return self._gui

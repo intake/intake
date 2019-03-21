@@ -16,13 +16,14 @@ def description(sources1):
 
 def assert_panel_matches_contents(desc):
     """Helper function to check that panel and contents match"""
-    assert desc.pane.object == desc.contents
-    assert desc.panel.objects == [desc.pane]
+    assert desc.label_pane.object == desc.label
+    assert desc.main_pane.object == desc.contents
+    assert desc.panel.objects == [desc.label_pane, desc.main_pane]
 
 
 def test_description(description):
     assert description.visible
-    assert len(description.children) == 1
+    assert len(description.children) == 2
     assert len(description.contents) > 0
     assert_panel_matches_contents(description)
 
@@ -77,10 +78,9 @@ def test_description_source_with_plots(sources2):
         'direct_access: forbid\n'
         'user_parameters: []\n'
         'plugin: csv\n'
-        'metadata: cache: []\n'
-        f'args: urlpath: {catalog_dir}../data/crime.csv\n'
-        '  metadata: cache: []\n'
-        f'    catalog_dir: {catalog_dir}')
+        'metadata: \n'
+        f'args: metadata: catalog_dir: {catalog_dir}\n'
+        f'  urlpath: {catalog_dir}../data/crime.csv\n')
     assert_panel_matches_contents(description)
 
 
