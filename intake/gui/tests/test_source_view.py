@@ -80,7 +80,7 @@ def test_description_source_with_plots(sources2):
         'plugin: csv\n'
         'metadata: \n'
         f'args: metadata: catalog_dir: {catalog_dir}\n'
-        f'  urlpath: {catalog_dir}../data/crime.csv\n')
+        f'  urlpath: {catalog_dir}../data/crime.csv')
     assert_panel_matches_contents(description)
 
 
