@@ -114,7 +114,7 @@ class Catalog(DataSource):
         self.updated = time.time()
         self._entries = self._make_entries_container()
         self.force_reload()
-        self.gui = CatalogGUI(cat=self)
+        self._gui = CatalogGUI(cat=self, visible=False)
 
     @classmethod
     def from_dict(cls, entries, **kwargs):
@@ -412,6 +412,11 @@ class Catalog(DataSource):
     def _close(self):
         # TODO: maybe close all entries?
         pass
+
+    @property
+    def gui(self):
+        self._gui.visible = True
+        return self._gui
 
 
 class Entries(collections.abc.Mapping):
