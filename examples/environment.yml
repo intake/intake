@@ -1,0 +1,10 @@
+name: intake-gui
+channels:
+  - conda-forge
+dependencies:
+  - intake
+  - jupyter
+  - bokeh/label/dev::bokeh
+  - pyviz/label/dev::hvplot
+  - pyviz/label/dev::holoviews
+  - pyviz/label/dev::panel
