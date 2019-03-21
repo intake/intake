@@ -109,7 +109,7 @@ except ImportError:
         def __repr__(self):
             raise RuntimeError("Please install panel to use the GUI")
 
-    EntryGui = GUI
+    EntryGUI = GUI
     CatalogGUI = GUI
 
 
@@ -120,5 +120,5 @@ except Exception as e:
             raise RuntimeError("Initialization of GUI failed, even though "
                                "panel is installed. Please update it "
                                "to a more recent version.")
-    EntryGui = GUI
+    EntryGUI = GUI
     CatalogGUI = GUI
