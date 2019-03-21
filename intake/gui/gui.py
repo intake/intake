@@ -47,83 +47,46 @@ class GUI(Base):
     """
     def __init__(self, cats=None, **kwargs):
         self._cats = cats
-        self.panel = pn.Column(name='GUI', width_policy='max')
+        self.panel = pn.Tabs(name='GUI', width_policy='max')
         super().__init__(**kwargs)
 
     def setup(self):
-        self.search = pn.widgets.RadioButtonGroup(
-            options={'🔍': True, 'x': False},
-            value=False,
-            disabled=True,
-            width=80)
-
-        self.cat_add = pn.widgets.RadioButtonGroup(
-            options={'＋': True, 'x': False},
-            value=False,
-            width=80)
-
-        self.plot = pn.widgets.RadioButtonGroup(
-            options={'📊': True, 'x': False},
-            value=False,
-            disabled=True,
-            width=80)
-
-        self.cat_browser = CatSelector(cats=self._cats,
-                                       dependent_widgets=[self.search])
-        self.source_browser = SourceSelector(cats=self.cats,
-                                             dependent_widgets=[self.plot])
+        self.cat_browser = CatSelector(cats=self._cats)
+        self.source_browser = SourceSelector(cats=self.cats)
         self.description = Description(source=self.sources)
-        self.cat_adder = CatAdder(done_callback=self.cat_browser.add,
-                                  control_widget=self.cat_add)
+        self.cat_adder = CatAdder(done_callback=self.done_callback)
         self.searcher = Search(cats=self.cats,
-                               done_callback=self.cat_browser.add,
-                               control_widget=self.search)
-        self.plotter = DefinedPlots(source=self.sources,
-                                    control_widget=self.plot)
+                               done_callback=self.cat_browser.add)
+        self.searcher.watchers.append(
+                self.cat_browser.widget.link(self.searcher, value='cats'))
+
+        self.plotter = DefinedPlots(source=self.sources)
+        self.plotter.watchers.append(
+            self.source_browser.widget.link(self.plotter, value='source'))
 
         self.watchers = [
-            self.cat_add.link(self.cat_adder, value='visible'),
-            self.search.param.watch(self.on_click_search, 'value'),
-            self.plot.param.watch(self.on_click_plot, 'value'),
             self.cat_browser.widget.link(self.source_browser, value='cats'),
             self.source_browser.widget.link(self.description, value='source'),
         ]
 
         self.children = [
-            pn.Row(
-                pn.Column(
-                    logo_file,
-                    self.cat_add,
-                    self.search,
-                    self.plot
-                ),
-                self.cat_browser.panel,
-                self.source_browser.panel,
-                self.description.panel,
-                background=BACKGROUND,
-                width_policy='max',
-                max_width=MAX_WIDTH,
-            ),
-            self.searcher.panel,
             self.cat_adder.panel,
+            pn.Column(
+                pn.Row(
+                    self.cat_browser.panel,
+                    self.source_browser.panel,
+                    self.description.panel,
+                ),
+                self.searcher.panel,
+                name='Select Entry'
+            ),
             self.plotter.panel,
         ]
 
-    def on_click_plot(self, event):
-        """ When the plot control is toggled, set visibility and hand down source"""
-        self.plotter.source = self.sources
-        self.plotter.visible = event.new
-        if self.plotter.visible:
-            self.plotter.watchers.append(
-                self.source_browser.widget.link(self.plotter, value='source'))
-
-    def on_click_search(self, event):
-        """ When the search control is toggled, set visibility and hand down cats"""
-        self.searcher.cats = self.cats
-        self.searcher.visible = event.new
-        if self.searcher.visible:
-            self.searcher.watchers.append(
-                self.cat_browser.widget.link(self.searcher, value='cats'))
+    def done_callback(self, cats=None):
+        self.panel.active += 1
+        if cats:
+            self.cat_browser.add(cats)
 
     @property
     def cats(self):

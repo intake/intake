@@ -172,7 +172,6 @@ class CatAdder(Base):
         """Add cat and close panel"""
         if self.cat.name is not None:
             self.done_callback(self.cat)
-            self.visible = False
 
     def tab_change(self, event):
         """Enable widget when on URL tab"""

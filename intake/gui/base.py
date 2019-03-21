@@ -8,7 +8,7 @@ import panel as pn
 from param.parameterized import Event
 
 MAX_WIDTH = 1200
-BACKGROUND = '#eeeeee'
+BACKGROUND = '#ffffff'
 
 
 class Base(object):

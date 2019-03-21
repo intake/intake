@@ -84,7 +84,7 @@ class DefinedPlots(Base):
 
     def __init__(self, source=None, **kwargs):
         self.source = source
-        self.panel = pn.Row(name='Plot')
+        self.panel = pn.Row(name='Defined Plots')
         super().__init__(**kwargs)
 
     def setup(self):

@@ -82,4 +82,3 @@ class Search(Base):
                 new_cats.append(new_cat)
         if len(new_cats) > 0:
             self.done_callback(new_cats)
-            self.visible = False
