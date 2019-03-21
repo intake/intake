@@ -4,9 +4,8 @@ channels:
 dependencies:
   - intake
   - jupyter
+  - nodejs
   - bokeh/label/dev::bokeh
   - pyviz/label/dev::hvplot
   - pyviz/label/dev::holoviews
   - pyviz/label/dev::panel
-  - pip:
-    - git+https://github.com/pyviz/panel.git@master
