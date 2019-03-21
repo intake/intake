@@ -106,6 +106,8 @@ try:
 except ImportError:
 
     class GUI(object):
+        def __init__(self, *args, **kwargs):
+            pass
         def __repr__(self):
             raise RuntimeError("Please install panel to use the GUI")
 
@@ -116,6 +118,8 @@ except ImportError:
 except Exception as e:
 
     class GUI(object):
+        def __init__(self, *args, **kwargs):
+            pass
         def __repr__(self):
             raise RuntimeError("Initialization of GUI failed, even though "
                                "panel is installed. Please update it "
