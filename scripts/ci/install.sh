@@ -30,4 +30,4 @@ npm install -g dat
 
 echo "Installing special versions of bokeh and panel - this is temporary"
 conda install -y -c pyviz/label/dev -c bokeh/label/dev panel bokeh hvplot holoviews
-git clone https://github.com/pyviz/panel.git && cd panel && python setup.py develop && cd ..
+git clone https://github.com/pyviz/panel.git && cd panel && python setup.py install && cd .. && rm -rf panel
