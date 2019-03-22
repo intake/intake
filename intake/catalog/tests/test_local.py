@@ -408,6 +408,24 @@ def test_multi_cat_names():
     assert cat.name == '2 files'
 
 
+def test_cat_with_declared_name():
+    fn = abspath("catalog_named.yml")
+    cat = open_catalog(fn, name='name_in_func')
+    assert cat.name == 'name_in_func'
+
+    cat = open_catalog(fn)
+    assert cat.name == 'name_in_spec'
+
+
+def test_cat_with_no_declared_name_gets_name_from_dir_if_file_named_catalog():
+    fn = abspath("catalog.yml")
+    cat = open_catalog(fn, name='name_in_func')
+    assert cat.name == 'name_in_func'
+
+    cat = open_catalog(fn)
+    assert cat.name == 'tests'
+
+
 def test_default_expansions():
     try:
         os.environ['INTAKE_INT_TEST'] = '1'

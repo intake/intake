@@ -228,7 +228,7 @@ class LocalCatalogEntry(CatalogEntry):
 
         if len(self._plugin) == 0:
             raise ValueError('No plugins loaded for this entry: %s\n'
-                             'A listing of installable plugins can be found ' 
+                             'A listing of installable plugins can be found '
                              'at https://intake.readthedocs.io/en/latest/plugin'
                              '-directory.html .'
                              % self._driver)
@@ -491,7 +491,8 @@ class CatalogParser(object):
         return dict(
             plugin_sources=self._parse_plugins(data),
             data_sources=self._parse_data_sources(data),
-            metadata=data.get('metadata', {})
+            metadata=data.get('metadata', {}),
+            name=data.get('name'),
         )
 
 
@@ -552,8 +553,6 @@ class YAMLFileCatalog(Catalog):
             file_open = open_files(self.path, mode='rb', **options)
             assert len(file_open) == 1
             file_open = file_open[0]
-        self.name = os.path.splitext(os.path.basename(
-            self.path))[0].replace('.', '_')
         self._dir = get_dir(self.path)
 
         with file_open as f:
@@ -584,7 +583,14 @@ class YAMLFileCatalog(Catalog):
             self._entries[entry.name] = entry
 
         self.metadata = cfg.get('metadata', {})
+        self.name = self.name or cfg.get('name') or self.name_from_path
 
+    @property
+    def name_from_path(self):
+        name = os.path.splitext(os.path.basename(self.path))[0]
+        if name == 'catalog':
+            name = os.path.basename(os.path.dirname(self.path))
+        return name.replace('.', '_')
 
 global_registry['yaml_file_cat'] = YAMLFileCatalog
 
