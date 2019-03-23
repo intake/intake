@@ -9,8 +9,7 @@ dependencies:
   - scikit-image
   - s3fs
   - tqdm
-  - intake::intake
-  - intake::intake-xarray
+  - intake-xarray
   - bokeh/label/dev::bokeh
   - pyviz/label/dev::hvplot
   - pyviz/label/dev::holoviews
