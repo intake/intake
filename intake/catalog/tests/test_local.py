@@ -79,6 +79,13 @@ def test_nested(catalog1):
     assert catalog1.nested.nested.nested().cat.cat.cat is catalog1
 
 
+def test_nested_gets_name_from_super(catalog1):
+    assert catalog1.name == 'name_in_cat'
+    assert 'nested' in catalog1
+    nested = catalog1.nested
+    assert nested.name == 'nested'
+
+
 def test_hash(catalog1):
     assert catalog1.nested() == catalog1.nested.nested()
 

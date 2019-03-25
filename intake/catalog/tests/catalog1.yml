@@ -1,3 +1,4 @@
+name: name_in_cat
 metadata:
   test: true
 plugins:
