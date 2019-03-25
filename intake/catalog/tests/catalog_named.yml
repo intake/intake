@@ -1,4 +1,5 @@
 name: name_in_spec
+description: This is a catalog with a description in the yaml
 plugins:
   source:
     - module: intake.catalog.tests.example1_source

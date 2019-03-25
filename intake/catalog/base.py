@@ -50,9 +50,9 @@ class Catalog(DataSource):
     container = 'catalog'
     name = 'catalog'
 
-    def __init__(self, *args, name=None, metadata=None, auth=None, ttl=1,
-                 getenv=True, getshell=True, persist_mode='default',
-                 storage_options=None):
+    def __init__(self, *args, name=None, description=None, metadata=None,
+                 auth=None, ttl=1, getenv=True, getshell=True,
+                 persist_mode='default', storage_options=None):
         """
         Parameters
         ----------
@@ -60,6 +60,9 @@ class Catalog(DataSource):
             A single URI or list of URIs.
         name : str, optional
             Unique identifier for catalog. This is primarily useful when
+            manually constructing a catalog. Defaults to None.
+        description : str, optional
+            Description of the catalog. This is primarily useful when
             manually constructing a catalog. Defaults to None.
         metadata: dict
             Additional information about this data
@@ -86,6 +89,7 @@ class Catalog(DataSource):
         """
         super(Catalog, self).__init__()
         self.name = name
+        self.description = description
         self.metadata = metadata or {}
         self.ttl = ttl
         self.getenv = getenv

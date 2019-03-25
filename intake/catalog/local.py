@@ -493,6 +493,7 @@ class CatalogParser(object):
             data_sources=self._parse_data_sources(data),
             metadata=data.get('metadata', {}),
             name=data.get('name'),
+            description=data.get('description'),
         )
 
 
@@ -584,6 +585,7 @@ class YAMLFileCatalog(Catalog):
 
         self.metadata = cfg.get('metadata', {})
         self.name = self.name or cfg.get('name') or self.name_from_path
+        self.description = self.description or cfg.get('description')
 
     @property
     def name_from_path(self):
@@ -629,14 +631,16 @@ class YAMLFilesCatalog(Catalog):
         if isinstance(self.path, (list, tuple)):
             files = sum([open_files(p, mode='rb', **options)
                          for p in self.path], [])
-            self.name = "%i files" % len(files)
+            self.name = self.name or "%i files" % len(files)
+            self.description = self.description or f'Catalog generated from {len(files)} files'
             self.path = [make_path_posix(p) for p in self.path]
         else:
             if isinstance(self.path, str) and '*' not in self.path:
                 self.path = self.path + '/*'
             files = open_files(self.path, mode='rb', **options)
             self.path = make_path_posix(self.path)
-            self.name = self.path
+            self.name = self.name or self.path
+            self.description = self.description or f'Catalog generated from all files found in {self.path}'
         if not set(f.path for f in files) == set(
                 f.path for f in self._cat_files):
             # glob changed, reload all

@@ -413,24 +413,41 @@ def test_multi_cat_names():
     fn2 = abspath("catalog_union_2.yml")
     cat = open_catalog([fn1, fn2])
     assert cat.name == '2 files'
+    assert cat.description == 'Catalog generated from 2 files'
+
+    cat = open_catalog([fn1, fn2], name='special_name',
+                       description='Special description')
+    assert cat.name == 'special_name'
+    assert cat.description == 'Special description'
+
+
+def test_name_of_builtin():
+    import intake
+    assert intake.cat.name == 'builtin'
+    assert intake.cat.description == 'Generated from data packages found on your intake search path'
 
 
 def test_cat_with_declared_name():
     fn = abspath("catalog_named.yml")
-    cat = open_catalog(fn, name='name_in_func')
+    description = 'Description declared in the open function'
+    cat = open_catalog(fn, name='name_in_func', description=description)
     assert cat.name == 'name_in_func'
+    assert cat.description == description
 
     cat = open_catalog(fn)
     assert cat.name == 'name_in_spec'
+    assert cat.description == 'This is a catalog with a description in the yaml'
 
 
 def test_cat_with_no_declared_name_gets_name_from_dir_if_file_named_catalog():
     fn = abspath("catalog.yml")
-    cat = open_catalog(fn, name='name_in_func')
+    cat = open_catalog(fn, name='name_in_func', description='Description in func')
     assert cat.name == 'name_in_func'
+    assert cat.description == 'Description in func'
 
     cat = open_catalog(fn)
     assert cat.name == 'tests'
+    assert cat.description == None
 
 
 def test_default_expansions():
