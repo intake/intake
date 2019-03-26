@@ -5,6 +5,11 @@ dependencies:
   - intake
   - jupyter
   - nodejs
+  - scipy
+  - scikit-image
+  - s3fs
+  - tqdm
+  - intake-xarray
   - bokeh/label/dev::bokeh
   - pyviz/label/dev::hvplot
   - pyviz/label/dev::holoviews
