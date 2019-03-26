@@ -122,6 +122,10 @@ def test_get_dir():
     assert out.endswith('/')
 
 
+def test_entry_dir_function(catalog1):
+    assert 'nested' in dir(catalog1.nested)
+
+
 @pytest.mark.parametrize("dtype,expected", [
     ("bool", False),
     ("datetime", pandas.Timestamp(1970, 1, 1, 0, 0, 0)),
