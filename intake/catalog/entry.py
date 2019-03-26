@@ -127,6 +127,12 @@ class CatalogEntry(DictSerialiseMixin):
         # TODO: only consider attr not starting with "_"?
         return getattr(self._get_default_source(), attr)
 
+    def __dir__(self):
+        selflist = {'describe', 'describe_open', 'get',
+                    'has_been_persisted', 'plots'}
+        selflist.update(set(dir(self._get_default_source())))
+        return list(sorted(selflist))
+
     def __getitem__(self, item):
         """Pass getitem to data source, assuming default parameters
 
