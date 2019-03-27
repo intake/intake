@@ -66,7 +66,11 @@ class RemoteSequenceSource(RemoteSource):
         from intake.source.textfiles import TextFilesSource
         encoder = {None: str, 'str': str, 'json': json.dumps,
                    'pickle': pickle.dumps}[encoder]
-        b = source.to_dask()
+        try:
+            b = source.to_dask()
+        except NotImplementedError:
+            import dask.bag as db
+            b = db.from_sequence(source.read(), npartitions=1)
         files = open_files(posixpath.join(path, 'part.*'), mode='wt',
                            num=b.npartitions)
         dwrite = dask.delayed(write_file)

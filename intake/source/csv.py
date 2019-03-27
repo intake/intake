@@ -9,9 +9,6 @@ from . import base
 from .utils import DASK_VERSION, reverse_formats, unique_string
 
 
-# For brevity, this implementation just wraps the Dask dataframe
-# implementation. Generally, plugins should not use Dask directly, as the
-# base class provides the implementation for to_dask().
 class CSVSource(base.DataSource, base.PatternMixin):
     """Read CSV files into dataframes
 
