@@ -119,3 +119,79 @@ Browsing for the data-set which will solve a particular problem can be hard, eve
 when the data have been curated and stored in a single, well-structured system. You
 do *not* want to rely on word-of-mouth to specify which data is right for which job.
 
+Intake catalogs allow for self-description of data-sets, with simple text and
+arbitrary metadata, with a consistent access pattern. Not only can you list the data
+available ot you, but you can find out what exactly that data represents, and
+the form the data would take if loaded (table versus list of items, for example). This extra
+metadata is also searchable: you can descend through a hierarchy of catalogs with
+a single search, and find all the entries containing some particular keywords.
+
+You can use the Intake GUI to graphically browse through your available data-sets or
+point to catalogs available to you, look through the entries listed there and get
+information about each, or even show a sample of the data or quick-look plots. The GUI
+is also able to execute searches and browse file-systems to find data artifacts of
+interest. This same functionality is also available via a command-line interface
+or programmatically.
+
+Work remotely
+-------------
+
+Interacting with cloud storage resources is very convenient, but you will not want to
+download large amounts of data to your laptop or workstation for analysis. Intake
+finds itself at home in the remote-execution world of jupyter and Anaconda Enterprise
+and other in-browser technologies. For instance, you can run the Intake GUI either as a
+stand-alone application for browsing data-sets or in a notebook for full analytics,
+and have all the runtime live on a remote machine, or perhaps a cluster which is
+co-located with the data storage. Together with cloud-optimised data formats such
+as parquet, this is an ideal set-up for processing data at web scale.
+
+Transform data to efficient formats for sharing
+-----------------------------------------------
+
+A massive amount of data exists in human-readable formats such as JSON, XML and CSV,
+which are not very efficient in terms of space usage and need to be parsed on
+load to turn into arrays or tables. Much faster processing times can be had with
+modern compact, optimised formats, such as parquet.
+
+Intake has a "persist" mechanism to transform any input data-source into the format
+most appropriate for that type of data, e.g., parquet for tabular data. The persisted
+data will be used in preference at analysis time, and the schedule for updating from
+the original source is configurable. The location of these persisted data-sets can
+be shared with others, so they can also gain the benefits, or the "export" variant
+can be used to produce an independent version in the same format, together with a
+spec to be reference it by - then you would share this spec with others.
+
+Access data without leaking credentials
+---------------------------------------
+
+Security is important. Users' identity and authority to view specific data should be
+established before handing over any sensitive bytes. It is, unfortunately, all too
+common for data scientists to include their username, passwords or other credentials
+directly in code, so that it can run automatically, thus presenting a potential
+security gap.
+
+Intake does not manage credentials or user identities directly, but does provide hooks
+for fetching details from the environment or other service, and using the values in
+templating at the time of reading the data. Thus, the details are not included in
+the code, but every access still requires for them to be present.
+
+In other cases, you may want to require the user to provide their credentials every
+time, rather that automatically establish them, and "user parameters" can be specified
+in Intake to cover this case.
+
+Establish a data gateway
+------------------------
+
+The Intake server protocol allows you fine-grained control over the set of data sources
+that are listed, and exactly what to return to a user when they want to read some of
+that data. This is an ideal opportunity to include authorisation checks,
+audit logging, and any more complicated access patterns, as required.
+
+By streaming the data through a single channel on the server, rather than allowing
+users direct access to the data storage backend, you can log and verify all access
+to your data.
+
+Clear distinction between data curator and analyst roles
+--------------------------------------------------------
+
+
