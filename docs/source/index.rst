@@ -88,6 +88,7 @@ are defined in the :doc:`glossary`.
     :caption: Documentation Contents
 
     quickstart.rst
+    use_cases.rst
     overview.rst
     examples.rst
     gui.rst
