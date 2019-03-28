@@ -80,7 +80,8 @@ class RemoteDataFrame(RemoteSource):
         try:
             df = source.to_dask()
         except NotImplementedError:
-            df = source.read()
+            import dask.dataframe as dd
+            df = dd.from_pandas(source.read(), 1)
         df.to_parquet(path, **kwargs)
         source = ParquetSource(path, meta={})
         return source

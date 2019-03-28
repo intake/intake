@@ -41,3 +41,21 @@ def test_backtrack(temp_cache):
     s2 = s.persist()
     s3 = store.backtrack(s2)
     assert s3 == s
+
+
+class DummyDataframe(DataSource):
+    name = 'dummy'
+    container = 'dataframe'
+
+    def __init__(self, *args):
+        DataSource.__init__(self)
+
+    def read(self):
+        import pandas as pd
+        return pd.DataFrame({'a': [0]})
+
+
+def test_undask_persist(temp_cache):
+    s = DummyDataframe()
+    s2 = s.persist()
+    assert s.read().equals(s2.read())
