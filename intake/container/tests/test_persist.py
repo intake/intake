@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 import os
+import pytest
 import time
 
 from intake.container.persist import store
@@ -56,6 +57,7 @@ class DummyDataframe(DataSource):
 
 
 def test_undask_persist(temp_cache):
+    pytest.importorskip('intake_parquet')
     s = DummyDataframe()
     s2 = s.persist()
     assert s.read().equals(s2.read())
