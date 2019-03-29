@@ -81,9 +81,14 @@ class RemoteArray(RemoteSource):
             attempt to get from the source's name
         kwargs: passed on to zarr array creation, see
         """
-        from dask.array import to_zarr
+        from dask.array import to_zarr, from_array
         from ..source.zarr import ZarrArraySource
-        arr = source.to_dask()
-        to_zarr(arr, path, component=None, storage_options=None, **kwargs)
+        try:
+            arr = source.to_dask()
+        except NotImplementedError:
+            arr = from_array(source.read(), chunks=-1).rechunk('auto')
+        to_zarr(arr, path, component=None,
+                storage_options=storage_options, **kwargs)
+
         source = ZarrArraySource(path, storage_options, component)
         return source
