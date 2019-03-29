@@ -194,4 +194,75 @@ to your data.
 Clear distinction between data curator and analyst roles
 --------------------------------------------------------
 
+It is desirable to separate out two tasks: the definition of data sources specifications, and
+accessing and using data. This is so that those who understand the origins of the data
+and the implications of various formats and other storage options (such as chunk-size)
+should make those decisions and encode what they have done into specs. It leaves the
+data users, e.g., data scientists, free to find and use the data-sets appropriate for
+their work and simply get on with their job - without having to learn about various
+storage formats and access APIs.
 
+This separation is at the very base of what Intake was designed to do.
+
+Users to be able to access data without learning every backend API
+------------------------------------------------------------------
+
+Data formats and services are a wide mess of many libraries and APIs. A large amount of
+time can be wasted in the life of a data scientist or engineer in finding out the details
+of the ones required by their work. Intake wraps these various libraries, REST APIs and
+similar, to provide a consistent experience for the data user. ``source.read()`` will
+simply get all of the data into memory in the container type for that source - no
+further parameters or knowledge required.
+
+Even for the curator of data catalogs or data driver authors, the framework established by
+Intake provides a lot of convenience and simplification which allows each person to
+deal with only the specifics of their job.
+
+Data sources to be self-describing
+----------------------------------
+
+Having a bunch of files in some directly is a very common pattern for data storage in the
+wild. There may or may not be a README file co-located giving some information in a
+human-readable form, but generally not structured - such files are usually different
+in every case.
+
+When a data source is encoded into a catalog, the spec offers a natural place to describe
+what that data is, along with the possibility to provide an arbitrary amount of
+structured metadata and to describe any parameters that are to be exposed for user
+choice. Furthermore, Intake data sources each have a particular container type, so
+that users know whether to expect a dataframe, array, etc., and simple introspection
+methods like ``describe`` and ``discover`` which return basic information about the
+data without having to load all of it into memory first.
+
+A data source hierarchy for natural structuring
+-----------------------------------------------
+
+Usually, the set of data sources held by an organisation have relationships to one-another,
+and would be poorly served to be provided as a simple flat list of everything available.
+Intake allows catalogs to refer to other catalogs. This means, that you can group data
+sources by various facets (type, department, time...) and establish hierarchical
+data-source trees within which to find the particular data most likely to be of interest.
+Since the catalogs live outside and separate from the data files themselves, as many
+hierarchy structures as thought useful could be created.
+
+For even more complicated data source meta-structures, it is possible to store all the
+details and even metadata in some external service (e.g., traditional SQL tables) with which
+Intake can interact to perform queries and return particular subsets of the
+available data sources.
+
+Expose several data collections under a single system
+-----------------------------------------------------
+
+There are already several catalog-like data services in existence in the world, and
+some organisation may have several of these in-house for various different purposes.
+For example, a SQL-server may hold details of customer lists and transactions, but
+historical time-series and reference data are held in archival data formats like
+parquet on a file-storage system; while real-time system monitoring is done by a
+totally unrelated system such as Splunk or elastic-search.
+
+Of course, Intake can read from various file formats and data services. However, it
+can also interpret the internal conception of data catalogs that some data services may
+have. For example, all of the tables known to the SQL server, or all of the pre-defined
+queries in Splunk can be automatically included as catalogs in Intake, and take their
+place amongst the regular YAML-specified data sources, with exactly the same usage for
+all of them.
