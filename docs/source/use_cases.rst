@@ -1,12 +1,9 @@
-Use Cases
-=========
+Use Cases - I want to...
+========================
 
 Here follows a list of specific things that people may want to get done, and
 details of how Intake can help. The details of how to achieve each of these
 activities can be found in the rest of the detailed documentation.
-
-**I want to...**
-~~~~~~~~~~~
 
 Avoid copy&paste of blocks of code for accessing data
 -----------------------------------------------------
@@ -266,3 +263,49 @@ have. For example, all of the tables known to the SQL server, or all of the pre-
 queries in Splunk can be automatically included as catalogs in Intake, and take their
 place amongst the regular YAML-specified data sources, with exactly the same usage for
 all of them.
+
+These data sources and their hierarchical structure can then be exposed via the
+graphical data browser, for searching, selecting and visualising data-sets.
+
+Modern visualisations for all data-sets
+---------------------------------------
+
+Intake is integrated with the ``pyviz`` suite, particularly ``hvplot``, to bring
+simple yet powerful data visualisations to any Intake data source by using just one
+single method for everything. These plots are interactive, and can include server-side
+dynamic aggregation of very large data-sets to display more data points than the
+browser can handle.
+
+You can specify specific plot types right in the data source definition, as have these
+customised visualisations available to the user as simple one-liners know to well-describe
+the content of the data, or even view the same visuals right in the graphical
+data source browser application. Thus, Intake is already an all-in-one data investigation
+and dashboarding app.
+
+
+Update data specifications in real time
+---------------------------------------
+
+Intake data catalogs are not limited to reading static specification from
+files. They can also execute queries on remote data services and return lists of
+data sources dynamically at runtime. New data sources may appear, for example,
+as directories of data files are pushed to a storage service, or new tables are
+created within a SQL server.
+
+Distribute data in a custom format
+----------------------------------
+
+Sometimes, the well-know data formats are just not right for a give data-set,
+and a custom-built format is required. In such cases, the code to read the data
+may not exist in any library. Intake allows for code to be distributed along
+with data source specs/catalogs or even files in a single ``conda`` package.
+That encapsulates everything needed to describe and use that particular data,
+and can then be distributed as a single entity, and installed with a one-liner.
+
+Furthermore, should the few builtin container types (sequence, array, dataframe)
+not be sufficient, you can supply your own, and then build drivers that use it.
+This was done, for example, for ``xarray``-type data, where multiple related
+N-D arrays share a coordinate system and metadata. By creating this container,
+a whole world of scientific and engineering data was opened up to Intake. Creating
+new containers is not hard, though, and we foresee more coming, such as
+machine-learning models and streaming/real-time data.
