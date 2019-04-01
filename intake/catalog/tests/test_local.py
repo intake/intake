@@ -433,6 +433,7 @@ def test_cat_with_declared_name():
     cat = open_catalog(fn, name='name_in_func', description=description)
     assert cat.name == 'name_in_func'
     assert cat.description == description
+    assert cat.metadata.get('some') == 'thing'
 
     cat = open_catalog(fn)
     assert cat.name == 'name_in_spec'
