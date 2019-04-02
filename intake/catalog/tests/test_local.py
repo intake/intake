@@ -67,6 +67,10 @@ def test_local_catalog(catalog1):
     # Specify parameters
     assert catalog1['entry1_part'].get(part='2').container == 'dataframe'
 
+def test_get_items(catalog1):
+    for key,entry in catalog1.items():
+        assert catalog1[key].describe() == entry.describe()
+
 
 def test_nested(catalog1):
     assert 'nested' in catalog1
