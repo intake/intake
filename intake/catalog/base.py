@@ -59,11 +59,11 @@ class Catalog(DataSource):
         args : str or list(str)
             A single URI or list of URIs.
         name : str, optional
-            Unique identifier for catalog. This is primarily useful when
-            manually constructing a catalog. Defaults to None.
+            Unique identifier for catalog. This takes precedence over whatever
+            is stated in the cat file itself. Defaults to None.
         description : str, optional
-            Description of the catalog. This is primarily useful when
-            manually constructing a catalog. Defaults to None.
+            Description of the catalog. This takes precedence over whatever
+            is stated in the cat file itself. Defaults to None.
         metadata: dict
             Additional information about this data
         auth : BaseClientAuth or None

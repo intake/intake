@@ -589,6 +589,7 @@ class YAMLFileCatalog(Catalog):
 
     @property
     def name_from_path(self):
+        """If catalog is named 'catalog' take name from parent directory"""
         name = os.path.splitext(os.path.basename(self.path))[0]
         if name == 'catalog':
             name = os.path.basename(os.path.dirname(self.path))
