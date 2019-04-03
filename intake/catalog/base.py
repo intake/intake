@@ -284,7 +284,7 @@ class Catalog(DataSource):
         pass
 
 
-class Entries(dict):
+class Entries:
     """Fetches entries from server on item lookup and iteration.
 
     This fetches pages of entries from the server during iteration and
