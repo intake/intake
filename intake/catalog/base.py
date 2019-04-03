@@ -116,7 +116,24 @@ class Catalog(DataSource):
     def _make_entries_container(self):
         """Subclasses may override this to return some other dict-like.
 
-        See RemoteCatalog below for the motivating example for this hook.
+        See RemoteCatalog below for the motivating example for this hook. This
+        is typically useful for large Catalogs backed by dynamic resources such
+        as databases.
+
+        The object returned by this method must implement:
+
+        * ``__iter__()`` -> an iterator of entry names
+        * ``__getitem__(key)`` -> an Entry
+        * ``items()`` -> an iterator of ``(key, Entry)`` pairs
+
+        For best performance the object should also implement:
+
+        * ``__len__()`` -> int
+        * ``__contains__(key)`` -> boolean
+
+        In ``__len__`` or ``__contains__`` are not implemented, intake will
+        fall back on iterating through the entire catalog to compute its length
+        or check for containment, which may be expensive on large catalogs.
         """
         return {}
 
