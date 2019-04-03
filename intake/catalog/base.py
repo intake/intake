@@ -355,7 +355,7 @@ class Entries(collections.abc.Mapping):
                 return source
 
     def __len__(self):
-        return len(self.catalog)
+        return len(self._catalog)
 
 
 class RemoteCatalog(Catalog):
