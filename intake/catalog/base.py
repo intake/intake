@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 import collections
+import collections.abc
 import copy
 import keyword
 import logging
@@ -284,7 +285,7 @@ class Catalog(DataSource):
         pass
 
 
-class Entries:
+class Entries(collections.abc.Mapping):
     """Fetches entries from server on item lookup and iteration.
 
     This fetches pages of entries from the server during iteration and
@@ -312,21 +313,8 @@ class Entries:
         self.complete = self._catalog.page_size is None
 
     def __iter__(self):
-        for key in self.keys():
+        for key in six.iterkeys(self._page_cache):
             yield key
-
-    def __contains__(self, key):
-        # Avoid iterating through all entries.
-        try:
-            self[key]
-        except KeyError:
-            return False
-        else:
-            return True
-
-    def items(self):
-        for item in six.iteritems(self._page_cache):
-            yield item
         if self._catalog.page_size is None:
             # We are not paginating, either because the user set page_size=None
             # or the server is a version of intake before pagination parameters
@@ -337,8 +325,8 @@ class Entries:
             page = self._catalog.fetch_page(self._page_offset)
             self._page_cache.update(page)
             self._page_offset += len(page)
-            for item in six.iteritems(page):
-                yield item
+            for key in six.iterkeys(page):
+                yield key
             if len(page) < self._catalog.page_size:
                 # Partial or empty page.
                 # We are done until the next call to items(), when we
@@ -355,14 +343,6 @@ class Entries:
         for item in six.iteritems(self._direct_lookup_cache):
             yield item
 
-    def keys(self):
-        for key, value in self.items():
-            yield key
-
-    def values(self):
-        for key, value in self.items():
-            yield value
-
     def __getitem__(self, key):
         try:
             return self._direct_lookup_cache[key]
@@ -373,6 +353,9 @@ class Entries:
                 source = self._catalog.fetch_by_name(key)
                 self._direct_lookup_cache[key] = source
                 return source
+
+    def __len__(self):
+        return len(self.catalog)
 
 
 class RemoteCatalog(Catalog):
