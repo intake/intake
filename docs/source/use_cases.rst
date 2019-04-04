@@ -218,7 +218,7 @@ deal with only the specifics of their job.
 Data sources to be self-describing
 ----------------------------------
 
-Having a bunch of files in some directly is a very common pattern for data storage in the
+Having a bunch of files in some directory is a very common pattern for data storage in the
 wild. There may or may not be a README file co-located giving some information in a
 human-readable form, but generally not structured - such files are usually different
 in every case.
