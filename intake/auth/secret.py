@@ -60,6 +60,7 @@ class SecretClientAuth(BaseClientAuth):
     def __init__(self, secret, key='intake-secret'):
         self.secret = secret
         self.key = key
+        super(SecretClientAuth, self).__init__()
 
     def get_headers(self):
         return {self.key: self.secret}
