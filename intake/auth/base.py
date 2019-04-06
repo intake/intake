@@ -65,6 +65,17 @@ class BaseClientAuth(object):
     def __init__(self, *args):
         self.args = args
 
+    def __dask_tokenize__(self):
+        return hash(self)
+
+    @property
+    def _tok(self):
+        from dask.base import tokenize
+        return tokenize({'cls': type(self).__name__, 'args': self.args})
+
+    def __hash__(self):
+        return int(self._tok, 16)
+
     def get_headers(self):
         """Returns a dictionary of HTTP headers for the remote catalog request.
         """
