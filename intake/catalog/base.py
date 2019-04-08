@@ -191,6 +191,10 @@ class Catalog(DataSource):
             out[n] = item
         return out
 
+    def items(self):
+        """Get an iterator over (key, value) tuples for the catalog entries."""
+        return self._get_entries().items()
+
     @reload_on_change
     def _get_entry(self, name):
         entry = self._entries[name]
