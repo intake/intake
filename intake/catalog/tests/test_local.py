@@ -535,3 +535,18 @@ def test_getitem_and_getattr():
     assert catalog.tables0 is catalog['tables0']
     assert isinstance(catalog.tables0, LocalCatalogEntry)
     assert isinstance(catalog.metadata, (dict, type(None)))
+
+
+def test_dot_names():
+    fn = abspath('dot-nest.yaml')
+    cat = open_catalog(fn)
+    assert cat.self.leaf._description == 'leaf'
+    assert cat.self['leafdot.dot']._description == 'leaf-dot'
+    assert cat['selfdot.dot', 'leafdot.dot']._description == 'leaf-dot'
+
+    assert cat['self.selfdot.dot', 'leafdot.dot']._description == 'leaf-dot'
+    assert cat['self.self.dot', 'leafdot.dot']._description == 'leaf-dot'
+    assert cat['self.self.dot', 'leaf']._description == 'leaf'
+    assert cat['self.self.dot', 'leaf.dot']._description == 'leaf-dot'
+
+    assert cat['self.self.dot.leaf.dot']._description == 'leaf-dot'

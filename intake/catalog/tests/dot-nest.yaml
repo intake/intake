@@ -1,0 +1,25 @@
+sources:
+  self:
+    description: this cat
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/dot-nest.yaml"
+  selfdot.dot:
+    description: this cat
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/dot-nest.yaml"
+  self.dot:
+    description: this cat
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/dot-nest.yaml"
+  leaf:
+    description: leaf
+    driver: csv
+  leafdot.dot:
+    description: leaf-dot
+    driver: csv
+  leaf.dot:
+    description: leaf-dot
+    driver: csv

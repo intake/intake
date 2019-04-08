@@ -271,14 +271,27 @@ class Catalog(DataSource):
             return e
         if isinstance(key, str) and '.' in key:
             key = key.split('.')
-        if isinstance(key, (tuple, list)):
-            if len(key) > 1 and key[0] in self._entries:
-                out = self._entries[key[0]].__getitem__(key[1:])
-                return out
-            if len(key) == 1:
-                return self[key[0]]
-        else:
-            raise KeyError(key)
+        if isinstance(key, list):
+            parts = list(key)[:]
+            prefix = ''
+            while parts:
+                bit = parts.pop(0)
+                prefix = prefix + ('.' if prefix else '') + bit
+                if prefix in self._entries:
+                    rest = '.'.join(parts)
+                    try:
+                        out = self._entries[prefix][rest]
+                        return out
+                    except KeyError:
+                        # name conflict like "thing" and "think.oi", where it's
+                        # the latter we are after
+                        continue
+        elif isinstance(key, tuple):
+            out = self
+            for part in key:
+                out = self[part]
+            return out
+        raise KeyError(key)
 
     def discover(self):
         return {"container": 'catalog', 'shape': None,
