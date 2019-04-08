@@ -15,5 +15,5 @@ def test_add_cat():
     import intake
     intake.gui.add_cat(os.path.join(here, '..', '..', 'catalog', 'tests',
                                     'catalog1.yml'))
-    assert 'catalog1' in intake.gui.cat_list.value
+    assert 'name_in_cat' in intake.gui.cat_list.value
     assert 'entry1' in intake.gui.item_list.options

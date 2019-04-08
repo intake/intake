@@ -1,0 +1,12 @@
+name: name_in_spec
+description: This is a catalog with a description in the yaml
+metadata:
+  some: thing
+plugins:
+  source:
+    - module: intake.catalog.tests.example1_source
+sources:
+  use_example1:
+    description: example1 source plugin
+    driver: example1
+    args: {}

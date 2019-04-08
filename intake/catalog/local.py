@@ -138,7 +138,9 @@ class LocalCatalogEntry(CatalogEntry):
         Parameters
         ----------
         name: str
-            How this entry is known, normally from its key in a YAML file
+            How this entry is known, normally from its key in a YAML file, or
+            if that is not provided then from name of file, or name of dir if
+            file name is 'catalog.yaml' or 'catalog.yml'.
         description: str
             Brief text about the target source
         driver: str
@@ -228,7 +230,7 @@ class LocalCatalogEntry(CatalogEntry):
 
         if len(self._plugin) == 0:
             raise ValueError('No plugins loaded for this entry: %s\n'
-                             'A listing of installable plugins can be found ' 
+                             'A listing of installable plugins can be found '
                              'at https://intake.readthedocs.io/en/latest/plugin'
                              '-directory.html .'
                              % self._driver)
@@ -491,7 +493,9 @@ class CatalogParser(object):
         return dict(
             plugin_sources=self._parse_plugins(data),
             data_sources=self._parse_data_sources(data),
-            metadata=data.get('metadata', {})
+            metadata=data.get('metadata', {}),
+            name=data.get('name'),
+            description=data.get('description'),
         )
 
 
@@ -552,8 +556,6 @@ class YAMLFileCatalog(Catalog):
             file_open = open_files(self.path, mode='rb', **options)
             assert len(file_open) == 1
             file_open = file_open[0]
-        self.name = os.path.splitext(os.path.basename(
-            self.path))[0].replace('.', '_')
         self._dir = get_dir(self.path)
 
         with file_open as f:
@@ -584,7 +586,16 @@ class YAMLFileCatalog(Catalog):
             self._entries[entry.name] = entry
 
         self.metadata = cfg.get('metadata', {})
+        self.name = self.name or cfg.get('name') or self.name_from_path
+        self.description = self.description or cfg.get('description')
 
+    @property
+    def name_from_path(self):
+        """If catalog is named 'catalog' take name from parent directory"""
+        name = os.path.splitext(os.path.basename(self.path))[0]
+        if name == 'catalog':
+            name = os.path.basename(os.path.dirname(self.path))
+        return name.replace('.', '_')
 
 global_registry['yaml_file_cat'] = YAMLFileCatalog
 
@@ -623,14 +634,16 @@ class YAMLFilesCatalog(Catalog):
         if isinstance(self.path, (list, tuple)):
             files = sum([open_files(p, mode='rb', **options)
                          for p in self.path], [])
-            self.name = "%i files" % len(files)
+            self.name = self.name or "%i files" % len(files)
+            self.description = self.description or f'Catalog generated from {len(files)} files'
             self.path = [make_path_posix(p) for p in self.path]
         else:
             if isinstance(self.path, str) and '*' not in self.path:
                 self.path = self.path + '/*'
             files = open_files(self.path, mode='rb', **options)
             self.path = make_path_posix(self.path)
-            self.name = self.path
+            self.name = self.name or self.path
+            self.description = self.description or f'Catalog generated from all files found in {self.path}'
         if not set(f.path for f in files) == set(
                 f.path for f in self._cat_files):
             # glob changed, reload all

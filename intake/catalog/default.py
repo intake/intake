@@ -80,7 +80,7 @@ def load_combo_catalog():
     """Load a union of the user and global catalogs for convenience"""
     user_dir = user_data_dir()
     global_dir = global_data_dir()
-
+    desc = 'Generated from data packages found on your intake search path'
     cat_dirs = []
     if os.path.isdir(user_dir):
         cat_dirs.append(user_dir + '/*.yaml')
@@ -96,4 +96,4 @@ def load_combo_catalog():
             else:
                 cat_dirs.append(path_dir)
 
-    return YAMLFilesCatalog(cat_dirs, name='builtin')
+    return YAMLFilesCatalog(cat_dirs, name='builtin', description=desc)
