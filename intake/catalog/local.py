@@ -138,7 +138,9 @@ class LocalCatalogEntry(CatalogEntry):
         Parameters
         ----------
         name: str
-            How this entry is known, normally from its key in a YAML file
+            How this entry is known, normally from its key in a YAML file, or
+            if that is not provided then from name of file, or name of dir if
+            file name is 'catalog.yaml' or 'catalog.yml'.
         description: str
             Brief text about the target source
         driver: str
