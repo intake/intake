@@ -139,6 +139,7 @@ class CatSelector(BaseSelector):
 
         self.watchers = [
             self.remove_button.param.watch(self.remove_selected, 'clicks'),
+            self.widget.param.watch(self.populate_nested, 'value'),
             self.widget.param.watch(self.enable_dependents, 'value'),
         ]
 
@@ -152,6 +153,15 @@ class CatSelector(BaseSelector):
         if isinstance(cat, str):
             cat = intake.open_catalog(cat)
         return cat
+
+    def populate_nested(self, event):
+        options = {}
+        for cat in event.new:
+            for nested in list(cat):
+                if cat[nested].container == 'catalog':
+                    options[f'→ {nested}'] = cat[nested]
+        self.widget.options.update(options)
+        self.widget.param.trigger('options')
 
     def remove_selected(self, *args):
         """Remove the selected catalog - allow the passing of arbitrary
@@ -204,5 +214,5 @@ class SourceSelector(BaseSelector):
         """Set sources from a list of cats"""
         sources = []
         for cat in coerce_to_list(cats):
-            sources.extend(list(cat._entries.values()))
+            sources.extend([entry for entry in cat._entries.values() if entry.container != 'catalog'])
         self.items = sources

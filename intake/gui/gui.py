@@ -51,22 +51,23 @@ class GUI(Base):
         super().__init__(**kwargs)
 
     def setup(self):
-        self.search = pn.widgets.RadioButtonGroup(
-            options={'🔍': True, 'x': False},
+        self.search = pn.widgets.Toggle(
+            name='🔍',
             value=False,
             disabled=True,
-            width=80)
+            width=50)
 
-        self.cat_add = pn.widgets.RadioButtonGroup(
-            options={'＋': True, 'x': False},
+        self.cat_add = pn.widgets.Toggle(
+            name='＋',
             value=False,
-            width=80)
+            disabled=False,
+            width=50)
 
-        self.plot = pn.widgets.RadioButtonGroup(
-            options={'📊': True, 'x': False},
+        self.plot = pn.widgets.Toggle(
+            name='📊',
             value=False,
             disabled=True,
-            width=80)
+            width=50)
 
         self.cat_browser = CatSelector(cats=self._cats,
                                        dependent_widgets=[self.search])

@@ -15,16 +15,10 @@ try:
             super().__init__(**kwargs)
 
         def setup(self):
-            self.plot = pn.widgets.RadioButtonGroup(
-                options={'📊': True, 'x': False},
-                value=False,
-                width=80)
-
             self.source_browser = SourceSelector(cats=[self.cat],
                                                  dependent_widgets=[self.plot])
             self.description = Description(source=self.sources)
-            self.plotter = DefinedPlots(source=self.sources,
-                                        control_widget=self.plot)
+            self.plotter = DefinedPlots(source=self.sources)
 
             self.watchers = [
                 self.plot.param.watch(self.on_click_plot, 'value'),
@@ -33,10 +27,6 @@ try:
 
             self.children = [
                 pn.Row(
-                    pn.Column(
-                        logo_file,
-                        self.plot
-                    ),
                     self.source_browser.panel,
                     self.description.panel,
                     background=BACKGROUND,
@@ -45,14 +35,6 @@ try:
                 ),
                 self.plotter.panel,
             ]
-
-        def on_click_plot(self, event):
-            """ When the plot control is toggled, set visibility and hand down source"""
-            self.plotter.source = self.sources
-            self.plotter.visible = event.new
-            if self.plotter.visible:
-                self.plotter.watchers.append(
-                    self.source_browser.widget.link(self.plotter, value='source'))
 
         @property
         def sources(self):
