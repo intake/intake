@@ -114,6 +114,27 @@ class Catalog(DataSource):
         self._entries = self._make_entries_container()
         self.force_reload()
 
+    @classmethod
+    def from_dict(cls, entries, **kwargs):
+        """
+        Create Catalog from the given set of entries
+
+        Parameters
+        ----------
+        entries : dict-like
+            A mapping of name:entry which supports dict-like functionality,
+            e.g., is derived from ``collections.abc.Mapping``.
+        kwargs : passed on the constructor
+            Things like metadata, name; see ``__init__``.
+
+        Returns
+        -------
+        Catalog instance
+        """
+        cat = cls(kwargs)
+        cat._entries = entries
+        return cat
+
     @property
     def kwargs(self):
         return dict(name=self.name, ttl=self.ttl)
@@ -216,6 +237,36 @@ class Catalog(DataSource):
     def items(self):
         """Get an iterator over (key, value) tuples for the catalog entries."""
         return self._get_entries().items()
+
+    def serialize(self):
+        """
+        Produce YAML version of this catalog.
+
+        Note that this is not the same as ``.yaml()``, which produces a YAML
+        block referring to this catalog.
+        """
+        import yaml
+        output = {"metadata": self.metadata, "sources": {},
+                  "name": self.name}
+        for key, entry in self.items():
+            output["sources"][key] = yaml.safe_load(
+                entry.yaml())["sources"][key]
+        return yaml.dump(output)
+
+    def save(self, url, storage_options=None):
+        """
+        Output this catalog to a file as YAML
+
+        Parameters
+        ----------
+        url : str
+            Location to save to, perhaps remote
+        storage_options : dict
+            Extra arguments for the file-system
+        """
+        from dask.bytes import open_files
+        with open_files(url, **(storage_options or {}))[0] as f:
+            f.write(self.serialize())
 
     @reload_on_change
     def _get_entry(self, name):
