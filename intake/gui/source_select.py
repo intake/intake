@@ -84,8 +84,8 @@ class BaseSelector(Base):
     def remove(self, items):
         """Remove items from options"""
         values = coerce_to_list(items)
-        for value in values:
-            self.widget.options.pop(value.name)
+        new_options = {k: v for k, v in self.widget.options.items() if v not in values}
+        self.widget.options = new_options
         self.widget.param.trigger('options')
 
     @property
@@ -139,7 +139,7 @@ class CatSelector(BaseSelector):
 
         self.watchers = [
             self.remove_button.param.watch(self.remove_selected, 'clicks'),
-            self.widget.param.watch(self.populate_nested, 'value'),
+            self.widget.param.watch(self.expand_nested, 'value'),
             self.widget.param.watch(self.enable_dependents, 'value'),
         ]
 
@@ -154,18 +154,59 @@ class CatSelector(BaseSelector):
             cat = intake.open_catalog(cat)
         return cat
 
-    def populate_nested(self, event):
-        options = {}
-        for cat in event.new:
-            for nested in list(cat):
-                if cat[nested].container == 'catalog':
-                    options[f'→ {nested}'] = cat[nested]
-        self.widget.options.update(options)
-        self.widget.param.trigger('options')
+    def expand_nested(self, event):
+        """Populate widget with nested catalogs"""
+        down = '│'
+        right = '└──'
+
+        def get_children(parent):
+            return [e() for e in parent._entries.values() if e.container == 'catalog']
+
+        if len(event.new) == 0:
+            return
+
+        got = event.new[0]
+        obj = event.obj
+        old = list(event.obj.options.items())
+        name = next(k for k, v in old if v == got)
+        index = next(i for i, (k, v) in enumerate(old) if v == got)
+        if right in name:
+            prefix = f'{name.split(right)[0]}{down} {right}'
+        else:
+            prefix = right
+
+        children = get_children(got)
+        for i, child in enumerate(children):
+            old.insert(index+i+1, (f'{prefix} {child.name}', child))
+        event.obj.options = dict(old)
+
+    def collapse_nested(self, cats, max_nestedness=10):
+        """
+        Collapse any items that are nested under cats.
+        `max_nestedness` acts as a fail-safe to prevent infinite looping.
+        """
+        children = []
+        removed = set()
+        nestedness = max_nestedness
+
+        old = list(self.widget.options.values())
+        nested = [cat for cat in old if getattr(cat, 'cat') is not None]
+        parents = {cat.cat for cat in nested}
+        parents_to_remove = cats
+        while len(parents_to_remove) > 0 and nestedness > 0:
+            for cat in nested:
+                if cat.cat in parents_to_remove:
+                    children.append(cat)
+            removed = removed.union(parents_to_remove)
+            nested = [cat for cat in nested if cat not in children]
+            parents_to_remove = {c for c in children if c in parents - removed}
+            nestedness -= 1
+        self.remove(children)
 
     def remove_selected(self, *args):
         """Remove the selected catalog - allow the passing of arbitrary
-        args so that buttons work"""
+        args so that buttons work. Also remove any nested catalogs."""
+        self.collapse_nested(self.selected)
         self.remove(self.selected)
 
 
