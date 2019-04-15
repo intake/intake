@@ -7,11 +7,12 @@
 
 import os
 from collections import OrderedDict
+from functools import partial
 
 import intake
 import panel as pn
 
-from .base import Base, MAX_WIDTH, BACKGROUND
+from .base import Base, MAX_WIDTH, BACKGROUND, enable_widget
 from .catalog_add import CatAdder
 from .source_select import CatSelector, SourceSelector
 from .source_view import Description, DefinedPlots
@@ -70,17 +71,20 @@ class GUI(Base):
             width=50)
 
         self.cat_browser = CatSelector(cats=self._cats,
-                                       dependent_widgets=[self.search])
+                                       enable_dependent=partial(enable_widget, self.search))
         self.source_browser = SourceSelector(cats=self.cats,
-                                             dependent_widgets=[self.plot])
+                                             enable_dependent=partial(enable_widget, self.plot))
         self.description = Description(source=self.sources)
         self.cat_adder = CatAdder(done_callback=self.cat_browser.add,
-                                  control_widget=self.cat_add)
+                                  visible=self.cat_add.value,
+                                  visible_callback=partial(setattr, self.cat_add, 'value'))
         self.searcher = Search(cats=self.cats,
                                done_callback=self.cat_browser.add,
-                               control_widget=self.search)
+                               visible=self.search.value,
+                               visible_callback=partial(setattr, self.search, 'value'))
         self.plotter = DefinedPlots(source=self.sources,
-                                    control_widget=self.plot)
+                                    visible=self.plot.value,
+                                    visible_callback=partial(setattr, self.plot, 'value'))
 
         self.watchers = [
             self.cat_add.link(self.cat_adder, value='visible'),

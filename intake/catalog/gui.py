@@ -4,6 +4,8 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
+from functools import partial
+
 try:
     import panel as pn
     from ..gui import *
@@ -16,7 +18,7 @@ try:
 
         def setup(self):
             self.source_browser = SourceSelector(cats=[self.cat],
-                                                 dependent_widgets=[self.plot])
+                                                 enable_dependent=partial(enable_widget, self.plot))
             self.description = Description(source=self.sources)
             self.plotter = DefinedPlots(source=self.sources)
 
@@ -53,15 +55,16 @@ try:
             super().__init__(**kwargs)
 
         def setup(self):
-            self.plot = pn.widgets.RadioButtonGroup(
-                options={'📊': True, 'x': False},
+            self.plot = pn.widgets.Toggle(
+                name='📊',
                 value=False,
                 disabled=len(self.source.plots) == 0,
-                width=80)
+                width=50)
 
             self.description = Description(source=self.source)
             self.plotter = DefinedPlots(source=self.source,
-                                        control_widget=self.plot)
+                                        visible=self.plot.value,
+                                        visible_callback=partial(setattr, self.plot, 'value'))
 
             self.watchers = [
                 self.plot.link(self.plotter, value='visible'),

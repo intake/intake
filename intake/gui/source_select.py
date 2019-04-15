@@ -44,11 +44,9 @@ class BaseSelector(Base):
 
     @items.setter
     def items(self, items):
-        """When setting items, enable any dependent widgets and make
-        sure widget options are uptodate"""
+        """When setting items make sure widget options are uptodate"""
         if items is not None:
             self.options = items
-        self.enable_dependents(items)
 
     def _create_options(self, items):
         """Helper method to create options from list, or instance.
@@ -118,7 +116,7 @@ class CatSelector(BaseSelector):
     """
     children = []
 
-    def __init__(self, cats=None, **kwargs):
+    def __init__(self, cats=None, enable_dependent=None, **kwargs):
         """Set cats to initialize the class.
 
         The order of the calls in this method matters and is different
@@ -127,6 +125,7 @@ class CatSelector(BaseSelector):
         """
         self.panel = pn.Column(name='Select Catalog')
         self.widget = pn.widgets.MultiSelect(size=9, width=200)
+        self._enable_dependent = enable_dependent
         super().__init__(**kwargs)
 
         self.items = cats if cats is not None else [intake.cat]
@@ -135,7 +134,6 @@ class CatSelector(BaseSelector):
         self.remove_button = pn.widgets.Button(
             name='Remove Selected Catalog',
             width=200)
-        self.dependent_widgets.append(self.remove_button)
 
         self.watchers = [
             self.remove_button.param.watch(self.remove_selected, 'clicks'),
@@ -145,8 +143,10 @@ class CatSelector(BaseSelector):
 
         self.children = ['####Catalogs', self.widget, self.remove_button]
 
-    def teardown(self):
-        self.dependent_widgets.remove(self.remove_button)
+    def enable_dependents(self, event):
+        self.remove_button.disabled = not event.new
+        if self._enable_dependent:
+            self._enable_dependent(event.new)
 
     def preprocess(self, cat):
         """Function to run on each cat input"""
@@ -222,7 +222,7 @@ class SourceSelector(BaseSelector):
     preprocess = None
     children = []
 
-    def __init__(self, sources=None, cats=None, **kwargs):
+    def __init__(self, sources=None, cats=None, enable_dependent=None, **kwargs):
         """Set sources or cats to initialize the class - sources trumps cats.
 
         The order of the calls in this method matters and is different
@@ -231,6 +231,7 @@ class SourceSelector(BaseSelector):
         """
         self.panel = pn.Column(name='Select Data Source')
         self.widget = pn.widgets.MultiSelect(size=9, width=200)
+        self._enable_dependent = enable_dependent
         super().__init__(**kwargs)
 
         if sources is not None:
@@ -240,7 +241,7 @@ class SourceSelector(BaseSelector):
 
     def setup(self):
         self.watchers = [
-            self.widget.param.watch(self.enable_dependents, 'value'),
+            self.widget.param.watch(self.enable_dependent, 'value'),
         ]
         self.label = '####Entries'
         self.children = [self.label, self.widget]
@@ -257,3 +258,7 @@ class SourceSelector(BaseSelector):
         for cat in coerce_to_list(cats):
             sources.extend([entry for entry in cat._entries.values() if entry.container != 'catalog'])
         self.items = sources
+
+    def enable_dependent(self, event):
+        if self._enable_dependent:
+            self._enable_dependent(event.new)

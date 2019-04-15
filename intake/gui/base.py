@@ -11,6 +11,11 @@ MAX_WIDTH = 1600
 BACKGROUND = '#ffffff'
 
 
+def enable_widget(widget, enable=True):
+    """Set disabled on widget"""
+    widget.disabled = not enable
+
+
 class Base(object):
     """
     Base class for composable panel objects that make up the GUI.
@@ -25,11 +30,6 @@ class Base(object):
     watchers: list of param watchers
         watchers that are set on children - cleaned up when visible
         is set to false.
-    dependent_widgets: list of widgets
-        widgets that should be enabled when the instance's action completes
-    control_widget: widget
-        widget tied to visible property of class. When value changes on widget
-        visible value changes as well.
     visible: bool
         whether or not the instance should be visible. When not visible
         ``panel`` is empty.
@@ -37,13 +37,11 @@ class Base(object):
     children = None
     panel = None
     watchers = None
-    dependent_widgets = None
-    control_widget = None
+    visible_callback = None
 
-    def __init__(self, visible=True, control_widget=None, dependent_widgets=None):
-        self.dependent_widgets = dependent_widgets or []
-        self.control_widget = control_widget
-        self.visible = visible if control_widget is None else control_widget.value
+    def __init__(self, visible=True, visible_callback=None):
+        self.visible = visible
+        self.visible_callback = visible_callback
 
     def __repr__(self):
         """Print output"""
@@ -71,29 +69,16 @@ class Base(object):
 
     @visible.setter
     def visible(self, visible):
-        """When visible changed, do setup or unwatch and teardown"""
+        """When visible changed, do setup or unwatch and call visible_callback"""
         self._visible = visible
         if visible and len(self.panel.objects) == 0:
             self.setup()
             self.panel.extend(self.children)
         elif not visible and len(self.panel.objects) > 0:
             self.unwatch()
-            self.teardown()
             self.panel.clear()
-        if self.control_widget:
-            self.control_widget.value = visible
-
-    def enable_dependents(self, enable=True):
-        """Set disabled on all dependent widgets"""
-        if self.dependent_widgets:
-            if isinstance(enable, Event):
-                enable = bool(enable.new)
-            for widget in self.dependent_widgets:
-                widget.disabled = not enable
-
-    def teardown(self):
-        """Should clean up any dependent widgets that setup appends"""
-        pass
+        if self.visible_callback:
+            self.visible_callback(visible)
 
     def unwatch(self):
         """Get rid of any lingering watchers and remove from list"""

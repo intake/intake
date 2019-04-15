@@ -6,11 +6,12 @@
 #-----------------------------------------------------------------------------
 
 import os
+from functools import partial
 
 import intake
 import panel as pn
 
-from .base import Base, MAX_WIDTH, BACKGROUND
+from .base import Base, MAX_WIDTH, BACKGROUND, enable_widget
 
 here = os.path.abspath(os.path.dirname(__file__))
 ICONS = {
@@ -31,9 +32,10 @@ class FileSelector(Base):
         extentions that are included in the list of files - correspond to
         catalog extensions.
     """
-    def __init__(self, filters=['yaml', 'yml'], **kwargs):
+    def __init__(self, enable_dependent, filters=['yaml', 'yml'], **kwargs):
         self.filters = filters
         self.panel = pn.Column(name='Local')
+        self.enable_dependent = enable_dependent
         super().__init__(**kwargs)
 
     def setup(self):
@@ -82,7 +84,7 @@ class FileSelector(Base):
             self.validator.object = ICONS['error']
 
     def make_options(self, arg=None):
-        self.enable_dependents(False)
+        self.enable_dependent(False)
         out = []
         if os.path.isdir(self.path):
             for f in sorted(os.listdir(self.path)):
@@ -104,7 +106,7 @@ class FileSelector(Base):
                     self.path_text.value = self.path + fn
                     self.make_options()
                 elif os.path.isfile(self.url):
-                    self.enable_dependents(True)
+                    self.enable_dependent(True)
 
 class URLSelector(Base):
     """
@@ -147,7 +149,7 @@ class CatAdder(Base):
         self.widget = pn.widgets.Button(name='Add Catalog',
                                         disabled=True,
                                         width_policy='min')
-        self.fs = FileSelector(dependent_widgets=[self.widget])
+        self.fs = FileSelector(enable_dependent=partial(enable_widget, self.widget))
         self.url = URLSelector()
         self.selectors = [self.fs, self.url]
         self.tabs = pn.Tabs(*map(lambda x: x.panel, self.selectors))

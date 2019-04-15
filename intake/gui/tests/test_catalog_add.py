@@ -49,7 +49,7 @@ def test_file_selector_edit_path(file_selector):
 
 
 def test_file_selector_edit_path_bad_value(file_selector):
-    file_selector.enable_dependents = callback
+    file_selector.enable_dependent = callback
     with pytest.raises(ValueError, match='False'):
         file_selector.path_text.value = 'blah/foo/blah'
         assert 'error' in file_selector.validator.object
