@@ -84,26 +84,30 @@ class DefinedPlots(Base):
 
     def __init__(self, source=None, **kwargs):
         self.source = source
-        self.panel = pn.Row(name='Plot')
+        self.panel = pn.Column(name='Plot')
         super().__init__(**kwargs)
 
     def setup(self):
         self.instructions = pn.pane.Markdown(self.instructions_contents)
         self.select = pn.widgets.Select(options=self.options)
-        self.desc = pn.pane.Str(self.desc_contents(self.selected))
+        self.desc = pn.pane.Str()
         self.pane = pn.pane.HoloViews(self.plot_object(self.selected))
+        self.show_desc = pn.widgets.Checkbox(value=False, width_policy='min')
 
         self.watchers = [
-            self.select.param.watch(self.callback, ['options','value'])
+            self.select.param.watch(self.callback, ['options','value']),
+            self.show_desc.param.watch(self.toggle_desc, 'value')
         ]
 
         self.children = [
-            pn.Column(
-                self.instructions,
+            self.instructions,
+            pn.Row(
                 self.select,
-                self.desc,
-                max_width=400),
-            self.pane
+                self.show_desc,
+                "show yaml",
+            ),
+            self.desc,
+            self.pane,
         ]
 
     @property
@@ -147,7 +151,8 @@ class DefinedPlots(Base):
     def callback(self, *events):
         for event in events:
             if event.name == 'value':
-                self.desc.object = self.desc_contents(event.new)
+                if self.show_desc.value:
+                    self.desc.object = self.desc_contents(event.new)
                 self.pane.object = self.plot_object(event.new)
             if event.name == 'options':
                 self.instructions.object = self.instructions_contents
@@ -162,3 +167,9 @@ class DefinedPlots(Base):
         if selected:
             contents = self.source.metadata['plots'][selected]
             return pretty_describe(contents)
+
+    def toggle_desc(self, event):
+        if event.new:
+            self.desc.object = self.desc_contents(self.selected)
+        else:
+            self.desc.object = None
