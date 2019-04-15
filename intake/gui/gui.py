@@ -47,7 +47,7 @@ class GUI(Base):
     """
     def __init__(self, cats=None, **kwargs):
         self._cats = cats
-        self.panel = pn.Column(name='GUI', width_policy='max')
+        self.panel = pn.Column(name='GUI', width_policy='max', max_width=MAX_WIDTH)
         super().__init__(**kwargs)
 
     def setup(self):

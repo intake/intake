@@ -5,8 +5,15 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 try:
-    import panel
+    import panel as pn
     from .gui import *
+    css = """
+.scrolling {
+  overflow: scroll;
+}
+"""
+
+    pn.config.raw_css.append('css')  # add scrolling class from css (panel GH#383, GH#384)
 
 except ImportError:
 

@@ -29,11 +29,12 @@ class Description(Base):
 
     def __init__(self, source=None, **kwargs):
         self.source = source
-        self.panel = pn.Column(name='Description')
+        self.panel = pn.Column(name='Description', sizing_mode='stretch_width')
         super().__init__(**kwargs)
 
     def setup(self):
-        self.main_pane = pn.pane.Str(self.contents, sizing_mode='stretch_width')
+        self.main_pane = pn.pane.Str(self.contents, sizing_mode='stretch_width',
+                                     css_classes=['scrolling'], height=200)
         self.label_pane = pn.pane.Markdown(self.label)
         self.children = [self.label_pane, self.main_pane]
 
