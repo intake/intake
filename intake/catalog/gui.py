@@ -124,7 +124,7 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             pass
         def __repr__(self):
-            raise RuntimeError("Please install panel to use the GUI")
+            raise RuntimeError("Please install panel to use the GUI (`conda install -c conda-forge panel==0.5.1`)")
 
     EntryGUI = GUI
     CatalogGUI = GUI
@@ -138,6 +138,6 @@ except Exception as e:
         def __repr__(self):
             raise RuntimeError("Initialization of GUI failed, even though "
                                "panel is installed. Please update it "
-                               "to a more recent version.")
+                               "to a more recent version (`conda install -c conda-forge panel==0.5.1`).")
     EntryGUI = GUI
     CatalogGUI = GUI
