@@ -71,9 +71,9 @@ class GUI(Base):
             width=50)
 
         self.cat_browser = CatSelector(cats=self._cats,
-                                       enable_dependent=partial(enable_widget, self.search))
+                                       enable_dependent=self.enable_search)
         self.source_browser = SourceSelector(cats=self.cats,
-                                             enable_dependent=partial(enable_widget, self.plot))
+                                             enable_dependent=self.enable_plot)
         self.description = Description(source=self.sources)
         self.cat_adder = CatAdder(done_callback=self.cat_browser.add,
                                   visible=self.cat_add.value,
@@ -114,6 +114,11 @@ class GUI(Base):
             self.plotter.panel,
         ]
 
+    def enable_plot(self, enable):
+        if not enable:
+            self.plot.value = False
+        return enable_widget(self.plot, enable)
+
     def on_click_plot(self, event):
         """ When the plot control is toggled, set visibility and hand down source"""
         self.plotter.source = self.sources
@@ -121,6 +126,11 @@ class GUI(Base):
         if self.plotter.visible:
             self.plotter.watchers.append(
                 self.source_browser.widget.link(self.plotter, value='source'))
+
+    def enable_search(self, enable):
+        if not enable:
+            self.search.value = False
+        return enable_widget(self.search, enable)
 
     def on_click_search(self, event):
         """ When the search control is toggled, set visibility and hand down cats"""
@@ -134,6 +144,10 @@ class GUI(Base):
     def cats(self):
         """Cats that have been selected from the cat_browser"""
         return self.cat_browser.selected
+
+    def add(self, *args, **kwargs):
+        """Add to list of cats"""
+        return self.cat_browser.add(*args, **kwargs)
 
     @property
     def sources(self):

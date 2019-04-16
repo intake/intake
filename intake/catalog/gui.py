@@ -13,7 +13,7 @@ try:
     class EntryGUI(Base):
         def __init__(self, source=None, **kwargs):
             self.source = source
-            self.panel = pn.Column(name='GUI')
+            self.panel = pn.Column(name='GUI', width_policy='max', max_width=MAX_WIDTH)
             super().__init__(**kwargs)
 
         def setup(self):
@@ -50,16 +50,28 @@ try:
         def item(self):
             return self.source
 
-    class CatalogGUI(EntryGUI):
-        def __init__(self, cat=None, **kwargs):
+    class CatalogGUI(Base):
+        def __init__(self, cat, **kwargs):
             self.cat = cat
-            self.panel = pn.Column(name='GUI')
+            self.panel = pn.Column(name='GUI', width_policy='max', max_width=MAX_WIDTH)
             super().__init__(**kwargs)
 
         def setup(self):
-            self.setup()
+            self.plot = pn.widgets.Toggle(
+                name='📊',
+                value=False,
+                width=50)
+
             self.source_browser = SourceSelector(cats=[self.cat],
-                                                 enable_dependent=partial(enable_widget, self.plot))
+                                                 enable_dependent=self.enable_plot)
+            self.description = Description(source=self.sources)
+
+            self.plotter = DefinedPlots(source=self.sources,
+                                        visible=self.plot.value,
+                                        visible_callback=partial(setattr, self.plot, 'value'))
+
+            # set disabled after item is selected
+            self.plot.disabled = self.item is None or len(self.item.plots) == 0
 
             self.watchers = [
                 self.plot.param.watch(self.on_click_plot, 'value'),
@@ -68,6 +80,10 @@ try:
 
             self.children = [
                 pn.Row(
+                    pn.Column(
+                        logo_file,
+                        self.plot
+                    ),
                     self.source_browser.panel,
                     self.description.panel,
                     background=BACKGROUND,
@@ -76,6 +92,11 @@ try:
                 ),
                 self.plotter.panel,
             ]
+
+        def enable_plot(self, enable):
+            if not enable:
+                self.plot.value = False
+                return enable_widget(self.plot, enable)
 
         def on_click_plot(self, event):
             """ When the plot control is toggled, set visibility and hand down source"""
