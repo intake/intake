@@ -627,3 +627,16 @@ def test_dict_adddel():
     del cat['trial']
     assert list(cat) == ['trial2']
     assert cat['trial2'] is entry
+
+
+def test_filter():
+    from intake.catalog.base import Catalog
+    entry1 = LocalCatalogEntry(name='trial', description='get this back',
+                              driver='csv')
+    entry2 = LocalCatalogEntry(name='trial', description='pass this through',
+                              driver='csv')
+    cat = Catalog.from_dict({'trial1': entry1,
+                             'trial2': entry2}, name='mycat')
+    cat2 = cat.filter(lambda e: 'pass' in e._description)
+    assert list(cat2) == ['trial2']
+    assert cat2.trial2 is entry2

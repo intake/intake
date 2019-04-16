@@ -220,7 +220,7 @@ class Catalog(DataSource):
         -------
         New Catalog
         """
-        return Catalog.from_dict({name: entry for name, entry in self._entries
+        return Catalog.from_dict({name: entry for name, entry in self.items()
                                   if predicate(entry)})
 
     @reload_on_change
