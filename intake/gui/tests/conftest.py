@@ -20,12 +20,20 @@ def cat2_url():
     return os.path.join(here, 'catalogs', 'catalog2.yaml')
 
 @pytest.fixture
+def parent_cat_url():
+    return os.path.join(here, 'catalogs', 'parent.yaml')
+
+@pytest.fixture
 def cat1(cat1_url):
     return intake.open_catalog(cat1_url)
 
 @pytest.fixture
 def cat2(cat2_url):
     return intake.open_catalog(cat2_url)
+
+@pytest.fixture
+def parent_cat(parent_cat_url):
+    return intake.open_catalog(parent_cat_url)
 
 @pytest.fixture
 def cat_browser(cat1):

@@ -113,9 +113,10 @@ def assert_plotting_source2_0_line(plots, visible=True, desc=False):
         assert plots.instructions.object == plots.instructions_contents
         if desc:
             assert plots.desc.object == ("kind: line\n"
-                                        "y: ['Robbery', 'Burglary']\n"
-                                        "x: Year")
-            assert str(plots.children[1].object) == str(plots.pane.object)
+                                         "y: ['Robbery', 'Burglary']\n"
+                                         "x: Year")
+        else:
+            assert plots.desc.object == None
         assert plots.pane.object is not None
         assert len(plots.children) == 4
         assert isinstance(plots.children[-1], pn.pane.HoloViews)
@@ -133,9 +134,12 @@ def defined_plots(sources2):
     return DefinedPlots(source=sources2[0])
 
 
-def test_defined_plots(defined_plots, sources2):
+def test_defined_plots_toggle_desc(defined_plots, sources2):
     assert defined_plots.source == sources2[0]
     assert_plotting_source2_0_line(defined_plots, visible=True)
+
+    defined_plots.show_desc.value = True
+    assert_plotting_source2_0_line(defined_plots, visible=True, desc=True)
 
 
 def test_defined_plots_init_empty_and_not_visible_set_source(sources2):

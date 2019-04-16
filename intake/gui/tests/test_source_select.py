@@ -63,6 +63,14 @@ def test_catalog_browser_add_cat_as_str(cat_browser, cat2, cat2_url):
     assert_widget_matches(cat_browser)
 
 
+def test_catalog_browser_add_nested_catalog(cat_browser, parent_cat):
+    cat_browser.add(parent_cat)
+    assert parent_cat.name in cat_browser.options
+    assert cat_browser.selected == [parent_cat]
+    assert list(cat_browser.options.keys()) == ['catalog1', 'parent', '└── child1', '└── child2']
+    assert_widget_matches(cat_browser)
+
+
 def test_catalog_browser_select_cat_by_widget(cat_browser, cat1):
     cat_browser.selected = []
     assert cat_browser.selected == []
@@ -83,6 +91,16 @@ def test_catalog_browser_remove_selected_cat(cat_browser, cat1):
 def test_catalog_browser_remove_cat_that_is_not_in_options_passes(cat_browser, cat2):
     assert cat2.name not in cat_browser.options
     cat_browser.remove(cat2)
+
+
+def test_catalog_browser_remove_nested_catalog(cat_browser, parent_cat):
+    cat_browser.add(parent_cat)
+    assert parent_cat.name in cat_browser.options
+    assert cat_browser.selected == [parent_cat]
+    assert list(cat_browser.options.keys()) == ['catalog1', 'parent', '└── child1', '└── child2']
+    cat_browser.remove_selected()
+    assert list(cat_browser.options.keys()) == ['catalog1']
+    assert_widget_matches(cat_browser)
 
 
 def test_source_browser_init_with_cats(cat1, cat2, sources1, sources2):
