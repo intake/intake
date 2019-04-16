@@ -10,7 +10,7 @@ dependencies:
   - s3fs
   - tqdm
   - intake-xarray
-  - bokeh/label/dev::bokeh
-  - pyviz/label/dev::hvplot
-  - pyviz/label/dev::holoviews
-  - pyviz/label/dev::panel
+  - bokeh==1.1.0
+  - hvplot==0.4.0
+  - holoviews==1.12.1
+  - panel==0.5.1
