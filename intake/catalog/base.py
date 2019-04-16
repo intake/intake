@@ -201,6 +201,28 @@ class Catalog(DataSource):
             e._catalog = cat
         return cat
 
+    def filter(self, predicate):
+        """Create a Catalog of a subset of entries based on a condition
+
+        Note that, whatever specific class this is performed on, the return
+        instance is a Catalog. The entries are passed unmodified, so they
+        will still reference the original catalog instance and include its
+        details such as directory,.
+
+        Parameters
+        ----------
+        predicate : function
+            This should take a CatalogEntry and return True or False. Those
+            items returning True will be included in the new Catalog, with the
+            same entry names
+
+        Returns
+        -------
+        New Catalog
+        """
+        return Catalog.from_dict({name: entry for name, entry in self._entries
+                                  if predicate(entry)})
+
     @reload_on_change
     def walk(self, sofar=None, prefix=None, depth=2):
         """Get all entries in this catalog and sub-catalogs
@@ -308,6 +330,36 @@ class Catalog(DataSource):
             except KeyError:
                 raise AttributeError(item)
         raise AttributeError(item)
+
+    def __setitem__(self, name, entry):
+        """Add entry to catalog
+
+        This relies on the `_entries` attribute being mutable, which it normally
+        is. Note that if a catalog automatically reloads, any entry added here
+        may be very transient
+
+        Parameters
+        ----------
+        name : str
+            Key to give the entry in the cat
+        entry : CatalogEntry
+            The entry to include (could be local, remote)
+        """
+        self._entries[name] = entry
+
+    def __delitem__(self, name):
+        """Remove entry from catalog
+
+        This relies on the `_entries` attribute being mutable, which it normally
+        is. Note that if a catalog automatically reloads, any entry removed here
+        may soon reappear
+
+        Parameters
+        ----------
+        name : str
+            Key to give the entry in the cat
+        """
+        del self._entries[name]
 
     def __getitem__(self, key):
         """Return a catalog entry by name.

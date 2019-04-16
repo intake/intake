@@ -534,37 +534,44 @@ class YAMLFileCatalog(Catalog):
     partition_access = None
     name = 'yaml_file_cat'
 
-    def __init__(self, path, **kwargs):
+    def __init__(self, path, autoreload=True, **kwargs):
         """
         Parameters
         ----------
         path: str
             Location of the file to parse (can be remote)
+        reload : bool
+            Whether to watch the source file for changes; make False if you want
+            an editable Catalog
         """
         self.path = path
+        self.autoreload = autoreload  # set this to False to prevent
         super(YAMLFileCatalog, self).__init__(**kwargs)
 
-    def _load(self):
-        # First, we load from YAML, failing if syntax errors are found
-        options = self.storage_options or {}
-        if hasattr(self.path, 'path') or hasattr(self.path, 'read'):
-            file_open = self.path
-            self.path = make_path_posix(
-                getattr(self.path, 'path',
-                        getattr(self.path, 'name', 'file')))
-        else:
-            file_open = open_files(self.path, mode='rb', **options)
-            assert len(file_open) == 1
-            file_open = file_open[0]
-        self._dir = get_dir(self.path)
+    def _load(self, reload=False):
+        if self.autoreload or reload:
+            # First, we load from YAML, failing if syntax errors are found
+            options = self.storage_options or {}
+            if hasattr(self.path, 'path') or hasattr(self.path, 'read'):
+                file_open = self.path
+                self.path = make_path_posix(
+                    getattr(self.path, 'path',
+                            getattr(self.path, 'name', 'file')))
+            else:
+                file_open = open_files(self.path, mode='rb', **options)
+                assert len(file_open) == 1
+                file_open = file_open[0]
+            self._dir = get_dir(self.path)
 
-        with file_open as f:
-            text = f.read().decode()
-        if "!template " in text:
-            logger.warning("Use of '!template' deprecated - fixing")
-            text = text.replace('!template ', '')
+            with file_open as f:
+                self.text = f.read().decode()
+            if "!template " in self.text:
+                logger.warning("Use of '!template' deprecated - fixing")
+                self.text = self.text.replace('!template ', '')
+            self.parse()
 
-        data = yaml_load(text)
+    def parse(self):
+        data = yaml_load(self.text)
 
         if data is None:
             raise exceptions.CatalogException('No YAML data in file')

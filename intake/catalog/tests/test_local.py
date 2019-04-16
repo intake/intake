@@ -614,3 +614,16 @@ def test_dict_save():
     assert 'trial' in cat2
     assert cat2.name == 'mycat'
     assert cat2.trial._driver =='csv'
+
+
+def test_dict_adddel():
+    from intake.catalog.base import Catalog
+    entry = LocalCatalogEntry(name='trial', description='get this back',
+                              driver='csv')
+    cat = Catalog.from_dict({'trial': entry}, name='mycat')
+    assert 'trial' in cat
+    cat['trial2'] = entry
+    assert list(cat) == ['trial', 'trial2']
+    del cat['trial']
+    assert list(cat) == ['trial2']
+    assert cat['trial2'] is entry
