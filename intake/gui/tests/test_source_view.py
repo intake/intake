@@ -94,32 +94,33 @@ def assert_is_empty(plots, visible=True):
         assert plots.instructions.object == plots.instructions_contents
         assert plots.desc.object is None
         assert plots.pane.object is None
-        assert len(plots.children) == 2
-        assert isinstance(plots.children[1], pn.pane.HoloViews)
+        assert len(plots.children) == 4
+        assert isinstance(plots.children[-1], pn.pane.HoloViews)
         assert plots.panel.objects == plots.children
-        assert len(plots.watchers) == 1
+        assert len(plots.watchers) == 2
     else:
         assert not plots.selected
         assert not plots.watchers
         assert not plots.panel.objects
 
 
-def assert_plotting_source2_0_line(plots, visible=True):
+def assert_plotting_source2_0_line(plots, visible=True, desc=False):
     assert plots.has_plots is True
     assert plots.instructions_contents == '**Select from the predefined plots:**'
     assert plots.options == ['line_example', 'violin_example']
     if visible:
         assert plots.selected == 'line_example'
         assert plots.instructions.object == plots.instructions_contents
-        assert plots.desc.object == ("kind: line\n"
-                                     "y: ['Robbery', 'Burglary']\n"
-                                     "x: Year")
+        if desc:
+            assert plots.desc.object == ("kind: line\n"
+                                        "y: ['Robbery', 'Burglary']\n"
+                                        "x: Year")
+            assert str(plots.children[1].object) == str(plots.pane.object)
         assert plots.pane.object is not None
-        assert len(plots.children) == 2
-        assert isinstance(plots.children[1], pn.pane.HoloViews)
-        assert str(plots.children[1].object) == str(plots.pane.object)
+        assert len(plots.children) == 4
+        assert isinstance(plots.children[-1], pn.pane.HoloViews)
         assert plots.panel.objects == plots.children
-        assert len(plots.watchers) == 1
+        assert len(plots.watchers) == 2
     else:
         assert not plots.selected
         assert not plots.watchers

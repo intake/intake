@@ -32,10 +32,10 @@ class FileSelector(Base):
         extentions that are included in the list of files - correspond to
         catalog extensions.
     """
-    def __init__(self, enable_dependent, filters=['yaml', 'yml'], **kwargs):
+    def __init__(self, filters=['yaml', 'yml'], enable_dependent=None,  **kwargs):
         self.filters = filters
         self.panel = pn.Column(name='Local')
-        self.enable_dependent = enable_dependent
+        self._enable_dependent = enable_dependent
         super().__init__(**kwargs)
 
     def setup(self):
@@ -107,6 +107,10 @@ class FileSelector(Base):
                     self.make_options()
                 elif os.path.isfile(self.url):
                     self.enable_dependent(True)
+
+    def enable_dependent(self, enable):
+        if self._enable_dependent:
+            self._enable_dependent(enable)
 
 class URLSelector(Base):
     """
