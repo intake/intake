@@ -133,6 +133,13 @@ class CatalogEntry(DictSerialiseMixin):
         selflist.update(set(dir(self._get_default_source())))
         return list(sorted(selflist))
 
+    def __iter__(self):
+        # If the entry is a catalog, this allows list(cat.entry)
+        if self._container == 'catalog':
+            return iter(self._get_default_source())
+        else:
+            raise ValueError('Cannot iterate a catalog entry')
+
     def __getitem__(self, item):
         """Pass getitem to data source, assuming default parameters
 

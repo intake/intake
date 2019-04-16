@@ -594,3 +594,9 @@ def test_dot_names():
     assert cat['self.self.dot', 'leaf.dot']._description == 'leaf-dot'
 
     assert cat['self.self.dot.leaf.dot']._description == 'leaf-dot'
+
+
+def test_listing(catalog1):
+    assert list(catalog1) == list(catalog1.nested)
+    with pytest.raises(ValueError):
+        list(catalog1.arr)
