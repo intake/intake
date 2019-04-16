@@ -42,15 +42,15 @@ def test_gui_remove_selected_cat(gui, cat1):
 def test_gui_open_plot_panel(gui, cat1, cat2, sources1, sources2):
     gui.plot.value = True
     assert gui.plotter.visible is True
-    assert len(gui.plotter.watchers) == 2
-    assert len(gui.plotter.panel.objects) == 2
+    assert len(gui.plotter.watchers) == 3
+    assert len(gui.plotter.panel.objects) == 4
     assert gui.plotter.source == sources1[0]
 
     gui.cat_browser.selected = [cat2]
     assert gui.plot.value is True
     assert gui.plotter.visible is True
-    assert len(gui.plotter.watchers) == 2
-    assert len(gui.plotter.panel.objects) == 2
+    assert len(gui.plotter.watchers) == 3
+    assert len(gui.plotter.panel.objects) == 4
     assert gui.plotter.source == sources2[0]
 
     gui.plot.value = False
@@ -87,7 +87,7 @@ def test_gui_close_and_open_cat_browser(gui, cat2, sources2):
     assert gui.search.disabled is False
 
     gui.cat_browser.visible = True
-    assert len(gui.cat_browser.watchers) == 2
+    assert len(gui.cat_browser.watchers) == 3
     assert gui.cat_browser.selected == [cat2]
     assert gui.source_browser.items == sources2
     assert gui.search.disabled is False

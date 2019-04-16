@@ -10,46 +10,8 @@ try:
     import panel as pn
     from ..gui import *
 
-    class CatalogGUI(Base):
-        def __init__(self, cat, **kwargs):
-            self.cat = cat
-            self.panel = pn.Column(name='GUI')
-            super().__init__(**kwargs)
-
-        def setup(self):
-            self.source_browser = SourceSelector(cats=[self.cat],
-                                                 enable_dependent=partial(enable_widget, self.plot))
-            self.description = Description(source=self.sources)
-            self.plotter = DefinedPlots(source=self.sources)
-
-            self.watchers = [
-                self.plot.param.watch(self.on_click_plot, 'value'),
-                self.source_browser.widget.link(self.description, value='source'),
-            ]
-
-            self.children = [
-                pn.Row(
-                    self.source_browser.panel,
-                    self.description.panel,
-                    background=BACKGROUND,
-                    width_policy='max',
-                    max_width=MAX_WIDTH,
-                ),
-                self.plotter.panel,
-            ]
-
-        @property
-        def sources(self):
-            return self.source_browser.selected
-
-        @property
-        def item(self):
-            if len(self.sources) == 0:
-                return None
-            return self.sources[0]
-
     class EntryGUI(Base):
-        def __init__(self, source, **kwargs):
+        def __init__(self, source=None, **kwargs):
             self.source = source
             self.panel = pn.Column(name='GUI')
             super().__init__(**kwargs)
@@ -87,6 +49,53 @@ try:
         @property
         def item(self):
             return self.source
+
+    class CatalogGUI(EntryGUI):
+        def __init__(self, cat=None, **kwargs):
+            self.cat = cat
+            self.panel = pn.Column(name='GUI')
+            super().__init__(**kwargs)
+
+        def setup(self):
+            self.setup()
+            self.source_browser = SourceSelector(cats=[self.cat],
+                                                 enable_dependent=partial(enable_widget, self.plot))
+
+            self.watchers = [
+                self.plot.param.watch(self.on_click_plot, 'value'),
+                self.source_browser.widget.link(self.description, value='source'),
+            ]
+
+            self.children = [
+                pn.Row(
+                    self.source_browser.panel,
+                    self.description.panel,
+                    background=BACKGROUND,
+                    width_policy='max',
+                    max_width=MAX_WIDTH,
+                ),
+                self.plotter.panel,
+            ]
+
+        def on_click_plot(self, event):
+            """ When the plot control is toggled, set visibility and hand down source"""
+            self.plotter.source = self.sources
+            self.plotter.visible = event.new
+            if self.plotter.visible:
+                self.plotter.watchers.append(
+                    self.source_browser.widget.link(self.plotter, value='source'))
+
+        @property
+        def sources(self):
+            return self.source_browser.selected
+
+        @property
+        def item(self):
+            if len(self.sources) == 0:
+                return None
+            return self.sources[0]
+
+
 
 except ImportError:
 

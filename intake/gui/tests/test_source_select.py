@@ -35,7 +35,7 @@ def test_catalog_browser_set_to_visible_and_back(cat_browser, cat1):
     assert len(cat_browser.watchers) == 0
 
     cat_browser.visible = True
-    assert len(cat_browser.watchers) == 2
+    assert len(cat_browser.watchers) == 3
     assert cat_browser.items == [cat1]
     assert cat1.name in cat_browser.options
     assert cat_browser.selected == [cat1]
@@ -80,10 +80,9 @@ def test_catalog_browser_remove_selected_cat(cat_browser, cat1):
     assert_widget_matches(cat_browser)
 
 
-def test_catalog_browser_remove_cat_that_is_not_in_options(cat_browser, cat2):
+def test_catalog_browser_remove_cat_that_is_not_in_options_passes(cat_browser, cat2):
     assert cat2.name not in cat_browser.options
-    with pytest.raises(KeyError, match='catalog2'):
-        cat_browser.remove(cat2)
+    cat_browser.remove(cat2)
 
 
 def test_source_browser_init_with_cats(cat1, cat2, sources1, sources2):

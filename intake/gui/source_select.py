@@ -81,8 +81,8 @@ class BaseSelector(Base):
 
     def remove(self, items):
         """Remove items from options"""
-        values = coerce_to_list(items)
-        new_options = {k: v for k, v in self.widget.options.items() if v not in values}
+        names = list(self._create_options(items).keys())
+        new_options = {k: v for k, v in self.widget.options.items() if v.name not in names}
         self.widget.options = new_options
         self.widget.param.trigger('options')
 
@@ -160,7 +160,7 @@ class CatSelector(BaseSelector):
         right = '└──'
 
         def get_children(parent):
-            return [e() for e in parent._entries.values() if e.container == 'catalog']
+            return [e() for e in parent._entries.values() if e._container == 'catalog']
 
         if len(event.new) == 0:
             return
@@ -256,7 +256,7 @@ class SourceSelector(BaseSelector):
         """Set sources from a list of cats"""
         sources = []
         for cat in coerce_to_list(cats):
-            sources.extend([entry for entry in cat._entries.values() if entry.container != 'catalog'])
+            sources.extend([entry for entry in cat._entries.values() if entry._container != 'catalog'])
         self.items = sources
 
     def enable_dependent(self, event):
