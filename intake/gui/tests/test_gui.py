@@ -40,6 +40,7 @@ def test_gui_remove_selected_cat(gui, cat1):
 
 
 def test_gui_open_plot_panel(gui, cat1, cat2, sources1, sources2):
+    pytest.importorskip('hvplot')
     gui.plot.value = True
     assert gui.plotter.visible is True
     assert len(gui.plotter.watchers) == 3

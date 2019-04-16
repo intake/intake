@@ -130,6 +130,7 @@ def assert_plotting_source2_0_line(plots, visible=True, desc=False):
 
 @pytest.fixture
 def defined_plots(sources2):
+    pytest.importorskip('hvplot')
     from ..source_view import DefinedPlots
     return DefinedPlots(source=sources2[0])
 
@@ -143,6 +144,7 @@ def test_defined_plots_toggle_desc(defined_plots, sources2):
 
 
 def test_defined_plots_init_empty_and_not_visible_set_source(sources2):
+    pytest.importorskip('hvplot')
     from ..source_view import DefinedPlots
     defined_plots = DefinedPlots(source=[], visible=False)
     defined_plots.source = sources2
@@ -151,6 +153,7 @@ def test_defined_plots_init_empty_and_not_visible_set_source(sources2):
 
 
 def test_defined_plots_init_with_source_not_visible_make_visible(sources2):
+    pytest.importorskip('hvplot')
     from ..source_view import DefinedPlots
     defined_plots = DefinedPlots(source=sources2, visible=False)
     defined_plots.source = sources2

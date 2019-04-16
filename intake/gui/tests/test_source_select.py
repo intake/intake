@@ -184,9 +184,3 @@ def test_source_browser_select_list_of_objects(source_browser, sources1):
     source_browser.selected = sources1
     assert source_browser.selected == sources1
     assert_widget_matches(source_browser)
-
-
-def test_source_browser_select_list_of_objects(source_browser, sources1):
-    source_browser.selected = sources1
-    assert source_browser.selected == sources1
-    assert_widget_matches(source_browser)
