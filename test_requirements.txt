@@ -2,4 +2,4 @@ intake-parquet
 zarr
 notebook
 ipywidgets
-panel
+panel ==0.5.1
