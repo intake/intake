@@ -82,6 +82,9 @@ class DictSerialiseMixin(object):
     def classname(self):
         return classname(self)
 
+    def __dask_tokenize__(self):
+        return hash(self)
+
     def __getstate__(self):
         args = [arg.__getstate__() if isinstance(arg, DictSerialiseMixin)
                 else arg

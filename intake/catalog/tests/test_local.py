@@ -600,3 +600,17 @@ def test_listing(catalog1):
     assert list(catalog1) == list(catalog1.nested)
     with pytest.raises(ValueError):
         list(catalog1.arr)
+
+
+def test_dict_save():
+    from intake.catalog.base import Catalog
+    fn = os.path.join(tempfile.mkdtemp(), 'mycat.yaml')
+    entry = LocalCatalogEntry(name='trial', description='get this back',
+                              driver='csv')
+    cat = Catalog.from_dict({'trial': entry}, name='mycat')
+    cat.save(fn)
+
+    cat2 = open_catalog(fn)
+    assert 'trial' in cat2
+    assert cat2.name == 'mycat'
+    assert cat2.trial._driver =='csv'

@@ -125,7 +125,10 @@ class CatalogEntry(DictSerialiseMixin):
 
     def __getattr__(self, attr):
         # TODO: only consider attr not starting with "_"?
-        return getattr(self._get_default_source(), attr)
+        if attr in self.__dict__:
+            return self.__dict__[attr]
+        else:
+            return getattr(self._get_default_source(), attr)
 
     def __dir__(self):
         selflist = {'describe', 'describe_open', 'get',

@@ -131,7 +131,7 @@ class Catalog(DataSource):
         -------
         Catalog instance
         """
-        cat = cls(kwargs)
+        cat = cls(**kwargs)
         cat._entries = entries
         return cat
 
@@ -249,8 +249,7 @@ class Catalog(DataSource):
         output = {"metadata": self.metadata, "sources": {},
                   "name": self.name}
         for key, entry in self.items():
-            output["sources"][key] = yaml.safe_load(
-                entry.yaml())["sources"][key]
+            output["sources"][key] = entry._captured_init_kwargs
         return yaml.dump(output)
 
     def save(self, url, storage_options=None):
@@ -265,7 +264,7 @@ class Catalog(DataSource):
             Extra arguments for the file-system
         """
         from dask.bytes import open_files
-        with open_files(url, **(storage_options or {}))[0] as f:
+        with open_files([url], **(storage_options or {}), mode='wt')[0] as f:
             f.write(self.serialize())
 
     @reload_on_change
