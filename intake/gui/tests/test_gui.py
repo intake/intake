@@ -47,12 +47,11 @@ def test_gui_open_plot_panel(gui, cat1, cat2, sources1, sources2):
     assert len(gui.plotter.panel.objects) == 4
     assert gui.plotter.source == sources1[0]
 
-    gui.cat_browser.selected = [cat2]
+    gui.source_browser.selected = [sources1[1]]
     assert gui.plot.value is True
     assert gui.plotter.visible is True
     assert len(gui.plotter.watchers) == 3
     assert len(gui.plotter.panel.objects) == 4
-    assert gui.plotter.source == sources2[0]
 
     gui.plot.value = False
     assert not gui.plotter.watchers
