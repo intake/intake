@@ -223,6 +223,6 @@ class DefinedPlots(Base):
 
     def _toggle_desc(self, event):
         if event.new:
-            self.desc.object = self.desc_contents(self.selected)
+            self.desc.object = self._desc_contents(self.selected)
         else:
             self.desc.object = None

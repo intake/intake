@@ -50,7 +50,7 @@ class FileSelector(Base):
     def __init__(self, filters=['yaml', 'yml'], done_callback=None,  **kwargs):
         self.filters = filters
         self.panel = pn.Column(name='Local', margin=0)
-        self.done_callback = done_callback or lambda x: return x
+        self.done_callback = done_callback
         super().__init__(**kwargs)
 
     def setup(self):
@@ -100,7 +100,8 @@ class FileSelector(Base):
             self.validator.object = ICONS['error']
 
     def make_options(self, arg=None):
-        self.done_callback(False)
+        if self.done_callback:
+            self.done_callback(False)
         out = []
         if os.path.isdir(self.path):
             for f in sorted(os.listdir(self.path)):
@@ -121,7 +122,7 @@ class FileSelector(Base):
                 if fn.endswith(os.path.sep):
                     self.path_text.value = self.path + fn
                     self.make_options()
-                elif os.path.isfile(self.url):
+                elif os.path.isfile(self.url) and self.done_callback:
                     self.done_callback(True)
 
 class URLSelector(Base):
