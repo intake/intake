@@ -33,7 +33,7 @@ class FileSelector(Base):
     """
     def __init__(self, filters=['yaml', 'yml'], enable_dependent=None,  **kwargs):
         self.filters = filters
-        self.panel = pn.Column(name='Local')
+        self.panel = pn.Column(name='Local', margin=0)
         self._enable_dependent = enable_dependent
         super().__init__(**kwargs)
 
@@ -56,7 +56,7 @@ class FileSelector(Base):
         ]
 
         self.children = [
-            pn.Row(self.home, self.up, self.path_text, self.validator),
+            pn.Row(self.home, self.up, self.path_text, self.validator, margin=0),
             self.main
         ]
 
@@ -119,7 +119,7 @@ class URLSelector(Base):
     """
     def __init__(self, **kwargs):
         self.panel = pn.Row(name='Remote',
-                            width_policy='max')
+                            width_policy='max', margin=0)
         super().__init__(**kwargs)
 
     def setup(self):
@@ -145,7 +145,7 @@ class CatAdder(Base):
     def __init__(self, done_callback=None, **kwargs):
         self.done_callback = done_callback
         self.panel = pn.Column(name='Add Catalog', background=BACKGROUND,
-                               width_policy='max', max_width=MAX_WIDTH)
+                               width_policy='max', max_width=MAX_WIDTH, margin=0)
         super().__init__(**kwargs)
 
     def setup(self):

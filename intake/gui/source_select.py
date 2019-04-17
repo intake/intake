@@ -137,8 +137,8 @@ class CatSelector(BaseSelector):
         from the order in other panel init methods because the top level
         gui class needs to be able to watch these widgets.
         """
-        self.panel = pn.Column(name='Select Catalog')
-        self.widget = pn.widgets.MultiSelect(size=9, width=200)
+        self.panel = pn.Column(name='Select Catalog', margin=0)
+        self.widget = pn.widgets.MultiSelect(size=9, min_width=200, width_policy='min')
         self._enable_dependent = enable_dependent
         super().__init__(**kwargs)
 
@@ -155,7 +155,7 @@ class CatSelector(BaseSelector):
             self.widget.param.watch(self.enable_dependents, 'value'),
         ]
 
-        self.children = ['####Catalogs', self.widget, self.remove_button]
+        self.children = ['#### Catalogs', self.widget, self.remove_button]
 
     def enable_dependents(self, event):
         self.remove_button.disabled = not event.new
@@ -243,8 +243,8 @@ class SourceSelector(BaseSelector):
         from the order in other panel init methods because the top level
         gui class needs to be able to watch these widgets.
         """
-        self.panel = pn.Column(name='Select Data Source')
-        self.widget = pn.widgets.MultiSelect(size=9, width=200)
+        self.panel = pn.Column(name='Select Data Source', margin=0)
+        self.widget = pn.widgets.MultiSelect(size=9, min_width=200, width_policy='min')
         self._enable_dependent = enable_dependent
         super().__init__(**kwargs)
 
@@ -257,8 +257,7 @@ class SourceSelector(BaseSelector):
         self.watchers = [
             self.widget.param.watch(self.enable_dependent, 'value'),
         ]
-        self.label = '####Entries'
-        self.children = [self.label, self.widget]
+        self.children = ['#### Entries', self.widget]
 
     @property
     def cats(self):

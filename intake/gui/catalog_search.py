@@ -13,10 +13,12 @@ from .base import Base, MAX_WIDTH, BACKGROUND
 class SearchInputs(Base):
     """Input areas to control search parameters"""
     def __init__(self, **kwargs):
-        self.panel = pn.Row(name='Search Inputs', height_policy='min')
+        self.panel = pn.Row(name='Search Inputs', height_policy='min', margin=0)
         super().__init__(**kwargs)
 
     def setup(self):
+        text_label = pn.pane.Markdown('Search Text:', align='center')
+        depth_label = pn.pane.Markdown('Depth:', align='center')
         self.text_widget = pn.widgets.TextInput(
             placeholder="Set of words",
             width_policy='max')
@@ -24,8 +26,8 @@ class SearchInputs(Base):
             options=['1', '2', '3', '4', '5', 'All'],
             width=80, height=30)
 
-        self.children = ['Search Text:', self.text_widget,
-                         'Depth:', self.depth_widget]
+        self.children = [text_label, self.text_widget,
+                         depth_label, self.depth_widget]
 
     @property
     def text(self):
@@ -59,7 +61,7 @@ class Search(Base):
         self.cats = cats
         self.done_callback = done_callback
         self.panel = pn.Row(name='Search', background=BACKGROUND,
-                            width_policy='max', max_width=MAX_WIDTH)
+                            width_policy='max', max_width=MAX_WIDTH, margin=0)
         super().__init__(**kwargs)
 
     def setup(self):

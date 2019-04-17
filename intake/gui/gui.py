@@ -21,7 +21,7 @@ from .catalog_search import Search
 
 here = os.path.abspath(os.path.dirname(__file__))
 logo_file = os.path.join(here, 'logo.png')
-
+logo = pn.pane.PNG(logo_file, align='center')
 
 class GUI(Base):
     """
@@ -97,10 +97,10 @@ class GUI(Base):
         self.children = [
             pn.Row(
                 pn.Column(
-                    logo_file,
+                    logo,
                     self.cat_add,
                     self.search,
-                    self.plot
+                    self.plot,
                 ),
                 self.cat_browser.panel,
                 self.source_browser.panel,
@@ -108,6 +108,7 @@ class GUI(Base):
                 background=BACKGROUND,
                 width_policy='max',
                 max_width=MAX_WIDTH,
+                margin=0
             ),
             self.searcher.panel,
             self.cat_adder.panel,
@@ -146,7 +147,7 @@ class GUI(Base):
         return self.cat_browser.selected
 
     def add(self, *args, **kwargs):
-        """Add to list of cats"""
+        """Add to list of cats TODO """
         return self.cat_browser.add(*args, **kwargs)
 
     @property
