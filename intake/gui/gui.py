@@ -52,44 +52,44 @@ class GUI(Base):
         super().__init__(**kwargs)
 
     def setup(self):
-        self.search = pn.widgets.Toggle(
+        self.search_toggle = pn.widgets.Toggle(
             name='🔍',
             value=False,
             disabled=True,
             width=50)
 
-        self.cat_add = pn.widgets.Toggle(
+        self.cat_add_toggle = pn.widgets.Toggle(
             name='＋',
             value=False,
             disabled=False,
             width=50)
 
-        self.plot = pn.widgets.Toggle(
+        self.plot_toggle = pn.widgets.Toggle(
             name='📊',
             value=False,
             disabled=True,
             width=50)
 
         self.cat_browser = CatSelector(cats=self._cats,
-                                       enable_dependent=self.enable_search)
+                                       enable_dependent=self.enable_search_toggle)
         self.source_browser = SourceSelector(cats=self.cats,
-                                             enable_dependent=self.enable_plot)
+                                             enable_dependent=self.enable_plot_toggle)
         self.description = Description(source=self.sources)
-        self.cat_adder = CatAdder(done_callback=self.cat_browser.add,
-                                  visible=self.cat_add.value,
-                                  visible_callback=partial(setattr, self.cat_add, 'value'))
-        self.searcher = Search(cats=self.cats,
-                               done_callback=self.cat_browser.add,
-                               visible=self.search.value,
-                               visible_callback=partial(setattr, self.search, 'value'))
-        self.plotter = DefinedPlots(source=self.sources,
-                                    visible=self.plot.value,
-                                    visible_callback=partial(setattr, self.plot, 'value'))
+        self.cat_add = CatAdder(done_callback=self.cat_browser.add,
+                                  visible=self.cat_add_toggle.value,
+                                  visible_callback=partial(setattr, self.cat_add_toggle, 'value'))
+        self.search = Search(cats=self.cats,
+                             done_callback=self.cat_browser.add,
+                             visible=self.search_toggle.value,
+                             visible_callback=partial(setattr, self.search_toggle, 'value'))
+        self.plot = DefinedPlots(source=self.sources,
+                                 visible=self.plot_toggle.value,
+                                 visible_callback=partial(setattr, self.plot_toggle, 'value'))
 
         self.watchers = [
-            self.cat_add.link(self.cat_adder, value='visible'),
-            self.search.param.watch(self.on_click_search, 'value'),
-            self.plot.param.watch(self.on_click_plot, 'value'),
+            self.cat_add_toggle.link(self.cat_add, value='visible'),
+            self.search_toggle.param.watch(self.on_click_search_toggle, 'value'),
+            self.plot_toggle.param.watch(self.on_click_plot_toggle, 'value'),
             self.cat_browser.widget.link(self.source_browser, value='cats'),
             self.source_browser.widget.link(self.description, value='source'),
         ]
@@ -98,9 +98,9 @@ class GUI(Base):
             pn.Row(
                 pn.Column(
                     logo,
-                    self.cat_add,
-                    self.search,
-                    self.plot,
+                    self.cat_add_toggle,
+                    self.search_toggle,
+                    self.plot_toggle,
                 ),
                 self.cat_browser.panel,
                 self.source_browser.panel,
@@ -110,36 +110,36 @@ class GUI(Base):
                 max_width=MAX_WIDTH,
                 margin=0
             ),
-            self.searcher.panel,
-            self.cat_adder.panel,
-            self.plotter.panel,
+            self.search.panel,
+            self.cat_add.panel,
+            self.plot.panel,
         ]
 
-    def enable_plot(self, enable):
+    def enable_plot_toggle(self, enable):
         if not enable:
-            self.plot.value = False
-        return enable_widget(self.plot, enable)
+            self.plot_toggle.value = False
+        return enable_widget(self.plot_toggle, enable)
 
-    def on_click_plot(self, event):
+    def on_click_plot_toggle(self, event):
         """ When the plot control is toggled, set visibility and hand down source"""
-        self.plotter.source = self.sources
-        self.plotter.visible = event.new
-        if self.plotter.visible:
-            self.plotter.watchers.append(
-                self.source_browser.widget.link(self.plotter, value='source'))
+        self.plot.source = self.sources
+        self.plot.visible = event.new
+        if self.plot.visible:
+            self.plot.watchers.append(
+                self.source_browser.widget.link(self.plot, value='source'))
 
-    def enable_search(self, enable):
+    def enable_search_toggle(self, enable):
         if not enable:
-            self.search.value = False
-        return enable_widget(self.search, enable)
+            self.search_toggle.value = False
+        return enable_widget(self.search_toggle, enable)
 
-    def on_click_search(self, event):
+    def on_click_search_toggle(self, event):
         """ When the search control is toggled, set visibility and hand down cats"""
-        self.searcher.cats = self.cats
-        self.searcher.visible = event.new
-        if self.searcher.visible:
-            self.searcher.watchers.append(
-                self.cat_browser.widget.link(self.searcher, value='cats'))
+        self.search.cats = self.cats
+        self.search.visible = event.new
+        if self.search.visible:
+            self.search.watchers.append(
+                self.cat_browser.widget.link(self.search, value='cats'))
 
     @property
     def cats(self):
