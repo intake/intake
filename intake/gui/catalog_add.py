@@ -181,8 +181,9 @@ class CatAdder(Base):
         try:
             self.done_callback(self.cat)
             self.visible = False
-        except:
+        except Exception as e:
             self.validator.object = ICONS['error']
+            raise e
 
     def remove_error(self, *args):
         """Remove error from the widget"""

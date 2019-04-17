@@ -44,7 +44,7 @@ def test_file_selector_edit_path(file_selector):
     expected = os.getcwd() + '/'
     file_selector.move_up()
     file_selector.path_text.value = os.getcwd()
-    assert 'check' in file_selector.validator.object
+    assert file_selector.validator.object is None
     assert file_selector.path == expected
 
 
@@ -111,7 +111,8 @@ def test_cat_adder(cat_adder):
     assert cat_adder.widget.disabled is False
 
     cat_adder.done_callback = callback
-    cat_adder.add_cat()  # does not trigger callback
+    with pytest.raises(ValueError, match='None'):
+        cat_adder.add_cat()
 
 def test_cat_adder_add_real_cat(cat_adder, cat1_url, cat1):
     cat_adder.tabs.active = 1
