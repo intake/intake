@@ -124,7 +124,6 @@ class CatalogEntry(DictSerialiseMixin):
         return list(self._metadata.get('plots', {}))
 
     def __getattr__(self, attr):
-        # TODO: only consider attr not starting with "_"?
         if attr in self.__dict__:
             return self.__dict__[attr]
         else:

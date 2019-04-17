@@ -624,7 +624,7 @@ def test_dict_adddel():
     assert 'trial' in cat
     cat['trial2'] = entry
     assert list(cat) == ['trial', 'trial2']
-    del cat['trial']
+    cat.pop('trial')
     assert list(cat) == ['trial2']
     assert cat['trial2'] is entry
 

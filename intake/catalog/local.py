@@ -545,10 +545,16 @@ class YAMLFileCatalog(Catalog):
             an editable Catalog
         """
         self.path = path
-        self.autoreload = autoreload  # set this to False to prevent
+        self.text = None
+        self.autoreload = autoreload  # set this to False if don't want reloads
         super(YAMLFileCatalog, self).__init__(**kwargs)
 
     def _load(self, reload=False):
+        """Load text of fcatalog file and pass to parse
+
+        Will do nothing if autoreload is off and reload is not explicitly
+        requested
+        """
         if self.autoreload or reload:
             # First, we load from YAML, failing if syntax errors are found
             options = self.storage_options or {}
@@ -564,13 +570,25 @@ class YAMLFileCatalog(Catalog):
             self._dir = get_dir(self.path)
 
             with file_open as f:
-                self.text = f.read().decode()
-            if "!template " in self.text:
+                text = f.read().decode()
+            if "!template " in text:
                 logger.warning("Use of '!template' deprecated - fixing")
-                self.text = self.text.replace('!template ', '')
-            self.parse()
+                text = text.replace('!template ', '')
+            self.parse(text)
 
-    def parse(self):
+    def parse(self, text):
+        """Create entries from catalog text
+
+        Normally the text comes from the file at self.path via the ``_load()``
+        method, but could be explicitly set instead. A copy of the text is
+        kept in attribute ``.text`` .
+
+        Parameters
+        ----------
+        text : str
+            YAML formatted catalog spec
+        """
+        self.text = text
         data = yaml_load(self.text)
 
         if data is None:

@@ -131,8 +131,10 @@ class Catalog(DataSource):
         -------
         Catalog instance
         """
+        from dask.base import tokenize
         cat = cls(**kwargs)
         cat._entries = entries
+        cat._tok = tokenize(kwargs, entries)
         return cat
 
     @property
@@ -184,24 +186,26 @@ class Catalog(DataSource):
 
     @reload_on_change
     def search(self, text, depth=2):
+        import copy
         words = text.lower().split()
-        cat = Catalog(name=self.name + "_search",
-                      ttl=self.ttl,
-                      getenv=self.getenv,
-                      getshell=self.getshell,
-                      auth=self.auth,
-                      metadata=(self.metadata or {}).copy(),
-                      storage_options=self.storage_options)
+        entries = {k: copy.copy(v)for k, v in self.walk(depth=depth).items()
+                   if any(word in str(v.describe().values()).lower()
+                   for word in words)}
+        cat = Catalog.from_dict(
+            entries, name=self.name + "_search",
+            ttl=self.ttl,
+            getenv=self.getenv,
+            getshell=self.getshell,
+            auth=self.auth,
+            metadata=(self.metadata or {}).copy(),
+            storage_options=self.storage_options)
         cat.metadata['search'] = {'text': text, 'upstream': self.name}
-        cat._entries = {k: v for k, v in self.walk(depth=depth).items()
-                        if any(word in str(v.describe().values()).lower()
-                               for word in words)}
         cat.cat = self
-        for e in cat._entries.values():
+        for e in entries.values():
             e._catalog = cat
         return cat
 
-    def filter(self, predicate):
+    def filter(self, func):
         """Create a Catalog of a subset of entries based on a condition
 
         Note that, whatever specific class this is performed on, the return
@@ -211,7 +215,7 @@ class Catalog(DataSource):
 
         Parameters
         ----------
-        predicate : function
+        func : function
             This should take a CatalogEntry and return True or False. Those
             items returning True will be included in the new Catalog, with the
             same entry names
@@ -220,8 +224,8 @@ class Catalog(DataSource):
         -------
         New Catalog
         """
-        return Catalog.from_dict({name: entry for name, entry in self.items()
-                                  if predicate(entry)})
+        return Catalog.from_dict({key: entry for key, entry in self.items()
+                                  if func(entry)})
 
     @reload_on_change
     def walk(self, sofar=None, prefix=None, depth=2):
@@ -331,7 +335,7 @@ class Catalog(DataSource):
                 raise AttributeError(item)
         raise AttributeError(item)
 
-    def __setitem__(self, name, entry):
+    def __setitem__(self, key, entry):
         """Add entry to catalog
 
         This relies on the `_entries` attribute being mutable, which it normally
@@ -340,15 +344,15 @@ class Catalog(DataSource):
 
         Parameters
         ----------
-        name : str
+        key : str
             Key to give the entry in the cat
         entry : CatalogEntry
             The entry to include (could be local, remote)
         """
-        self._entries[name] = entry
+        self._entries[key] = entry
 
-    def __delitem__(self, name):
-        """Remove entry from catalog
+    def pop(self, key):
+        """Remove entry from catalog and return it
 
         This relies on the `_entries` attribute being mutable, which it normally
         is. Note that if a catalog automatically reloads, any entry removed here
@@ -356,10 +360,10 @@ class Catalog(DataSource):
 
         Parameters
         ----------
-        name : str
+        key : str
             Key to give the entry in the cat
         """
-        del self._entries[name]
+        return self._entries.pop(key)
 
     def __getitem__(self, key):
         """Return a catalog entry by name.
