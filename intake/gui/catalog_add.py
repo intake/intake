@@ -15,7 +15,6 @@ from .base import Base, MAX_WIDTH, BACKGROUND, enable_widget
 
 here = os.path.abspath(os.path.dirname(__file__))
 ICONS = {
-    'check': os.path.join(here, 'icons', 'baseline-check-24px.svg'),
     'error': os.path.join(here, 'icons', 'baseline-error-24px.svg'),
 }
 
@@ -41,7 +40,7 @@ class FileSelector(Base):
     def setup(self):
         self.path_text = pn.widgets.TextInput(value=os.getcwd() + os.path.sep,
                                               width_policy='max')
-        self.validator = pn.pane.SVG(ICONS['check'], width=25)
+        self.validator = pn.pane.SVG(None, width=25)
         self.main = pn.widgets.MultiSelect(size=15, width_policy='max')
         self.home = pn.widgets.Button(name='🏠', width=40, height=30)
         self.up = pn.widgets.Button(name='‹', width=30, height=30)
@@ -79,7 +78,7 @@ class FileSelector(Base):
     def validate(self, arg=None):
         """Check that inputted path is valid - set validator accordingly"""
         if os.path.isdir(self.path):
-            self.validator.object = ICONS['check']
+            self.validator.object = None
         else:
             self.validator.object = ICONS['error']
 
@@ -157,13 +156,16 @@ class CatAdder(Base):
         self.url = URLSelector()
         self.selectors = [self.fs, self.url]
         self.tabs = pn.Tabs(*map(lambda x: x.panel, self.selectors))
+        self.validator = pn.pane.SVG(None, width=25)
 
         self.watchers = [
             self.widget.param.watch(self.add_cat, 'clicks'),
             self.tabs.param.watch(self.tab_change, 'active'),
+            self.fs.main.param.watch(self.remove_error, 'value'),
+            self.url.main.param.watch(self.remove_error, 'value'),
         ]
 
-        self.children = [self.tabs, self.widget]
+        self.children = [self.tabs, pn.Row(self.widget, self.validator)]
 
     @property
     def cat_url(self):
@@ -176,11 +178,18 @@ class CatAdder(Base):
 
     def add_cat(self, arg=None):
         """Add cat and close panel"""
-        if self.cat.name is not None:
+        try:
             self.done_callback(self.cat)
             self.visible = False
+        except:
+            self.validator.object = ICONS['error']
+
+    def remove_error(self, *args):
+        """Remove error from the widget"""
+        self.validator.object = None
 
     def tab_change(self, event):
-        """Enable widget when on URL tab"""
+        """When tab changes remove error, and enable widget if on url tab"""
+        self.remove_error()
         if event.new == 1:
             self.widget.disabled = False
