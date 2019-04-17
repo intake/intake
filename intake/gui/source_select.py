@@ -37,10 +37,16 @@ class BaseSelector(Base):
     preprocess = None
     widget = None
 
+
+    @property
+    def labels(self):
+        """Labels of items in widget"""
+        return self.widget.labels
+
     @property
     def items(self):
         """Available items to select from"""
-        return list(self.options.values())
+        return self.widget.values
 
     @items.setter
     def items(self, items):
@@ -75,14 +81,22 @@ class BaseSelector(Base):
     def add(self, items):
         """Add items to options"""
         options = self._create_options(items)
+        for k, v in options.items():
+            if k in self.labels and v not in self.items:
+                options.pop(k)
+                count = 0
+                while f'{k}_{count}' in self.labels:
+                    count += 1
+                print(f'{k}_{count}')
+                options[f'{k}_{count}'] = v
         self.widget.options.update(options)
         self.widget.param.trigger('options')
         self.widget.value = list(options.values())[:1]
 
     def remove(self, items):
         """Remove items from options"""
-        names = list(self._create_options(items).keys())
-        new_options = {k: v for k, v in self.widget.options.items() if v.name not in names}
+        items = coerce_to_list(items)
+        new_options = {k: v for k, v in self.options.items() if v not in items}
         self.widget.options = new_options
         self.widget.param.trigger('options')
 

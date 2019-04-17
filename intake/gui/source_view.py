@@ -72,7 +72,7 @@ class Description(Base):
 
     @property
     def label(self):
-        return f'####Entry: {self.source.name}' if self.source else None
+        return f'####Entry: {self.source._name}' if self.source else None
 
 
 class DefinedPlots(Base):
