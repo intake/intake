@@ -20,9 +20,27 @@ def pretty_describe(object, nestedness=0, indent=2):
 
 class Description(Base):
     """
-    Panel for displaying a textual description of a data source.
+    Class for displaying a textual description of a data source.
 
-    Set ``source`` to update the output.
+    Parameters
+    ----------
+    source: intake catalog entry, or list of same
+        source to describe in this object
+
+    Attributes
+    ----------
+    contents: str
+        string representation of the source's description
+    label: str
+        label to display at top of panel - contains name of source
+    children: list of panel objects
+        children that will be used to populate the panel when visible
+    panel: panel layout object
+        instance of a panel layout (row or column) that contains children
+        when visible
+    watchers: list of param watchers
+        watchers that are set on children - cleaned up when visible
+        is set to false.
     """
     main_pane = None
     label_pane = None
@@ -55,6 +73,7 @@ class Description(Base):
 
     @property
     def contents(self):
+        """String representation of the source's description"""
         if not self._source:
             return ' ' * 100  # HACK - make sure that area is big
         contents = deepcopy(self.source.describe())
@@ -72,6 +91,7 @@ class Description(Base):
 
     @property
     def label(self):
+        """Label to display at top of panel"""
         return f'####Entry: {self.source._name}' if self.source else None
 
 
@@ -79,7 +99,31 @@ class DefinedPlots(Base):
     """
     Panel for displaying pre-defined plots from catalog.
 
-    Set ``source`` to update the available plots.
+    Parameters
+    ----------
+    source: intake catalog entry, or list of same
+        source to describe in this object
+
+    Attributes
+    ----------
+    plot: holoviews object
+        plot object displayed in plot_pane
+    has_plots: bool
+        whether the source has plots defined
+    instructions_contents: str
+        instructions to put on the plot selector label
+    options: list
+        plots options defined on the source
+    selected: str
+        name of selected plot
+    children: list of panel objects
+        children that will be used to populate the panel when visible
+    panel: panel layout object
+        instance of a panel layout (row or column) that contains children
+        when visible
+    watchers: list of param watchers
+        watchers that are set on children - cleaned up when visible
+        is set to false.
     """
     select = None
 
@@ -92,12 +136,12 @@ class DefinedPlots(Base):
         self.instructions = pn.pane.Markdown(self.instructions_contents)
         self.select = pn.widgets.Select(options=self.options)
         self.desc = pn.pane.Str()
-        self.pane = pn.pane.HoloViews(self.plot_object(self.selected))
+        self.pane = pn.pane.HoloViews(self._plot_object(self.selected))
         self.show_desc = pn.widgets.Checkbox(value=False, width_policy='min')
 
         self.watchers = [
             self.select.param.watch(self.callback, ['options','value']),
-            self.show_desc.param.watch(self.toggle_desc, 'value')
+            self.show_desc.param.watch(self._toggle_desc, 'value')
         ]
 
         self.children = [
@@ -127,16 +171,19 @@ class DefinedPlots(Base):
 
     @property
     def has_plots(self):
+        """Whether the source has plots defined"""
         return self.source is not None and len(self._source.plots) > 0
 
     @property
     def instructions_contents(self):
+        """Instructions to put on the plot selector label"""
         if self.has_plots:
             return '**Select from the predefined plots:**'
         return '*No predefined plots found - declare these in the catalog*'
 
     @property
     def options(self):
+        """Plots options defined on the source"""
         return self.source.plots if self.source is not None else []
 
     @property
@@ -153,23 +200,28 @@ class DefinedPlots(Base):
         for event in events:
             if event.name == 'value':
                 if self.show_desc.value:
-                    self.desc.object = self.desc_contents(event.new)
-                self.pane.object = self.plot_object(event.new)
+                    self.desc.object = self._desc_contents(event.new)
+                self.pane.object = self._plot_object(event.new)
             if event.name == 'options':
                 self.instructions.object = self.instructions_contents
 
-    def plot_object(self, selected):
+    @property
+    def plot(self):
+        """Holoviews plot object displayed in plot_pane"""
+        return self.plot_pane.object
+
+    def _plot_object(self, selected):
         if selected:
             plot_method = getattr(self.source.plot, selected)
             if plot_method:
                 return plot_method()
 
-    def desc_contents(self, selected):
+    def _desc_contents(self, selected):
         if selected:
             contents = self.source.metadata['plots'][selected]
             return pretty_describe(contents)
 
-    def toggle_desc(self, event):
+    def _toggle_desc(self, event):
         if event.new:
             self.desc.object = self.desc_contents(self.selected)
         else:

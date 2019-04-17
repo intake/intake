@@ -30,11 +30,27 @@ class FileSelector(Base):
     filters: list of string
         extentions that are included in the list of files - correspond to
         catalog extensions.
+    done_callback: func, opt
+        called when the object's main job has completed. In this case,
+        selecting a file.
+
+    Attributes
+    ----------
+    url: str
+        path to local catalog file
+    children: list of panel objects
+        children that will be used to populate the panel when visible
+    panel: panel layout object
+        instance of a panel layout (row or column) that contains children
+        when visible
+    watchers: list of param watchers
+        watchers that are set on children - cleaned up when visible
+        is set to false.
     """
-    def __init__(self, filters=['yaml', 'yml'], enable_dependent=None,  **kwargs):
+    def __init__(self, filters=['yaml', 'yml'], done_callback=None,  **kwargs):
         self.filters = filters
         self.panel = pn.Column(name='Local', margin=0)
-        self._enable_dependent = enable_dependent
+        self.done_callback = done_callback or lambda x: return x
         super().__init__(**kwargs)
 
     def setup(self):
@@ -67,6 +83,7 @@ class FileSelector(Base):
 
     @property
     def url(self):
+        """Path to local catalog file"""
         return os.path.join(self.path, self.main.value[0])
 
     def move_up(self, arg=None):
@@ -83,7 +100,7 @@ class FileSelector(Base):
             self.validator.object = ICONS['error']
 
     def make_options(self, arg=None):
-        self.enable_dependent(False)
+        self.done_callback(False)
         out = []
         if os.path.isdir(self.path):
             for f in sorted(os.listdir(self.path)):
@@ -105,17 +122,26 @@ class FileSelector(Base):
                     self.path_text.value = self.path + fn
                     self.make_options()
                 elif os.path.isfile(self.url):
-                    self.enable_dependent(True)
-
-    def enable_dependent(self, enable):
-        if self._enable_dependent:
-            self._enable_dependent(enable)
+                    self.done_callback(True)
 
 class URLSelector(Base):
     """
     Panel interface for inputting a URL to a remote catalog
 
     The inputted URL is stored in .url.
+
+    Attributes
+    ----------
+    url: str
+        url to remote files (including protocol)
+    children: list of panel objects
+        children that will be used to populate the panel when visible
+    panel: panel layout object
+        instance of a panel layout (row or column) that contains children
+        when visible
+    watchers: list of param watchers
+        watchers that are set on children - cleaned up when visible
+        is set to false.
     """
     def __init__(self, **kwargs):
         self.panel = pn.Row(name='Remote',
@@ -130,16 +156,32 @@ class URLSelector(Base):
 
     @property
     def url(self):
+        """URL to remote files (including protocol)"""
         return self.main.value
 
 
 class CatAdder(Base):
-    """Panel for adding new cats from file or remote
+    """Panel for adding new cats from local file or remote
 
     Parameters
     ----------
     done_callback: function with cat as input
         function that is called when the "Add Catalog" button is clicked.
+
+    Attributes
+    ----------
+    cat_url: str
+        url to remote files or path to local files. Depends on active tab
+    cat: catalog
+        catalog object initialized from from cat_url
+    children: list of panel objects
+        children that will be used to populate the panel when visible
+    panel: panel layout object
+        instance of a panel layout (row or column) that contains children
+        when visible
+    watchers: list of param watchers
+        watchers that are set on children - cleaned up when visible
+        is set to false.
     """
 
     def __init__(self, done_callback=None, **kwargs):
@@ -152,7 +194,7 @@ class CatAdder(Base):
         self.widget = pn.widgets.Button(name='Add Catalog',
                                         disabled=True,
                                         width_policy='min')
-        self.fs = FileSelector(enable_dependent=partial(enable_widget, self.widget))
+        self.fs = FileSelector(done_callback=partial(enable_widget, self.widget))
         self.url = URLSelector()
         self.selectors = [self.fs, self.url]
         self.tabs = pn.Tabs(*map(lambda x: x.panel, self.selectors))
@@ -169,10 +211,12 @@ class CatAdder(Base):
 
     @property
     def cat_url(self):
+        """URL to remote files or path to local files. Depends on active tab."""
         return self.selectors[self.tabs.active].url
 
     @property
     def cat(self):
+        """Catalog object initialized from from cat_url"""
         # might want to do some validation in here
         return intake.open_catalog(self.cat_url)
 

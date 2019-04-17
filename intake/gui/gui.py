@@ -71,9 +71,9 @@ class GUI(Base):
             width=50)
 
         self.cat_browser = CatSelector(cats=self._cats,
-                                       enable_dependent=self.enable_search_toggle)
+                                       done_callback=self.enable_search_toggle)
         self.source_browser = SourceSelector(cats=self.cats,
-                                             enable_dependent=self.enable_plot_toggle)
+                                             done_callback=self.enable_plot_toggle)
         self.description = Description(source=self.sources)
         self.cat_add = CatAdder(done_callback=self.cat_browser.add,
                                   visible=self.cat_add_toggle.value,

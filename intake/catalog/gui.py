@@ -63,7 +63,7 @@ try:
                 width=50)
 
             self.source_browser = SourceSelector(cats=[self.cat],
-                                                 enable_dependent=self.enable_plot)
+                                                 done_callback=self.enable_plot)
             self.description = Description(source=self.sources)
 
             self.plot = DefinedPlots(source=self.sources,

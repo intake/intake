@@ -11,7 +11,23 @@ from .base import Base, MAX_WIDTH, BACKGROUND
 
 
 class SearchInputs(Base):
-    """Input areas to control search parameters"""
+    """Input areas to control search parameters
+
+    Attributes
+    ----------
+    text: str
+        text to use in search. Displayed in text_widget
+    depth: int or 'All'
+        depth of nestedness to use in search. Displayed in depth_widget.
+    children: list of panel objects
+        children that will be used to populate the panel when visible
+    panel: panel layout object
+        instance of a panel layout (row or column) that contains children
+        when visible
+    watchers: list of param watchers
+        watchers that are set on children - cleaned up when visible
+        is set to false.
+    """
     def __init__(self, **kwargs):
         self.panel = pn.Row(name='Search Inputs', height_policy='min', margin=0)
         super().__init__(**kwargs)
@@ -31,6 +47,7 @@ class SearchInputs(Base):
 
     @property
     def text(self):
+        """Text to use in search. Displayed in text_widget"""
         return self.text_widget.value
 
     @text.setter
@@ -39,6 +56,7 @@ class SearchInputs(Base):
 
     @property
     def depth(self):
+        """Depth of nestedness to use in search. Displayed in depth_widget"""
         return int(self.depth_widget.value) if self.depth_widget.value != 'All' else 99
 
     @depth.setter
@@ -56,6 +74,17 @@ class Search(Base):
     done_callback: function with cats as input
         function that is called when new cats have been generated
         via the search functionality
+
+    Attributes
+    ----------
+    children: list of panel objects
+        children that will be used to populate the panel when visible
+    panel: panel layout object
+        instance of a panel layout (row or column) that contains children
+        when visible
+    watchers: list of param watchers
+        watchers that are set on children - cleaned up when visible
+        is set to false.
     """
     def __init__(self, cats, done_callback=None, **kwargs):
         self.cats = cats

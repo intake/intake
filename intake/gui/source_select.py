@@ -129,10 +129,38 @@ class CatSelector(BaseSelector):
     Once the cat selector is populated with these options, the user can
     select which catalog(s) are of interest. These catalogs are stored on
     the ``selected`` property of the class.
+
+    Parameters
+    ----------
+    cats: list of catalogs, opt
+        catalogs used to initalize, can be provided as objects or
+        urls pointing to local or remote catalogs.
+    done_callback: func, opt
+        called when the object's main job has completed. In this case,
+        selecting catalog(s).
+
+    Attributes
+    ----------
+    selected: list of cats
+        list of selected cats
+    items: list of cats
+        list of all the catalog values represented in widget
+    labels: list of str
+        list of labels for all the catalog represented in widget
+    options: dict
+        dict of widget labels and values (same as `dict(zip(self.labels, self.values))`)
+    children: list of panel objects
+        children that will be used to populate the panel when visible
+    panel: panel layout object
+        instance of a panel layout (row or column) that contains children
+        when visible
+    watchers: list of param watchers
+        watchers that are set on children - cleaned up when visible
+        is set to false.
     """
     children = []
 
-    def __init__(self, cats=None, enable_dependent=None, **kwargs):
+    def __init__(self, cats=None, done_callback=None, **kwargs):
         """Set cats to initialize the class.
 
         The order of the calls in this method matters and is different
@@ -141,7 +169,7 @@ class CatSelector(BaseSelector):
         """
         self.panel = pn.Column(name='Select Catalog', margin=0)
         self.widget = pn.widgets.MultiSelect(size=9, min_width=200, width_policy='min')
-        self._enable_dependent = enable_dependent
+        self.done_callback = done_callback
         super().__init__(**kwargs)
 
         self.items = cats if cats is not None else [intake.cat]
@@ -154,15 +182,15 @@ class CatSelector(BaseSelector):
         self.watchers = [
             self.remove_button.param.watch(self.remove_selected, 'clicks'),
             self.widget.param.watch(self.expand_nested, 'value'),
-            self.widget.param.watch(self.enable_dependents, 'value'),
+            self.widget.param.watch(self.callback, 'value'),
         ]
 
         self.children = ['#### Catalogs', self.widget, self.remove_button]
 
-    def enable_dependents(self, event):
+    def callback(self, event):
         self.remove_button.disabled = not event.new
-        if self._enable_dependent:
-            self._enable_dependent(bool(event.new))
+        if self.done_callback:
+            self.done_callback(event.new)
 
     def preprocess(self, cat):
         """Function to run on each cat input"""
@@ -234,11 +262,40 @@ class SourceSelector(BaseSelector):
     Once the source selector is populated with these options, the user can
     select which source(s) are of interest. These sources are stored on
     the ``selected`` property of the class.
+
+    Parameters
+    ----------
+    cats: list of catalogs, opt
+        catalogs used to initalize, provided as objects.
+    sources: list of sources, opt
+        sources used to initalize, provided as objects.
+    done_callback: func, opt
+        called when the object's main job has completed. In this case,
+        selecting source(s).
+
+    Attributes
+    ----------
+    selected: list of sources
+        list of selected sources
+    items: list of sources
+        list of all the source values represented in widget
+    labels: list of str
+        list of labels for all the sources represented in widget
+    options: dict
+        dict of widget labels and values (same as `dict(zip(self.labels, self.values))`)
+    children: list of panel objects
+        children that will be used to populate the panel when visible
+    panel: panel layout object
+        instance of a panel layout (row or column) that contains children
+        when visible
+    watchers: list of param watchers
+        watchers that are set on children - cleaned up when visible
+        is set to false.
     """
     preprocess = None
     children = []
 
-    def __init__(self, sources=None, cats=None, enable_dependent=None, **kwargs):
+    def __init__(self, sources=None, cats=None, done_callback=None, **kwargs):
         """Set sources or cats to initialize the class - sources trumps cats.
 
         The order of the calls in this method matters and is different
@@ -247,7 +304,7 @@ class SourceSelector(BaseSelector):
         """
         self.panel = pn.Column(name='Select Data Source', margin=0)
         self.widget = pn.widgets.MultiSelect(size=9, min_width=200, width_policy='min')
-        self._enable_dependent = enable_dependent
+        self.done_callback = done_callback
         super().__init__(**kwargs)
 
         if sources is not None:
@@ -257,7 +314,7 @@ class SourceSelector(BaseSelector):
 
     def setup(self):
         self.watchers = [
-            self.widget.param.watch(self.enable_dependent, 'value'),
+            self.widget.param.watch(self.callback, 'value'),
         ]
         self.children = ['#### Entries', self.widget]
 
@@ -274,7 +331,6 @@ class SourceSelector(BaseSelector):
             sources.extend([entry for entry in cat._entries.values() if entry._container != 'catalog'])
         self.items = sources
 
-    def enable_dependent(self, event):
-        """Call self._enable_dependent with bool of event.new"""
-        if self._enable_dependent:
-            self._enable_dependent(bool(event.new))
+    def callback(self, event):
+        if self.done_callback:
+            self.done_callback(event.new)
