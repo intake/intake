@@ -640,3 +640,13 @@ def test_filter():
     cat2 = cat.filter(lambda e: 'pass' in e._description)
     assert list(cat2) == ['trial2']
     assert cat2.trial2 is entry2
+
+
+def test_no_instance():
+    from intake.catalog.local import LocalCatalogEntry
+
+    e0 = LocalCatalogEntry('foo', '', 'fake')
+    e1 = LocalCatalogEntry('foo0', '', 'fake')
+
+    # this would error on instantiation with driver not found
+    assert e0 != e1
