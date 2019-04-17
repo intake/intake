@@ -150,8 +150,15 @@ def test_source_browser_add_list(source_browser, sources2):
 def test_catalog_browser_add_entry_with_nonunique_name(source_browser):
     from intake.catalog.local import LocalCatalogEntry
     name = source_browser.labels[0]
-    e = LocalCatalogEntry(name, '', 'csv', args=dict(urlpath='foo'))
-    source_browser.add(e)
+    e0 = LocalCatalogEntry(name, '', 'csv', args=dict(urlpath='foo'))
+    source_browser.add(e0)
+    assert f'{name}_0' in source_browser.labels
+    assert name in source_browser.labels
+    assert_widget_matches(source_browser)
+
+    e1 = LocalCatalogEntry(name, '', 'csv', args=dict(urlpath='foo1'))
+    source_browser.add(e1)
+    assert f'{name}_1' in source_browser.labels
     assert f'{name}_0' in source_browser.labels
     assert name in source_browser.labels
     assert_widget_matches(source_browser)
