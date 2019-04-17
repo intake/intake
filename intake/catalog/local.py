@@ -260,14 +260,6 @@ class LocalCatalogEntry(CatalogEntry):
             'args': args
         }
 
-    @property
-    def _tok(self, **user_parameters):
-        from dask.base import tokenize
-        plugin, open_args = self._create_open_args(user_parameters)
-        plugin = '.'.join([plugin.__module__, plugin.__name__])
-        return tokenize({'cls': plugin.classname, 'args': (),
-                         'kwargs': open_args})
-
     def get(self, **user_parameters):
         """Instantiate the DataSource for the given parameters"""
         plugin, open_args = self._create_open_args(user_parameters)
