@@ -35,7 +35,7 @@ try:
             self.children = [
                 pn.Row(
                     pn.Column(
-                        logo_file,
+                        logo,
                         self.plot_toggle
                     ),
                     self.description.panel,
@@ -81,7 +81,7 @@ try:
             self.children = [
                 pn.Row(
                     pn.Column(
-                        logo_file,
+                        logo,
                         self.plot_toggle
                     ),
                     self.source_browser.panel,
