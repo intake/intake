@@ -75,8 +75,11 @@ class BaseSelector(Base):
         Over-writes old options
         """
         options = self._create_options(new)
-        self.widget.options = options
-        self.widget.value = list(options.values())[:1]
+        if self.widget.value:
+            self.widget.set_param(options=options, value=list(options.values())[:1])
+        else:
+            self.widget.options = options
+            self.widget.value = list(options.values())[:1]
 
     def add(self, items):
         """Add items to options"""
@@ -160,7 +163,7 @@ class CatSelector(BaseSelector):
     def enable_dependents(self, event):
         self.remove_button.disabled = not event.new
         if self._enable_dependent:
-            self._enable_dependent(event.new)
+            self._enable_dependent(bool(event.new))
 
     def preprocess(self, cat):
         """Function to run on each cat input"""
@@ -261,7 +264,7 @@ class SourceSelector(BaseSelector):
 
     @property
     def cats(self):
-        """Available cats to select from"""
+        """Cats represented in the sources options"""
         return set(source._catalog for source in self.items)
 
     @cats.setter
@@ -273,5 +276,6 @@ class SourceSelector(BaseSelector):
         self.items = sources
 
     def enable_dependent(self, event):
+        """Call self._enable_dependent with bool of event.new"""
         if self._enable_dependent:
-            self._enable_dependent(event.new)
+            self._enable_dependent(bool(event.new))
