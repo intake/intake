@@ -90,7 +90,6 @@ class BaseSelector(Base):
                 count = 0
                 while f'{k}_{count}' in self.labels:
                     count += 1
-                print(f'{k}_{count}')
                 options[f'{k}_{count}'] = v
         self.widget.options.update(options)
         self.widget.param.trigger('options')
