@@ -1,0 +1,11 @@
+sources:
+  crime:
+    description: Fake flight data - doesn't matter
+    driver: csv
+    args:
+      urlpath: '{{ CATALOG_DIR }}../data/crime.csv'
+
+  fake1:
+    driver: fake
+    args:
+      urlpath: ''

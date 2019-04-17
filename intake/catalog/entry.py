@@ -7,6 +7,7 @@
 
 import time
 from ..utils import DictSerialiseMixin
+from .gui import EntryGUI
 
 
 class CatalogEntry(DictSerialiseMixin):
@@ -20,6 +21,7 @@ class CatalogEntry(DictSerialiseMixin):
         self.getenv = getenv
         self.getshell = getshell
         self._pmode = 'default'
+        self._gui = EntryGUI(source=self, visible=False)
 
     def describe(self):
         """Get a dictionary of attributes of this entry.
@@ -157,3 +159,8 @@ class CatalogEntry(DictSerialiseMixin):
 
     def __repr__(self):
         return "<Catalog Entry: %s>" % self.name
+
+    @property
+    def gui(self):
+        self._gui.visible = True
+        return self._gui

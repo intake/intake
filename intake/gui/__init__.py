@@ -4,24 +4,31 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-
 try:
-    import ipywidgets
-    from .widgets import DataBrowser
+    import panel as pn
+    from .gui import *
+    css = """
+.scrolling {
+  overflow: scroll;
+}
+"""
+
+    pn.config.raw_css.append('css')  # add scrolling class from css (panel GH#383, GH#384)
+    pn.extension()
 
 except ImportError:
 
-    class DataBrowser(object):
+    class GUI(object):
         def __repr__(self):
-            raise RuntimeError("Please install ipywidgets to use the Data "
-                               "Browser")
+            raise RuntimeError("Please install panel to use the GUI `conda install -c conda-forge panel==0.5.1`")
+
 except Exception as e:
 
-    class DataBrowser(object):
+    class GUI(object):
         def __repr__(self):
             raise RuntimeError("Initialisation of GUI failed, even though "
-                               "ipywidgets is installed. Please update it "
-                               "to a more recent version.")
+                               "panel is installed. Please update it "
+                               "to a more recent version (`conda install -c conda-forge panel==0.5.1`).")
 
 
 class InstanceMaker(object):
