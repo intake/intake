@@ -594,3 +594,59 @@ def test_dot_names():
     assert cat['self.self.dot', 'leaf.dot']._description == 'leaf-dot'
 
     assert cat['self.self.dot.leaf.dot']._description == 'leaf-dot'
+
+
+def test_listing(catalog1):
+    assert list(catalog1) == list(catalog1.nested)
+    with pytest.raises(ValueError):
+        list(catalog1.arr)
+
+
+def test_dict_save():
+    from intake.catalog.base import Catalog
+    fn = os.path.join(tempfile.mkdtemp(), 'mycat.yaml')
+    entry = LocalCatalogEntry(name='trial', description='get this back',
+                              driver='csv')
+    cat = Catalog.from_dict({'trial': entry}, name='mycat')
+    cat.save(fn)
+
+    cat2 = open_catalog(fn)
+    assert 'trial' in cat2
+    assert cat2.name == 'mycat'
+    assert cat2.trial._driver =='csv'
+
+
+def test_dict_adddel():
+    from intake.catalog.base import Catalog
+    entry = LocalCatalogEntry(name='trial', description='get this back',
+                              driver='csv')
+    cat = Catalog.from_dict({'trial': entry}, name='mycat')
+    assert 'trial' in cat
+    cat['trial2'] = entry
+    assert list(cat) == ['trial', 'trial2']
+    cat.pop('trial')
+    assert list(cat) == ['trial2']
+    assert cat['trial2'] is entry
+
+
+def test_filter():
+    from intake.catalog.base import Catalog
+    entry1 = LocalCatalogEntry(name='trial', description='get this back',
+                              driver='csv')
+    entry2 = LocalCatalogEntry(name='trial', description='pass this through',
+                              driver='csv')
+    cat = Catalog.from_dict({'trial1': entry1,
+                             'trial2': entry2}, name='mycat')
+    cat2 = cat.filter(lambda e: 'pass' in e._description)
+    assert list(cat2) == ['trial2']
+    assert cat2.trial2 is entry2
+
+
+def test_no_instance():
+    from intake.catalog.local import LocalCatalogEntry
+
+    e0 = LocalCatalogEntry('foo', '', 'fake')
+    e1 = LocalCatalogEntry('foo0', '', 'fake')
+
+    # this would error on instantiation with driver not found
+    assert e0 != e1

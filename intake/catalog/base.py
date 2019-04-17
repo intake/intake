@@ -114,6 +114,29 @@ class Catalog(DataSource):
         self._entries = self._make_entries_container()
         self.force_reload()
 
+    @classmethod
+    def from_dict(cls, entries, **kwargs):
+        """
+        Create Catalog from the given set of entries
+
+        Parameters
+        ----------
+        entries : dict-like
+            A mapping of name:entry which supports dict-like functionality,
+            e.g., is derived from ``collections.abc.Mapping``.
+        kwargs : passed on the constructor
+            Things like metadata, name; see ``__init__``.
+
+        Returns
+        -------
+        Catalog instance
+        """
+        from dask.base import tokenize
+        cat = cls(**kwargs)
+        cat._entries = entries
+        cat._tok = tokenize(kwargs, entries)
+        return cat
+
     @property
     def kwargs(self):
         return dict(name=self.name, ttl=self.ttl)
@@ -163,22 +186,46 @@ class Catalog(DataSource):
 
     @reload_on_change
     def search(self, text, depth=2):
+        import copy
         words = text.lower().split()
-        cat = Catalog(name=self.name + "_search",
-                      ttl=self.ttl,
-                      getenv=self.getenv,
-                      getshell=self.getshell,
-                      auth=self.auth,
-                      metadata=(self.metadata or {}).copy(),
-                      storage_options=self.storage_options)
+        entries = {k: copy.copy(v)for k, v in self.walk(depth=depth).items()
+                   if any(word in str(v.describe().values()).lower()
+                   for word in words)}
+        cat = Catalog.from_dict(
+            entries, name=self.name + "_search",
+            ttl=self.ttl,
+            getenv=self.getenv,
+            getshell=self.getshell,
+            auth=self.auth,
+            metadata=(self.metadata or {}).copy(),
+            storage_options=self.storage_options)
         cat.metadata['search'] = {'text': text, 'upstream': self.name}
-        cat._entries = {k: v for k, v in self.walk(depth=depth).items()
-                        if any(word in str(v.describe().values()).lower()
-                               for word in words)}
         cat.cat = self
-        for e in cat._entries.values():
+        for e in entries.values():
             e._catalog = cat
         return cat
+
+    def filter(self, func):
+        """Create a Catalog of a subset of entries based on a condition
+
+        Note that, whatever specific class this is performed on, the return
+        instance is a Catalog. The entries are passed unmodified, so they
+        will still reference the original catalog instance and include its
+        details such as directory,.
+
+        Parameters
+        ----------
+        func : function
+            This should take a CatalogEntry and return True or False. Those
+            items returning True will be included in the new Catalog, with the
+            same entry names
+
+        Returns
+        -------
+        New Catalog
+        """
+        return Catalog.from_dict({key: entry for key, entry in self.items()
+                                  if func(entry)})
 
     @reload_on_change
     def walk(self, sofar=None, prefix=None, depth=2):
@@ -216,6 +263,35 @@ class Catalog(DataSource):
     def items(self):
         """Get an iterator over (key, value) tuples for the catalog entries."""
         return self._get_entries().items()
+
+    def serialize(self):
+        """
+        Produce YAML version of this catalog.
+
+        Note that this is not the same as ``.yaml()``, which produces a YAML
+        block referring to this catalog.
+        """
+        import yaml
+        output = {"metadata": self.metadata, "sources": {},
+                  "name": self.name}
+        for key, entry in self.items():
+            output["sources"][key] = entry._captured_init_kwargs
+        return yaml.dump(output)
+
+    def save(self, url, storage_options=None):
+        """
+        Output this catalog to a file as YAML
+
+        Parameters
+        ----------
+        url : str
+            Location to save to, perhaps remote
+        storage_options : dict
+            Extra arguments for the file-system
+        """
+        from dask.bytes import open_files
+        with open_files([url], **(storage_options or {}), mode='wt')[0] as f:
+            f.write(self.serialize())
 
     @reload_on_change
     def _get_entry(self, name):
@@ -258,6 +334,36 @@ class Catalog(DataSource):
             except KeyError:
                 raise AttributeError(item)
         raise AttributeError(item)
+
+    def __setitem__(self, key, entry):
+        """Add entry to catalog
+
+        This relies on the `_entries` attribute being mutable, which it normally
+        is. Note that if a catalog automatically reloads, any entry added here
+        may be very transient
+
+        Parameters
+        ----------
+        key : str
+            Key to give the entry in the cat
+        entry : CatalogEntry
+            The entry to include (could be local, remote)
+        """
+        self._entries[key] = entry
+
+    def pop(self, key):
+        """Remove entry from catalog and return it
+
+        This relies on the `_entries` attribute being mutable, which it normally
+        is. Note that if a catalog automatically reloads, any entry removed here
+        may soon reappear
+
+        Parameters
+        ----------
+        key : str
+            Key to give the entry in the cat
+        """
+        return self._entries.pop(key)
 
     def __getitem__(self, key):
         """Return a catalog entry by name.

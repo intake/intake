@@ -260,14 +260,6 @@ class LocalCatalogEntry(CatalogEntry):
             'args': args
         }
 
-    @property
-    def _tok(self, **user_parameters):
-        from dask.base import tokenize
-        plugin, open_args = self._create_open_args(user_parameters)
-        plugin = '.'.join([plugin.__module__, plugin.__name__])
-        return tokenize({'cls': plugin.classname, 'args': (),
-                         'kwargs': open_args})
-
     def get(self, **user_parameters):
         """Instantiate the DataSource for the given parameters"""
         plugin, open_args = self._create_open_args(user_parameters)
@@ -534,37 +526,62 @@ class YAMLFileCatalog(Catalog):
     partition_access = None
     name = 'yaml_file_cat'
 
-    def __init__(self, path, **kwargs):
+    def __init__(self, path, autoreload=True, **kwargs):
         """
         Parameters
         ----------
         path: str
             Location of the file to parse (can be remote)
+        reload : bool
+            Whether to watch the source file for changes; make False if you want
+            an editable Catalog
         """
         self.path = path
+        self.text = None
+        self.autoreload = autoreload  # set this to False if don't want reloads
         super(YAMLFileCatalog, self).__init__(**kwargs)
 
-    def _load(self):
-        # First, we load from YAML, failing if syntax errors are found
-        options = self.storage_options or {}
-        if hasattr(self.path, 'path') or hasattr(self.path, 'read'):
-            file_open = self.path
-            self.path = make_path_posix(
-                getattr(self.path, 'path',
-                        getattr(self.path, 'name', 'file')))
-        else:
-            file_open = open_files(self.path, mode='rb', **options)
-            assert len(file_open) == 1
-            file_open = file_open[0]
-        self._dir = get_dir(self.path)
+    def _load(self, reload=False):
+        """Load text of fcatalog file and pass to parse
 
-        with file_open as f:
-            text = f.read().decode()
-        if "!template " in text:
-            logger.warning("Use of '!template' deprecated - fixing")
-            text = text.replace('!template ', '')
+        Will do nothing if autoreload is off and reload is not explicitly
+        requested
+        """
+        if self.autoreload or reload:
+            # First, we load from YAML, failing if syntax errors are found
+            options = self.storage_options or {}
+            if hasattr(self.path, 'path') or hasattr(self.path, 'read'):
+                file_open = self.path
+                self.path = make_path_posix(
+                    getattr(self.path, 'path',
+                            getattr(self.path, 'name', 'file')))
+            else:
+                file_open = open_files(self.path, mode='rb', **options)
+                assert len(file_open) == 1
+                file_open = file_open[0]
+            self._dir = get_dir(self.path)
 
-        data = yaml_load(text)
+            with file_open as f:
+                text = f.read().decode()
+            if "!template " in text:
+                logger.warning("Use of '!template' deprecated - fixing")
+                text = text.replace('!template ', '')
+            self.parse(text)
+
+    def parse(self, text):
+        """Create entries from catalog text
+
+        Normally the text comes from the file at self.path via the ``_load()``
+        method, but could be explicitly set instead. A copy of the text is
+        kept in attribute ``.text`` .
+
+        Parameters
+        ----------
+        text : str
+            YAML formatted catalog spec
+        """
+        self.text = text
+        data = yaml_load(self.text)
 
         if data is None:
             raise exceptions.CatalogException('No YAML data in file')
