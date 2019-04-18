@@ -11,12 +11,8 @@ from functools import partial
 import intake
 import panel as pn
 
-from .base import Base, MAX_WIDTH, BACKGROUND, enable_widget
+from ..base import Base, MAX_WIDTH, BACKGROUND, enable_widget, ICONS
 
-here = os.path.abspath(os.path.dirname(__file__))
-ICONS = {
-    'error': os.path.join(here, 'icons', 'baseline-error-24px.svg'),
-}
 
 class FileSelector(Base):
     """

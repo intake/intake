@@ -10,7 +10,7 @@ pytest.importorskip('panel')
 
 @pytest.fixture
 def search_inputs(cat1, cat2):
-    from ..catalog_search import SearchInputs
+    from ..search import SearchInputs
     return SearchInputs()
 
 
@@ -35,7 +35,7 @@ def test_search_inputs_depth_prop_parses_to_int(search_inputs):
 
 @pytest.fixture
 def search(cat1, cat2):
-    from ..catalog_search import Search
+    from ..search import Search
     return Search(cats=[cat1, cat2])
 
 

@@ -1,0 +1,146 @@
+#-----------------------------------------------------------------------------
+# Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
+# All rights reserved.
+#
+# The full license is in the LICENSE file, distributed with this software.
+#-----------------------------------------------------------------------------
+
+from collections import OrderedDict
+
+import intake
+import panel as pn
+
+from ..base import BaseSelector, coerce_to_list
+
+
+class CatSelector(BaseSelector):
+    """
+    The cat selector takes a variety of inputs such as a catalog instance,
+    a path to a catalog, or a list of either of those.
+
+    Once the cat selector is populated with these options, the user can
+    select which catalog(s) are of interest. These catalogs are stored on
+    the ``selected`` property of the class.
+
+    Parameters
+    ----------
+    cats: list of catalogs, opt
+        catalogs used to initalize, can be provided as objects or
+        urls pointing to local or remote catalogs.
+    done_callback: func, opt
+        called when the object's main job has completed. In this case,
+        selecting catalog(s).
+
+    Attributes
+    ----------
+    selected: list of cats
+        list of selected cats
+    items: list of cats
+        list of all the catalog values represented in widget
+    labels: list of str
+        list of labels for all the catalog represented in widget
+    options: dict
+        dict of widget labels and values (same as `dict(zip(self.labels, self.values))`)
+    children: list of panel objects
+        children that will be used to populate the panel when visible
+    panel: panel layout object
+        instance of a panel layout (row or column) that contains children
+        when visible
+    watchers: list of param watchers
+        watchers that are set on children - cleaned up when visible
+        is set to false.
+    """
+    children = []
+
+    def __init__(self, cats=None, done_callback=None, **kwargs):
+        """Set cats to initialize the class.
+
+        The order of the calls in this method matters and is different
+        from the order in other panel init methods because the top level
+        gui class needs to be able to watch these widgets.
+        """
+        self.panel = pn.Column(name='Select Catalog', margin=0)
+        self.widget = pn.widgets.MultiSelect(size=9, min_width=200, width_policy='min')
+        self.done_callback = done_callback
+        super().__init__(**kwargs)
+
+        self.items = cats if cats is not None else [intake.cat]
+
+    def setup(self):
+        self.remove_button = pn.widgets.Button(
+            name='Remove Selected Catalog',
+            width=200)
+
+        self.watchers = [
+            self.remove_button.param.watch(self.remove_selected, 'clicks'),
+            self.widget.param.watch(self.expand_nested, 'value'),
+            self.widget.param.watch(self.callback, 'value'),
+        ]
+
+        self.children = ['#### Catalogs', self.widget, self.remove_button]
+
+    def callback(self, event):
+        self.remove_button.disabled = not event.new
+        if self.done_callback:
+            self.done_callback(event.new)
+
+    def preprocess(self, cat):
+        """Function to run on each cat input"""
+        if isinstance(cat, str):
+            cat = intake.open_catalog(cat)
+        return cat
+
+    def expand_nested(self, event):
+        """Populate widget with nested catalogs"""
+        down = '│'
+        right = '└──'
+
+        def get_children(parent):
+            return [e() for e in parent._entries.values() if e._container == 'catalog']
+
+        if len(event.new) == 0:
+            return
+
+        got = event.new[0]
+        obj = event.obj
+        old = list(event.obj.options.items())
+        name = next(k for k, v in old if v == got)
+        index = next(i for i, (k, v) in enumerate(old) if v == got)
+        if right in name:
+            prefix = f'{name.split(right)[0]}{down} {right}'
+        else:
+            prefix = right
+
+        children = get_children(got)
+        for i, child in enumerate(children):
+            old.insert(index+i+1, (f'{prefix} {child.name}', child))
+        event.obj.options = dict(old)
+
+    def collapse_nested(self, cats, max_nestedness=10):
+        """
+        Collapse any items that are nested under cats.
+        `max_nestedness` acts as a fail-safe to prevent infinite looping.
+        """
+        children = []
+        removed = set()
+        nestedness = max_nestedness
+
+        old = list(self.widget.options.values())
+        nested = [cat for cat in old if getattr(cat, 'cat') is not None]
+        parents = {cat.cat for cat in nested}
+        parents_to_remove = cats
+        while len(parents_to_remove) > 0 and nestedness > 0:
+            for cat in nested:
+                if cat.cat in parents_to_remove:
+                    children.append(cat)
+            removed = removed.union(parents_to_remove)
+            nested = [cat for cat in nested if cat not in children]
+            parents_to_remove = {c for c in children if c in parents - removed}
+            nestedness -= 1
+        self.remove(children)
+
+    def remove_selected(self, *args):
+        """Remove the selected catalog - allow the passing of arbitrary
+        args so that buttons work. Also remove any nested catalogs."""
+        self.collapse_nested(self.selected)
+        self.remove(self.selected)

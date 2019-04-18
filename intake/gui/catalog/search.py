@@ -7,7 +7,7 @@
 
 import panel as pn
 
-from .base import Base, MAX_WIDTH, BACKGROUND
+from ..base import Base, MAX_WIDTH, BACKGROUND
 
 
 class SearchInputs(Base):

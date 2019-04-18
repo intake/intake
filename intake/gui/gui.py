@@ -4,24 +4,15 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-
-import os
-from collections import OrderedDict
 from functools import partial
 
 import intake
 import panel as pn
 
-from .base import Base, MAX_WIDTH, BACKGROUND, enable_widget
-from .catalog_add import CatAdder
-from .source_select import CatSelector, SourceSelector
-from .source_view import Description, DefinedPlots
-from .catalog_search import Search
+from .base import Base, MAX_WIDTH, BACKGROUND, enable_widget, logo
+from .catalog import CatAdder, CatSelector, Search
+from .source import SourceSelector, DefinedPlots, Description
 
-
-here = os.path.abspath(os.path.dirname(__file__))
-logo_file = os.path.join(here, 'logo.png')
-logo = pn.pane.PNG(logo_file, align='center')
 
 class GUI(Base):
     """

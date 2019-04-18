@@ -4,16 +4,45 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
+from collections import OrderedDict
+import os
 import panel as pn
-from param.parameterized import Event
+
 
 MAX_WIDTH = 1600
 BACKGROUND = '#ffffff'
+
+here = os.path.abspath(os.path.dirname(__file__))
+ICONS = {
+    'logo': os.path.join(here, 'icons', 'logo.png'),
+    'error': os.path.join(here, 'icons', 'baseline-error-24px.svg'),
+}
+logo = pn.pane.PNG(ICONS['logo'], align='center')
 
 
 def enable_widget(widget, enable=True):
     """Set disabled on widget"""
     widget.disabled = not enable
+
+
+def coerce_to_list(items, preprocess=None):
+    """Given an instance or list, coerce to list.
+
+    With optional preprocessing.
+    """
+    if not isinstance(items, list):
+        items = [items]
+    if preprocess:
+        items = list(map(preprocess, items))
+    return items
+
+
+def pretty_describe(object, nestedness=0, indent=2):
+    """Maintain dict ordering - but make string version prettier"""
+    if not isinstance(object, dict):
+        return str(object)
+    sep = f'\n{" " * nestedness * indent}'
+    return sep.join((f'{k}: {pretty_describe(v, nestedness + 1)}' for k, v in object.items()))
 
 
 class Base(object):
@@ -88,3 +117,100 @@ class Base(object):
                 watcher.inst.param.unwatch(watcher)
                 unwatched.append(watcher)
             self.watchers = [w for w in self.watchers if w not in unwatched]
+
+
+class BaseSelector(Base):
+    """Base class for capturing selector logic.
+
+    Parameters
+    ----------
+    preprocess: function
+        run on every input value when creating options
+    widget: panel widget
+        selector widget which this class keeps uptodate with class properties
+    """
+    preprocess = None
+    widget = None
+
+
+    @property
+    def labels(self):
+        """Labels of items in widget"""
+        return self.widget.labels
+
+    @property
+    def items(self):
+        """Available items to select from"""
+        return self.widget.values
+
+    @items.setter
+    def items(self, items):
+        """When setting items make sure widget options are uptodate"""
+        if items is not None:
+            self.options = items
+
+    def _create_options(self, items):
+        """Helper method to create options from list, or instance.
+
+        Applies preprocess method if available to create a uniform
+        output
+        """
+        return OrderedDict(map(lambda x: (x.name, x),
+                           coerce_to_list(items, self.preprocess)))
+
+    @property
+    def options(self):
+        """Options available on the widget"""
+        return self.widget.options
+
+    @options.setter
+    def options(self, new):
+        """Set options from list, or instance of named item
+
+        Over-writes old options
+        """
+        options = self._create_options(new)
+        if self.widget.value:
+            self.widget.set_param(options=options, value=list(options.values())[:1])
+        else:
+            self.widget.options = options
+            self.widget.value = list(options.values())[:1]
+
+    def add(self, items):
+        """Add items to options"""
+        options = self._create_options(items)
+        for k, v in options.items():
+            if k in self.labels and v not in self.items:
+                options.pop(k)
+                count = 0
+                while f'{k}_{count}' in self.labels:
+                    count += 1
+                options[f'{k}_{count}'] = v
+        self.widget.options.update(options)
+        self.widget.param.trigger('options')
+        self.widget.value = list(options.values())[:1]
+
+    def remove(self, items):
+        """Remove items from options"""
+        items = coerce_to_list(items)
+        new_options = {k: v for k, v in self.options.items() if v not in items}
+        self.widget.options = new_options
+        self.widget.param.trigger('options')
+
+    @property
+    def selected(self):
+        """Value sepected on the widget"""
+        return self.widget.value
+
+    @selected.setter
+    def selected(self, new):
+        """Set selected from list or instance of object or name.
+
+        Over-writes existing selection
+        """
+        def preprocess(item):
+            if isinstance(item, str):
+                return self.options[item]
+            return item
+        items = coerce_to_list(new, preprocess)
+        self.widget.value = items
