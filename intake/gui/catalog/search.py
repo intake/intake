@@ -37,10 +37,12 @@ class SearchInputs(Base):
         depth_label = pn.pane.Markdown('Depth:', align='center')
         self.text_widget = pn.widgets.TextInput(
             placeholder="Set of words",
-            width_policy='max')
+            width_policy='max',
+            align='center')
         self.depth_widget = pn.widgets.Select(
             options=['1', '2', '3', '4', '5', 'All'],
-            width=80, height=30)
+            width=80, height=30,
+            align='center')
 
         self.children = [text_label, self.text_widget,
                          depth_label, self.depth_widget]
@@ -90,12 +92,13 @@ class Search(Base):
         self.cats = cats
         self.done_callback = done_callback
         self.panel = pn.Row(name='Search', background=BACKGROUND,
+                            height_policy='min',
                             width_policy='max', max_width=MAX_WIDTH, margin=0)
         super().__init__(**kwargs)
 
     def setup(self):
         self.inputs = SearchInputs()
-        self.widget = pn.widgets.Button(name='🔍', width=50)
+        self.widget = pn.widgets.Button(name='🔍', width=50, align='center')
 
         self.watchers = [
             self.widget.param.watch(self.do_search, 'clicks')

@@ -67,22 +67,11 @@ class CatSelector(BaseSelector):
         self.items = cats if cats is not None else [intake.cat]
 
     def setup(self):
-        self.remove_button = pn.widgets.Button(
-            name='Remove Selected Catalog',
-            width=200)
-
         self.watchers = [
-            self.remove_button.param.watch(self.remove_selected, 'clicks'),
-            self.widget.param.watch(self.expand_nested, 'value'),
             self.widget.param.watch(self.callback, 'value'),
         ]
 
-        self.children = ['#### Catalogs', self.widget, self.remove_button]
-
-    def callback(self, event):
-        self.remove_button.disabled = not event.new
-        if self.done_callback:
-            self.done_callback(event.new)
+        self.children = ['#### Catalogs', self.widget]
 
     def preprocess(self, cat):
         """Function to run on each cat input"""
@@ -90,7 +79,12 @@ class CatSelector(BaseSelector):
             cat = intake.open_catalog(cat)
         return cat
 
-    def expand_nested(self, event):
+    def callback(self, event):
+        self.expand_nested(event.new)
+        if self.done_callback:
+            self.done_callback(event.new)
+
+    def expand_nested(self, cats):
         """Populate widget with nested catalogs"""
         down = '│'
         right = '└──'
@@ -98,23 +92,22 @@ class CatSelector(BaseSelector):
         def get_children(parent):
             return [e() for e in parent._entries.values() if e._container == 'catalog']
 
-        if len(event.new) == 0:
+        if len(cats) == 0:
             return
 
-        got = event.new[0]
-        obj = event.obj
-        old = list(event.obj.options.items())
-        name = next(k for k, v in old if v == got)
-        index = next(i for i, (k, v) in enumerate(old) if v == got)
+        cat = cats[0]
+        old = list(self.options.items())
+        name = next(k for k, v in old if v == cat)
+        index = next(i for i, (k, v) in enumerate(old) if v == cat)
         if right in name:
             prefix = f'{name.split(right)[0]}{down} {right}'
         else:
             prefix = right
 
-        children = get_children(got)
+        children = get_children(cat)
         for i, child in enumerate(children):
             old.insert(index+i+1, (f'{prefix} {child.name}', child))
-        event.obj.options = dict(old)
+        self.widget.options = dict(old)
 
     def collapse_nested(self, cats, max_nestedness=10):
         """

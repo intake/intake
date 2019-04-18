@@ -18,6 +18,7 @@ ICONS = {
     'error': os.path.join(here, 'icons', 'baseline-error-24px.svg'),
 }
 logo = pn.pane.PNG(ICONS['logo'], align='center')
+logo_panel = pn.Column(logo, margin=(25, 0, 0, 0), width=50)
 
 
 def enable_widget(widget, enable=True):
