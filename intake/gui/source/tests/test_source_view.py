@@ -96,7 +96,7 @@ def assert_is_empty(plots, visible=True):
         assert plots.instructions.object == plots.instructions_contents
         assert plots.desc.object is None
         assert plots.pane.object is None
-        assert len(plots.children) == 4
+        assert len(plots.children) == 3
         assert isinstance(plots.children[-1], pn.pane.HoloViews)
         assert plots.panel.objects == plots.children
         assert len(plots.watchers) == 2
@@ -120,7 +120,7 @@ def assert_plotting_source2_0_line(plots, visible=True, desc=False):
         else:
             assert plots.desc.object == None
         assert plots.pane.object is not None
-        assert len(plots.children) == 4
+        assert len(plots.children) == 3
         assert isinstance(plots.children[-1], pn.pane.HoloViews)
         assert plots.panel.objects == plots.children
         assert len(plots.watchers) == 2

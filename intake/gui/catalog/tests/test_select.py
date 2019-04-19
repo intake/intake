@@ -35,7 +35,7 @@ def test_catalog_browser_set_to_visible_and_back(cat_browser, cat1):
     assert len(cat_browser.watchers) == 0
 
     cat_browser.visible = True
-    assert len(cat_browser.watchers) == 3
+    assert len(cat_browser.watchers) == 1
     assert cat_browser.items == [cat1]
     assert cat1.name in cat_browser.options
     assert cat_browser.selected == [cat1]
