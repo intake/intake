@@ -44,7 +44,7 @@ class DefinedPlots(Base):
 
     def __init__(self, source=None, **kwargs):
         self.source = source
-        self.panel = pn.Column(name='Plot', margin=0)
+        self.panel = pn.Column(name='Plot', width_policy='max', margin=0)
         super().__init__(**kwargs)
 
     def setup(self):

@@ -38,7 +38,7 @@ class Description(Base):
 
     def __init__(self, source=None, **kwargs):
         self.source = source
-        self.panel = pn.Column(name='Description', sizing_mode='stretch_width', margin=0)
+        self.panel = pn.Column(name='Description', width_policy='max', margin=0)
         super().__init__(**kwargs)
 
     def setup(self):

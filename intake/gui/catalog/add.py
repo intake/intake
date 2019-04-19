@@ -45,7 +45,7 @@ class FileSelector(Base):
     """
     def __init__(self, filters=['yaml', 'yml'], done_callback=None,  **kwargs):
         self.filters = filters
-        self.panel = pn.Column(name='Local', margin=0)
+        self.panel = pn.Column(name='Local', width_policy='max', margin=0)
         self.done_callback = done_callback
         super().__init__(**kwargs)
 

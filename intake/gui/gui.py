@@ -38,7 +38,7 @@ class GUI(Base):
     def __init__(self, cats=None):
         self.source = SourceGUI()
         self.cat = CatGUI(cats=cats, done_callback=self.done_callback)
-        self.panel = pn.Row(name='GUI', width_policy='max', max_width=MAX_WIDTH)
+        self.panel = pn.Row(name='GUI')
         self.visible = True
 
     def setup(self):
@@ -58,12 +58,12 @@ class GUI(Base):
                     ),
                     self.source.description.panel,
                     margin=0,
-                    width_policy='max',
-                    max_width=MAX_WIDTH,
                 ),
                 self.cat.search.panel,
                 self.cat.add.panel,
                 self.source.plot.panel,
+                width_policy='max',
+                max_width=MAX_WIDTH,
             ),
         ]
 
