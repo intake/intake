@@ -7,7 +7,7 @@
 import intake
 import panel as pn
 
-from .base import Base, MAX_WIDTH, BACKGROUND, logo_panel
+from .base import Base, MAX_WIDTH, logo_panel
 from .catalog import CatGUI
 from .source import SourceGUI
 

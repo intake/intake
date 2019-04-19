@@ -11,7 +11,7 @@ from functools import partial
 import intake
 import panel as pn
 
-from ..base import Base, MAX_WIDTH, BACKGROUND, enable_widget, ICONS
+from ..base import Base, MAX_WIDTH, enable_widget, ICONS
 
 
 class FileSelector(Base):
@@ -183,8 +183,10 @@ class CatAdder(Base):
 
     def __init__(self, done_callback=None, **kwargs):
         self.done_callback = done_callback
-        self.panel = pn.Column(name='Add Catalog', background=BACKGROUND,
-                               width_policy='max', max_width=MAX_WIDTH, margin=0)
+        self.panel = pn.Column(name='Add Catalog',
+                               width_policy='max',
+                               max_width=MAX_WIDTH,
+                               margin=0)
         super().__init__(**kwargs)
 
     def setup(self):

@@ -67,11 +67,12 @@ class CatSelector(BaseSelector):
         self.items = cats if cats is not None else [intake.cat]
 
     def setup(self):
+        label = pn.pane.Markdown('#### Catalogs', height=40)
         self.watchers = [
             self.widget.param.watch(self.callback, 'value'),
         ]
 
-        self.children = ['#### Catalogs', self.widget]
+        self.children = [label, self.widget]
 
     def preprocess(self, cat):
         """Function to run on each cat input"""

@@ -5,11 +5,9 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 from functools import partial
-
 import panel as pn
 
-from ..base import Base, logo, enable_widget, MAX_WIDTH, BACKGROUND
-from .select import SourceSelector
+from ..base import Base, logo, enable_widget, MAX_WIDTH
 from .defined_plots import DefinedPlots
 from .description import Description
 

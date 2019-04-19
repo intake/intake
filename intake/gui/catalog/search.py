@@ -4,10 +4,8 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-
 import panel as pn
-
-from ..base import Base, MAX_WIDTH, BACKGROUND
+from ..base import Base, MAX_WIDTH
 
 
 class SearchInputs(Base):
@@ -91,9 +89,11 @@ class Search(Base):
     def __init__(self, cats, done_callback=None, **kwargs):
         self.cats = cats
         self.done_callback = done_callback
-        self.panel = pn.Row(name='Search', background=BACKGROUND,
+        self.panel = pn.Row(name='Search',
                             height_policy='min',
-                            width_policy='max', max_width=MAX_WIDTH, margin=0)
+                            width_policy='max',
+                            max_width=MAX_WIDTH,
+                            margin=0)
         super().__init__(**kwargs)
 
     def setup(self):

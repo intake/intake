@@ -44,7 +44,7 @@ class Description(Base):
     def setup(self):
         self.main_pane = pn.pane.Str(self.contents, sizing_mode='stretch_width',
                                      css_classes=['scrolling'], height=200)
-        self.label_pane = pn.pane.Markdown(self.label)
+        self.label_pane = pn.pane.Markdown(self.label, height=40)
         self.children = [self.label_pane, self.main_pane]
 
     @property

@@ -10,7 +10,6 @@ import panel as pn
 
 
 MAX_WIDTH = 1600
-BACKGROUND = '#ffffff'
 
 here = os.path.abspath(os.path.dirname(__file__))
 ICONS = {
