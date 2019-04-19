@@ -48,11 +48,15 @@ class DefinedPlots(Base):
         super().__init__(**kwargs)
 
     def setup(self):
-        self.instructions = pn.pane.Markdown(self.instructions_contents)
-        self.select = pn.widgets.Select(options=self.options)
+        self.instructions = pn.pane.Markdown(
+            self.instructions_contents, align='center', width_policy='max')
+        self.select = pn.widgets.Select(options=self.options, height=30,
+                                        align='center', width=200)
         self.desc = pn.pane.Str()
         self.pane = pn.pane.HoloViews(self._plot_object(self.selected))
-        self.show_desc = pn.widgets.Checkbox(value=False, width_policy='min')
+        self.show_desc = pn.widgets.Checkbox(value=False,
+                                             width_policy='min',
+                                             align='center')
 
         self.watchers = [
             self.select.param.watch(self.callback, ['options','value']),
@@ -60,8 +64,8 @@ class DefinedPlots(Base):
         ]
 
         self.children = [
-            self.instructions,
             pn.Row(
+                self.instructions,
                 self.select,
                 self.show_desc,
                 "show yaml",
