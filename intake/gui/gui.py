@@ -8,8 +8,8 @@ import intake
 import panel as pn
 
 from .base import Base, MAX_WIDTH, logo_panel
-from .catalog import CatGUI
-from .source import SourceGUI
+from .catalog.gui import CatGUI
+from .source.gui import SourceGUI
 
 
 class GUI(Base):
