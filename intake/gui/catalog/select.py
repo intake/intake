@@ -67,7 +67,7 @@ class CatSelector(BaseSelector):
         self.items = cats if cats is not None else [intake.cat]
 
     def setup(self):
-        label = pn.pane.Markdown('#### Catalogs', height=40)
+        label = pn.pane.Markdown('#### Catalogs', max_height=40)
         self.watchers = [
             self.widget.param.watch(self.callback, 'value'),
         ]

@@ -72,7 +72,7 @@ class SourceSelector(BaseSelector):
             self.cats = cats
 
     def setup(self):
-        label = pn.pane.Markdown('#### Entries', height=40)
+        label = pn.pane.Markdown('#### Sources', max_height=40)
         self.watchers = [
             self.widget.param.watch(self.callback, 'value'),
         ]
