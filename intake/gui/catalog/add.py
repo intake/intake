@@ -78,9 +78,14 @@ class FileSelector(Base):
         return path if path.endswith(os.path.sep) else path + os.path.sep
 
     @property
+    def selected(self):
+        return self.main.value[0] if len(self.main.value) > 0 else []
+
+    @property
     def url(self):
         """Path to local catalog file"""
-        return os.path.join(self.path, self.main.value[0])
+        if self.selected is not None:
+            return os.path.join(self.path, self.selected)
 
     def move_up(self, arg=None):
         self.path_text.value = os.path.dirname(self.path.rstrip(os.path.sep)) + os.path.sep
@@ -121,6 +126,17 @@ class FileSelector(Base):
                 elif os.path.isfile(self.url) and self.done_callback:
                     self.done_callback(True)
 
+    def __getstate__(self):
+        return {
+            'path': self.path,
+            'selected': self.selected
+        }
+
+    def __setstate__(self, state):
+        self.path_text.value = state['path']
+        self.main.value = state['selected']
+        return self
+
 class URLSelector(Base):
     """
     Panel interface for inputting a URL to a remote catalog
@@ -156,6 +172,12 @@ class URLSelector(Base):
         """URL to remote files (including protocol)"""
         return self.main.value
 
+    def __getstate__(self):
+        return {'url': self.url}
+
+    def __setstate__(self, state):
+        self.main.value = state['url']
+        return self
 
 class CatAdder(Base):
     """Panel for adding new cats from local file or remote
@@ -180,6 +202,7 @@ class CatAdder(Base):
         watchers that are set on children - cleaned up when visible
         is set to false.
     """
+    tabs = None
 
     def __init__(self, done_callback=None, **kwargs):
         self.done_callback = done_callback
@@ -187,14 +210,14 @@ class CatAdder(Base):
                                width_policy='max',
                                max_width=MAX_WIDTH,
                                margin=0)
-        super().__init__(**kwargs)
-
-    def setup(self):
         self.widget = pn.widgets.Button(name='Add Catalog',
                                         disabled=True,
                                         width_policy='min')
         self.fs = FileSelector(done_callback=partial(enable_widget, self.widget))
         self.url = URLSelector()
+        super().__init__(**kwargs)
+
+    def setup(self):
         self.selectors = [self.fs, self.url]
         self.tabs = pn.Tabs(*map(lambda x: x.panel, self.selectors))
         self.validator = pn.pane.SVG(None, width=25)
@@ -237,3 +260,19 @@ class CatAdder(Base):
         self.remove_error()
         if event.new == 1:
             self.widget.disabled = False
+
+    def __getstate__(self):
+        return {
+            'visible': self.visible,
+            'local': self.fs.__getstate__(),
+            'remote': self.url.__getstate__(),
+            'active': self.tabs.active if self.tabs else 0
+        }
+
+    def __setstate__(self, state):
+        self.fs.__setstate__(state['local'])
+        self.url.__setstate__(state['remote'])
+        self.visible = state.get('visible', True)
+        if self.visible:
+            self.tabs.active = state['active']
+        return self

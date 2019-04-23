@@ -8,6 +8,7 @@
 from collections import OrderedDict
 
 import intake
+from intake.utils import remake_instance
 import panel as pn
 
 from ..base import BaseSelector, coerce_to_list
@@ -52,6 +53,13 @@ class CatSelector(BaseSelector):
     """
     children = []
 
+    @classmethod
+    def preprocess(cls, cat):
+        """Function to run on each cat input"""
+        if isinstance(cat, str):
+            cat = intake.open_catalog(cat)
+        return cat
+
     def __init__(self, cats=None, done_callback=None, **kwargs):
         """Set cats to initialize the class.
 
@@ -74,11 +82,6 @@ class CatSelector(BaseSelector):
 
         self.children = [label, self.widget]
 
-    def preprocess(self, cat):
-        """Function to run on each cat input"""
-        if isinstance(cat, str):
-            cat = intake.open_catalog(cat)
-        return cat
 
     def callback(self, event):
         self.expand_nested(event.new)
@@ -138,3 +141,22 @@ class CatSelector(BaseSelector):
         args so that buttons work. Also remove any nested catalogs."""
         self.collapse_nested(self.selected)
         self.remove(self.selected)
+
+    def __getstate__(self):
+        return {
+            'visible': self.visible,
+            'labels': self.labels,
+            'cats': [cat.__getstate__() for cat in self.items],
+            'selected': [k for k, v in self.options.items() if v in self.selected],
+        }
+
+    def __setstate__(self, state):
+        cats, labels = state['cats'], state['labels']
+        self.widget.options = {l: remake_instance(cat) for l, cat in zip(labels, cats)}
+        self.selected = state.get('selected', [])
+        self.visible = state.get('visible', True)
+        return self
+
+    @classmethod
+    def from_state(cls, state):
+        return cls(cats=[], visible=False).__setstate__(state)

@@ -9,7 +9,7 @@ from .base import Base
 from ..utils import pretty_describe
 
 
-class Description(Base):
+class Description(BaseView):
     """
     Class for displaying a textual description of a data source.
 
@@ -47,17 +47,10 @@ class Description(Base):
         self.label_pane = pn.pane.Markdown(self.label, max_height=40)
         self.children = [self.label_pane, self.main_pane]
 
-    @property
-    def source(self):
-        return self._source
-
-    @source.setter
+    @BaseView.source.setter
     def source(self, source):
         """When the source gets updated, update the pane object"""
-        if isinstance(source, list):
-            # if source is a list, get first item or None
-            source = source[0] if len(source) > 0 else None
-        self._source = source
+        BaseView.source.fset(self, source)
         if self.main_pane:
             self.main_pane.object = self.contents
             self.label_pane.object = self.label

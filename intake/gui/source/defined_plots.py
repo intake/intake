@@ -7,10 +7,10 @@
 from copy import deepcopy
 
 import panel as pn
-from ..base import Base, pretty_describe
+from ..base import BaseView, pretty_describe
 
 
-class DefinedPlots(Base):
+class DefinedPlots(BaseView):
     """
     Panel for displaying pre-defined plots from catalog.
 
@@ -21,8 +21,6 @@ class DefinedPlots(Base):
 
     Attributes
     ----------
-    plot: holoviews object
-        plot object displayed in plot_pane
     has_plots: bool
         whether the source has plots defined
     instructions_contents: str
@@ -41,10 +39,12 @@ class DefinedPlots(Base):
         is set to false.
     """
     select = None
+    show_desc = None
 
     def __init__(self, source=None, **kwargs):
         self.source = source
         self.panel = pn.Column(name='Plot', width_policy='max', margin=0)
+        self._show_yaml = False
         super().__init__(**kwargs)
 
     def setup(self):
@@ -75,16 +75,17 @@ class DefinedPlots(Base):
         ]
 
     @property
-    def source(self):
-        return self._source
+    def show_yaml(self):
+        return self.show_desc.value if self.show_desc else self._show_yaml
 
-    @source.setter
+    @show_yaml.setter
+    def show_yaml(self, show):
+        self.show_desc.value = show
+
+    @BaseView.source.setter
     def source(self, source):
-        """When the source gets updated, update the select widget"""
-        if isinstance(source, list):
-            # if source is a list, get first item or None
-            source = source[0] if len(source) > 0 else None
-        self._source = source
+        """When the source gets updated, update the the options in the selector"""
+        BaseView.source.fset(self, source)
         if self.select:
             self.select.options = self.options
 
@@ -124,11 +125,6 @@ class DefinedPlots(Base):
             if event.name == 'options':
                 self.instructions.object = self.instructions_contents
 
-    @property
-    def plot(self):
-        """Holoviews plot object displayed in plot_pane"""
-        return self.plot_pane.object
-
     def _plot_object(self, selected):
         if selected:
             plot_method = getattr(self.source.plot, selected)
@@ -145,3 +141,19 @@ class DefinedPlots(Base):
             self.desc.object = self._desc_contents(self.selected)
         else:
             self.desc.object = None
+
+
+    def __getstate__(self, include_source=True):
+        state = super().__getstate__(include_source)
+        state.update({
+            'selected': self.selected,
+            'show_yaml': self.show_yaml,
+        })
+        return state
+
+    def __setstate__(self, state):
+        super().__setstate__(state)
+        if self.visible:
+            self.selected = state.get('selected')
+            self.show_yaml = state.get('show_yaml', False)
+        return self

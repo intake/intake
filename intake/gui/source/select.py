@@ -8,6 +8,7 @@
 from collections import OrderedDict
 
 import intake
+from intake.utils import remake_instance
 import panel as pn
 
 from ..base import BaseSelector, coerce_to_list
@@ -94,3 +95,24 @@ class SourceSelector(BaseSelector):
     def callback(self, event):
         if self.done_callback:
             self.done_callback(event.new)
+
+    def __getstate__(self):
+        return {
+            'visible': self.visible,
+            'labels': self.labels,
+            'sources': [source.__getstate__() for source in self.items],
+            'selected': [k for k, v in self.options.items() if v in self.selected],
+        }
+
+
+    def __setstate__(self, state):
+        sources = state['sources']
+        labels = state['labels']
+        self.widget.options = {l: remake_instance(s) for l, s in zip(labels, sources)}
+        self.selected = state.get('selected', [])
+        self.visible = state.get('visible', True)
+        return self
+
+    @classmethod
+    def from_state(cls, state):
+        return cls(sources=[], visible=False).__setstate__(state)

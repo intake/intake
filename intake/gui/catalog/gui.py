@@ -118,3 +118,23 @@ class CatGUI(Base):
     def cats(self):
         """Cats that have been selected from the select"""
         return self.select.selected
+
+    def __getstate__(self):
+        return {
+            'visible': self.visible,
+            'select': self.select.__getstate__(),
+            'add': self.add.__getstate__(),
+            'search':  self.search.__getstate__(include_cats=False),
+        }
+
+    def __setstate__(self, state):
+        self.visible = state.get('visible', True)
+        if self.visible:
+            self.select.__setstate__(state['select'])
+            self.add.__setstate__(state['add'])
+            self.search.__setstate__(state['search'])
+        return self
+
+    @classmethod
+    def from_state(cls, state):
+        return cls(cats=[]).__setstate__(state)

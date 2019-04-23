@@ -61,7 +61,20 @@ class SearchInputs(Base):
 
     @depth.setter
     def depth(self, depth):
+        if isinstance(depth, int):
+            depth = str(depth) if depth <=5 else 'All'
         self.depth_widget.value = depth
+
+    def __getstate__(self):
+        return {
+            'text': self.text,
+            'depth': self.depth,
+        }
+
+    def __setstate__(self, state):
+        self.text = state['text']
+        self.depth = state['depth']
+        return self
 
 
 class Search(Base):
@@ -94,10 +107,10 @@ class Search(Base):
                             width_policy='max',
                             max_width=MAX_WIDTH,
                             margin=0)
+        self.inputs = SearchInputs()
         super().__init__(**kwargs)
 
     def setup(self):
-        self.inputs = SearchInputs()
         self.widget = pn.widgets.Button(name='🔍', width=50, align='center')
 
         self.watchers = [
@@ -117,3 +130,19 @@ class Search(Base):
         if len(new_cats) > 0:
             self.done_callback(new_cats)
             self.visible = False
+
+    def __getstate__(self, include_cats=True):
+        state = {
+            'visible': self.visible,
+            'inputs': self.inputs.__getstate__()
+        }
+        if include_cats:
+            state['cats'] = [cat.__getstate__() for cat in self.cats]
+        return state
+
+    def __setstate__(self, state):
+        if 'cats' in state:
+            self.cats = state['cats']
+        self.visible = state.get('visible', True)
+        self.inputs.__setstate__(state['inputs'])
+        return self

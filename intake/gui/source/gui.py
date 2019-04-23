@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 from functools import partial
 import panel as pn
+from intake.utils import remake_instance
 
 from ..base import Base, logo, enable_widget, MAX_WIDTH
 from .select import SourceSelector
@@ -109,3 +110,23 @@ class SourceGUI(Base):
     def sources(self):
         """Sources that have been selected from the source GUI"""
         return self.select.selected
+
+    def __getstate__(self):
+        return {
+            'visible': self.visible,
+            'select': self.select.__getstate__(),
+            'description': self.description.__getstate__(include_source=False),
+            'plot':  self.plot.__getstate__(include_source=False),
+        }
+
+    def __setstate__(self, state):
+        self.visible = state.get('visible', True)
+        if self.visible:
+            self.select.__setstate__(state['select'])
+            self.description.__setstate__(state['description'])
+            self.plot.__setstate__(state['plot'])
+        return self
+
+    @classmethod
+    def from_state(cls, state):
+        return cls(cats=[], sources=[]).__setstate__(state)

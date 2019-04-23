@@ -79,7 +79,6 @@ class Base(object):
         except:
             raise RuntimeError("Panel does not seem to be set up properly")
 
-
     def _repr_mimebundle_(self, *args, **kwargs):
         """Display in a notebook or a server"""
         try:
@@ -118,6 +117,12 @@ class Base(object):
                 unwatched.append(watcher)
             self.watchers = [w for w in self.watchers if w not in unwatched]
 
+    def __getstate__(self):
+        return {'visible': self.visible}
+
+    def __setstate__(self, state):
+        self.visible = state.get('visible', True)
+        return self
 
 class BaseSelector(Base):
     """Base class for capturing selector logic.
@@ -131,7 +136,6 @@ class BaseSelector(Base):
     """
     preprocess = None
     widget = None
-
 
     @property
     def labels(self):
@@ -214,3 +218,32 @@ class BaseSelector(Base):
             return item
         items = coerce_to_list(new, preprocess)
         self.widget.value = items
+
+
+class BaseView(Base):
+    def __getstate__(self, include_source=True):
+        if include_source:
+            return {
+                'visible': self.visible,
+                'label': self.source._name,
+                'source': self.source.__getstate__(),
+            }
+        else:
+            return {'visible': self.visible}
+
+    def __setstate__(self, state):
+        if 'source' in state:
+            self.source = state['source']
+        self.visible = state.get('visible', True)
+
+    @property
+    def source(self):
+        return self._source
+
+    @source.setter
+    def source(self, source):
+        """When the source gets updated, update the select widget"""
+        if isinstance(source, list):
+            # if source is a list, get first item or None
+            source = source[0] if len(source) > 0 else None
+        self._source = source

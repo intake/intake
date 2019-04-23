@@ -90,3 +90,20 @@ class GUI(Base):
         if len(self.sources) == 0:
             return None
         return self.sources[0]
+
+    def __getstate__(self):
+        return {
+            'visible': self.visible,
+            'cat': self.cat.__getstate__(),
+            'source': self.source.__getstate__(),
+        }
+
+    def __setstate__(self, state):
+        self.visible = state.get('visible', True)
+        self.cat.__setstate__(state['cat'])
+        self.source.__setstate__(state['source'])
+        return self
+
+    @classmethod
+    def from_state(cls, state):
+        return cls(cats=[]).__setstate__(state)
