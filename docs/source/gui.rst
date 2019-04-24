@@ -34,35 +34,13 @@ source entries from the catalog in the **list of sources**.
 Below the **lists of catalogs** is a row of buttons that are used for adding, removing and
 searching-within catalogs:
 
--  **Search**: opens a sub-panel for finding entries in the currently-selected catalog (and it's
-   sub-catalogs)
-
 -  **Add**: opens a sub-panel for adding catalogs to the interface, by either browsing for a local
    YAML file or by entering a URL for a catalog, which can be a remote file or Intake server
 
 -  **Remove**: deletes the currently-selected catalog from the list
 
-
-Search
-~~~~~~
-
-The sub-panel opened by the Search button (🔍) allows the user to search within the selected catalog
-
-.. image:: _static/images/gui_search.png
-
-From the Search sub-panel the user enters for free-form text. Since come catalogs contain nested sub-catalogs,
-the Depth selector allows the search to be limited to the stated number of nesting levels.
-This may be necessary, since, in theory, catalogs can contain circular references,
-and therefore allow for infinite recursion.
-
-.. image:: _static/images/gui_search_inputs.png
-
-Upon execution of the search, the currently-selected catalog will be searched. Entries will
-be considered to match if any of the entered words is found in the description of the entry (this
-is case-insensitive). If any matches are found, a new entry will be made in the catalog list,
-with the suffix "_search".
-
-.. image:: _static/images/gui_search_cat.png
+-  **Search**: opens a sub-panel for finding entries in the currently-selected catalog (and it's
+   sub-catalogs)
 
 Add Catalogs
 ~~~~~~~~~~~~
@@ -95,6 +73,27 @@ The Remove button (-) deletes the currently-selected catalog from the list. It i
 note that this action does not have any impact on files, it only affects what shows up in the list.
 
 .. image:: _static/images/gui_remove.png
+
+Search
+~~~~~~
+
+The sub-panel opened by the Search button (🔍) allows the user to search within the selected catalog
+
+.. image:: _static/images/gui_search.png
+
+From the Search sub-panel the user enters for free-form text. Since come catalogs contain nested sub-catalogs,
+the Depth selector allows the search to be limited to the stated number of nesting levels.
+This may be necessary, since, in theory, catalogs can contain circular references,
+and therefore allow for infinite recursion.
+
+.. image:: _static/images/gui_search_inputs.png
+
+Upon execution of the search, the currently-selected catalog will be searched. Entries will
+be considered to match if any of the entered words is found in the description of the entry (this
+is case-insensitive). If any matches are found, a new entry will be made in the catalog list,
+with the suffix "_search".
+
+.. image:: _static/images/gui_search_cat.png
 
 Sources
 -------
