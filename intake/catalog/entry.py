@@ -5,8 +5,9 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+from copy import deepcopy
 import time
-from ..utils import DictSerialiseMixin
+from ..utils import DictSerialiseMixin, pretty_describe
 from .gui import EntryGUI
 
 
@@ -124,6 +125,32 @@ class CatalogEntry(DictSerialiseMixin):
     def plots(self):
         """List custom associated quick-plots """
         return list(self._metadata.get('plots', {}))
+
+    def _ipython_display_(self):
+        """Display the entry as a rich object in an IPython session."""
+        contents, warning = self._display_content()
+        display({
+            'application/json': contents,
+            'text/plain': pretty_describe(contents)
+        }, metadata={
+            'application/json': { 'root': self.name }
+        }, raw=True)
+        if warning:
+            display(warning)
+
+    def _display_content(self):
+        """Create a dictionary with content to display in reprs."""
+        contents = deepcopy(self.describe())
+        warning = None
+        try:
+            contents.update(self.describe_open())
+            if 'plots' in contents['metadata']:
+                contents['metadata'].pop('plots')
+            if 'plots' in contents['args'].get('metadata', {}):
+                contents['args']['metadata'].pop('plots')
+        except ValueError:
+            warning = f'Need additional plugin to use {self.source._driver} driver'
+        return contents, warning
 
     def __getattr__(self, attr):
         if attr in self.__dict__:

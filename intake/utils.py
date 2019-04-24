@@ -120,3 +120,11 @@ def remake_instance(data):
     module = importlib.import_module(mod)
     cl = getattr(module, klass)
     return cl(*data.get('args', ()), **data.get('kwargs', {}))
+
+
+def pretty_describe(object, nestedness=0, indent=2):
+    """Maintain dict ordering - but make string version prettier"""
+    if not isinstance(object, dict):
+        return str(object)
+    sep = f'\n{" " * nestedness * indent}'
+    return sep.join((f'{k}: {pretty_describe(v, nestedness + 1)}' for k, v in object.items()))

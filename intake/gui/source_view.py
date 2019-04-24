@@ -4,10 +4,9 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-from copy import deepcopy
-
 import panel as pn
 from .base import Base
+from ..utils import pretty_describe
 
 
 def pretty_describe(object, nestedness=0, indent=2):
@@ -76,18 +75,8 @@ class Description(Base):
         """String representation of the source's description"""
         if not self._source:
             return ' ' * 100  # HACK - make sure that area is big
-        contents = deepcopy(self.source.describe())
-        try:
-            extra = deepcopy(self.source.describe_open())
-            contents.update(extra)
-            if 'plots' in contents['metadata']:
-                contents['metadata'].pop('plots')
-            if 'plots' in contents['args'].get('metadata', {}):
-                contents['args']['metadata'].pop('plots')
-            return pretty_describe(contents)
-        except ValueError:
-            warning = f'Need additional plugin to use {self.source._driver} driver'
-            return pretty_describe(contents) + '\n' + warning
+        contents, warning = self.source._display_content()
+        return pretty_describe(contents) + ('\n' + warning if warning else '')
 
     @property
     def label(self):
