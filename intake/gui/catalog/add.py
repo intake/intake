@@ -78,14 +78,9 @@ class FileSelector(Base):
         return path if path.endswith(os.path.sep) else path + os.path.sep
 
     @property
-    def selected(self):
-        return self.main.value[0] if len(self.main.value) > 0 else []
-
-    @property
     def url(self):
         """Path to local catalog file"""
-        if self.selected is not None:
-            return os.path.join(self.path, self.selected)
+        return os.path.join(self.path, self.main.value[0])
 
     def move_up(self, arg=None):
         self.path_text.value = os.path.dirname(self.path.rstrip(os.path.sep)) + os.path.sep
@@ -129,7 +124,7 @@ class FileSelector(Base):
     def __getstate__(self):
         return {
             'path': self.path,
-            'selected': self.selected
+            'selected': self.main.value
         }
 
     def __setstate__(self, state):

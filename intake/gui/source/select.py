@@ -104,7 +104,6 @@ class SourceSelector(BaseSelector):
             'selected': [k for k, v in self.options.items() if v in self.selected],
         }
 
-
     def __setstate__(self, state):
         sources = state['sources']
         labels = state['labels']
