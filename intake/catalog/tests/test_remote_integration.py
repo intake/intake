@@ -424,3 +424,23 @@ def test_len(intake_server):
     remote_catalog = Catalog(intake_server)
     local_catalog = Catalog(TEST_CATALOG_PATH)
     assert sum(1 for entry in local_catalog) == len(remote_catalog)
+
+def test_display_content(intake_server):
+    remote_catalog = Catalog(intake_server)
+    entry = remote_catalog['arr']
+    content, warning = entry._display_content()
+    content['args']['metadata'].pop('catalog_dir') # remove os-dependent paths
+    content['args'].pop('path') # remove os-dependent paths
+    assert warning == None
+    assert content == {
+        'container': 'ndarray',
+        'description': 'small array',
+        'direct_access': 'forbid',
+        'user_parameters': [],
+        'plugin': 'numpy',
+        'metadata': {},
+        'args': {
+            'metadata': {},
+            'chunks': 5
+        }
+    }
