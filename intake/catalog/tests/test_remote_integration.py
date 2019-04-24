@@ -433,6 +433,7 @@ def test_display_content(intake_server):
     content['args'].pop('path') # remove os-dependent paths
     assert warning == None
     assert content == {
+        'name': 'arr',
         'container': 'ndarray',
         'description': 'small array',
         'direct_access': 'forbid',

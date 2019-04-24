@@ -28,7 +28,8 @@ class CatalogEntry(DictSerialiseMixin):
         """Get a dictionary of attributes of this entry.
 
         Returns: dict with keys
-
+          name: str
+              The name of the catalog entry.
           container : str
               kind of container used by this data source
           description : str
@@ -133,7 +134,7 @@ class CatalogEntry(DictSerialiseMixin):
             'application/json': contents,
             'text/plain': pretty_describe(contents)
         }, metadata={
-            'application/json': { 'root': self._name }
+            'application/json': { 'root': contents["name"]}
         }, raw=True)
         if warning:
             display(warning) # noqa: F821
@@ -145,7 +146,7 @@ class CatalogEntry(DictSerialiseMixin):
         try:
             contents.update(self.describe_open())
         except ValueError:
-            warning = f'Need additional plugin to use {self._driver} driver'
+            warning = f'Need an additional plugin to load {contents["name"]}.'
         return contents, warning
 
     def __getattr__(self, attr):
