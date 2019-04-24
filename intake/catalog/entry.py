@@ -144,10 +144,6 @@ class CatalogEntry(DictSerialiseMixin):
         warning = None
         try:
             contents.update(self.describe_open())
-            if 'plots' in contents['metadata']:
-                contents['metadata'].pop('plots')
-            if 'plots' in contents['args'].get('metadata', {}):
-                contents['args']['metadata'].pop('plots')
         except ValueError:
             warning = f'Need additional plugin to use {self._driver} driver'
         return contents, warning
