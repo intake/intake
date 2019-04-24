@@ -8,7 +8,7 @@ from functools import partial
 
 import panel as pn
 
-from ..base import Base, logo, enable_widget, MAX_WIDTH
+from ..base import Base, enable_widget, MAX_WIDTH
 from .select import CatSelector
 from .add import CatAdder
 from .search import Search

@@ -8,20 +8,22 @@ from functools import partial
 
 try:
     import panel as pn
-    from ..gui import SourceGUI, logo_panel, MAX_WIDTH
+    from ..gui import SourceGUI, MAX_WIDTH
 
     class EntryGUI(SourceGUI):
         def __init__(self, source=None, **kwargs):
             self.source = source
+            # set logo to false because we'll use a special logo_panel
+            kwargs['logo'] = False
             super().__init__(sources=[self.source], **kwargs)
-            self.panel = pn.Row(name='Entry')
+            self.panel = pn.Row(name='Source')
 
         def setup(self):
             super().setup()
             self.select.visible = False
             self.children = [
                 pn.Column(
-                    logo_panel,
+                    self.logo_panel,
                     *self.controls,
                     margin=0,
                 ),
@@ -38,30 +40,9 @@ try:
             return self.source
 
     class CatalogGUI(SourceGUI):
-        def __init__(self, cat, **kwargs):
+        def __init__(self, cat, logo=True, **kwargs):
             self.cat = cat
-            super().__init__(cats=[self.cat], **kwargs)
-            self.panel = pn.Row(name='Catalog')
-
-        def setup(self):
-            super().setup()
-            self.children = [
-                logo_panel,
-                pn.Column(
-                    pn.Row(
-                        pn.Column(
-                            self.select.panel,
-                            self.control_panel,
-                            margin=0,
-                        ),
-                        self.description.panel,
-                        margin=0,
-                    ),
-                    self.plot.panel,
-                    width_policy='max',
-                    max_width=MAX_WIDTH,
-                )
-            ]
+            super().__init__(cats=[self.cat], logo=logo, **kwargs)
 
         @property
         def item(self):

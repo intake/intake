@@ -33,4 +33,4 @@ def test_no_panel_display_init_gui():
 def test_display_init_gui():
     pytest.importorskip('panel')
     import intake
-    assert repr(intake.gui).startswith('Row')
+    assert repr(intake.gui).startswith('Column')

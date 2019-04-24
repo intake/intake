@@ -38,7 +38,8 @@ class Description(BaseView):
 
     def __init__(self, source=None, **kwargs):
         self.source = source
-        self.panel = pn.Column(name='Description', width_policy='max', margin=0)
+        self.panel = pn.Column(name='Description', width_policy='max',
+                               margin=0, height=240)
         super().__init__(**kwargs)
 
     def setup(self):

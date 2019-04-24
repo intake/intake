@@ -7,7 +7,7 @@
 import intake
 import panel as pn
 
-from .base import Base, MAX_WIDTH, logo_panel
+from .base import Base, MAX_WIDTH
 from .catalog.gui import CatGUI
 from .source.gui import SourceGUI
 
@@ -35,36 +35,32 @@ class GUI(Base):
         watchers that are set on children - cleaned up when visible
         is set to false.
     """
-    def __init__(self, cats=None):
+    def __init__(self, cats=None, logo=True):
         self.source = SourceGUI()
         self.cat = CatGUI(cats=cats, done_callback=self.done_callback)
-        self.panel = pn.Row(name='GUI')
+        self.panel = pn.Column(name='GUI', width_policy='max', max_width=MAX_WIDTH)
         self.visible = True
+        self.logo = logo
 
     def setup(self):
         self.children = [
-            logo_panel,
-            pn.Column(
-                pn.Row(
-                    pn.Column(
-                        self.cat.select.panel,
-                        self.cat.control_panel,
-                        margin=0,
-                    ),
-                    pn.Column(
-                        self.source.select.panel,
-                        self.source.control_panel,
-                        margin=0
-                    ),
-                    self.source.description.panel,
+            pn.Row(
+                pn.Column(
+                    self.cat.select.panel,
+                    self.cat.control_panel,
                     margin=0,
                 ),
-                self.cat.search.panel,
-                self.cat.add.panel,
-                self.source.plot.panel,
-                width_policy='max',
-                max_width=MAX_WIDTH,
+                pn.Column(
+                    self.source.select.panel,
+                    self.source.control_panel,
+                    margin=0
+                ),
+                self.source.description.panel,
+                margin=0,
             ),
+            self.cat.search.panel,
+            self.cat.add.panel,
+            self.source.plot.panel,
         ]
 
     def done_callback(self, cats):

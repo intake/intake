@@ -16,9 +16,6 @@ ICONS = {
     'logo': os.path.join(here, 'icons', 'logo.png'),
     'error': os.path.join(here, 'icons', 'baseline-error-24px.svg'),
 }
-logo = pn.pane.PNG(ICONS['logo'], align='center')
-logo_panel = pn.Column(logo, margin=(25, 0, 0, 0), width=50)
-
 
 def enable_widget(widget, enable=True):
     """Set disabled on widget"""
@@ -62,15 +59,22 @@ class Base(object):
     visible: bool
         whether or not the instance should be visible. When not visible
         ``panel`` is empty.
+    logo : bool, opt
+        whether to show the intake logo in a panel to the left of the main
+        panel. Default is False
     """
     children = None
     panel = None
     watchers = None
     visible_callback = None
+    logo_panel = pn.Column(
+        pn.pane.PNG(ICONS['logo'], align='center'), margin=(25, 0, 0, 0), width=50)
+    logo = False
 
-    def __init__(self, visible=True, visible_callback=None):
+    def __init__(self, visible=True, visible_callback=None, logo=False):
         self.visible = visible
         self.visible_callback = visible_callback
+        self.logo = logo
 
     def __repr__(self):
         """Print output"""
@@ -82,7 +86,14 @@ class Base(object):
     def _repr_mimebundle_(self, *args, **kwargs):
         """Display in a notebook or a server"""
         try:
-            return self.panel._repr_mimebundle_(*args, **kwargs)
+            if self.logo:
+                p = pn.Row(
+                    self.logo_panel,
+                    self.panel,
+                    margin=0)
+                return p._repr_mimebundle_(*args, **kwargs)
+            else:
+                return self.panel._repr_mimebundle_(*args, **kwargs)
         except:
             raise RuntimeError("Panel does not seem to be set up properly")
 
