@@ -129,14 +129,14 @@ class CatalogEntry(DictSerialiseMixin):
     def _ipython_display_(self):
         """Display the entry as a rich object in an IPython session."""
         contents, warning = self._display_content()
-        display({
+        display({ # noqa: F821
             'application/json': contents,
             'text/plain': pretty_describe(contents)
         }, metadata={
             'application/json': { 'root': self.name }
         }, raw=True)
         if warning:
-            display(warning)
+            display(warning) # noqa: F821
 
     def _display_content(self):
         """Create a dictionary with content to display in reprs."""
