@@ -133,7 +133,7 @@ class CatalogEntry(DictSerialiseMixin):
             'application/json': contents,
             'text/plain': pretty_describe(contents)
         }, metadata={
-            'application/json': { 'root': self.name }
+            'application/json': { 'root': self._name }
         }, raw=True)
         if warning:
             display(warning) # noqa: F821
