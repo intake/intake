@@ -429,8 +429,6 @@ def test_display_content(intake_server):
     remote_catalog = Catalog(intake_server)
     entry = remote_catalog['arr']
     content, warning = entry._display_content()
-    content['args']['metadata'].pop('catalog_dir') # remove os-dependent paths
-    content['args'].pop('path') # remove os-dependent paths
     assert warning == None
     assert content == {
         'name': 'arr',
@@ -438,10 +436,7 @@ def test_display_content(intake_server):
         'description': 'small array',
         'direct_access': 'forbid',
         'user_parameters': [],
-        'plugin': 'numpy',
+        'plugin': None,
         'metadata': {},
-        'args': {
-            'metadata': {},
-            'chunks': 5
-        }
+        'args': ('http://localhost:7483/',)
     }
