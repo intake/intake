@@ -9,14 +9,6 @@ from .base import Base
 from ..utils import pretty_describe
 
 
-def pretty_describe(object, nestedness=0, indent=2):
-    """Maintain dict ordering - but make string version prettier"""
-    if not isinstance(object, dict):
-        return str(object)
-    sep = f'\n{" " * nestedness * indent}'
-    return sep.join((f'{k}: {pretty_describe(v, nestedness + 1)}' for k, v in object.items()))
-
-
 class Description(Base):
     """
     Class for displaying a textual description of a data source.
