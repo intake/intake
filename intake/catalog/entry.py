@@ -149,7 +149,7 @@ class CatalogEntry(DictSerialiseMixin):
             if 'plots' in contents['args'].get('metadata', {}):
                 contents['args']['metadata'].pop('plots')
         except ValueError:
-            warning = f'Need additional plugin to use {self.source._driver} driver'
+            warning = f'Need additional plugin to use {self._driver} driver'
         return contents, warning
 
     def __getattr__(self, attr):
