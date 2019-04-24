@@ -144,6 +144,8 @@ class DefinedPlots(BaseView):
 
 
     def __getstate__(self, include_source=True):
+        """Serialize the current state of the object. Set include_source
+        to False when using with another panel that will include source."""
         state = super().__getstate__(include_source)
         state.update({
             'selected': self.selected,
@@ -152,6 +154,9 @@ class DefinedPlots(BaseView):
         return state
 
     def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
         super().__setstate__(state)
         if self.visible:
             self.selected = state.get('selected')

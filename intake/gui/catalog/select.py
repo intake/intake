@@ -143,6 +143,7 @@ class CatSelector(BaseSelector):
         self.remove(self.selected)
 
     def __getstate__(self):
+        """Serialize the current state of the object"""
         return {
             'visible': self.visible,
             'labels': self.labels,
@@ -151,12 +152,11 @@ class CatSelector(BaseSelector):
         }
 
     def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
         cats, labels = state['cats'], state['labels']
         self.widget.options = {l: remake_instance(cat) for l, cat in zip(labels, cats)}
         self.selected = state.get('selected', [])
         self.visible = state.get('visible', True)
         return self
-
-    @classmethod
-    def from_state(cls, state):
-        return cls(cats=[], visible=False).__setstate__(state)

@@ -122,12 +122,16 @@ class FileSelector(Base):
                     self.done_callback(True)
 
     def __getstate__(self):
+        """Serialize the current state of the object."""
         return {
             'path': self.path,
             'selected': self.main.value
         }
 
     def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
         self.path_text.value = state['path']
         self.main.value = state['selected']
         return self
@@ -168,9 +172,13 @@ class URLSelector(Base):
         return self.main.value
 
     def __getstate__(self):
+        """Serialize the current state of the object."""
         return {'url': self.url}
 
     def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
         self.main.value = state['url']
         return self
 
@@ -257,6 +265,7 @@ class CatAdder(Base):
             self.widget.disabled = False
 
     def __getstate__(self):
+        """Serialize the current state of the object"""
         return {
             'visible': self.visible,
             'local': self.fs.__getstate__(),
@@ -265,6 +274,9 @@ class CatAdder(Base):
         }
 
     def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
         self.fs.__setstate__(state['local'])
         self.url.__setstate__(state['remote'])
         self.visible = state.get('visible', True)

@@ -88,6 +88,7 @@ class GUI(Base):
         return self.sources[0]
 
     def __getstate__(self):
+        """Serialize the current state of the object"""
         return {
             'visible': self.visible,
             'cat': self.cat.__getstate__(),
@@ -95,6 +96,9 @@ class GUI(Base):
         }
 
     def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
         self.visible = state.get('visible', True)
         self.cat.__setstate__(state['cat'])
         self.source.__setstate__(state['source'])
@@ -102,4 +106,11 @@ class GUI(Base):
 
     @classmethod
     def from_state(cls, state):
+        """Create a new object from a serialized exising object.
+
+        Example
+        -------
+        original = GUI()
+        copy = GUI.from_state(original.__getstate__())
+        """
         return cls(cats=[]).__setstate__(state)

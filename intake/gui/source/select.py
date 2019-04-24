@@ -97,6 +97,7 @@ class SourceSelector(BaseSelector):
             self.done_callback(event.new)
 
     def __getstate__(self):
+        """Serialize the current state of the object"""
         return {
             'visible': self.visible,
             'labels': self.labels,
@@ -105,13 +106,12 @@ class SourceSelector(BaseSelector):
         }
 
     def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
         sources = state['sources']
         labels = state['labels']
         self.widget.options = {l: remake_instance(s) for l, s in zip(labels, sources)}
         self.selected = state.get('selected', [])
         self.visible = state.get('visible', True)
         return self
-
-    @classmethod
-    def from_state(cls, state):
-        return cls(sources=[], visible=False).__setstate__(state)

@@ -66,12 +66,16 @@ class SearchInputs(Base):
         self.depth_widget.value = depth
 
     def __getstate__(self):
+        """Serialize the current state of the object"""
         return {
             'text': self.text,
             'depth': self.depth,
         }
 
     def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
         self.text = state['text']
         self.depth = state['depth']
         return self
@@ -132,6 +136,8 @@ class Search(Base):
             self.visible = False
 
     def __getstate__(self, include_cats=True):
+        """Serialize the current state of the object. Set include_cats
+        to False when using with another panel that will include cats."""
         state = {
             'visible': self.visible,
             'inputs': self.inputs.__getstate__()
@@ -141,6 +147,9 @@ class Search(Base):
         return state
 
     def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
         if 'cats' in state:
             self.cats = state['cats']
         self.visible = state.get('visible', True)

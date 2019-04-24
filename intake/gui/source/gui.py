@@ -134,6 +134,7 @@ class SourceGUI(Base):
         return self.select.selected
 
     def __getstate__(self):
+        """Serialize the current state of the object"""
         return {
             'visible': self.visible,
             'select': self.select.__getstate__(),
@@ -142,6 +143,9 @@ class SourceGUI(Base):
         }
 
     def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
         self.visible = state.get('visible', True)
         if self.visible:
             self.select.__setstate__(state['select'])
@@ -151,4 +155,11 @@ class SourceGUI(Base):
 
     @classmethod
     def from_state(cls, state):
+        """Create a new object from a serialized exising object.
+
+        Example
+        -------
+        original = SourceGUI()
+        copy = SourceGUI.from_state(original.__getstate__())
+        """
         return cls(cats=[], sources=[]).__setstate__(state)

@@ -129,11 +129,27 @@ class Base(object):
             self.watchers = [w for w in self.watchers if w not in unwatched]
 
     def __getstate__(self):
+        """Serialize the current state of the object"""
         return {'visible': self.visible}
 
     def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
         self.visible = state.get('visible', True)
         return self
+
+    @classmethod
+    def from_state(cls, state):
+        """Create a new object from a serialized exising object.
+
+        Example
+        -------
+        original = cls()
+        copy = cls.from_state(original.__getstate__())
+        """
+        return cls().__setstate__(state)
+
 
 class BaseSelector(Base):
     """Base class for capturing selector logic.
@@ -233,6 +249,8 @@ class BaseSelector(Base):
 
 class BaseView(Base):
     def __getstate__(self, include_source=True):
+        """Serialize the current state of the object. Set include_source
+        to False when using with another panel that will include source."""
         if include_source:
             return {
                 'visible': self.visible,
@@ -243,6 +261,9 @@ class BaseView(Base):
             return {'visible': self.visible}
 
     def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
         if 'source' in state:
             self.source = state['source']
         self.visible = state.get('visible', True)
