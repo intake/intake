@@ -74,37 +74,37 @@ def test_gui_open_search_panel(gui, cat1, cat2, sources1, sources2):
 
 
 def test_gui_close_and_open_cat(gui, cat2, sources2):
-    assert gui.cat.search_widget.disabled is False
-
     gui.cat.select.selected = [cat2]
-    assert gui.source.select.items == sources2
-    assert gui.cat.search_widget.disabled is False
+    gui.cat.visible = False
 
-    gui.cat.select.visible = False
-    assert gui.source.select.items == sources2
-    assert not gui.cat.select.watchers
-    assert gui.cat.search_widget.disabled is False
+    assert gui.cat.select.visible is False
+    assert len(gui.cat.control_panel.objects) == 0
+    assert gui.cat.search.visible is False
+    assert gui.cat.add.visible is False
 
-    gui.cat.select.visible = True
-    assert len(gui.cat.select.watchers) == 1
-    assert gui.cat.select.selected == [cat2]
-    assert gui.source.select.items == sources2
-    assert gui.cat.search_widget.disabled is False
+    gui.cat.visible = True
+    assert gui.cat.select.visible is True
+    assert len(gui.cat.control_panel.objects) == 3
+    assert gui.cat.search.visible is False
+    assert gui.cat.add.visible is False
+    assert gui.cats == [cat2]
 
 
-def test_gui_close_and_open_source_select(gui, sources1):
-    assert gui.source.select.selected == sources1[:1]
-    assert gui.source.plot_widget.disabled is False
+def test_gui_close_and_open_source(gui, cat2, sources2):
+    gui.source.visible = False
+    gui.cat.select.selected = [cat2]
 
-    gui.source.select.visible = False
-    assert not gui.source.select.watchers
-    assert gui.source.select.selected == sources1[:1]
-    assert gui.source.plot_widget.disabled is False
+    assert gui.source.visible is False
+    assert len(gui.source.control_panel.objects) == 0
+    assert gui.source.description.visible is False
+    assert gui.source.plot.visible is False
 
-    gui.source.select.visible = True
-    assert len(gui.source.select.watchers) == 1
-    assert gui.source.select.selected == sources1[:1]
-    assert gui.source.plot_widget.disabled is False
+    gui.source.visible = True
+    assert gui.source.select.visible is True
+    assert len(gui.source.control_panel.objects) == 1
+    assert gui.source.description.visible is True
+    assert gui.source.plot.visible is False
+    assert gui.source.sources == [sources2[0]]
 
 
 def test_gui_init_empty():
@@ -126,3 +126,27 @@ def test_gui_init_empty():
     assert gui.source.plot.visible is False
     assert gui.source.plot_widget.disabled is True
 
+
+def test_gui_getstate(gui, cat1, sources1):
+    state = gui.__getstate__()
+
+    assert state['visible'] is True
+    assert state['cat']['visible']is True
+    assert state['cat']['add']['visible'] is False
+    assert state['cat']['search']['visible'] is False
+    assert state['cat']['select']['selected'] == [cat1.name]
+    assert state['source']['visible'] is True
+    assert state['source']['select']['selected'] == [sources1[0].name]
+    assert state['source']['plot']['visible'] is False
+
+
+def test_gui_state_roundtrip(gui, cat1, cat2, sources1):
+    from ..gui import GUI
+    other = GUI.from_state(gui.__getstate__())
+
+    assert other.cat.select.items == [cat1, cat2]
+    assert other.cats == [cat1]
+    assert other.sources == [sources1[0]]
+    assert other.cat.search.visible is False
+    assert other.cat.add.visible is False
+    assert other.source.plot.visible is False

@@ -47,14 +47,14 @@ class SourceGUI(Base):
         self._sources = sources
         self.panel = pn.Column(name='Entries', width_policy='max', max_width=MAX_WIDTH)
         self.done_callback = done_callback
-        super().__init__(**kwargs)
 
-    def setup(self):
         self.plot_widget = pn.widgets.Toggle(
             name='📊',
             value=False,
             disabled=True,
             width=50)
+        self.controls = [self.plot_widget]
+        self.control_panel = pn.Row(name='Controls', margin=0)
 
         self.select = SourceSelector(cats=self._cats,
                                      sources=self._sources,
@@ -65,14 +65,13 @@ class SourceGUI(Base):
                                  visible=self.plot_widget.value,
                                  visible_callback=partial(setattr, self.plot_widget, 'value'))
 
+        super().__init__(**kwargs)
+
+    def setup(self):
         self.watchers = [
             self.plot_widget.param.watch(self.on_click_plot_widget, 'value'),
             self.select.widget.link(self.description, value='source'),
         ]
-        self.control_panel = pn.Row(
-            self.plot_widget,
-            margin=0
-        )
 
         self.children = [
             pn.Row(
@@ -86,6 +85,29 @@ class SourceGUI(Base):
             ),
             self.plot.panel,
         ]
+
+    @Base.visible.setter
+    def visible(self, visible):
+        """When visible changed, do setup or unwatch and call visible_callback"""
+        self._visible = visible
+
+        if visible and len(self.panel.objects) == 0:
+            self.setup()
+            self.select.visible = True
+            self.description.visible = True
+            if len(self.control_panel.objects) == 0:
+                self.control_panel.extend(self.controls)
+            self.panel.extend(self.children)
+        elif not visible and len(self.panel.objects) > 0:
+            self.unwatch()
+            # do children
+            self.select.visible = False
+            self.control_panel.clear()
+            self.description.visible = False
+            self.plot.visible = False
+            self.panel.clear()
+        if self.visible_callback:
+            self.visible_callback(visible)
 
     def callback(self, sources):
         """When a source is selected, enable widgets that depend on that condition

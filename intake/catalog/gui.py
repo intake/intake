@@ -18,10 +18,11 @@ try:
 
         def setup(self):
             super().setup()
+            self.select.visible = False
             self.children = [
                 pn.Column(
                     logo_panel,
-                    *self.control_panel.objects,
+                    *self.controls,
                     margin=0,
                 ),
                 pn.Column(

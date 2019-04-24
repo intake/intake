@@ -44,9 +44,7 @@ class CatGUI(Base):
         self._cats = cats
         self.panel = pn.Column(name='Catalogs', width_policy='max', max_width=MAX_WIDTH)
         self.done_callback = done_callback or (lambda x: x)
-        super().__init__(**kwargs)
 
-    def setup(self):
         self.add_widget = pn.widgets.Toggle(
             name='＋',
             value=False,
@@ -64,6 +62,13 @@ class CatGUI(Base):
             disabled=True,
             width=50)
 
+        self.controls  = [
+            self.add_widget,
+            self.remove_widget,
+            self.search_widget,
+        ]
+        self.control_panel = pn.Row(name='Controls', margin=0)
+
         self.select = CatSelector(cats=self._cats,
                                   done_callback=self.callback)
         self.add = CatAdder(done_callback=self.select.add,
@@ -74,24 +79,42 @@ class CatGUI(Base):
                              visible=self.search_widget.value,
                              visible_callback=partial(setattr, self.search_widget, 'value'))
 
-        self.watchers = [
-            self.add_widget.link(self.add, value='visible'),
-            self.search_widget.param.watch(self.on_click_search_widget, 'value'),
-            self.remove_widget.param.watch(self.select.remove_selected, 'clicks'),
-        ]
-        self.control_panel = pn.Row(
-            self.add_widget,
-            self.remove_widget,
-            self.search_widget,
-            margin=0
-        )
-
         self.children = [
             self.select.panel,
             self.control_panel,
             self.search.panel,
             self.add.panel,
         ]
+
+        super().__init__(**kwargs)
+
+    def setup(self):
+        self.watchers = [
+            self.add_widget.link(self.add, value='visible'),
+            self.search_widget.param.watch(self.on_click_search_widget, 'value'),
+            self.remove_widget.param.watch(self.select.remove_selected, 'clicks'),
+        ]
+
+    @Base.visible.setter
+    def visible(self, visible):
+        """When visible changed, do setup or unwatch and call visible_callback"""
+        self._visible = visible
+
+        if visible and len(self.panel.objects) == 0:
+            self.setup()
+            self.select.visible = True
+            self.control_panel.extend(self.controls)
+            self.panel.extend(self.children)
+        elif not visible and len(self.panel.objects) > 0:
+            self.unwatch()
+            # do children
+            self.select.visible = False
+            self.control_panel.clear()
+            self.search.visible = False
+            self.add.visible = False
+            self.panel.clear()
+        if self.visible_callback:
+            self.visible_callback(visible)
 
     def callback(self, cats):
         """When a catalog is selected, enable widgets that depend on that condition

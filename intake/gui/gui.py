@@ -72,7 +72,7 @@ class GUI(Base):
 
     @property
     def cats(self):
-        """Cats that have been selected from the cat_browser"""
+        """Cats that have been selected from the cat sub-panel"""
         return self.cat.cats
 
     def add(self, *args, **kwargs):
@@ -81,7 +81,7 @@ class GUI(Base):
 
     @property
     def sources(self):
-        """Sources that have been selected from the source_browser"""
+        """Sources that have been selected from the source sub-panel"""
         return self.source.sources
 
     @property
