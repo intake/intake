@@ -55,19 +55,6 @@ def test_description_clears_if_visible_is_set_to_false(description):
     assert len(description.panel.objects) == 0
 
 
-def test_description_with_fake_driver_shows_missing_plugin_warning(sources1):
-    from ..description import Description
-
-    description = Description(source=sources1[1])
-    assert description.contents == ('name: fake1\n'
-                                    'container: None\n'
-                                    'description: \n'
-                                    'direct_access: forbid\n'
-                                    'user_parameters: []\n'
-                                    'Need an additional plugin to load fake1.')
-    assert_panel_matches_contents(description)
-
-
 def test_description_source_with_plots(sources2):
     from ..description import Description
     description = Description(source=sources2[0])
@@ -79,7 +66,7 @@ def test_description_source_with_plots(sources2):
         'description: US Crime data [UCRDataTool](https://www.ucrdatatool.gov/Search/Crime/State/StatebyState.cfm)\n'
         'direct_access: forbid\n'
         'user_parameters: []\n'
-        'plugin: csv\n'
+        'plugin: [csv]\n'
         'metadata: \n'
         f'args: metadata: catalog_dir: {catalog_dir}\n'
         f'  urlpath: {catalog_dir}../data/crime.csv')

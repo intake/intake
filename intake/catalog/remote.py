@@ -63,7 +63,7 @@ class RemoteCatalogEntry(CatalogEntry):
             'description': self.description,
             'direct_access': self._direct_access,
             'metadata': self._metadata,
-            'user_paramers': self._user_parameters,
+            'user_parameters': self._user_parameters,
             'args': (self.url, )
         }
 
@@ -106,10 +106,19 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
         response = msgpack.unpackb(req.content, **unpack_kwargs)
 
         if 'plugin' in response:
+            pl = response['plugin']
+            pl = [pl] if isinstance(pl, str) else pl
             # Direct access
-            source = plugin_registry[response['plugin']](**response['args'])
+            for p in pl:
+                if p in plugin_registry:
+                    source = plugin_registry[p](**response['args'])
+                    proxy = False
+                    break
+            else:
+                proxy = True
         else:
-            # Proxied access
+            proxy = True
+        if proxy:
             response.pop('container')
             response.update({'name': entry, 'parameters': user_parameters})
             if container == 'catalog':

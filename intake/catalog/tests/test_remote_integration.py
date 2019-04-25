@@ -28,13 +28,15 @@ def test_info_describe(intake_server):
 
     info = catalog['entry1'].describe()
 
-    assert info == {
+    expected = {
         'container': 'dataframe',
         'description': 'entry1 full',
         'name': 'entry1',
         'direct_access': 'forbid',
         'user_parameters': []
     }
+    for k in expected:
+        assert info[k] == expected[k]
 
     info = catalog['entry1_part'].describe()
 
