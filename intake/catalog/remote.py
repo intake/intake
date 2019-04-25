@@ -55,24 +55,15 @@ class RemoteCatalogEntry(CatalogEntry):
         super(RemoteCatalogEntry, self).__init__(getenv=getenv,
                                                  getshell=getshell)
 
-    @property
-    def kwargs(self):
-        return dict(name=self.name,
-                    container=self.container, description=self.description,
-                    direct_access=self._direct_access,
-                    user_parameters=self._user_parameters
-                    )
-
     def describe(self):
-        return self.kwargs
-
-    def describe_open(self, **kwargs):
         return {
+            'name': self.name,
             'container': self.container,
-            'plugin': None,
+            'plugin': "remote",
             'description': self.description,
             'direct_access': self._direct_access,
             'metadata': self._metadata,
+            'user_paramers': self._user_parameters,
             'args': (self.url, )
         }
 

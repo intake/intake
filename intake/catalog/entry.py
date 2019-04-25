@@ -40,31 +40,6 @@ class CatalogEntry(DictSerialiseMixin):
         """
         raise NotImplementedError
 
-    def describe_open(self, **user_parameters):
-        """Get a dictionary describing how to open this data source.
-
-        Parameters
-        ----------
-          user_parameters : dict
-              Values for user-configurable parameters for this data source
-
-        Returns: dict with keys
-          plugin : str
-              Name of data plugin to use
-          container: str
-              Data type returned
-          description : str
-              Markdown-friendly description of data source
-          direct_access : str
-              Mode of remote access: forbid, allow, force
-          metadata : dict
-              Dictionary of metadata defined in the catalog for this data source
-          args: dict
-              Dictionary of keyword arguments for the plugin
-
-        """
-        raise NotImplementedError
-
     def get(self, **user_parameters):
         """Open the data source.
 
@@ -127,25 +102,13 @@ class CatalogEntry(DictSerialiseMixin):
 
     def _ipython_display_(self):
         """Display the entry as a rich object in an IPython session."""
-        contents, warning = self._display_content()
-        display({ # noqa: F821
+        contents = self.describe()
+        display({  # noqa: F821
             'application/json': contents,
             'text/plain': pretty_describe(contents)
         }, metadata={
-            'application/json': { 'root': contents["name"]}
+            'application/json': {'root': contents["name"]}
         }, raw=True)
-        if warning:
-            display(warning) # noqa: F821
-
-    def _display_content(self):
-        """Create a dictionary with content to display in reprs."""
-        contents = deepcopy(self.describe())
-        warning = None
-        try:
-            contents.update(self.describe_open())
-        except ValueError:
-            warning = f'Need an additional plugin to load {contents["name"]}.'
-        return contents, warning
 
     def __getattr__(self, attr):
         if attr in self.__dict__:
@@ -180,7 +143,7 @@ class CatalogEntry(DictSerialiseMixin):
         return self._get_default_source()[item]
 
     def __repr__(self):
-        return "<Catalog Entry: %s>" % self.name
+        return pretty_describe(self.describe())
 
     @property
     def gui(self):
