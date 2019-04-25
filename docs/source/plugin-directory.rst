@@ -16,7 +16,7 @@ contains in parentheses:
 * `intake-dynamodb <https://github.com/informatics-lab/intake-dynamodb>`_ link to Amazon DynamoDB (``dynamodb``)
 * `intake-elasticsearch <https://github.com/intake/intake-elasticsearch>`_: Elasticsearch search and analytics engine (``elasticsearch_seq``, ``elasticsearch_table``)
 * `intake-esm <https://github.com/NCAR/intake-esm>`_:  Plugin for building and loading intake catalogs for earth system data sets holdings, such as `CMIP <https://cmip.llnl.gov/>`_ (Coupled Model Intercomparison Project) and CESM Large Ensemble datasets.
-* `intake-geopandas <https://github.com/informatics-lab/intake_geopandas>`_: load ESRI Shape Files with geopandas (``shape``)
+* `intake-geopandas <https://github.com/informatics-lab/intake_geopandas>`_: load from ESRI Shape Files, GeoJSON, and geospatial databases with geopandas (``geojson``, ``postgis``, ``shapefile``, ``spatialite``).
 * `intake-hbase <https://github.com/intake/intake-hbase>`_: Apache HBase database (``hbase``)
 * `intake-iris <https://github.com/informatics-lab/intake-iris>`_ load netCDF and GRIB files with IRIS (``grib``, ``netcdf``)
 * `intake-mongo <https://github.com/intake/intake-mongo>`_: MongoDB noSQL query (``mongo``)
