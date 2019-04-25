@@ -38,12 +38,14 @@ def test_local_catalog(catalog1):
                        ['use_example1', 'nested', 'entry1', 'entry1_part',
                         'remote_env', 'local_env', 'text', 'arr'])
     assert catalog1['entry1'].describe() == {
+        'name': 'entry1',
         'container': 'dataframe',
         'direct_access': 'forbid',
         'user_parameters': [],
         'description': 'entry1 full'
     }
     assert catalog1['entry1_part'].describe() == {
+        'name': 'entry1_part',
         'container': 'dataframe',
         'user_parameters': [
             {
@@ -286,6 +288,7 @@ def test_union_catalog():
     assert_items_equal(list(union_cat), ['entry1', 'entry1_part', 'use_example1'])
 
     assert union_cat.entry1_part.describe() == {
+        'name': 'entry1_part',
         'container': 'dataframe',
         'user_parameters': [
             {
@@ -308,6 +311,7 @@ def test_union_catalog():
     assert desc_open == {
         'args': {'metadata': {'bar': [2, 4, 6], 'foo': 'baz'}},
         'description': 'entry1 part',
+        'container': 'dataframe',
         'direct_access': 'allow',
         'metadata': {'bar': [2, 4, 6], 'foo': 'baz'},
     }
@@ -650,3 +654,24 @@ def test_no_instance():
 
     # this would error on instantiation with driver not found
     assert e0 != e1
+
+
+def test_display_content(catalog1):
+    entry = catalog1['arr']
+    content, warning = entry._display_content()
+    content['args']['metadata'].pop('catalog_dir') # remove os-dependent paths
+    content['args'].pop('path') # remove os-dependent paths
+    assert warning == None
+    assert content == {
+        'name': 'arr',
+        'container': 'ndarray',
+        'description': 'small array',
+        'direct_access': 'forbid',
+        'user_parameters': [],
+        'plugin': 'numpy',
+        'metadata': {},
+        'args': {
+            'metadata': {},
+            'chunks': 5
+        }
+    }

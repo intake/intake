@@ -34,7 +34,7 @@ def test_full_list():
     out, _ = process.communicate()
     out = out.decode('utf-8')
 
-    assert len(out.strip().split('\n')) == 12
+    assert len(out.strip().split('\n')) == 15
     assert "[entry1]" in out
     assert "[entry1_part]" in out
     assert "[use_example1]" in out
@@ -51,6 +51,7 @@ def test_describe():
 [entry1] container=dataframe
 [entry1] description=entry1 full
 [entry1] direct_access=forbid
+[entry1] name=entry1
 [entry1] user_parameters=[]
 """
 

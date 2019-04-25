@@ -4,18 +4,9 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-from copy import deepcopy
-
 import panel as pn
 from .base import Base
-
-
-def pretty_describe(object, nestedness=0, indent=2):
-    """Maintain dict ordering - but make string version prettier"""
-    if not isinstance(object, dict):
-        return str(object)
-    sep = f'\n{" " * nestedness * indent}'
-    return sep.join((f'{k}: {pretty_describe(v, nestedness + 1)}' for k, v in object.items()))
+from ..utils import pretty_describe
 
 
 class Description(Base):
@@ -76,18 +67,12 @@ class Description(Base):
         """String representation of the source's description"""
         if not self._source:
             return ' ' * 100  # HACK - make sure that area is big
-        contents = deepcopy(self.source.describe())
-        try:
-            extra = deepcopy(self.source.describe_open())
-            contents.update(extra)
-            if 'plots' in contents['metadata']:
-                contents['metadata'].pop('plots')
-            if 'plots' in contents['args'].get('metadata', {}):
-                contents['args']['metadata'].pop('plots')
-            return pretty_describe(contents)
-        except ValueError:
-            warning = f'Need additional plugin to use {self.source._driver} driver'
-            return pretty_describe(contents) + '\n' + warning
+        contents, warning = self.source._display_content()
+        if 'metadata' in contents and 'plots' in contents['metadata']:
+            contents['metadata'].pop('plots')
+        if 'args' in contents and 'plots' in contents['args'].get('metadata', {}):
+            contents['args']['metadata'].pop('plots')
+        return pretty_describe(contents) + ('\n' + warning if warning else '')
 
     @property
     def label(self):

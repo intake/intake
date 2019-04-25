@@ -59,11 +59,12 @@ def test_description_with_fake_driver_shows_missing_plugin_warning(sources1):
     from ..source_view import Description
 
     description = Description(source=sources1[1])
-    assert description.contents == ('container: None\n'
+    assert description.contents == ('name: fake1\n'
+                                    'container: None\n'
                                     'description: \n'
                                     'direct_access: forbid\n'
                                     'user_parameters: []\n'
-                                    'Need additional plugin to use fake driver')
+                                    'Need an additional plugin to load fake1.')
     assert_panel_matches_contents(description)
 
 
@@ -73,6 +74,7 @@ def test_description_source_with_plots(sources2):
     assert description.source == sources2[0]
     catalog_dir = sources2[0].metadata['catalog_dir']
     assert description.contents == (
+        'name: us_crime\n'
         'container: dataframe\n'
         'description: US Crime data [UCRDataTool](https://www.ucrdatatool.gov/Search/Crime/State/StatebyState.cfm)\n'
         'direct_access: forbid\n'

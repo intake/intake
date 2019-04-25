@@ -207,6 +207,7 @@ class LocalCatalogEntry(CatalogEntry):
     def describe(self):
         """Basic information about this entry"""
         return {
+            'name': self._name,
             'container': self._container,
             'description': self._description,
             'direct_access': self._direct_access,
@@ -253,6 +254,7 @@ class LocalCatalogEntry(CatalogEntry):
     def describe_open(self, **user_parameters):
         _, args = self._create_open_args(user_parameters)
         return {
+            'container': self._container,
             'plugin': self._driver,
             'description': self._description,
             'direct_access': self._direct_access,

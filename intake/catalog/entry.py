@@ -5,8 +5,9 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+from copy import deepcopy
 import time
-from ..utils import DictSerialiseMixin
+from ..utils import DictSerialiseMixin, pretty_describe
 from .gui import EntryGUI
 
 
@@ -27,7 +28,8 @@ class CatalogEntry(DictSerialiseMixin):
         """Get a dictionary of attributes of this entry.
 
         Returns: dict with keys
-
+          name: str
+              The name of the catalog entry.
           container : str
               kind of container used by this data source
           description : str
@@ -124,6 +126,28 @@ class CatalogEntry(DictSerialiseMixin):
     def plots(self):
         """List custom associated quick-plots """
         return list(self._metadata.get('plots', {}))
+
+    def _ipython_display_(self):
+        """Display the entry as a rich object in an IPython session."""
+        contents, warning = self._display_content()
+        display({ # noqa: F821
+            'application/json': contents,
+            'text/plain': pretty_describe(contents)
+        }, metadata={
+            'application/json': { 'root': contents["name"]}
+        }, raw=True)
+        if warning:
+            display(warning) # noqa: F821
+
+    def _display_content(self):
+        """Create a dictionary with content to display in reprs."""
+        contents = deepcopy(self.describe())
+        warning = None
+        try:
+            contents.update(self.describe_open())
+        except ValueError:
+            warning = f'Need an additional plugin to load {contents["name"]}.'
+        return contents, warning
 
     def __getattr__(self, attr):
         if attr in self.__dict__:
