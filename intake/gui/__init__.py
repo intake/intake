@@ -13,7 +13,7 @@ try:
 }
 """
 
-    pn.config.raw_css.append('css')  # add scrolling class from css (panel GH#383, GH#384)
+    pn.config.raw_css.append(css)  # add scrolling class from css (panel GH#383, GH#384)
     pn.extension()
 
 except ImportError:

@@ -11,12 +11,8 @@ from functools import partial
 import intake
 import panel as pn
 
-from .base import Base, MAX_WIDTH, BACKGROUND, enable_widget
+from ..base import Base, MAX_WIDTH, enable_widget, ICONS
 
-here = os.path.abspath(os.path.dirname(__file__))
-ICONS = {
-    'error': os.path.join(here, 'icons', 'baseline-error-24px.svg'),
-}
 
 class FileSelector(Base):
     """
@@ -49,7 +45,7 @@ class FileSelector(Base):
     """
     def __init__(self, filters=['yaml', 'yml'], done_callback=None,  **kwargs):
         self.filters = filters
-        self.panel = pn.Column(name='Local', margin=0)
+        self.panel = pn.Column(name='Local', width_policy='max', margin=0)
         self.done_callback = done_callback
         super().__init__(**kwargs)
 
@@ -125,6 +121,21 @@ class FileSelector(Base):
                 elif os.path.isfile(self.url) and self.done_callback:
                     self.done_callback(True)
 
+    def __getstate__(self):
+        """Serialize the current state of the object."""
+        return {
+            'path': self.path,
+            'selected': self.main.value
+        }
+
+    def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
+        self.path_text.value = state['path']
+        self.main.value = state['selected']
+        return self
+
 class URLSelector(Base):
     """
     Panel interface for inputting a URL to a remote catalog
@@ -160,6 +171,16 @@ class URLSelector(Base):
         """URL to remote files (including protocol)"""
         return self.main.value
 
+    def __getstate__(self):
+        """Serialize the current state of the object."""
+        return {'url': self.url}
+
+    def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
+        self.main.value = state['url']
+        return self
 
 class CatAdder(Base):
     """Panel for adding new cats from local file or remote
@@ -184,19 +205,22 @@ class CatAdder(Base):
         watchers that are set on children - cleaned up when visible
         is set to false.
     """
+    tabs = None
 
     def __init__(self, done_callback=None, **kwargs):
         self.done_callback = done_callback
-        self.panel = pn.Column(name='Add Catalog', background=BACKGROUND,
-                               width_policy='max', max_width=MAX_WIDTH, margin=0)
-        super().__init__(**kwargs)
-
-    def setup(self):
+        self.panel = pn.Column(name='Add Catalog',
+                               width_policy='max',
+                               max_width=MAX_WIDTH,
+                               margin=0)
         self.widget = pn.widgets.Button(name='Add Catalog',
                                         disabled=True,
                                         width_policy='min')
         self.fs = FileSelector(done_callback=partial(enable_widget, self.widget))
         self.url = URLSelector()
+        super().__init__(**kwargs)
+
+    def setup(self):
         self.selectors = [self.fs, self.url]
         self.tabs = pn.Tabs(*map(lambda x: x.panel, self.selectors))
         self.validator = pn.pane.SVG(None, width=25)
@@ -239,3 +263,23 @@ class CatAdder(Base):
         self.remove_error()
         if event.new == 1:
             self.widget.disabled = False
+
+    def __getstate__(self):
+        """Serialize the current state of the object"""
+        return {
+            'visible': self.visible,
+            'local': self.fs.__getstate__(),
+            'remote': self.url.__getstate__(),
+            'active': self.tabs.active if self.tabs else 0
+        }
+
+    def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
+        self.fs.__setstate__(state['local'])
+        self.url.__setstate__(state['remote'])
+        self.visible = state.get('visible', True)
+        if self.visible:
+            self.tabs.active = state['active']
+        return self

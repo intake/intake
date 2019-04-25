@@ -1,90 +1,138 @@
 GUI
 ===
 
-Using the Data Browser
-----------------------
+Using the GUI
+-------------
 
-**Note**: the data browser requires ``ipywidgets`` to be available in the current environment
+**Note**: the GUI requires the latest release versions of ``panel`` and ``bokeh`` to
+be available in the current environment.
 
 The Intake top-level singleton ``intake.gui`` gives access to a graphical data browser
 within the Jupyter notebook. To expose it, simply enter it into a code cell (Jupyter
 automatically display the last object in a code cell).
 
-.. image:: _static/images/gui1.png
+.. image:: _static/images/gui_builtin.png
 
-New instances of the GUI are also available by instantiating ``intake.DataBrowser``,
-where you can specify a set of catalogs to initially include.
+New instances of the GUI are also available by instantiating ``intake.GUI``,
+where you can specify a list of catalogs to initially include.
 
+The GUI contains three main areas:
 
-The GUI contains:
-
-- a list of catalogs. The "builtin" catalog, displayed by default, includes data-sets installed
+- a **list of catalogs**. The "builtin" catalog, displayed by default, includes data-sets installed
   in the system, the same as ``intake.cat``.
 
-- a list of entries within the currently-selected catalog. Entries marked with ``" ->"``
-  are themselves catalogs, clicking them will load the catalog and update the left-hand
-  listing. Clicking any other entry will display some basic information in the right-hand text
-  box.
+- a **list of sources** within the currently-selected catalog.
 
-- The following controls:
+- a **description** of the currently-selected source.
 
-  -  Search: opens a sub-panel for finding entries in the currently-selected catalog (and it's
-     sub-catalogs)
 
-  -  Add: opens a sub-panden for adding catalogs to the interface, by either browsing for a local
-     YAML file or by entering a URL for a catalog, which can be a remote file or Intake server
+Catalogs
+--------
+Selecting a catalog from the list will display nested catalogs below the parent and display
+source entries from the catalog in the **list of sources**.
 
-  -  Remove: delete the currently-selected catalog from the list
+Below the **lists of catalogs** is a row of buttons that are used for adding, removing and
+searching-within catalogs:
 
-Search
-~~~~~~
+-  **Add**: opens a sub-panel for adding catalogs to the interface, by either browsing for a local
+   YAML file or by entering a URL for a catalog, which can be a remote file or Intake server
 
-.. image:: _static/images/gui2.png
+-  **Remove**: deletes the currently-selected catalog from the list
 
-The sub-panel opened by the Search button allows for the entry of free-form text. Upon execution
-of the search with the check button, the currently-selected catalog will be searched. Entries will
-be considered to match if any of the entered words is found in the description of the entry (and
-this is case-insensitive). If any entries match, a new entry will be made in the catalog list,
-with the suffix "_search".
-
-Some catalogs can contain nested sub-catalogs. The Depth selector allows the search to be limited
-to the stated number of nesting levels. This may be necessary, since, in theory, catalogs can
-contain circular references, and therefore allow for infinite recursion.
+-  **Search**: opens a sub-panel for finding entries in the currently-selected catalog (and it's
+   sub-catalogs)
 
 Add Catalogs
 ~~~~~~~~~~~~
 
-The Add button exposes a sub-panel with two main ways to add catalogs to the interface
+The Add button (+) exposes a sub-panel with two main ways to add catalogs to the interface
 
-.. image:: _static/images/gui3.png
+.. image:: _static/images/gui_add.png
 
-A *file selector*. Use the folder icon to open this below the main GUI. You can navigate
-around the filesystem, and select the catalog file you need. Use the tick icon to accept
-the selection, or the cross button to close the selector without accepting the selection.
-If accepted, the catalog will appear in the listing, unless parsing of the file fails:
+This panel has a tab to load files from **local** from that you can navigate around the filesystem
+using the arrow or by editting the path directly. Use the home button to get back to the starting
+place. Select the catalog file you need. Use the "Add Catalog" button to add the catalog to the list
+above.
 
-.. image:: _static/images/gui4.png
+.. image:: _static/images/gui_add_local.png
 
-A *URL editor*. Any URL is valid here, including cloud locations, ``"gcs://bucket/..."``, and
-intake servers, ``"intake://server:port"``. Without a protocol specifier, this can be a
-local path. Again, use the check button to accept the value, and attempt to load the file
-into the interface's catalogs list.
+Another tab loads a catalog from **remote**. Any URL is valid here, including cloud locations,
+``"gcs://bucket/..."``, and intake servers, ``"intake://server:port"``. Without a protocol
+specifier, this can be a local path. Again, use the "Add Catalog" button to add
+the catalog to the list above.
 
-.. image:: _static/images/gui5.png
+.. image:: _static/images/gui_add_remote.png
 
-Finally, you can add catalogs to the interface in code, using the ``.add_cat()`` method,
-which can take filenames, remote URLs or an existing ``Catalog`` instance.
+Finally, you can add catalogs to the interface in code, using the ``.add()`` method,
+which can take filenames, remote URLs or existing ``Catalog`` instances.
+
+Remove Catalogs
+~~~~~~~~~~~~~~~
+
+The Remove button (-) deletes the currently-selected catalog from the list. It is important to
+note that this action does not have any impact on files, it only affects what shows up in the list.
+
+.. image:: _static/images/gui_remove.png
+
+Search
+~~~~~~
+
+The sub-panel opened by the Search button (🔍) allows the user to search within the selected catalog
+
+.. image:: _static/images/gui_search.png
+
+From the Search sub-panel the user enters for free-form text. Since come catalogs contain nested sub-catalogs,
+the Depth selector allows the search to be limited to the stated number of nesting levels.
+This may be necessary, since, in theory, catalogs can contain circular references,
+and therefore allow for infinite recursion.
+
+.. image:: _static/images/gui_search_inputs.png
+
+Upon execution of the search, the currently-selected catalog will be searched. Entries will
+be considered to match if any of the entered words is found in the description of the entry (this
+is case-insensitive). If any matches are found, a new entry will be made in the catalog list,
+with the suffix "_search".
+
+.. image:: _static/images/gui_search_cat.png
+
+Sources
+-------
+Selecting a source from the list updates the description text on the left-side of the gui.
+
+Below the **list of sources** is a row of buttons for inspecting the selected data source:
+
+-  **Plot**: opens a sub-panel for viewing the pre-defined (specified in the yaml) plots
+   for the selected source.
+
+Plot
+~~~~
+
+The Plot button (📊) opens a sub-panel with an area for viewing pre-defined plots.
+
+.. image:: _static/images/gui_plot.png
+
+These plots are specified in the catalog yaml and that yaml can be displayed by
+checking the box next to "show yaml".
+
+.. image:: _static/images/gui_plot_yaml.png
+
+The holoviews object can be retrieved from the gui using ``intake.gui.source.plot.pane.object``.
 
 Using the Selection
 -------------------
 
-Once catalogs are loaded and the correct entry has been identified and selected, the item
-in question will be available as the ``.item`` attribute (``intake.gui.item``), which has informational
-methods available and can be opened as a data source, as with any catalog entry:
+Once catalogs are loaded and the desired sources has been identified and selected,
+the selected sources will be available at the ``.sources`` attribute (``intake.gui.sources``).
+Each source entry has informational methods available and can be opened as a data source,
+as with any catalog entry:
 
 .. code-block:: python
 
-   In [ ]: intake.gui.item.describe_open()
+   In [ ]: source_entry = intake.gui.sources[0]
+           source_entry
+   Out   : <Catalog Entry: sea_ice>
+
+   In [ ]: source_entry.describe_open()
    Out   : {'plugin': 'csv',
             'description': 'Arctic/Antarctic Sea Ice',
             'direct_access': 'forbid',
@@ -92,9 +140,9 @@ methods available and can be opened as a data source, as with any catalog entry:
             'args': {'urlpath': 'https://timeseries.weebly.com/uploads/2/1/0/8/21086414/sea_ice.csv',
             'metadata': {}}}
 
-   In [ ]: s = intake.gui.item()  # may specify parameters here
-           s.read()
+   In [ ]: data_source = source_entry()  # may specify parameters here
+           data_source.read()
    Out   : < some data >
 
-   In [ ]: intake.gui.item.plot()  # or skip data source step
+   In [ ]: source_entry.plot()  # or skip data source step
    Out   : < graphics>

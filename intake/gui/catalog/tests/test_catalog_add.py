@@ -15,19 +15,19 @@ def callback(args):
 
 @pytest.fixture
 def file_selector():
-    from ..catalog_add import FileSelector
+    from ..add import FileSelector
     return FileSelector()
 
 
 @pytest.fixture
 def url_selector():
-    from ..catalog_add import URLSelector
+    from ..add import URLSelector
     return URLSelector()
 
 
 @pytest.fixture
 def cat_adder():
-    from ..catalog_add import CatAdder
+    from ..add import CatAdder
     return CatAdder()
 
 

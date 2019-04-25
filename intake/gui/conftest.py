@@ -13,15 +13,15 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 @pytest.fixture
 def cat1_url():
-    return os.path.join(here, 'catalogs', 'catalog1.yaml')
+    return os.path.join(here, 'tests', 'catalogs', 'catalog1.yaml')
 
 @pytest.fixture
 def cat2_url():
-    return os.path.join(here, 'catalogs', 'catalog2.yaml')
+    return os.path.join(here, 'tests', 'catalogs', 'catalog2.yaml')
 
 @pytest.fixture
 def parent_cat_url():
-    return os.path.join(here, 'catalogs', 'parent.yaml')
+    return os.path.join(here, 'tests', 'catalogs', 'parent.yaml')
 
 @pytest.fixture
 def cat1(cat1_url):
@@ -37,7 +37,7 @@ def parent_cat(parent_cat_url):
 
 @pytest.fixture
 def cat_browser(cat1):
-    from ..source_select import CatSelector
+    from .catalog.select import CatSelector
     return CatSelector(cats=[cat1])
 
 @pytest.fixture
@@ -50,5 +50,5 @@ def sources2(cat2):
 
 @pytest.fixture
 def source_browser(sources1):
-    from ..source_select import SourceSelector
+    from .source.select import SourceSelector
     return SourceSelector(sources=sources1)

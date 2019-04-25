@@ -4,83 +4,14 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
+from copy import deepcopy
+
 import panel as pn
-from .base import Base
-from ..utils import pretty_describe
+from ..base import BaseView
+from ...utils import pretty_describe
 
 
-class Description(Base):
-    """
-    Class for displaying a textual description of a data source.
-
-    Parameters
-    ----------
-    source: intake catalog entry, or list of same
-        source to describe in this object
-
-    Attributes
-    ----------
-    contents: str
-        string representation of the source's description
-    label: str
-        label to display at top of panel - contains name of source
-    children: list of panel objects
-        children that will be used to populate the panel when visible
-    panel: panel layout object
-        instance of a panel layout (row or column) that contains children
-        when visible
-    watchers: list of param watchers
-        watchers that are set on children - cleaned up when visible
-        is set to false.
-    """
-    main_pane = None
-    label_pane = None
-
-    def __init__(self, source=None, **kwargs):
-        self.source = source
-        self.panel = pn.Column(name='Description', sizing_mode='stretch_width', margin=0)
-        super().__init__(**kwargs)
-
-    def setup(self):
-        self.main_pane = pn.pane.Str(self.contents, sizing_mode='stretch_width',
-                                     css_classes=['scrolling'], height=200)
-        self.label_pane = pn.pane.Markdown(self.label)
-        self.children = [self.label_pane, self.main_pane]
-
-    @property
-    def source(self):
-        return self._source
-
-    @source.setter
-    def source(self, source):
-        """When the source gets updated, update the pane object"""
-        if isinstance(source, list):
-            # if source is a list, get first item or None
-            source = source[0] if len(source) > 0 else None
-        self._source = source
-        if self.main_pane:
-            self.main_pane.object = self.contents
-            self.label_pane.object = self.label
-
-    @property
-    def contents(self):
-        """String representation of the source's description"""
-        if not self._source:
-            return ' ' * 100  # HACK - make sure that area is big
-        contents, warning = self.source._display_content()
-        if 'metadata' in contents and 'plots' in contents['metadata']:
-            contents['metadata'].pop('plots')
-        if 'args' in contents and 'plots' in contents['args'].get('metadata', {}):
-            contents['args']['metadata'].pop('plots')
-        return pretty_describe(contents) + ('\n' + warning if warning else '')
-
-    @property
-    def label(self):
-        """Label to display at top of panel"""
-        return f'####Entry: {self.source._name}' if self.source else None
-
-
-class DefinedPlots(Base):
+class DefinedPlots(BaseView):
     """
     Panel for displaying pre-defined plots from catalog.
 
@@ -91,8 +22,6 @@ class DefinedPlots(Base):
 
     Attributes
     ----------
-    plot: holoviews object
-        plot object displayed in plot_pane
     has_plots: bool
         whether the source has plots defined
     instructions_contents: str
@@ -111,18 +40,24 @@ class DefinedPlots(Base):
         is set to false.
     """
     select = None
+    show_desc = None
 
     def __init__(self, source=None, **kwargs):
         self.source = source
-        self.panel = pn.Column(name='Plot', margin=0)
+        self.panel = pn.Column(name='Plot', width_policy='max', margin=0)
+        self._show_yaml = False
         super().__init__(**kwargs)
 
     def setup(self):
-        self.instructions = pn.pane.Markdown(self.instructions_contents)
-        self.select = pn.widgets.Select(options=self.options)
+        self.instructions = pn.pane.Markdown(
+            self.instructions_contents, align='center', width_policy='max')
+        self.select = pn.widgets.Select(options=self.options, height=30,
+                                        align='center', width=200)
         self.desc = pn.pane.Str()
         self.pane = pn.pane.HoloViews(self._plot_object(self.selected))
-        self.show_desc = pn.widgets.Checkbox(value=False, width_policy='min')
+        self.show_desc = pn.widgets.Checkbox(value=False,
+                                             width_policy='min',
+                                             align='center')
 
         self.watchers = [
             self.select.param.watch(self.callback, ['options','value']),
@@ -130,8 +65,8 @@ class DefinedPlots(Base):
         ]
 
         self.children = [
-            self.instructions,
             pn.Row(
+                self.instructions,
                 self.select,
                 self.show_desc,
                 "show yaml",
@@ -141,16 +76,17 @@ class DefinedPlots(Base):
         ]
 
     @property
-    def source(self):
-        return self._source
+    def show_yaml(self):
+        return self.show_desc.value if self.show_desc else self._show_yaml
 
-    @source.setter
+    @show_yaml.setter
+    def show_yaml(self, show):
+        self.show_desc.value = show
+
+    @BaseView.source.setter
     def source(self, source):
-        """When the source gets updated, update the select widget"""
-        if isinstance(source, list):
-            # if source is a list, get first item or None
-            source = source[0] if len(source) > 0 else None
-        self._source = source
+        """When the source gets updated, update the the options in the selector"""
+        BaseView.source.fset(self, source)
         if self.select:
             self.select.options = self.options
 
@@ -190,11 +126,6 @@ class DefinedPlots(Base):
             if event.name == 'options':
                 self.instructions.object = self.instructions_contents
 
-    @property
-    def plot(self):
-        """Holoviews plot object displayed in plot_pane"""
-        return self.plot_pane.object
-
     def _plot_object(self, selected):
         if selected:
             plot_method = getattr(self.source.plot, selected)
@@ -211,3 +142,24 @@ class DefinedPlots(Base):
             self.desc.object = self._desc_contents(self.selected)
         else:
             self.desc.object = None
+
+
+    def __getstate__(self, include_source=True):
+        """Serialize the current state of the object. Set include_source
+        to False when using with another panel that will include source."""
+        state = super().__getstate__(include_source)
+        state.update({
+            'selected': self.selected,
+            'show_yaml': self.show_yaml,
+        })
+        return state
+
+    def __setstate__(self, state):
+        """Set the current state of the object from the serialized version.
+        Works inplace. See ``__getstate__`` to get serialized version and
+        ``from_state`` to create a new object."""
+        super().__setstate__(state)
+        if self.visible:
+            self.selected = state.get('selected')
+            self.show_yaml = state.get('show_yaml', False)
+        return self

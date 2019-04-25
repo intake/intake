@@ -25,7 +25,6 @@ from .remote import RemoteCatalogEntry
 from .utils import flatten, reload_on_change, RemoteCatalogError
 from ..source.base import DataSource
 from ..compat import unpack_kwargs
-from .gui import CatalogGUI
 logger = logging.getLogger('intake')
 
 
@@ -114,7 +113,6 @@ class Catalog(DataSource):
         self.updated = time.time()
         self._entries = self._make_entries_container()
         self.force_reload()
-        self._gui = CatalogGUI(cat=self, visible=False)
 
     @classmethod
     def from_dict(cls, entries, **kwargs):
@@ -415,7 +413,11 @@ class Catalog(DataSource):
 
     @property
     def gui(self):
-        self._gui.visible = True
+        if not hasattr(self, '_gui'):
+            from .gui import CatalogGUI
+            self._gui = CatalogGUI(cat=self, visible=True)
+        else:
+            self._gui.visible = True
         return self._gui
 
 

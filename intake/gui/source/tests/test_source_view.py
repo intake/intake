@@ -10,7 +10,7 @@ pn = pytest.importorskip('panel')
 
 @pytest.fixture
 def description(sources1):
-    from ..source_view import Description
+    from ..description import Description
     return Description(source=sources1[0])
 
 
@@ -36,7 +36,7 @@ def test_description_set_source(description, sources1, sources2):
 
 
 def test_description_set_source_from_list(sources2):
-    from ..source_view import Description
+    from ..description import Description
     description = Description()
     description.source = sources2
     assert description.source == sources2[0]
@@ -56,7 +56,7 @@ def test_description_clears_if_visible_is_set_to_false(description):
 
 
 def test_description_with_fake_driver_shows_missing_plugin_warning(sources1):
-    from ..source_view import Description
+    from ..description import Description
 
     description = Description(source=sources1[1])
     assert description.contents == ('name: fake1\n'
@@ -69,7 +69,7 @@ def test_description_with_fake_driver_shows_missing_plugin_warning(sources1):
 
 
 def test_description_source_with_plots(sources2):
-    from ..source_view import Description
+    from ..description import Description
     description = Description(source=sources2[0])
     assert description.source == sources2[0]
     catalog_dir = sources2[0].metadata['catalog_dir']
@@ -96,7 +96,7 @@ def assert_is_empty(plots, visible=True):
         assert plots.instructions.object == plots.instructions_contents
         assert plots.desc.object is None
         assert plots.pane.object is None
-        assert len(plots.children) == 4
+        assert len(plots.children) == 3
         assert isinstance(plots.children[-1], pn.pane.HoloViews)
         assert plots.panel.objects == plots.children
         assert len(plots.watchers) == 2
@@ -120,7 +120,7 @@ def assert_plotting_source2_0_line(plots, visible=True, desc=False):
         else:
             assert plots.desc.object == None
         assert plots.pane.object is not None
-        assert len(plots.children) == 4
+        assert len(plots.children) == 3
         assert isinstance(plots.children[-1], pn.pane.HoloViews)
         assert plots.panel.objects == plots.children
         assert len(plots.watchers) == 2
@@ -133,7 +133,7 @@ def assert_plotting_source2_0_line(plots, visible=True, desc=False):
 @pytest.fixture
 def defined_plots(sources2):
     pytest.importorskip('hvplot')
-    from ..source_view import DefinedPlots
+    from ..defined_plots import DefinedPlots
     return DefinedPlots(source=sources2[0])
 
 
@@ -147,7 +147,7 @@ def test_defined_plots_toggle_desc(defined_plots, sources2):
 
 def test_defined_plots_init_empty_and_not_visible_set_source(sources2):
     pytest.importorskip('hvplot')
-    from ..source_view import DefinedPlots
+    from ..defined_plots import DefinedPlots
     defined_plots = DefinedPlots(source=[], visible=False)
     defined_plots.source = sources2
     assert defined_plots.source == sources2[0]
@@ -156,7 +156,7 @@ def test_defined_plots_init_empty_and_not_visible_set_source(sources2):
 
 def test_defined_plots_init_with_source_not_visible_make_visible(sources2):
     pytest.importorskip('hvplot')
-    from ..source_view import DefinedPlots
+    from ..defined_plots import DefinedPlots
     defined_plots = DefinedPlots(source=sources2, visible=False)
     defined_plots.source = sources2
     assert defined_plots.source == sources2[0]
@@ -167,13 +167,13 @@ def test_defined_plots_init_with_source_not_visible_make_visible(sources2):
 
 
 def test_defined_plots_init_empty_and_visible():
-    from ..source_view import DefinedPlots
+    from ..defined_plots import DefinedPlots
     defined_plots = DefinedPlots()
     assert_is_empty(defined_plots, visible=True)
 
 
 def test_defined_plots_init_empty_and_not_visible():
-    from ..source_view import DefinedPlots
+    from ..defined_plots import DefinedPlots
     defined_plots = DefinedPlots(visible=False)
     assert_is_empty(defined_plots, visible=False)
 
