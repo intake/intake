@@ -209,7 +209,7 @@ class LocalCatalogEntry(CatalogEntry):
         return {
             'name': self._name,
             'container': self._container,
-            'driver': str(self._plugin),
+            'plugin': str(self._plugin),
             'description': self._description,
             'direct_access': self._direct_access,
             'user_parameters': [u.describe() for u in self._user_parameters],

@@ -22,7 +22,7 @@ class RemoteCatalogEntry(CatalogEntry):
     def __init__(self, url, auth, name=None, user_parameters=None,
                  container=None, description='', metadata=None,
                  http_args=None, page_size=None, direct_access=False,
-                 getenv=True, getshell=True):
+                 getenv=True, getshell=True, **kwags):
         """
 
         Parameters

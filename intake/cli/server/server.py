@@ -269,7 +269,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             client_plugins = request.get('available_plugins', [])
 
             # Can the client directly access the data themselves?
-            open_desc = entry.describe_open(**user_parameters)
+            open_desc = entry.describe()
             direct_access = open_desc['direct_access']
             plugin_name = open_desc['plugin']
             client_has_plugin = plugin_name in client_plugins

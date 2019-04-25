@@ -654,24 +654,3 @@ def test_no_instance():
 
     # this would error on instantiation with driver not found
     assert e0 != e1
-
-
-def test_display_content(catalog1):
-    entry = catalog1['arr']
-    content, warning = entry._display_content()
-    content['args']['metadata'].pop('catalog_dir') # remove os-dependent paths
-    content['args'].pop('path') # remove os-dependent paths
-    assert warning == None
-    assert content == {
-        'name': 'arr',
-        'container': 'ndarray',
-        'description': 'small array',
-        'direct_access': 'forbid',
-        'user_parameters': [],
-        'plugin': 'numpy',
-        'metadata': {},
-        'args': {
-            'metadata': {},
-            'chunks': 5
-        }
-    }
