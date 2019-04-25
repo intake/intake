@@ -7,7 +7,8 @@
 from copy import deepcopy
 
 import panel as pn
-from ..base import BaseView, pretty_describe
+from ..base import BaseView
+from ...utils import pretty_describe
 
 
 class DefinedPlots(BaseView):

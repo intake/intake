@@ -34,14 +34,6 @@ def coerce_to_list(items, preprocess=None):
     return items
 
 
-def pretty_describe(object, nestedness=0, indent=2):
-    """Maintain dict ordering - but make string version prettier"""
-    if not isinstance(object, dict):
-        return str(object)
-    sep = f'\n{" " * nestedness * indent}'
-    return sep.join((f'{k}: {pretty_describe(v, nestedness + 1)}' for k, v in object.items()))
-
-
 class Base(object):
     """
     Base class for composable panel objects that make up the GUI.

@@ -11,7 +11,7 @@ import intake
 from intake.utils import remake_instance
 import panel as pn
 
-from ..base import BaseSelector, coerce_to_list
+from ..base import BaseSelector
 
 
 class CatSelector(BaseSelector):
