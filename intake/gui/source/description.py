@@ -62,10 +62,6 @@ class Description(BaseView):
         if not self._source:
             return ' ' * 100  # HACK - make sure that area is big
         contents, warning = self.source._display_content()
-        if 'metadata' in contents and 'plots' in contents['metadata']:
-            contents['metadata'].pop('plots')
-        if 'args' in contents and 'plots' in contents['args'].get('metadata', {}):
-            contents['args']['metadata'].pop('plots')
         return pretty_describe(contents) + ('\n' + warning if warning else '')
 
     @property

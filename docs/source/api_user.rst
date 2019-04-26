@@ -13,7 +13,7 @@ These are reference class and function definitions likely to be useful to everyo
    intake.source.zarr.ZarrArraySource
    intake.catalog.local.YAMLFileCatalog
    intake.catalog.local.YAMLFilesCatalog
-   intake.gui.DataBrowser
+   intake.gui.GUI
 
 .. autofunction::
    intake.open_catalog
@@ -47,5 +47,5 @@ These are reference class and function definitions likely to be useful to everyo
 .. autoclass:: intake.catalog.local.YAMLFilesCatalog
    :members: __init__, reload, search, walk, persist, export
 
-.. autoclass:: intake.gui.DataBrowser
+.. autoclass:: intake.gui.GUI
    :members:
