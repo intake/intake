@@ -73,18 +73,7 @@ def test_description_source_with_plots(sources2):
     description = Description(source=sources2[0])
     assert description.source == sources2[0]
     catalog_dir = sources2[0].metadata['catalog_dir']
-    assert description.contents == (
-        'name: us_crime\n'
-        'container: dataframe\n'
-        'description: US Crime data [UCRDataTool](https://www.ucrdatatool.gov/Search/Crime/State/StatebyState.cfm)\n'
-        'direct_access: forbid\n'
-        'user_parameters: []\n'
-        'plugin: csv\n'
-        'metadata: \n'
-        'args: \n'
-        '  metadata: \n'
-        f'    catalog_dir: {catalog_dir}\n'
-        f'  urlpath: {catalog_dir}../data/crime.csv')
+    assert 'plots' in description.contents
     assert_panel_matches_contents(description)
 
 
