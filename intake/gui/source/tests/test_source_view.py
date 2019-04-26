@@ -71,6 +71,7 @@ def test_description_source_with_plots(sources2):
         'args:\nurlpath: {{ CATALOG_DIR }}../data/crime.csv').split('\n')
     for line in lines:
         assert line in description.contents
+    assert 'plots' in description.contents
     assert_panel_matches_contents(description)
 
 
