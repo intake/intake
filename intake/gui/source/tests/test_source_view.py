@@ -59,7 +59,6 @@ def test_description_source_with_plots(sources2):
     from ..description import Description
     description = Description(source=sources2[0])
     assert description.source == sources2[0]
-    catalog_dir = sources2[0].metadata['catalog_dir']
     assert description.contents == (
         'name: us_crime\n'
         'container: dataframe\n'
