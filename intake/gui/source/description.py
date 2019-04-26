@@ -61,8 +61,8 @@ class Description(BaseView):
         """String representation of the source's description"""
         if not self._source:
             return ' ' * 100  # HACK - make sure that area is big
-        contents, warning = self.source._display_content()
-        return pretty_describe(contents) + ('\n' + warning if warning else '')
+        contents = self.source.describe()
+        return pretty_describe(contents)
 
     @property
     def label(self):

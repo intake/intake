@@ -21,7 +21,7 @@ from ..source import registry as global_registry
 from ..source import get_plugin_class
 from ..source.discovery import load_plugins_from_module
 from .utils import expand_defaults, coerce, COERCION_RULES, merge_pars
-from ..utils import yaml_load, DictSerialiseMixin, make_path_posix
+from ..utils import yaml_load, DictSerialiseMixin, make_path_posix, classname
 
 logger = logging.getLogger('intake')
 
@@ -206,12 +206,21 @@ class LocalCatalogEntry(CatalogEntry):
 
     def describe(self):
         """Basic information about this entry"""
+        if isinstance(self._plugin, list):
+            pl = [p.name for p in self._plugin]
+        elif isinstance(self._plugin, dict):
+            pl = {k: classname(v) for k, v in self._plugin.items()}
+        else:
+            pl = self._plugin if isinstance(self._plugin, str) else self._plugin.name
         return {
             'name': self._name,
             'container': self._container,
+            'plugin': pl,
             'description': self._description,
             'direct_access': self._direct_access,
-            'user_parameters': [u.describe() for u in self._user_parameters]
+            'user_parameters': [u.describe() for u in self._user_parameters],
+            'metadata': self._metadata,
+            'args': self._open_args
         }
 
     def _create_open_args(self, user_parameters):
@@ -250,17 +259,6 @@ class LocalCatalogEntry(CatalogEntry):
                 raise ValueError('Attempt to select not available plugin %s, '
                                  'perhaps import of plugin failed' % plugin)
         return plugin, open_args
-
-    def describe_open(self, **user_parameters):
-        _, args = self._create_open_args(user_parameters)
-        return {
-            'container': self._container,
-            'plugin': self._driver,
-            'description': self._description,
-            'direct_access': self._direct_access,
-            'metadata': self._metadata,
-            'args': args
-        }
 
     def get(self, **user_parameters):
         """Instantiate the DataSource for the given parameters"""

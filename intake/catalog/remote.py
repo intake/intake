@@ -22,7 +22,7 @@ class RemoteCatalogEntry(CatalogEntry):
     def __init__(self, url, auth, name=None, user_parameters=None,
                  container=None, description='', metadata=None,
                  http_args=None, page_size=None, direct_access=False,
-                 getenv=True, getshell=True):
+                 getenv=True, getshell=True, **kwags):
         """
 
         Parameters
@@ -55,24 +55,15 @@ class RemoteCatalogEntry(CatalogEntry):
         super(RemoteCatalogEntry, self).__init__(getenv=getenv,
                                                  getshell=getshell)
 
-    @property
-    def kwargs(self):
-        return dict(name=self.name,
-                    container=self.container, description=self.description,
-                    direct_access=self._direct_access,
-                    user_parameters=self._user_parameters
-                    )
-
     def describe(self):
-        return self.kwargs
-
-    def describe_open(self, **kwargs):
         return {
+            'name': self.name,
             'container': self.container,
-            'plugin': None,
+            'plugin': "remote",
             'description': self.description,
             'direct_access': self._direct_access,
             'metadata': self._metadata,
+            'user_parameters': self._user_parameters,
             'args': (self.url, )
         }
 
@@ -115,10 +106,19 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
         response = msgpack.unpackb(req.content, **unpack_kwargs)
 
         if 'plugin' in response:
+            pl = response['plugin']
+            pl = [pl] if isinstance(pl, str) else pl
             # Direct access
-            source = plugin_registry[response['plugin']](**response['args'])
+            for p in pl:
+                if p in plugin_registry:
+                    source = plugin_registry[p](**response['args'])
+                    proxy = False
+                    break
+            else:
+                proxy = True
         else:
-            # Proxied access
+            proxy = True
+        if proxy:
             response.pop('container')
             response.update({'name': entry, 'parameters': user_parameters})
             if container == 'catalog':

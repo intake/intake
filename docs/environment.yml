@@ -1,11 +1,11 @@
 name: intake
 channels:
   - defaults
-  - intake
   - conda-forge
 
 dependencies:
   - appdirs
+  - cloudpickle
   - python=3.6
   - dask
   - numpy
@@ -19,7 +19,7 @@ dependencies:
   - python-snappy
   - pyyaml
   - holoplot
-  - pip:
-    - sphinx
-    - sphinx-rtd-theme
-    - numpydoc
+  - sphinx
+  - sphinx_rtd_theme
+  - numpydoc
+  - panel >=0.5.0

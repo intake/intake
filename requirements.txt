@@ -11,6 +11,5 @@ pandas
 python-snappy
 pyyaml
 requests
-six
 toolz
 tornado >=4.5.1

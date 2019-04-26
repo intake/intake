@@ -269,9 +269,14 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             client_plugins = request.get('available_plugins', [])
 
             # Can the client directly access the data themselves?
-            open_desc = entry.describe_open(**user_parameters)
+            open_desc = entry.describe()
             direct_access = open_desc['direct_access']
             plugin_name = open_desc['plugin']
+            if isinstance(plugin_name, list):
+                for pl in plugin_name:
+                    if pl in client_plugins:
+                        plugin_name = pl
+                        break
             client_has_plugin = plugin_name in client_plugins
 
             if direct_access == 'forbid' or \
@@ -301,9 +306,10 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                                             reason=msg)
             else:
                 # If we get here, the client can access the source directly
-                response = dict(
-                    plugin=plugin_name, args=open_desc['args'],
-                    description=open_desc['description'])
+                # some server-side args need to be parsed
+                response = open_desc
+                user_parameters['plugin'] = plugin_name
+                response['args'] = (entry._create_open_args(user_parameters)[1])
                 self.write(msgpack.packb(response, use_bin_type=True))
                 self.finish()
 

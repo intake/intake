@@ -28,13 +28,15 @@ def test_info_describe(intake_server):
 
     info = catalog['entry1'].describe()
 
-    assert info == {
+    expected = {
         'container': 'dataframe',
         'description': 'entry1 full',
         'name': 'entry1',
         'direct_access': 'forbid',
         'user_parameters': []
     }
+    for k in expected:
+        assert info[k] == expected[k]
 
     info = catalog['entry1_part'].describe()
 
@@ -424,19 +426,3 @@ def test_len(intake_server):
     remote_catalog = Catalog(intake_server)
     local_catalog = Catalog(TEST_CATALOG_PATH)
     assert sum(1 for entry in local_catalog) == len(remote_catalog)
-
-def test_display_content(intake_server):
-    remote_catalog = Catalog(intake_server)
-    entry = remote_catalog['arr']
-    content, warning = entry._display_content()
-    assert warning == None
-    assert content == {
-        'name': 'arr',
-        'container': 'ndarray',
-        'description': 'small array',
-        'direct_access': 'forbid',
-        'user_parameters': [],
-        'plugin': None,
-        'metadata': {},
-        'args': ('http://localhost:7483/',)
-    }

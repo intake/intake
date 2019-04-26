@@ -42,7 +42,10 @@ def test_local_catalog(catalog1):
         'container': 'dataframe',
         'direct_access': 'forbid',
         'user_parameters': [],
-        'description': 'entry1 full'
+        'description': 'entry1 full',
+        'args': {'urlpath': '{{ CATALOG_DIR }}/entry1_*.csv'},
+        'metadata': {'bar': [1, 2, 3], 'foo': 'bar'},
+        'plugin': ['csv']
     }
     assert catalog1['entry1_part'].describe() == {
         'name': 'entry1_part',
@@ -57,7 +60,10 @@ def test_local_catalog(catalog1):
             }
         ],
         'description': 'entry1 part',
-        'direct_access': 'allow'
+        'direct_access': 'allow',
+        'args': {'urlpath': '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'},
+        'metadata': {'foo': 'baz', 'bar': [2, 4, 6]},
+        'plugin': ['csv']
     }
     assert catalog1['entry1'].get().container == 'dataframe'
     md = catalog1['entry1'].get().metadata
@@ -69,8 +75,9 @@ def test_local_catalog(catalog1):
     # Specify parameters
     assert catalog1['entry1_part'].get(part='2').container == 'dataframe'
 
+
 def test_get_items(catalog1):
-    for key,entry in catalog1.items():
+    for key, entry in catalog1.items():
         assert catalog1[key].describe() == entry.describe()
 
 
@@ -287,7 +294,7 @@ def test_union_catalog():
 
     assert_items_equal(list(union_cat), ['entry1', 'entry1_part', 'use_example1'])
 
-    assert union_cat.entry1_part.describe() == {
+    expected = {
         'name': 'entry1_part',
         'container': 'dataframe',
         'user_parameters': [
@@ -302,19 +309,8 @@ def test_union_catalog():
         'description': 'entry1 part',
         'direct_access': 'allow'
     }
-
-    desc_open = union_cat.entry1_part.describe_open()
-    assert desc_open['args']['urlpath'].endswith('entry1_1.csv')
-    del desc_open['args']['urlpath']  # Full path will be system dependent
-    desc_open['args']['metadata'].pop('catalog_dir')
-    assert 'csv' in str(desc_open.pop('plugin'))
-    assert desc_open == {
-        'args': {'metadata': {'bar': [2, 4, 6], 'foo': 'baz'}},
-        'description': 'entry1 part',
-        'container': 'dataframe',
-        'direct_access': 'allow',
-        'metadata': {'bar': [2, 4, 6], 'foo': 'baz'},
-    }
+    for k in expected:
+        assert union_cat.entry1_part.describe()[k] == expected[k]
 
     # Implied creation of data source
     assert union_cat.entry1.container == 'dataframe'
@@ -654,24 +650,3 @@ def test_no_instance():
 
     # this would error on instantiation with driver not found
     assert e0 != e1
-
-
-def test_display_content(catalog1):
-    entry = catalog1['arr']
-    content, warning = entry._display_content()
-    content['args']['metadata'].pop('catalog_dir') # remove os-dependent paths
-    content['args'].pop('path') # remove os-dependent paths
-    assert warning == None
-    assert content == {
-        'name': 'arr',
-        'container': 'ndarray',
-        'description': 'small array',
-        'direct_access': 'forbid',
-        'user_parameters': [],
-        'plugin': 'numpy',
-        'metadata': {},
-        'args': {
-            'metadata': {},
-            'chunks': 5
-        }
-    }
