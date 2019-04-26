@@ -59,7 +59,7 @@ def test_description_source_with_plots(sources2):
     from ..description import Description
     description = Description(source=sources2[0])
     assert description.source == sources2[0]
-    assert description.contents == (
+    lines = (
         'name: us_crime\n'
         'container: dataframe\n'
         "plugin: ['csv']\n"
@@ -68,7 +68,9 @@ def test_description_source_with_plots(sources2):
         'direct_access: forbid\n'
         'user_parameters: []\n'
         'metadata: \n'
-        'args: urlpath: {{ CATALOG_DIR }}../data/crime.csv')
+        'args:\nurlpath: {{ CATALOG_DIR }}../data/crime.csv').split('\n')
+    for line in lines:
+        assert line in description.contents
     assert_panel_matches_contents(description)
 
 
