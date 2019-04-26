@@ -81,7 +81,7 @@ The sub-panel opened by the Search button (🔍) allows the user to search withi
 
 .. image:: _static/images/gui_search.png
 
-From the Search sub-panel the user enters for free-form text. Since come catalogs contain nested sub-catalogs,
+From the Search sub-panel the user enters for free-form text. Since some catalogs contain nested sub-catalogs,
 the Depth selector allows the search to be limited to the stated number of nesting levels.
 This may be necessary, since, in theory, catalogs can contain circular references,
 and therefore allow for infinite recursion.
@@ -130,15 +130,16 @@ as with any catalog entry:
 
    In [ ]: source_entry = intake.gui.sources[0]
            source_entry
-   Out   : <Catalog Entry: sea_ice>
-
-   In [ ]: source_entry.describe_open()
-   Out   : {'plugin': 'csv',
-            'description': 'Arctic/Antarctic Sea Ice',
-            'direct_access': 'forbid',
-            'metadata': {},
-            'args': {'urlpath': 'https://timeseries.weebly.com/uploads/2/1/0/8/21086414/sea_ice.csv',
-            'metadata': {}}}
+   Out   :
+   name: sea_ice_origin
+   container: dataframe
+   plugin: ['csv']
+   description: Arctic/Antarctic Sea Ice
+   direct_access: forbid
+   user_parameters: []
+   metadata:
+   args:
+     urlpath: https://timeseries.weebly.com/uploads/2/1/0/8/21086414/sea_ice.csv
 
    In [ ]: data_source = source_entry()  # may specify parameters here
            data_source.read()
