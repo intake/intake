@@ -127,7 +127,7 @@ class TestServerV1Source(TestServerV1Base):
 
         self.assertTrue('csv' in resp_msg['plugin'])
         args = resp_msg['args']
-        assert set(args) == {'urlpath'}
+        assert 'urlpath' in args
         self.assertTrue(args['urlpath'].endswith('/entry1_2.csv'))
         md = resp_msg['metadata']
         md.pop('catalog_dir', None)

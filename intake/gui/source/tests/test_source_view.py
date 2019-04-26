@@ -63,13 +63,13 @@ def test_description_source_with_plots(sources2):
     assert description.contents == (
         'name: us_crime\n'
         'container: dataframe\n'
-        'description: US Crime data [UCRDataTool](https://www.ucrdatatool.gov/Search/Crime/State/StatebyState.cfm)\n'
+        "plugin: ['csv']\n"
+        'description: US Crime data [UCRDataTool](https://www.ucrdatatool.gov'
+        '/Search/Crime/State/StatebyState.cfm)\n'
         'direct_access: forbid\n'
         'user_parameters: []\n'
-        'plugin: [csv]\n'
         'metadata: \n'
-        f'args: metadata: catalog_dir: {catalog_dir}\n'
-        f'  urlpath: {catalog_dir}../data/crime.csv')
+        'args: urlpath: {{ CATALOG_DIR }}../data/crime.csv')
     assert_panel_matches_contents(description)
 
 

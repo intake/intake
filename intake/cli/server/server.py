@@ -306,7 +306,10 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                                             reason=msg)
             else:
                 # If we get here, the client can access the source directly
+                # some server-side args need to be parsed
                 response = open_desc
+                user_parameters['plugin'] = plugin_name
+                response['args'] = (entry._create_open_args(user_parameters)[1])
                 self.write(msgpack.packb(response, use_bin_type=True))
                 self.finish()
 
