@@ -60,6 +60,12 @@ More specific examples of Intake functionality
       [`Static <https://github.com/jsignell/intake-blog/blob/master/path-as-pattern/csv.ipynb>`__]
       [`Executable <https://mybinder.org/v2/gh/jsignell/intake-blog/master?filepath=path-as-pattern%2Fcsv.ipynb>`__]
 
+- Custom catalogs:
+
+    - A custom intake plugin that adapts DCAT catalogs
+      [`Static <https://github.com/CityOfLosAngeles/intake-dcat/blob/master/examples/demo.ipynb>`__]
+      [`Executable <https://mybinder.org/v2/gh/CityOfLosAngeles/intake-dcat/master?urlpath=lab%2Ftree%2Fexamples%2Fdemo.ipynb>`__]
+
 Blogs
 -----
 
