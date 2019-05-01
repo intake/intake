@@ -9,7 +9,6 @@ recursive-include intake/source/tests/plugin_searchpath *.py
 recursive-include docs/source *
 include docs/Makefile docs/make.bat
 
-recursive-include examples *
 recursive-include templates *
 
 include versioneer.py
