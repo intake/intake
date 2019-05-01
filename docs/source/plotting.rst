@@ -50,7 +50,8 @@ For detailed instructions on displaying plots in the notebook and from the Pytho
 Python Command Prompt & Scripts
 --------------------------------
 
-Assuming the US Crime dataset has been installed (in this repo's `examples/` directory, or from
+Assuming the US Crime dataset has been installed (in the
+`intake-examples repo <https://github.com/intake/intake-examples>`_, or from
 conda with `conda install -c intake us_crime`):
 
 Once installed the plot API can be used, by using the ``.plot`` method on an intake ``DataSource``:
@@ -152,7 +153,7 @@ cryptic names with underscores. They also do not provide additional information 
 range of values, therefore the catalog yaml specification also provides the ability to define additional information
 about the `fields` in a dataset.
 
-Valid attributes that may be defined for the data `fields` include: 
+Valid attributes that may be defined for the data `fields` include:
 
 - `label`: A readable label for the field which will be used to label axes and widgets
 - `unit`: A unit associated with the values inside a data field

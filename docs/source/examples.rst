@@ -9,10 +9,10 @@ Many of the entries here include a link to Binder, which a service that lest you
 code live in a notebook environment. This is a great way to experience using Intake.
 It can take a while, sometimes, for Binder to come up, please have patience.
 
-See also the `example data`_ page, containing data-sets which can be built and installed
+See also the `examples`_ repository, containing data-sets which can be built and installed
 as conda packages.
 
-.. _example data: https://github.com/intake/intake/tree/master/examples
+.. _examples: https://github.com/intake/intake-examples/
 
 
 General
