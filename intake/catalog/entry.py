@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 from copy import deepcopy
+import functools
 import time
 from ..utils import DictSerialiseMixin, pretty_describe
 
@@ -54,7 +55,9 @@ class CatalogEntry(DictSerialiseMixin):
           user_parameters : dict
               Values for user-configurable parameters for this data source
 
-        Returns: DataSource
+        Returns
+        -------
+        DataSource
         """
         raise NotImplementedError
 
@@ -88,7 +91,9 @@ class CatalogEntry(DictSerialiseMixin):
 
     def _get_default_source(self):
         """Instantiate DataSource with default agruments"""
-        return self()
+        if self._default_source is None:
+            self._default_source = self()
+        return self._default_source
 
     @property
     def has_been_persisted(self, **kwargs):
@@ -102,8 +107,9 @@ class CatalogEntry(DictSerialiseMixin):
 
     def _ipython_display_(self):
         """Display the entry as a rich object in an IPython session."""
+        from IPython.display import display
         contents = self.describe()
-        display({  # noqa: F821
+        display({
             'application/json': contents,
             'text/plain': pretty_describe(contents)
         }, metadata={
