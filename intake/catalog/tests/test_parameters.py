@@ -21,8 +21,8 @@ def test_simplest():
 
 def test_is_cached():
     e = LocalCatalogEntry('', '', driver, args={'arg1': 1})
-    s1 = e()
-    s2 = e()
+    s1 = e._get_default_source()
+    s2 = e._get_default_source()
     assert s1 is s2
 
 

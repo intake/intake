@@ -61,7 +61,6 @@ class CatalogEntry(DictSerialiseMixin):
         """
         raise NotImplementedError
 
-    @functools.lru_cache(1)
     def __call__(self, persist=None, **kwargs):
         """Instantiate DataSource with given user arguments
 
@@ -92,7 +91,9 @@ class CatalogEntry(DictSerialiseMixin):
 
     def _get_default_source(self):
         """Instantiate DataSource with default agruments"""
-        return self()
+        if self._default_source is None:
+            self._default_source = self()
+        return self._default_source
 
     @property
     def has_been_persisted(self, **kwargs):
@@ -108,7 +109,7 @@ class CatalogEntry(DictSerialiseMixin):
         """Display the entry as a rich object in an IPython session."""
         from IPython.display import display
         contents = self.describe()
-        display({  # noqa: F821
+        display({
             'application/json': contents,
             'text/plain': pretty_describe(contents)
         }, metadata={
