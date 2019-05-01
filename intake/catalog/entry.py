@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 from copy import deepcopy
+import functools
 import time
 from ..utils import DictSerialiseMixin, pretty_describe
 
@@ -54,10 +55,13 @@ class CatalogEntry(DictSerialiseMixin):
           user_parameters : dict
               Values for user-configurable parameters for this data source
 
-        Returns: DataSource
+        Returns
+        -------
+        DataSource
         """
         raise NotImplementedError
 
+    @functools.lru_cache(1)
     def __call__(self, persist=None, **kwargs):
         """Instantiate DataSource with given user arguments
 
@@ -102,6 +106,7 @@ class CatalogEntry(DictSerialiseMixin):
 
     def _ipython_display_(self):
         """Display the entry as a rich object in an IPython session."""
+        from IPython.display import display
         contents = self.describe()
         display({  # noqa: F821
             'application/json': contents,

@@ -19,6 +19,13 @@ def test_simplest():
     assert s.kwargs['arg1'] == 1
 
 
+def test_is_cached():
+    e = LocalCatalogEntry('', '', driver, args={'arg1': 1})
+    s1 = e()
+    s2 = e()
+    assert s1 is s2
+
+
 def test_parameter_default():
     up = UserParameter('name', default='oi')
     e = LocalCatalogEntry('', '', driver, args={'arg1': "{{name}}"},
