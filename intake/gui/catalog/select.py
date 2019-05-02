@@ -94,7 +94,8 @@ class CatSelector(BaseSelector):
         right = '└──'
 
         def get_children(parent):
-            return [e() for e in parent._entries.values() if e._container == 'catalog']
+            return [e() for k, e in parent.items()
+                    if e.describe()['container'] == 'catalog']
 
         if len(cats) == 0:
             return
