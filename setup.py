@@ -7,10 +7,23 @@
 #-----------------------------------------------------------------------------
 
 from setuptools import setup, find_packages
+import sys
 import versioneer
 
 requires = [line.strip() for line in open('requirements.txt').readlines()
             if not line.startswith("#")]
+extras_require = {
+  'server': ['tornado', 'python-snappy'],
+  'plot': ['hvplot', 'panel >= 0.5.1'],
+  'dataframe': ['dask[dataframe]'],
+}
+extras_require['complete'] = sorted(set(sum(extras_require.values(), [])))
+
+# Only include pytest-runner in setup_requires if we're invoking tests
+if {'pytest', 'test', 'ptr'}.intersection(sys.argv):
+    setup_requires = ['pytest-runner']
+else:
+    setup_requires = []
 
 setup(
     name='intake',
@@ -39,5 +52,7 @@ setup(
     python_requires=">=3.6",
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
+    tests_require=['pytest'],
+    extras_require=extras_require,
     zip_safe=False,
 )
