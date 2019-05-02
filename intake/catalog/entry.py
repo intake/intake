@@ -6,7 +6,6 @@
 #-----------------------------------------------------------------------------
 
 from copy import deepcopy
-import functools
 import time
 from ..utils import DictSerialiseMixin, pretty_describe
 
