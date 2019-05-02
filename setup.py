@@ -15,7 +15,7 @@ requires = [line.strip() for line in open('requirements.txt').readlines()
 extras_require = {
   'server': ['tornado', 'python-snappy'],
   'plot': ['hvplot', 'panel >= 0.5.1'],
-  'dataframe': ['dask[dataframe]'],
+  'dataframe': ['dask[dataframe]', 'msgpack-numpy'],
 }
 extras_require['complete'] = sorted(set(sum(extras_require.values(), [])))
 

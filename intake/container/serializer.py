@@ -37,14 +37,19 @@ class GzipCompressor(object):
             return f.read()
 
 
+try:
+    import msgpack_numpy
+except ImportError:
+    msgpack_numpy = None
+
+
 class MsgPackSerializer(object):
     # TODO: This is ugly, should maybe transition to
     #  distributed.protocol.serialize
     name = 'msgpack'
 
     def encode(self, obj, container):
-        if container in ['ndarray', 'xarray']:
-            import msgpack_numpy
+        if container in ['ndarray', 'xarray'] and msgpack_numpy:
             return msgpack.packb(obj, default=msgpack_numpy.encode)
         elif container == 'dataframe':
             return obj.to_msgpack()
@@ -53,8 +58,7 @@ class MsgPackSerializer(object):
 
     def decode(self, bytestr, container):
         from ..compat import unpack_kwargs
-        if container in ['ndarray', 'xarray']:
-            import msgpack_numpy
+        if container in ['ndarray', 'xarray'] and msgpack_numpy:
             return msgpack.unpackb(bytestr, object_hook=msgpack_numpy.decode)
         elif container == 'dataframe':
             import pandas as pd
@@ -91,6 +95,7 @@ class ComboSerializer(object):
             self._compressor.decompress(bytestr), container)
 
 
+compressors = [GzipCompressor(), NoneCompressor()]
 try:
     import snappy
 
@@ -105,10 +110,9 @@ try:
             return snappy.decompress(data)
 
 
-    compressors = [SnappyCompressor(), GzipCompressor(),
-                   NoneCompressor()]
+    compressors.insert(0, SnappyCompressor())
 except ImportError:
-    compressors = [GzipCompressor(), NoneCompressor()]
+    pass
 
 
 # Insert in preference order
