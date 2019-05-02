@@ -15,6 +15,7 @@ import re
 import time
 import warnings
 
+import msgpack
 import requests
 from requests.compat import urljoin, urlparse
 

@@ -33,7 +33,7 @@ matrix:
       install:
         - sudo apt update
         - sudo apt install libsnappy-dev
-        - pip install -e .
+        - pip install -e .[complete]
         - pip install pytest
       script:
         - pytest

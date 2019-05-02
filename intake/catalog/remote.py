@@ -92,6 +92,7 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
                 page_size=None, auth=None, getenv=None, getshell=None):
     """Create either local direct data source or remote streamed source"""
     from intake.container import container_map
+    import msgpack
     if url.startswith('intake://'):
         url = url[len('intake://'):]
     payload = dict(action='open',
