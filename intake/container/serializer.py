@@ -10,7 +10,6 @@ import gzip
 import io
 import pickle
 
-import snappy
 import msgpack
 
 
@@ -36,16 +35,6 @@ class GzipCompressor(object):
     def decompress(self, data):
         with gzip.GzipFile(fileobj=io.BytesIO(data)) as f:
             return f.read()
-
-
-class SnappyCompressor(object):
-    name = 'snappy'
-
-    def compress(self, data):
-        return snappy.compress(data)
-
-    def decompress(self, data):
-        return snappy.decompress(data)
 
 
 class MsgPackSerializer(object):
@@ -102,10 +91,28 @@ class ComboSerializer(object):
             self._compressor.decompress(bytestr), container)
 
 
+try:
+    import snappy
+
+
+    class SnappyCompressor(object):
+        name = 'snappy'
+
+        def compress(self, data):
+            return snappy.compress(data)
+
+        def decompress(self, data):
+            return snappy.decompress(data)
+
+
+    compressors = [SnappyCompressor(), GzipCompressor(),
+                   NoneCompressor()]
+except ImportError:
+    compressors = [GzipCompressor(), NoneCompressor()]
+
+
 # Insert in preference order
 picklers = [PickleSerializer(protocol) for protocol in [2, 1]]
 serializers = [MsgPackSerializer()] + picklers
 format_registry = OrderedDict([(e.name, e) for e in serializers])
-
-compressors = [SnappyCompressor(), GzipCompressor(), NoneCompressor()]
 compression_registry = OrderedDict([(e.name, e) for e in compressors])

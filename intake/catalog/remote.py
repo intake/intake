@@ -8,7 +8,6 @@
 import msgpack
 import requests
 from requests.compat import urljoin
-import six
 
 from ..source import registry as plugin_registry
 from .entry import CatalogEntry
@@ -71,7 +70,7 @@ class RemoteCatalogEntry(CatalogEntry):
         for par in self._user_parameters:
             if par['name'] not in user_parameters:
                 default = par['default']
-                if isinstance(default, six.string_types):
+                if isinstance(default, str):
                     default = coerce(par['type'], expand_defaults(
                         par['default'], True, self.getenv, self.getshell))
                 user_parameters[par['name']] = default
