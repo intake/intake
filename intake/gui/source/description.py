@@ -67,4 +67,4 @@ class Description(BaseView):
     @property
     def label(self):
         """Label to display at top of panel"""
-        return f'#### Source: {self.source._name}' if self.source else None
+        return f'#### Source: {self.source.describe()["name"]}' if self.source else None
