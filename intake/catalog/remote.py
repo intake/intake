@@ -8,7 +8,6 @@
 import msgpack
 import requests
 from requests.compat import urljoin
-import six
 
 from ..source import registry as plugin_registry
 from .entry import CatalogEntry
@@ -71,7 +70,7 @@ class RemoteCatalogEntry(CatalogEntry):
         for par in self._user_parameters:
             if par['name'] not in user_parameters:
                 default = par['default']
-                if isinstance(default, six.string_types):
+                if isinstance(default, str):
                     default = coerce(par['type'], expand_defaults(
                         par['default'], True, self.getenv, self.getshell))
                 user_parameters[par['name']] = default
@@ -93,6 +92,7 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
                 page_size=None, auth=None, getenv=None, getshell=None):
     """Create either local direct data source or remote streamed source"""
     from intake.container import container_map
+    import msgpack
     if url.startswith('intake://'):
         url = url[len('intake://'):]
     payload = dict(action='open',

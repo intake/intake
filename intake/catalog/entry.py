@@ -5,8 +5,6 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from copy import deepcopy
-import functools
 import time
 from ..utils import DictSerialiseMixin, pretty_describe
 

@@ -10,7 +10,6 @@ import gzip
 import io
 import pickle
 
-import snappy
 import msgpack
 
 
@@ -38,14 +37,10 @@ class GzipCompressor(object):
             return f.read()
 
 
-class SnappyCompressor(object):
-    name = 'snappy'
-
-    def compress(self, data):
-        return snappy.compress(data)
-
-    def decompress(self, data):
-        return snappy.decompress(data)
+try:
+    import msgpack_numpy
+except ImportError:
+    msgpack_numpy = None
 
 
 class MsgPackSerializer(object):
@@ -54,8 +49,7 @@ class MsgPackSerializer(object):
     name = 'msgpack'
 
     def encode(self, obj, container):
-        if container in ['ndarray', 'xarray']:
-            import msgpack_numpy
+        if container in ['ndarray', 'xarray'] and msgpack_numpy:
             return msgpack.packb(obj, default=msgpack_numpy.encode)
         elif container == 'dataframe':
             return obj.to_msgpack()
@@ -64,8 +58,7 @@ class MsgPackSerializer(object):
 
     def decode(self, bytestr, container):
         from ..compat import unpack_kwargs
-        if container in ['ndarray', 'xarray']:
-            import msgpack_numpy
+        if container in ['ndarray', 'xarray'] and msgpack_numpy:
             return msgpack.unpackb(bytestr, object_hook=msgpack_numpy.decode)
         elif container == 'dataframe':
             import pandas as pd
@@ -102,10 +95,28 @@ class ComboSerializer(object):
             self._compressor.decompress(bytestr), container)
 
 
+compressors = [GzipCompressor(), NoneCompressor()]
+try:
+    import snappy
+
+
+    class SnappyCompressor(object):
+        name = 'snappy'
+
+        def compress(self, data):
+            return snappy.compress(data)
+
+        def decompress(self, data):
+            return snappy.decompress(data)
+
+
+    compressors.insert(0, SnappyCompressor())
+except ImportError:
+    pass
+
+
 # Insert in preference order
 picklers = [PickleSerializer(protocol) for protocol in [2, 1]]
 serializers = [MsgPackSerializer()] + picklers
 format_registry = OrderedDict([(e.name, e) for e in serializers])
-
-compressors = [SnappyCompressor(), GzipCompressor(), NoneCompressor()]
 compression_registry = OrderedDict([(e.name, e) for e in compressors])

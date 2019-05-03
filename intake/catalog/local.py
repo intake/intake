@@ -10,7 +10,6 @@ import os
 import posixpath
 
 from jinja2 import Template
-import six
 from dask.bytes import open_files
 
 from .. import __version__
@@ -102,7 +101,7 @@ class UserParameter(DictSerialiseMixin):
     def expand_defaults(self, client=False, getenv=True, getshell=True):
         """Compile env, client_env, shell and client_shell commands
         """
-        if not isinstance(self._default, six.string_types):
+        if not isinstance(self._default, str):
             self.expanded_default = self._default
         else:
             self.expanded_default = coerce(self.type, expand_defaults(

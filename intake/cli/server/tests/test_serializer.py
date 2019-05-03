@@ -9,7 +9,6 @@ import os.path
 
 import pytest
 import numpy as np
-import pandas as pd
 
 from intake.container import serializer
 
@@ -22,6 +21,7 @@ all_compressors = pytest.mark.parametrize(
 
 @all_serializers
 def test_dataframe(ser):
+    pd = pytest.importorskip('pandas')
     csv_filename = os.path.join(os.path.dirname(__file__), 'entry1_1.csv')
     expected_df = pd.read_csv(csv_filename)
 

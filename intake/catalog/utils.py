@@ -14,8 +14,6 @@ import shlex
 import subprocess
 import sys
 
-import six
-
 
 def flatten(iterable):
     """Flatten an arbitrarily deep list"""
@@ -27,7 +25,7 @@ def flatten(iterable):
         except StopIteration:
             break
 
-        if isinstance(item, six.string_types):
+        if isinstance(item, str):
             yield item
             continue
 
@@ -80,7 +78,7 @@ def _expand(p, context, all_vars, client, getenv, getshell):
     elif isinstance(p, (list, tuple, set)):
         return type(p)(_expand(v, context, all_vars, client, getenv, getshell)
                        for v in p)
-    elif isinstance(p, six.string_types):
+    elif isinstance(p, str):
         jinja = Environment()
         if getenv and not client:
             jinja.globals['env'] = _j_getenv
@@ -230,7 +228,7 @@ def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True,
     for par in spec_pars:
         val = user_inputs.get(par.name, par.default)
         if val is not None:
-            if isinstance(val, six.string_types):
+            if isinstance(val, str):
                 val = expand_defaults(val, getenv=getenv, getshell=getshell,
                                       client=client)
             context[par.name] = par.validate(val)
@@ -269,7 +267,7 @@ COERCION_RULES = {
     'int': int,
     'list': list,
     'str': str,
-    'unicode': six.text_type
+    'unicode': str
 }
 
 

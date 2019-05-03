@@ -12,7 +12,6 @@ import keyword
 import logging
 import posixpath
 import re
-import six
 import time
 import warnings
 
@@ -449,7 +448,7 @@ class Entries(collections.abc.Mapping):
         self.complete = self._catalog.page_size is None
 
     def __iter__(self):
-        for key in six.iterkeys(self._page_cache):
+        for key in self._page_cache:
             yield key
         if self._catalog.page_size is None:
             # We are not paginating, either because the user set page_size=None
@@ -461,7 +460,7 @@ class Entries(collections.abc.Mapping):
             page = self._catalog.fetch_page(self._page_offset)
             self._page_cache.update(page)
             self._page_offset += len(page)
-            for key in six.iterkeys(page):
+            for key in page:
                 yield key
             if len(page) < self._catalog.page_size:
                 # Partial or empty page.
@@ -474,9 +473,9 @@ class Entries(collections.abc.Mapping):
         """
         Iterate over items that are already cached. Perform no requests.
         """
-        for item in six.iteritems(self._page_cache):
+        for item in self._page_cache.items():
             yield item
-        for item in six.iteritems(self._direct_lookup_cache):
+        for item in self._direct_lookup_cache.items():
             yield item
 
     def __getitem__(self, key):
@@ -606,9 +605,9 @@ class RemoteCatalog(Catalog):
         try:
             response.raise_for_status()
         except requests.HTTPError as err:
-            six.raise_from(RemoteCatalogError(
+            raise RemoteCatalogError(
                 "Failed to fetch page of entries {}-{}."
-                "".format(page_offset, page_offset + self._page_size)), err)
+                "".format(page_offset, page_offset + self._page_size)) from err
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         page = {}
         for source in info['sources']:
@@ -635,8 +634,8 @@ class RemoteCatalog(Catalog):
         try:
             response.raise_for_status()
         except requests.HTTPError as err:
-            six.raise_from(RemoteCatalogError(
-                "Failed to fetch entry {!r}.".format(name)), err)
+            raise RemoteCatalogError(
+                "Failed to fetch entry {!r}.".format(name)) from err
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         return RemoteCatalogEntry(
             url=self.url,
@@ -689,8 +688,8 @@ class RemoteCatalog(Catalog):
         try:
             response.raise_for_status()
         except requests.HTTPError as err:
-            six.raise_from(RemoteCatalogError(
-                "Failed to fetch metadata."), err)
+            raise RemoteCatalogError(
+                "Failed to fetch metadata.") from err
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         self.metadata = info['metadata']
         # The intake server now always provides a length, but the server may be
@@ -723,7 +722,7 @@ class RemoteCatalog(Catalog):
         try:
             response.raise_for_status()
         except requests.HTTPError as err:
-            six.raise_from(RemoteCatalogError("Failed search query."), err)
+            raise RemoteCatalogError("Failed search query.") from err
         source = msgpack.unpackb(response.content, **unpack_kwargs)
         source_id = source['source_id']
         cat = RemoteCatalog(
