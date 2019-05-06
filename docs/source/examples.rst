@@ -93,3 +93,10 @@ Talks
 .. _ESIP tech dive (November 2018): https://www.youtube.com/watch?v=PSD7r3JFml0&feature=youtu.be
 .. _PyData DC (November 2018): https://www.youtube.com/watch?v=OvZFtePHKXw
 .. _PyData NYC (October 2018): https://www.youtube.com/watch?v=pjkMmJQfTb8
+
+News
+----
+
+- See out `Wiki`_ page
+
+.. _Wiki: https://github.com/intake/intake/wiki/Community-News
