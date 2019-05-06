@@ -21,14 +21,16 @@ requirements:
     - python
     - jinja2
   run:
-    - python
+    - python >=3.6
     - numpy
-
-    {% for dep in data['install_requires'] %}
-    {% if "ruamel.yaml" not in dep %}
-    - {{ dep.lower() }}
-    {% endif %}
-    {% endfor %}
+    - msgpack-python
+    - msgpack-numpy
+    - requests
+    - tornado >=4.5.1
+    - jinja2
+    - pyyaml
+    - dask >=1.0
+    - appdirs
 
 test:
   requires:

@@ -6,7 +6,6 @@
 [![Coverage Status](https://coveralls.io/repos/github/intake/intake/badge.svg?branch=master)](https://coveralls.io/github/intake/intake?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/intake/badge/?version=latest)](http://intake.readthedocs.io/en/latest/?badge=latest)
 [![Join the chat at https://gitter.im/ContinuumIO/intake](https://badges.gitter.im/ContinuumIO/intake.svg)](https://gitter.im/ContinuumIO/intake?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Waffle.io - Columns and their card count](https://badge.waffle.io/intake/intake.svg?columns=all)](https://waffle.io/intake/intake)
 
 
 Intake is a lightweight set of tools for loading and sharing data in data science projects.
@@ -21,6 +20,9 @@ Documentation is available at [Read the Docs](http://intake.readthedocs.io/en/la
 
 Status of intake and related packages is available at [Status Dashboard](https://intake.github.io/status)
 
+Weekly news about this repo and other related projects can be found on the
+[wiki](https://github.com/intake/intake/wiki/Community-News) 
+
 Install
 -------
 
@@ -29,10 +31,28 @@ Recommended method using conda:
 conda install -c conda-forge intake
 ```
 
+You can also install using `pip`, in which case you have a choice as to how many of the optional
+dependencies you install, with the simplest having least requirements
 
-Development Environment
-----------------------------
- * Create development Python environment.
- * `pip install -r requirements.txt`
- * `python setup.py develop`
- * Verify development environment by running the unit tests with `py.test`.
+```bash
+pip install intake
+```
+
+and additional sections `[server]`, `[plot]` and `[dataframe]`, or to include everything:
+
+```bash
+pip install intake[complete]
+```
+
+Note that you may well need specific drivers and other plugins, which usually have additional 
+dependencies of their own. 
+
+Development
+-----------
+ * Create development Python environment, ideally with `conda`. The requirements can be found in the
+   recipe in the `conda/` directory of this repo or in the sister 
+   [feedstock](https://github.com/conda-forge/intake-feedstock)
+ * Install using `pip install -e .[complete]`
+ * Add `pytest` to the environment to be able to run tests
+ * Create a fork on github to be able to submit PRs.
+ * We respect, but do not enforce, pep8 standards; all new code should be covered by tests.
