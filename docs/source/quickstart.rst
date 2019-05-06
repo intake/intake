@@ -18,6 +18,9 @@ If you are using virtualenv/pip, run the following command::
 
     pip install intake
 
+Note that this will install with the mininum of optional requirements. If you want a more complete
+install, use `intake[complete]` instead.
+
 .. _Anaconda: https://www.anaconda.com/download/
 
 Creating Sample Data
