@@ -10,6 +10,9 @@ rather aims to whet the appetite for what Intake can be in the future.
 Since Intake aims to be a community of data-oriented pythoneers, nothing written here is laid in
 stone, and users and devs are encouraged to make their opinions known!
 
+See also the [wiki page](https://github.com/intake/intake/wiki/Community-News) on latest Intake
+community news.
+
 Broaden the coverage of formats
 -------------------------------
 
@@ -18,6 +21,7 @@ impetus to get the work done. Conversations over the coming months can help dete
 drivers that should be created by the Intake team, and those that might be contributed by the
 community.
 
+The next type that we would specifically like to consider is machine learning model artefacts.
 
 Streaming Source
 ----------------
@@ -30,37 +34,27 @@ The most obvious place to start would be read a file: every time a new line appe
 is emitted. This is appropriate, for instance, for watching the log files of a web-server, and indeed could
 be extended to read from an arbitrary socket.
 
+Streamz has seen renewed development recently and a new version is coming soon.
 
-Persistence
------------
+GUI interactive plotting
+------------------------
 
-Intake is not in the business or *writing* data. However, each of the container types do lend themselves
-to a particular on-disc format, wherever they came from. This proposal is to allow for a persist method
-on every source, which loads the data and saves it to a configured storage location (local or remote),
-and automatically adds an entry to some "persisted data" catalog. Such entries may be time-restricted and
-eventually expire, or perhaps automatically renew themselves.
+The new `Panel`-based GUI can act as a standalone data catalog browser. It has the ability,
+currently, to display the "builtin" plots included with the data source specification (which
+are generally interactive). We would
+like to develop more arbitrary interactions, so the user can choose the type of plot (or
+data table) to show,
+the fields to build from and display options for various data types; and this should include
+options on how to sample from the data.
 
-This is the counterpart to caching, which involves making local copies of remote files. Here we can save
-anything, for example the output of an expensive SQL query.
+It would be good to be able to save these hand-made plot definitions into the catalogs containing
+the data source specs.
 
+Server publish hooks
+--------------------
 
-Next-generation GUI
--------------------
-
-The jupyter-widgets GUI is useful and simple, but we can do better. See the `long form proposal`_.
-
-.. _long form proposal: https://github.com/intake/intake/issues/225
-
-
-Catalog services
-----------------
-
-We are experimenting with reflecting external catalog-like data servers as Intake catalogs, so that the
-familiar API can be used for all the disparate services. See for example `this discussion`_.
-
-.. _this discussion: https://github.com/intake/intake/issues/224
-
-Use DAT as a cache service
---------------------------
-
-The [DAT protocol](https://datproject.org/)
+To add API endpoints to the server, so that a user (with sufficient privilege) can post data
+specifications to a running server, optionally saving the specs to a catalog server-side. Furthermore,
+we will consider the possibility of being able to upload and/or transform data
+(rather than refer to it in a third-party location), so that you would have a one-line "publish"
+ability from the client.
