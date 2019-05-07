@@ -46,3 +46,15 @@ like to develop more arbitrary interactions, so the user can choose the type of 
 data table) to show,
 the fields to build from and display options for various data types; and this should include
 options on how to sample from the data.
+
+It would be good to be able to save these hand-made plot definitions into the catalogs containing
+the data source specs.
+
+Server publish hooks
+--------------------
+
+To add API endpoints to the server, so that a user (with sufficient privilege) can post data
+specifications to a running server, optionally saving the specs to a catalog server-side. Furthermore,
+we will consider the possibility of being able to upload and/or transform data
+(rather than refer to it in a third-party location), so that you would have a one-line "publish"
+ability from the client.
