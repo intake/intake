@@ -11,7 +11,7 @@ from . import base, import_name
 class TextFilesSource(base.DataSource):
     """Read textfiles as sequence of lines
 
-    Protype of sources reading sequential data.
+    Prototype of sources reading sequential data.
 
     Takes a set of files, and returns an iterator over the text in each of them.
     The files can be local or remote. Extra parameters for encoding, etc.,
