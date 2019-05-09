@@ -86,6 +86,7 @@ These are Intake-related articles that may be of interest.
 Talks
 -----
 
+- `AnacondaCon (March 2019)`_
 - `PyData DC (November 2018)`_
 - `PyData NYC (October 2018)`_
 - `ESIP tech dive (November 2018)`_
@@ -93,6 +94,7 @@ Talks
 .. _ESIP tech dive (November 2018): https://www.youtube.com/watch?v=PSD7r3JFml0&feature=youtu.be
 .. _PyData DC (November 2018): https://www.youtube.com/watch?v=OvZFtePHKXw
 .. _PyData NYC (October 2018): https://www.youtube.com/watch?v=pjkMmJQfTb8
+.. _Anacondacon (March 2019): https://www.youtube.com/watch?v=oyZJrROQzUs
 
 News
 ----
