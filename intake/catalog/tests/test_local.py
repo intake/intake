@@ -559,6 +559,17 @@ def test_no_plugins():
     assert 'doesnotexist' in str(e.value)
 
 
+def test_explicit_entry_driver():
+    from intake.source.textfiles import TextFilesSource
+    e = LocalCatalogEntry('test', 'desc', TextFilesSource,
+                          args={'urlpath': None})
+    assert e.describe()['container'] == 'python'
+    assert isinstance(e(), TextFilesSource)
+
+    with pytest.raises(TypeError):
+        LocalCatalogEntry('test', 'desc', None)
+
+
 def test_getitem_and_getattr():
     fn = abspath('multi_plugins.yaml')
     catalog = open_catalog(fn)

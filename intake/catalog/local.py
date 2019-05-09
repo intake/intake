@@ -5,6 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import inspect
 import logging
 import os
 import posixpath
@@ -13,7 +14,7 @@ from jinja2 import Template
 from dask.bytes import open_files
 
 from .. import __version__
-from .base import Catalog
+from .base import Catalog, DataSource
 from . import exceptions
 from .entry import CatalogEntry
 from ..source import registry as global_registry
@@ -142,8 +143,12 @@ class LocalCatalogEntry(CatalogEntry):
             file name is 'catalog.yaml' or 'catalog.yml'.
         description: str
             Brief text about the target source
-        driver: str
-            Name of the plugin that can load this
+        driver: str, list, dict or DataSource subclass
+            The plugin(s) that can load this. Can be a simple name like "csv",
+            which will be looked up in the registry, a fully-qualified class
+            name ("package.mod.Class"), a list of these which would all work,
+            a dictionary of the same with reasonable names, or an explicit
+            class derived from DataSource.
         direct_access: bool
             Is the client allowed to attempt to reach this data
         args: dict
@@ -185,6 +190,12 @@ class LocalCatalogEntry(CatalogEntry):
             self._plugin = {k: v for k, v in self._plugin.items()
                             if v is not None}
             containers = set(p.container for p in self._plugin.values())
+        elif inspect.isclass(driver) and issubclass(driver, DataSource):
+            self._plugin = [driver]
+            containers = {driver.container}
+        else:
+            raise TypeError('Driver was not a string, list, dict or DataSource:'
+                            ' %s' % driver)
         if len(containers) > 1:
             # this is an error, because cat is poorly specified, even if other
             # plugins are OK
