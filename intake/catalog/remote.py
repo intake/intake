@@ -5,10 +5,6 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-import msgpack
-import requests
-from requests.compat import urljoin
-
 from ..source import registry as plugin_registry
 from .entry import CatalogEntry
 from .utils import expand_defaults, coerce
@@ -93,6 +89,9 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
     """Create either local direct data source or remote streamed source"""
     from intake.container import container_map
     import msgpack
+    import requests
+    from requests.compat import urljoin
+
     if url.startswith('intake://'):
         url = url[len('intake://'):]
     payload = dict(action='open',
