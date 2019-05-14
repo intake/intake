@@ -207,8 +207,22 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             if self.auth.allow_access(head, source, self._catalog):
                 info = source.describe()
                 info['name'] = name
+
                 source_info = dict(source=info)
-                self.write(msgpack.packb(source_info, use_bin_type=True))
+                try:
+                    out = msgpack.packb(source_info, use_bin_type=True)
+                except TypeError:
+                    info['direct_access'] = 'forbid'
+                    args = {}
+                    for k, v in info['args'].items():
+                        try:
+                            msgpack.packb(v, use_bin_type=True)
+                            args[k] = v
+                        except TypeError:
+                            args[k] = 'UNSERIALIZABLE_VALUE'
+                    out = msgpack.packb(dict(source=source_info),
+                                        use_bin_type=True)
+                self.write(out)
                 return
 
         msg = 'Access forbidden'
