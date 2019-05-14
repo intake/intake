@@ -16,8 +16,6 @@ import time
 import warnings
 
 import msgpack
-import requests
-from requests.compat import urljoin, urlparse
 
 from ..auth.base import BaseClientAuth
 from .remote import RemoteCatalogEntry
@@ -537,6 +535,7 @@ class RemoteCatalog(Catalog):
         parameters: dict
             To pass to the server when it instantiates the data source
         """
+        from requests.compat import urljoin, urlparse
         if http_args is None:
             http_args = {}
         else:
@@ -594,6 +593,7 @@ class RemoteCatalog(Catalog):
         return self._page_size
 
     def fetch_page(self, page_offset):
+        import requests
         logger.debug("Request page entries %d-%d",
                      page_offset, page_offset + self._page_size)
         params = {'page_offset': page_offset,
@@ -625,6 +625,7 @@ class RemoteCatalog(Catalog):
         return page
 
     def fetch_by_name(self, name):
+        import requests
         logger.debug("Requesting info about entry named '%s'", name)
         params = {'name': name}
         http_args = self._get_http_args(params)
@@ -676,6 +677,7 @@ class RemoteCatalog(Catalog):
         # fetch sources from the server in paginated blocks when this Catalog
         # is iterated over. It will fetch specific sources when they are
         # accessed in this Catalog via __getitem__.
+        import requests
 
         if self.page_size is None:
             # Fetch all source info.
@@ -714,6 +716,7 @@ class RemoteCatalog(Catalog):
                  for source in info['sources']})
 
     def search(self, *args, **kwargs):
+        import requests
         request = {'action': 'search', 'query': (args, kwargs),
                    'source_id': self._source_id}
         response = requests.post(
