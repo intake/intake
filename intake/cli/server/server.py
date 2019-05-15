@@ -112,6 +112,11 @@ class ServerInfoHandler(tornado.web.RequestHandler):
                 if self.auth.allow_access(head, source, self.catalog):
                     info = source.describe()
                     info['name'] = name
+                    for k, v in info['args'].copy().items():
+                        try:
+                            msgpack.packb(v, use_bin_type=True)
+                        except TypeError:
+                            info['args'][k] = 'UNSERIALIZABLE_VALUE'
                     sources.append(info)
             try:
                 length = len(cat)
