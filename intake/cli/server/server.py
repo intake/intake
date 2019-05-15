@@ -218,6 +218,9 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                     out = msgpack.packb(source_info, use_bin_type=True)
                 except TypeError:
                     info['direct_access'] = 'forbid'
+                    # One copy to avoid mutating internal state held by source
+                    source_info['source']['args'] = source_info['source']['args'].copy()
+                    # Another copy to avoid mutating during iteration
                     for k, v in source_info['source']['args'].copy().items():
                         try:
                             msgpack.packb(v, use_bin_type=True)
