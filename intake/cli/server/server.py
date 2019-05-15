@@ -218,13 +218,11 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                     out = msgpack.packb(source_info, use_bin_type=True)
                 except TypeError:
                     info['direct_access'] = 'forbid'
-                    args = {}
-                    for k, v in info['args'].items():
+                    for k, v in source_info['source']['args'].copy().items():
                         try:
                             msgpack.packb(v, use_bin_type=True)
-                            args[k] = v
                         except TypeError:
-                            args[k] = 'UNSERIALIZABLE_VALUE'
+                            source_info['source']['args'][k] = 'UNSERIALIZABLE_VALUE'
                     out = msgpack.packb(dict(source=source_info),
                                         use_bin_type=True)
                 self.write(out)
