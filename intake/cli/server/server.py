@@ -223,7 +223,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                             msgpack.packb(v, use_bin_type=True)
                         except TypeError:
                             source_info['source']['args'][k] = 'UNSERIALIZABLE_VALUE'
-                    out = msgpack.packb(dict(source=source_info),
+                    out = msgpack.packb(source_info,
                                         use_bin_type=True)
                 self.write(out)
                 return
