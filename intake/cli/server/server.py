@@ -112,6 +112,11 @@ class ServerInfoHandler(tornado.web.RequestHandler):
                 if self.auth.allow_access(head, source, self.catalog):
                     info = source.describe()
                     info['name'] = name
+                    for k, v in info['args'].copy().items():
+                        try:
+                            msgpack.packb(v, use_bin_type=True)
+                        except TypeError:
+                            info['args'][k] = 'UNSERIALIZABLE_VALUE'
                     sources.append(info)
             try:
                 length = len(cat)
@@ -207,8 +212,23 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             if self.auth.allow_access(head, source, self._catalog):
                 info = source.describe()
                 info['name'] = name
+
                 source_info = dict(source=info)
-                self.write(msgpack.packb(source_info, use_bin_type=True))
+                try:
+                    out = msgpack.packb(source_info, use_bin_type=True)
+                except TypeError:
+                    info['direct_access'] = 'forbid'
+                    # One copy to avoid mutating internal state held by source
+                    source_info['source']['args'] = source_info['source']['args'].copy()
+                    # Another copy to avoid mutating during iteration
+                    for k, v in source_info['source']['args'].copy().items():
+                        try:
+                            msgpack.packb(v, use_bin_type=True)
+                        except TypeError:
+                            source_info['source']['args'][k] = 'UNSERIALIZABLE_VALUE'
+                    out = msgpack.packb(source_info,
+                                        use_bin_type=True)
+                self.write(out)
                 return
 
         msg = 'Access forbidden'
