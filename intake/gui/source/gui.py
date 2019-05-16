@@ -91,21 +91,21 @@ class SourceGUI(Base):
         """When visible changed, do setup or unwatch and call visible_callback"""
         self._visible = visible
 
-        if visible and len(self.panel.objects) == 0:
+        if visible and len(self._panel.objects) == 0:
             self.setup()
             self.select.visible = True
             self.description.visible = True
             if len(self.control_panel.objects) == 0:
                 self.control_panel.extend(self.controls)
-            self.panel.extend(self.children)
-        elif not visible and len(self.panel.objects) > 0:
+            self._panel.extend(self.children)
+        elif not visible and len(self._panel.objects) > 0:
             self.unwatch()
             # do children
             self.select.visible = False
             self.control_panel.clear()
             self.description.visible = False
             self.plot.visible = False
-            self.panel.clear()
+            self._panel.clear()
         if self.visible_callback:
             self.visible_callback(visible)
 
