@@ -8,7 +8,14 @@ from functools import partial
 
 try:
     import panel as pn
-    from ..gui import SourceGUI, MAX_WIDTH
+    from ..gui.gui import SourceGUI, MAX_WIDTH
+    css = """
+    .scrolling {
+        overflow: scroll;
+    }
+    """
+    pn.config.raw_css.append(css)  # add scrolling class from css (panel GH#383, GH#384)
+    pn.extension()
 
     class EntryGUI(SourceGUI):
         def __init__(self, source=None, **kwargs):
@@ -51,7 +58,6 @@ try:
                 return None
             return self.sources[0]
 
-
 except ImportError:
 
     class GUI(object):
@@ -62,7 +68,6 @@ except ImportError:
 
     EntryGUI = GUI
     CatalogGUI = GUI
-
 
 except Exception as e:
 
