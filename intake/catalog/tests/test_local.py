@@ -27,12 +27,6 @@ def abspath(filename):
         os.path.join(os.path.dirname(__file__), filename))
 
 
-@pytest.fixture
-def catalog1():
-    path = os.path.dirname(__file__)
-    return Catalog(os.path.join(path, 'catalog1.yml'))
-
-
 def test_local_catalog(catalog1):
     assert_items_equal(list(catalog1),
                        ['use_example1', 'nested', 'entry1', 'entry1_part',

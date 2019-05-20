@@ -68,6 +68,24 @@ class Base(object):
         self.visible_callback = visible_callback
         self.logo = logo
 
+    @property
+    def panel(self):
+        if not self.logo:
+            return self._panel
+        return pn.Row(self.logo_panel,
+                      self._panel,
+                      margin=0)
+
+    @panel.setter
+    def panel(self, panel):
+        self._panel = panel
+
+    def servable(self, *args, **kwargs):
+        return self.panel.servable(*args, **kwargs)
+
+    def show(self, *args, **kwargs):
+        return self.panel.show(*args, **kwargs)
+
     def __repr__(self):
         """Print output"""
         try:
@@ -78,14 +96,7 @@ class Base(object):
     def _repr_mimebundle_(self, *args, **kwargs):
         """Display in a notebook or a server"""
         try:
-            if self.logo:
-                p = pn.Row(
-                    self.logo_panel,
-                    self.panel,
-                    margin=0)
-                return p._repr_mimebundle_(*args, **kwargs)
-            else:
-                return self.panel._repr_mimebundle_(*args, **kwargs)
+            return self.panel._repr_mimebundle_(*args, **kwargs)
         except:
             raise RuntimeError("Panel does not seem to be set up properly")
 
@@ -102,12 +113,12 @@ class Base(object):
     def visible(self, visible):
         """When visible changed, do setup or unwatch and call visible_callback"""
         self._visible = visible
-        if visible and len(self.panel.objects) == 0:
+        if visible and len(self._panel.objects) == 0:
             self.setup()
-            self.panel.extend(self.children)
-        elif not visible and len(self.panel.objects) > 0:
+            self._panel.extend(self.children)
+        elif not visible and len(self._panel.objects) > 0:
             self.unwatch()
-            self.panel.clear()
+            self._panel.clear()
         if self.visible_callback:
             self.visible_callback(visible)
 
