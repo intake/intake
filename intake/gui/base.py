@@ -88,17 +88,15 @@ class Base(object):
 
     def __repr__(self):
         """Print output"""
-        try:
-            return self.panel.__repr__()
-        except:
-            raise RuntimeError("Panel does not seem to be set up properly")
+        return self.panel.__repr__()
 
     def _repr_mimebundle_(self, *args, **kwargs):
         """Display in a notebook or a server"""
         try:
             return self.panel._repr_mimebundle_(*args, **kwargs)
         except:
-            raise RuntimeError("Panel does not seem to be set up properly")
+            raise NotImplementedError("Panel does not seem to be set "
+                                      "up properly")
 
     def setup(self):
         """Should instantiate widgets, set ``children``, and set watchers"""

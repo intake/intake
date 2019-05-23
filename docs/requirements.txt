@@ -2,3 +2,5 @@ sphinx
 sphinx_rtd_theme
 numpydoc
 msgpack_numpy
+panel
+
