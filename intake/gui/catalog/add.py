@@ -182,6 +182,7 @@ class URLSelector(Base):
         self.main.value = state['url']
         return self
 
+
 class CatAdder(Base):
     """Panel for adding new cats from local file or remote
 
