@@ -8,3 +8,4 @@ Auto-generated reference
 
    api_user.rst
    api_base.rst
+   api_other.rst
