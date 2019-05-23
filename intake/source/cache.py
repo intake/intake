@@ -384,10 +384,10 @@ class CompressedCache(BaseCache):
 
         self._ensure_cache_dir()
         self._urlpath = urlpath
-        files_in = open_files(urlpath, 'rb')
+        files_in = open_files(urlpath, 'rb', **self._storage_options)
         files_out = [open_files(
             [make_path_posix(os.path.join(d, os.path.basename(f.path)))],
-            'wb', **self._storage_options)[0]
+            'wb')[0]
             for f in files_in
         ]
         super(CompressedCache, self)._load(files_in, files_out, urlpath,
