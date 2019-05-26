@@ -110,8 +110,11 @@ class ServerInfoHandler(tornado.web.RequestHandler):
             page = itertools.islice(cat.walk(depth=1).items(), start, stop)
             for name, source in page:
                 if self.auth.allow_access(head, source, self.catalog):
-                    info = source.describe()
+                    info = source.describe().copy()
+                    # One copy to avoid mutating internal state held by source
+                    info['args'] = info['args'].copy()
                     info['name'] = name
+                    # Another copy to avoid mutating during iteration
                     for k, v in info['args'].copy().items():
                         try:
                             msgpack.packb(v, use_bin_type=True)
@@ -210,7 +213,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 raise tornado.web.HTTPError(status_code=404, log_message=msg,
                                             reason=msg)
             if self.auth.allow_access(head, source, self._catalog):
-                info = source.describe()
+                info = source.describe().copy()
                 info['name'] = name
 
                 source_info = dict(source=info)
