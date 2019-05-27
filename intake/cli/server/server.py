@@ -111,15 +111,14 @@ class ServerInfoHandler(tornado.web.RequestHandler):
             for name, source in page:
                 if self.auth.allow_access(head, source, self.catalog):
                     info = source.describe().copy()
-                    # One copy to avoid mutating internal state held by source
-                    info['args'] = info['args'].copy()
+                    modified_args = info['args'].copy()
                     info['name'] = name
-                    # Another copy to avoid mutating during iteration
-                    for k, v in info['args'].copy().items():
+                    for k, v in info['args'].items():
                         try:
                             msgpack.packb(v, use_bin_type=True)
                         except TypeError:
-                            info['args'][k] = 'UNSERIALIZABLE_VALUE'
+                            modified_args[k] = 'UNSERIALIZABLE_VALUE'
+                    info['args'] = modified_args
                     sources.append(info)
             try:
                 length = len(cat)
@@ -221,14 +220,13 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                     out = msgpack.packb(source_info, use_bin_type=True)
                 except TypeError:
                     info['direct_access'] = 'forbid'
-                    # One copy to avoid mutating internal state held by source
-                    source_info['source']['args'] = source_info['source']['args'].copy()
-                    # Another copy to avoid mutating during iteration
-                    for k, v in source_info['source']['args'].copy().items():
+                    modified_args = source_info['source']['args'].copy()
+                    for k, v in source_info['source']['args'].items():
                         try:
                             msgpack.packb(v, use_bin_type=True)
                         except TypeError:
-                            source_info['source']['args'][k] = 'UNSERIALIZABLE_VALUE'
+                            modified_args[k] = 'UNSERIALIZABLE_VALUE'
+                    source_info['source']['args'] = modified_args
                     out = msgpack.packb(source_info,
                                         use_bin_type=True)
                 self.write(out)
