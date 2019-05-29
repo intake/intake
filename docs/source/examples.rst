@@ -14,17 +14,16 @@ as conda packages.
 
 .. _examples: https://github.com/intake/intake-examples/
 
-
 General
 -------
 
 - Basic Data scientist workflow: using Intake
-  [`Static <https://github.com/martindurant/intake-release-blog/blob/master/data_scientist.ipynb>`__]
-  [`Executable <https://mybinder.org/v2/gh/martindurant/intake-release-blog/master?filepath=data_scientist.ipynb>`__].
+  [`Static <https://github.com/intake/intake-examples/blob/master/tutorial/data_scientist.ipynb>`__]
+  [`Executable <https://mybinder.org/v2/gh/intake/intake-examples/master?filepath=tutorial%2Fdata_scientist.ipynb>`__].
 
 - Workflow for creating catalogs: a Data Engineer's approach to Intake
-  [`Static <https://github.com/martindurant/intake-release-blog/blob/master/data_engineer.ipynb>`__]
-  [`Executable <https://mybinder.org/v2/gh/martindurant/intake-release-blog/master?filepath=data_engineer.ipynb>`__]
+  [`Static <https://github.com/intake/intake-examples/blob/master/tutorial/data_engineer.ipynb>`__]
+  [`Executable <https://mybinder.org/v2/gh/intake/intake-examples/master?filepath=tutorial%2Fdata_engineer.ipynb>`__]
 
 Developer
 ---------
@@ -32,8 +31,8 @@ Developer
 Tutorials delving deeper into the Internals of Intake, for those who wish to contribute
 
 - How you would go about writing a new plugin
-  [`Static <https://github.com/martindurant/intake-release-blog/blob/master/dev.ipynb>`__]
-  [`Executable <https://mybinder.org/v2/gh/martindurant/intake-release-blog/master?filepath=dev.ipynb>`__]
+  [`Static <https://github.com/intake/intake-examples/blob/master/tutorial/dev.ipynb>`__]
+  [`Executable <https://mybinder.org/v2/gh/intake/intake-examples/master?filepath=tutorial%2Fdev.ipynb>`__]
 
 Features
 --------
@@ -71,12 +70,14 @@ Blogs
 
 These are Intake-related articles that may be of interest.
 
+- `Discovering and Exploring Data in a Graphical Interface`_
 - `Taking the Pain out of Data Access`_
 - `Caching Data on First Read Makes Future Analysis Faster`_
 - `Parsing Data from Filenames and Paths`_
 - `Intake for cataloguing Spark`_
 - `Intake released on Conda-Forge`_
 
+.. _Discovering and Exploring Data in a Graphical Interface: https://www.anaconda.com/intake-discovering-and-exploring-data-in-a-graphical-interface/
 .. _Intake for cataloguing Spark: https://www.anaconda.com/intake-for-cataloging-spark/
 .. _Taking the Pain out of Data Access: https://www.anaconda.com/intake-taking-the-pain-out-of-data-access/
 .. _Caching Data on First Read Makes Future Analysis Faster: https://www.anaconda.com/intake-caching-data-on-first-read-makes-future-analysis-faster/

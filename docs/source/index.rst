@@ -26,6 +26,8 @@ smooth the progression of data from developers and providers to users.
 * Install data-sets and automatically get requirements
 * Leverage cloud resources and distributed computing.
 
+See the tutorial: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/intake/intake-examples/master?filepath=tutorial%2Fdata_scientist.ipynb)
+
 :term:`Data Provider`
 ---------------------
 
@@ -39,6 +41,8 @@ smooth the progression of data from developers and providers to users.
 * Update definitions in-place
 * Parametrise user options
 * Make use of additional functionality like filename parsing and caching.
+
+See the tutorial: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/intake/intake-examples/master?filepath=tutorial%2Fdata_engineer.ipynb)
 
 :term:`IT`
 ----------
@@ -70,13 +74,16 @@ smooth the progression of data from developers and providers to users.
 .. _github: https://github.com/intake/intake
 
 
+See the tutorial: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/intake/intake-examples/master?filepath=tutorial%2Fdev.ipynb)
+
 First steps
 ===========
 
-For a brief demonstration and tutorial, which you can execute locally, go to :doc:`quickstart`.
+For a brief demonstration, which you can execute locally, go to :doc:`quickstart`.
 For a general description of all of the components of Intake and how they fit together, fo
 to :doc:`overview`. Finally, for some notebooks using Intake and articles about Intake, go
-to :doc:`examples`. These and other documentation pages will make reference to concepts that
+to :doc:`examples` and [intake-examples](https://github.com/intake/intake-examples).
+These and other documentation pages will make reference to concepts that
 are defined in the :doc:`glossary`.
 
 |
