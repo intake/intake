@@ -26,7 +26,10 @@ smooth the progression of data from developers and providers to users.
 * Install data-sets and automatically get requirements
 * Leverage cloud resources and distributed computing.
 
-See the tutorial: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/intake/intake-examples/master?filepath=tutorial%2Fdata_scientist.ipynb)
+See the executable tutorial:
+
+.. image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/intake/intake-examples/master?filepath=tutorial%2Fdata_scientist.ipynb
 
 :term:`Data Provider`
 ---------------------
@@ -42,7 +45,10 @@ See the tutorial: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybin
 * Parametrise user options
 * Make use of additional functionality like filename parsing and caching.
 
-See the tutorial: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/intake/intake-examples/master?filepath=tutorial%2Fdata_engineer.ipynb)
+See the executable tutorial:
+
+.. image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/intake/intake-examples/master?filepath=tutorial%2Fdata_engineer.ipynb
 
 :term:`IT`
 ----------
@@ -74,7 +80,10 @@ See the tutorial: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybin
 .. _github: https://github.com/intake/intake
 
 
-See the tutorial: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/intake/intake-examples/master?filepath=tutorial%2Fdev.ipynb)
+See the executable tutorial:
+
+.. image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/intake/intake-examples/master?filepath=tutorial%2Fdev.ipynb
 
 First steps
 ===========
