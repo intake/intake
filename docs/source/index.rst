@@ -91,9 +91,11 @@ First steps
 For a brief demonstration, which you can execute locally, go to :doc:`quickstart`.
 For a general description of all of the components of Intake and how they fit together, fo
 to :doc:`overview`. Finally, for some notebooks using Intake and articles about Intake, go
-to :doc:`examples` and [intake-examples](https://github.com/intake/intake-examples).
+to :doc:`examples` and `intake-examples`_.
 These and other documentation pages will make reference to concepts that
 are defined in the :doc:`glossary`.
+
+.. _intake-examples: https://github.com/intake/intake-examples
 
 |
 
