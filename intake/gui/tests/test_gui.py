@@ -47,14 +47,13 @@ def test_gui_open_plot_panel(gui, cat1, cat2, sources1, sources2):
     assert gui.source.plot.source == sources1[0]
 
     gui.source.select.cats = [cat2]
-    assert gui.source.plot_widget.value is True
-    assert gui.source.plot.visible is True
+    assert gui.source.plot_widget.value is False  # hide on select change
+    assert gui.source.plot.visible is False
+    assert not gui.source.plot.watchers
+
+    gui.source.plot_widget.value = True
     assert len(gui.source.plot.watchers) == 3
     assert len(gui.source.plot.panel.objects) == 3
-
-    gui.source.plot_widget.value = False
-    assert not gui.source.plot.watchers
-    assert gui.source.plot.visible is False
 
 
 def test_gui_open_search_panel(gui, cat1, cat2, sources1, sources2):
