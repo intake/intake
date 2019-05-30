@@ -62,7 +62,7 @@ class SourceGUI(Base):
         self.description = Description(source=self.sources)
 
         self.plot = DefinedPlots(source=self.sources,
-                                 visible=False,
+                                 visible=self.plot_widget.value,
                                  visible_callback=partial(setattr, self.plot_widget, 'value'))
 
         super().__init__(**kwargs)
