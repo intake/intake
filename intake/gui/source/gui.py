@@ -65,6 +65,7 @@ class SourceGUI(Base):
                                      sources=self._sources,
                                      done_callback=self.callback)
         self.description = Description(source=self.sources)
+        self.pars_editor = ParsEditor()
 
         self.plot = DefinedPlots(source=self.sources,
                                  visible=self.plot_widget.value,
@@ -75,6 +76,7 @@ class SourceGUI(Base):
     def setup(self):
         self.watchers = [
             self.plot_widget.param.watch(self.on_click_plot_widget, 'value'),
+            self.pars_widget.param.watch(self.on_click_pars_widget, 'value'),
             self.select.widget.link(self.description, value='source'),
         ]
 
@@ -120,6 +122,7 @@ class SourceGUI(Base):
         enable = bool(sources)
         if not enable:
             self.plot_widget.value = False
+            self.pars_widget.value = False
         enable_widget(self.plot_widget, enable)
         enable_widget(self.pars_widget, enable and sources[0]._user_parameters)
 
@@ -130,9 +133,16 @@ class SourceGUI(Base):
         """ When the plot control is toggled, set visibility and hand down source"""
         self.plot.source = self.sources
         self.plot.visible = event.new
-        if self.plot.visible:
-            self.plot.watchers.append(
-                self.select.widget.link(self.plot, value='source'))
+
+    def on_click_pars_widget(self, event):
+        print(event)
+        if event.new:
+            pars = self.sources[0]._user_parameters
+            print(pars)
+            self.pars_editor.remake(pars)
+            self.description.panel.append(self.pars_editor.panel)
+        else:
+            self.description.panel.remove(self.pars_editor.panel)
 
     @property
     def sources(self):
@@ -177,3 +187,15 @@ class SourceGUI(Base):
         copy = SourceGUI.from_state(original.__getstate__())
         """
         return cls(cats=[], sources=[]).__setstate__(state)
+
+
+class ParsEditor(Base):
+
+    def __init__(self):
+        self.panel = pn.Row(pn.Spacer())
+
+    def remake(self, upars):
+        self.panel.clear()
+        self.panel.append(pn.widgets.StaticText(value="Parameters"))
+        for upar in upars:
+            self.panel.append(pn.widgets.StaticText(value=upar.name))
