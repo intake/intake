@@ -53,7 +53,12 @@ class SourceGUI(Base):
             value=False,
             disabled=True,
             width=50)
-        self.controls = [self.plot_widget]
+        self.pars_widget = pn.widgets.Toggle(
+            name='⚙',
+            value=False,
+            disabled=True,
+            width=50)
+        self.controls = [self.plot_widget, self.pars_widget]
         self.control_panel = pn.Row(name='Controls', margin=0)
 
         self.select = SourceSelector(cats=self._cats,
@@ -116,6 +121,7 @@ class SourceGUI(Base):
         if not enable:
             self.plot_widget.value = False
         enable_widget(self.plot_widget, enable)
+        enable_widget(self.pars_widget, enable and sources[0]._user_parameters)
 
         if self.done_callback:
             self.done_callback(sources)
@@ -132,6 +138,14 @@ class SourceGUI(Base):
     def sources(self):
         """Sources that have been selected from the source GUI"""
         return self.select.selected
+
+    @property
+    def source_instance(self):
+        """DataSource from the current selection using current parameters"""
+        sel = self.select.selected
+        args = self.paramset.args
+        if sel:
+            return sel[0](**args)
 
     def __getstate__(self):
         """Serialize the current state of the object"""
