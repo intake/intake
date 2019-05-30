@@ -112,9 +112,9 @@ class SourceGUI(Base):
     def callback(self, sources):
         """When a source is selected, enable widgets that depend on that condition
         and do done_callback"""
+        self.plot.visible = False
         enable = bool(sources)
-        if not enable:
-            self.plot_widget.value = False
+        self.plot_widget.value = False
         enable_widget(self.plot_widget, enable)
 
         if self.done_callback:
