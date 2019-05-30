@@ -62,7 +62,7 @@ class SourceGUI(Base):
         self.description = Description(source=self.sources)
 
         self.plot = DefinedPlots(source=self.sources,
-                                 visible=self.plot_widget.value,
+                                 visible=False,
                                  visible_callback=partial(setattr, self.plot_widget, 'value'))
 
         super().__init__(**kwargs)
@@ -112,7 +112,9 @@ class SourceGUI(Base):
     def callback(self, sources):
         """When a source is selected, enable widgets that depend on that condition
         and do done_callback"""
-        self.plot.visible = False
+        if hasattr(self, 'plot'):
+            # guard since this cannot happen until plot is ready
+            self.plot.visible = False
         enable = bool(sources)
         self.plot_widget.value = False
         enable_widget(self.plot_widget, enable)
