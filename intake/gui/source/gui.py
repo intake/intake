@@ -62,11 +62,11 @@ class SourceGUI(Base):
         self.controls = [self.plot_widget, self.pars_widget]
         self.control_panel = pn.Row(name='Controls', margin=0)
 
+        self.pars_editor = ParsEditor()
         self.select = SourceSelector(cats=self._cats,
                                      sources=self._sources,
                                      done_callback=self.callback)
         self.description = Description(source=self.sources)
-        self.pars_editor = ParsEditor()
 
         self.plot = DefinedPlots(source=self.sources,
                                  visible=self.plot_widget.value,
