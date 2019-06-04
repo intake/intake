@@ -63,7 +63,7 @@ def test_hash(file_cache):
 
     file_cache._driver = 'bar'
     subdir_new = file_cache._hash('foo/bar.csv')
-    assert subdir_new != subdir
+    assert subdir_new == subdir
 
     file_cache._driver = 'csv'
     subdir_new = file_cache._hash('foo/bar.csv')
@@ -71,7 +71,7 @@ def test_hash(file_cache):
 
     file_cache._spec['regex'] = 'foo/bar'
     subdir_new = file_cache._hash('foo/bar.csv')
-    assert subdir_new != subdir
+    assert subdir_new == subdir
 
 
 def test_path(file_cache):

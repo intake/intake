@@ -6,7 +6,6 @@
 #-----------------------------------------------------------------------------
 
 from datetime import datetime
-from hashlib import md5
 
 import collections
 import json
@@ -18,6 +17,7 @@ import shutil
 import warnings
 
 from dask.bytes.utils import infer_storage_options
+from dask.base import tokenize
 from intake.config import conf
 from intake.utils import make_path_posix
 
@@ -102,12 +102,9 @@ class BaseCache(object):
 
         return posixpath.join(self._cache_dir, cache_subdir, path.lstrip('/\\'))
 
-    def _hash(self, urlpath):
-        return md5(
-                str((os.path.basename(urlpath),
-                     self._spec.get('regex', ''),
-                     self._driver)).encode()
-            ).hexdigest()
+    @staticmethod
+    def _hash(urlpath):
+        return tokenize(urlpath)
 
     def _path(self, urlpath, subdir=None):
         if subdir is None:
@@ -478,8 +475,10 @@ class CacheMetadata(collections.abc.MutableMapping):
     def __init__(self, *args, **kwargs):
         from intake import config
 
-        self._path = posixpath.join(make_path_posix(config.confdir), 
-                                    'cache_metadata.json')
+        self._path = posixpath.join(
+            kwargs.get('path', make_path_posix(config.confdir)),
+            'cache_metadata.json'
+        )
         d = os.path.dirname(self._path)
         if not os.path.exists(d):
             os.makedirs(d)

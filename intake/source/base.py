@@ -4,14 +4,12 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-''' Base classes for Data Loader interface
-
-'''
+"""
+Base classes for Data Loader interface
+"""
 
 from .cache import make_caches
 from ..utils import make_path_posix, DictSerialiseMixin
-import sys
-PY2 = sys.version_info[0] == 2
 
 
 class Schema(dict):
@@ -125,12 +123,8 @@ class DataSource(DictSerialiseMixin):
         import inspect
         kwargs = self._captured_init_kwargs.copy()
         meta = kwargs.pop('metadata', self.metadata) or {}
-        if PY2:
-            kwargs.update(dict(zip(inspect.getargspec(self.__init__).args,
-                          self._captured_init_args)))
-        else:
-            kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
-                                   self._captured_init_args)))
+        kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
+                           self._captured_init_args)))
         data = {'sources': {self.name: {
             'driver': self.classname,
             'description': self.description or "",
