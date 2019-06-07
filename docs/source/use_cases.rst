@@ -118,7 +118,7 @@ do *not* want to rely on word-of-mouth to specify which data is right for which 
 
 Intake catalogs allow for self-description of data-sets, with simple text and
 arbitrary metadata, with a consistent access pattern. Not only can you list the data
-available ot you, but you can find out what exactly that data represents, and
+available to you, but you can find out what exactly that data represents, and
 the form the data would take if loaded (table versus list of items, for example). This extra
 metadata is also searchable: you can descend through a hierarchy of catalogs with
 a single search, and find all the entries containing some particular keywords.
