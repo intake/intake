@@ -8,6 +8,7 @@
 import collections
 import collections.abc
 import copy
+import datetime
 import keyword
 import logging
 import posixpath
@@ -747,12 +748,18 @@ class RemoteCatalog(Catalog):
 
     @staticmethod
     def _persist(source, path, **kwargs):
+        return RemoteCatalog._data_to_source(source, path, **kwargs)
+
+    @staticmethod
+    def _data_to_source(cat, path, **kwargs):
         from intake.catalog.local import YAMLFileCatalog
         from dask.bytes.core import open_files
         import yaml
+        if not isinstance(cat, Catalog):
+            raise NotImplementedError
         out = {}
-        for name in source:
-            entry = source[name]
+        for name in cat:
+            entry = cat[name]
             out[name] = entry.__getstate__()
             out[name]['parameters'] = [up._captured_init_kwargs for up
                                        in entry._user_parameters]

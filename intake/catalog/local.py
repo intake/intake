@@ -624,8 +624,6 @@ class YAMLFileCatalog(Catalog):
             name = os.path.basename(os.path.dirname(self.path))
         return name.replace('.', '_')
 
-global_registry['yaml_file_cat'] = YAMLFileCatalog
-
 
 class YAMLFilesCatalog(Catalog):
     """Catalog as described by a multiple YAML files"""
@@ -710,4 +708,5 @@ class YAMLFilesCatalog(Catalog):
                 self._entries[entry._name] = entry
 
 
+global_registry['yaml_file_cat'] = YAMLFileCatalog
 global_registry['yaml_files_cat'] = YAMLFilesCatalog

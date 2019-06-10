@@ -17,6 +17,7 @@ from .source.base import Schema, DataSource
 from .catalog.base import Catalog, RemoteCatalog
 from .catalog import local
 from .catalog.default import load_combo_catalog
+from .container import upload
 from .source import registry
 from .source.discovery import autodiscover
 from .gui import InstanceMaker

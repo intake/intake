@@ -97,7 +97,7 @@ def test_text_export(temp_cache):
     out = s.export(outdir)
     fn = os.path.join(outdir, 'cat.yaml')
     with open(fn, 'w') as f:
-        f.write(out)
+        f.write(out.yaml())
     cat = intake.open_catalog(fn)
     s2 = cat[s.name]()
     assert s.read() == s2.read()

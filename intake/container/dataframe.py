@@ -6,10 +6,7 @@
 #-----------------------------------------------------------------------------
 
 from intake.source.base import Schema, DataSource
-import os
-import posixpath
 from .base import RemoteSource, get_partition
-from ..config import conf
 
 
 class RemoteDataFrame(RemoteSource):
@@ -73,15 +70,24 @@ class RemoteDataFrame(RemoteSource):
         kwargs: passed on to dask.dataframe.to_parquet
         """
         try:
+            df = source.to_dask()
+        except NotImplementedError:
+            df = source.read()
+        return RemoteDataFrame._data_to_source(df, path, **kwargs)
+
+    @staticmethod
+    def _data_to_source(df, path, **kwargs):
+        import dask.dataframe as dd
+        from dask.utils import is_dataframe_like
+        if not is_dataframe_like(df):
+            raise NotImplementedError
+        try:
             from intake_parquet import ParquetSource
         except ImportError:
             raise ImportError("Please install intake-parquet to use persistence"
                               " on dataframe container sources.")
-        try:
-            df = source.to_dask()
-        except NotImplementedError:
-            import dask.dataframe as dd
-            df = dd.from_pandas(source.read(), 1)
+        if not hasattr(df, 'npartitions'):
+            df = dd.from_pandas(df, npartitions=1)
         df.to_parquet(path, **kwargs)
         source = ParquetSource(path, meta={})
         return source

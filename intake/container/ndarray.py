@@ -5,6 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import datetime
 import itertools
 from .base import RemoteSource, Schema, get_partition
 
@@ -81,14 +82,24 @@ class RemoteArray(RemoteSource):
             attempt to get from the source's name
         kwargs: passed on to zarr array creation, see
         """
-        from dask.array import to_zarr, from_array
-        from ..source.zarr import ZarrArraySource
         try:
             arr = source.to_dask()
         except NotImplementedError:
-            arr = from_array(source.read(), chunks=-1).rechunk('auto')
+            arr = source.read()
+        return RemoteArray._data_to_source(arr, path, component=None,
+                                           storage_options=None, **kwargs)
+
+    @staticmethod
+    def _data_to_source(arr, path, component=None,  storage_options=None,
+                        **kwargs):
+        from dask.utils import is_arraylike
+        from dask.array import to_zarr, from_array
+        from ..source.zarr import ZarrArraySource
+        if not is_arraylike(arr):
+            raise NotImplementedError
+        if not hasattr(arr, 'npartitions'):
+            arr = from_array(arr, chunks='auto')
         to_zarr(arr, path, component=None,
                 storage_options=storage_options, **kwargs)
-
         source = ZarrArraySource(path, storage_options, component)
         return source
