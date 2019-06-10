@@ -5,12 +5,15 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import ast
 import os
 from functools import partial
 
 import intake
 import panel as pn
 
+import fsspec
+from fsspec.registry import known_implementations
 from ..base import Base, MAX_WIDTH, enable_widget, ICONS
 
 
@@ -47,11 +50,17 @@ class FileSelector(Base):
         self.filters = filters
         self.panel = pn.Column(name='Local', width_policy='max', margin=0)
         self.done_callback = done_callback
+        self.fs = fsspec.filesystem("file")
         super().__init__(**kwargs)
 
     def setup(self):
-        self.path_text = pn.widgets.TextInput(value=os.getcwd() + os.path.sep,
+        self.path_text = pn.widgets.TextInput(value=os.getcwd() + '/',
                                               width_policy='max')
+        self.protocol = pn.widgets.Select(options=list(known_implementations),
+                                          value='file', name='protocol')
+        self.storage_options = pn.widgets.TextInput(name='kwargs',
+                                                    value="{}")
+        self.go = pn.widgets.Button(name='⇨')
         self.validator = pn.pane.SVG(None, width=25)
         self.main = pn.widgets.MultiSelect(size=15, width_policy='max')
         self.home = pn.widgets.Button(name='🏠', width=40, height=30)
@@ -60,32 +69,47 @@ class FileSelector(Base):
         self.make_options()
 
         self.watchers = [
-            self.path_text.param.watch(self.validate, ['value']),
-            self.path_text.param.watch(self.make_options, ['value']),
+            self.go.param.watch(self.go_clicked, 'clicks'),
+            self.protocol.param.watch(self.protocol_changed, 'value'),
+            #self.path_text.param.watch(self.validate, ['value']),
+            #self.path_text.param.watch(self.make_options, ['value']),
             self.home.param.watch(self.go_home, 'clicks'),
             self.up.param.watch(self.move_up, 'clicks'),
             self.main.param.watch(self.move_down, ['value'])
         ]
 
         self.children = [
-            pn.Row(self.home, self.up, self.path_text, self.validator, margin=0),
+            pn.Row(self.protocol, self.storage_options),
+            pn.Row(self.home, self.up, self.path_text, self.go, margin=0),
             self.main
         ]
 
+    def protocol_changed(self, *_):
+        self.path_text.value = ""
+        self.main.options = []
+        self.main.value = []
+
+    def go_clicked(self, *_):
+        self.fs = fsspec.filesystem(
+            self.protocol.value, **ast.literal_eval(self.storage_options.value))
+        self.make_options()
+
     @property
     def path(self):
-        path = self.path_text.value
-        return path if path.endswith(os.path.sep) else path + os.path.sep
+        return self.path_text.value
 
     @property
     def url(self):
         """Path to local catalog file"""
-        return os.path.join(self.path, self.main.value[0])
+        return (self.protocol.value + "://" +
+                os.path.join(self.path, self.main.value[0]))
 
     def move_up(self, arg=None):
-        self.path_text.value = os.path.dirname(self.path.rstrip(os.path.sep)) + os.path.sep
+        self.path_text.value = self.fs._parent(self.path_text.value)
+        self.make_options()
 
     def go_home(self, arg=None):
+        self.protocol.value = 'file'
         self.path_text.value = os.getcwd() + os.path.sep
 
     def validate(self, arg=None):
@@ -99,26 +123,32 @@ class FileSelector(Base):
         if self.done_callback:
             self.done_callback(False)
         out = []
-        if os.path.isdir(self.path):
-            for f in sorted(os.listdir(self.path)):
-                if f.startswith('.'):
+        try:
+            for f in self.fs.ls(self.path, True):
+                bn = os.path.basename(f['name'].rstrip('/'))
+                if bn.startswith('.'):
                     continue
-                elif os.path.isdir(os.path.join(self.path, f)):
-                    out.append(f + os.path.sep)
-                elif any(f.endswith(ext) for ext in self.filters):
-                    out.append(f)
+                elif f['type'] == 'directory':
+                    out.append(bn + '/')
+                elif any(bn.endswith(ext) for ext in self.filters):
+                    out.append(bn)
+        except Exception as e:
+            print(e)
 
         self.main.value = []
-        self.main.options = dict(zip(out, out))
+        self.main.options = out
 
     def move_down(self, *events):
         for event in events:
             if event.name == 'value' and len(event.new) > 0:
                 fn = event.new[0]
-                if fn.endswith(os.path.sep):
-                    self.path_text.value = self.path + fn
+                if fn.endswith('/'):
+                    if self.path_text.value:
+                        self.path_text.value = self.path_text.value + '/' + fn
+                    else:
+                        self.path_text.value = fn
                     self.make_options()
-                elif os.path.isfile(self.url) and self.done_callback:
+                elif self.done_callback:
                     self.done_callback(True)
 
     def __getstate__(self):
@@ -135,6 +165,7 @@ class FileSelector(Base):
         self.path_text.value = state['path']
         self.main.value = state['selected']
         return self
+
 
 class URLSelector(Base):
     """
@@ -238,13 +269,19 @@ class CatAdder(Base):
     @property
     def cat_url(self):
         """URL to remote files or path to local files. Depends on active tab."""
-        return self.selectors[self.tabs.active].url
+        url = self.selectors[self.tabs.active].url
+        if self.selectors[self.tabs.active] is self.fs:
+            fs = self.fs.fs
+        else:
+            fs = None
+        return url, fs
 
     @property
     def cat(self):
         """Catalog object initialized from from cat_url"""
         # might want to do some validation in here
-        return intake.open_catalog(self.cat_url)
+        url, fs =  self.cat_url
+        return intake.open_catalog(url, fs=fs)
 
     def add_cat(self, arg=None):
         """Add cat and close panel"""

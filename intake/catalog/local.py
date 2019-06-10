@@ -549,6 +549,7 @@ class YAMLFileCatalog(Catalog):
         self.path = path
         self.text = None
         self.autoreload = autoreload  # set this to False if don't want reloads
+        self.filesystem = kwargs.pop('fs', None)
         super(YAMLFileCatalog, self).__init__(**kwargs)
 
     def _load(self, reload=False):
@@ -565,10 +566,12 @@ class YAMLFileCatalog(Catalog):
                 self.path = make_path_posix(
                     getattr(self.path, 'path',
                             getattr(self.path, 'name', 'file')))
-            else:
+            elif self.filesystem is None:
                 file_open = open_files(self.path, mode='rb', **options)
                 assert len(file_open) == 1
                 file_open = file_open[0]
+            else:
+                file_open = self.filesystem.open(self.path, mode='rb')
             self._dir = get_dir(self.path)
 
             with file_open as f:
