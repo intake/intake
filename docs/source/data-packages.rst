@@ -13,6 +13,22 @@ which can be installed and upgraded just like software packages.  This offers se
 In this tutorial, we give a walkthrough to enable you to distribute any dataset to others, so that they can access the
 data using Intake without worrying about where it resides or how it should be loaded.
 
+Implementation
+''''''''''''''
+
+The function ``intake.catalog.default.load_combo_catalog`` searches for YAML catalog files in a number
+of place at import. All entries in these catalogs are flattened and placed in the "builtin"
+``intake.cat``.
+
+The places searched are:
+
+  * a platform-specific user directory as given by the `appdirs`_ package
+  * in the environment's "/share/intake" data directory, where the location of the current environment
+    is found from virtualenv or conda environment variables
+  * in directories listed in the "INTAKE_PATH" environment variable or "catalog_path" config parameter
+
+.. _appdirs: https://github.com/ActiveState/appdirs
+
 Defining a Package
 ''''''''''''''''''
 
@@ -90,7 +106,7 @@ The corresponding ``build.sh`` file in the recipe looks like this:
 
     #!/bin/bash
 
-    mkdir -p $PREFIX/share/intake/civilservices
+    mkdir -p $CONDA_PREFIX/share/intake/civilservices
     cp $SRC_DIR/data/states.csv $PREFIX/share/intake/civilservices
     cp $RECIPE_DIR/us_states.yaml $PREFIX/share/intake/
 
@@ -174,3 +190,33 @@ Packaging
   them on a separate web server or cloud storage bucket.
   `conda index <https://conda.io/docs/commands/build/conda-index.html>`_ will help you construct the required JSON
   metadata to host conda packages.
+
+Nested catalogs
+---------------
+
+As noted at the top of this page, entries like ``states``, above, will appear in the users' builtin
+catalog as ``intake.cat.states``. In the case that the catalog has multiple entries, it may be desirable
+to put the entries below a namespace as ``intake.cat.data_package.*``. This can be achieved by having
+one catalog file containing the (several) data sources, and one with only a single entry pointing to
+it:
+
+.. code-block:: bash
+
+    #!/bin/bash
+
+    mkdir -p $CONDA_PREFIX/share/intake/data_package
+    cp $RECIPE_DIR/sources.yaml $PREFIX/share/intake/data_package
+    cp $RECIPE_DIR/top_level.yaml $PREFIX/share/intake/
+
+where the file ``top_level.yaml`` looks something like
+
+.. code-block:: yaml
+
+    sources:
+      data_package:
+        args:
+          path: "{{ CATALOG_DIR }}/data_package/sources.yaml"
+        description: 'Example of nested catalogues'
+        driver: intake.catalog.local.YAMLFileCatalog
+        metadata: {}
+
