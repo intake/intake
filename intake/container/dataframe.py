@@ -78,7 +78,6 @@ class RemoteDataFrame(RemoteSource):
     @staticmethod
     def _data_to_source(df, path, **kwargs):
         import dask.dataframe as dd
-        from dask.utils import is_dataframe_like
         if not is_dataframe_like(df):
             raise NotImplementedError
         try:
@@ -91,6 +90,19 @@ class RemoteDataFrame(RemoteSource):
         df.to_parquet(path, **kwargs)
         source = ParquetSource(path, meta={})
         return source
+
+
+def is_dataframe_like(df):
+    """ Looks like a Pandas DataFrame
+
+    Copied from dask.utils
+    """
+    typ = type(df)
+    return (all(hasattr(typ, name)
+                for name in ('groupby', 'head', 'merge', 'mean')) and
+            all(hasattr(df, name) for name in ('dtypes',)) and not
+            any(hasattr(typ, name)
+                for name in ('value_counts', 'dtype')))
 
 
 class GenericDataFrame(DataSource):
