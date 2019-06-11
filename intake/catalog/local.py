@@ -578,6 +578,23 @@ class YAMLFileCatalog(Catalog):
                 text = text.replace('!template ', '')
             self.parse(text)
 
+    def add(self, **sources):
+        """Add sources to the catalog and save into the original file"""
+        import yaml
+        entries = self._entries.copy()
+        entries.update(sources)
+
+        options = self.storage_options or {}
+        file_open = open_files([self.path], mode='wt', **options)
+        assert len(file_open) == 1
+        file_open = file_open[0]
+
+        data = {'metadata': self.metadata, 'sources': {}}
+        for e in entries:
+            data['sources'][e] = list(entries[e]._yaml()['sources'].values())[0]
+        with file_open as f:
+            yaml.dump(data, f, default_flow_style=False)
+
     def parse(self, text):
         """Create entries from catalog text
 
