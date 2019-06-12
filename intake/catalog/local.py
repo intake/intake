@@ -552,9 +552,9 @@ class YAMLFileCatalog(Catalog):
         super(YAMLFileCatalog, self).__init__(**kwargs)
 
     def _load(self, reload=False):
-        """Load text of fcatalog file and pass to parse
+        """Load text of catalog file and pass to parse
 
-        Will do nothing if autoreload is off and reload is not explicitly
+        Will do nothing if auto-reload is off and reload is not explicitly
         requested
         """
         if self.autoreload or reload:
@@ -578,14 +578,45 @@ class YAMLFileCatalog(Catalog):
                 text = text.replace('!template ', '')
             self.parse(text)
 
-    def add(self, **sources):
-        """Add sources to the catalog and save into the original file"""
+    def add(self, source, name=None, path=None, storage_options=None):
+        """Add sources to the catalog and save into the original file
+
+        This adds the source into the catalog dictionary, and saves the
+        resulting catalog as YAML. Typically, this would be used to update a
+        catalog file in-place. Optionally, the new catalog can be saved to a
+        new location, in which case the new catalog is returned.
+
+        Note that if a source of the given name exists, it will be clobbered.
+
+        Parameters
+        ----------
+        source : DataSource instance
+            The source whose spec we want to save
+        name : str or None
+            The name the source is to have in the catalog; use the source's
+            name attribute, if not given.
+        path : str or None
+            Location to save the new catalog; if None, the original location
+            from which it was loaded
+        storage_options : dict or None
+            If saving to a new location, use these arguments for the filesystem
+            backend
+
+        Returns
+        -------
+        YAMLFileCatalog instance, containing the new entry
+        """
         import yaml
         entries = self._entries.copy()
-        entries.update(sources)
+        name = name or source.name or "source"
+        entries[name] = source
 
-        options = self.storage_options or {}
-        file_open = open_files([self.path], mode='wt', **options)
+        if path is None:
+            options = self.storage_options or {}
+            file_open = open_files([self.path], mode='wt', **options)
+        else:
+            options = storage_options or {}
+            file_open = open_files([path], mode='wt', **options)
         assert len(file_open) == 1
         file_open = file_open[0]
 
@@ -594,6 +625,12 @@ class YAMLFileCatalog(Catalog):
             data['sources'][e] = list(entries[e]._yaml()['sources'].values())[0]
         with file_open as f:
             yaml.dump(data, f, default_flow_style=False)
+
+        if path:
+            return self
+        else:
+            return YAMLFileCatalog(path, storage_options=storage_options,
+                                   autoreload=self.autoreload)
 
     def parse(self, text):
         """Create entries from catalog text
