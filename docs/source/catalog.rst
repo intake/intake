@@ -225,8 +225,7 @@ intake-iris and the intake-xarray packages contain drivers with the name ``"netc
 are capable of reading the same files, but with different backends. Here we will describe the
 various possibilities of coping with this situation. Intake's plugin system makes it easy to encode such choices.
 
-It may be
-acceptable to use any driver which claims to handle that data type, or to give the option of
+It may be acceptable to use any driver which claims to handle that data type, or to give the option of
 which driver to use to the user, or it may be necessary to specify which precise driver(s) are
 appropriate for that particular data. Intake allows all of these possibilities, even if the
 backend drivers require extra arguments.
@@ -256,7 +255,7 @@ instantiation.
         args: {}
 
 These alternative plugins can also be given data-source specific names, allowing the
-user to choose at load time with `driver=` as a parameter. Additional arguments may also
+user to choose at load time with `plugin=` as a parameter. Additional arguments may also
 be required for each option (which, as usual, may include user parameters); however, the
 same global arguments will be passed to all of the drivers listed.
 
