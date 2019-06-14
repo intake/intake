@@ -12,7 +12,7 @@ from intake.source.base import DataSource, Schema
 from . import serializer
 from ..compat import unpack_kwargs
 from intake import __version__
-
+from ..utils import encode_datetime, decode_datetime
 
 class RemoteSource(DataSource):
     """Base class for all DataSources living on an Intake server"""
@@ -49,10 +49,10 @@ class RemoteSource(DataSource):
             payload = dict(action='open', name=self.name,
                            parameters=self.parameters)
             req = requests.post(urljoin(self.url, '/v1/source'),
-                                data=msgpack.packb(payload, use_bin_type=True),
+                                data=msgpack.packb(payload, default=encode_datetime, use_bin_type=True),
                                 **self.headers)
             req.raise_for_status()
-            response = msgpack.unpackb(req.content, **unpack_kwargs)
+            response = msgpack.unpackb(req.content, object_hook=decode_datetime, **unpack_kwargs)
             self._parse_open_response(response)
 
     def _parse_open_response(self, response):
@@ -106,12 +106,12 @@ def get_partition(url, headers, source_id, container, partition):
 
     try:
         resp = requests.post(urljoin(url, '/v1/source'),
-                             data=msgpack.packb(payload, use_bin_type=True),
+                             data=msgpack.packb(payload, default=encode_datetime, use_bin_type=True),
                              **headers)
         if resp.status_code != 200:
             raise Exception('Error reading data')
 
-        msg = msgpack.unpackb(resp.content, **unpack_kwargs)
+        msg = msgpack.unpackb(resp.content, object_hook=decode_datetime, **unpack_kwargs)
         format = msg['format']
         compression = msg['compression']
         compressor = serializer.compression_registry[compression]

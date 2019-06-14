@@ -12,6 +12,7 @@ import pickle
 
 import msgpack
 
+from ..utils import encode_datetime, decode_datetime
 
 class NoneCompressor(object):
     name = 'none'
@@ -54,17 +55,17 @@ class MsgPackSerializer(object):
         elif container == 'dataframe':
             return obj.to_msgpack()
         else:
-            return msgpack.packb(obj, use_bin_type=True)
+            return msgpack.packb(obj, default=encode_datetime, use_bin_type=True)
 
     def decode(self, bytestr, container):
         from ..compat import unpack_kwargs
         if container in ['ndarray', 'xarray'] and msgpack_numpy:
-            return msgpack.unpackb(bytestr, object_hook=msgpack_numpy.decode)
+            return msgpack.unpackb(bytestr, object_hook=lambda obj: decode_datetime(msgpack_numpy.decode(obj)))
         elif container == 'dataframe':
             import pandas as pd
             return pd.read_msgpack(bytestr)
         else:
-            return msgpack.unpackb(bytestr, **unpack_kwargs)
+            return msgpack.unpackb(bytestr, object_hook=decode_datetime, **unpack_kwargs)
 
 
 class PickleSerializer(object):

@@ -257,6 +257,11 @@ def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True,
 
 def coerce_datetime(v=None):
     import pandas
+    print(v)
+    if "__datetime__" in v:
+        print("in the if")
+        return pandas.to_datetime(v["as_str"])
+
     return pandas.to_datetime(v) if v else pandas.to_datetime(0)
 
 
