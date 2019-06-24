@@ -309,3 +309,22 @@ N-D arrays share a coordinate system and metadata. By creating this container,
 a whole world of scientific and engineering data was opened up to Intake. Creating
 new containers is not hard, though, and we foresee more coming, such as
 machine-learning models and streaming/real-time data.
+
+Create Intake data-sets from scratch
+-----------------------------------
+
+If you have a set of files or a data service which you wish to make into a data-set,
+so that you can include it in a catalog, you should use the set of functions
+``intake.open_*``, where you need to pick the function appropriate for your
+particular data. You can use tab-completion to list the set of data drivers you have
+installed, and find others you may not yet have installed at :ref:`plugin-directory`.
+One you have determined the right set of parameters to load the data in the manner
+you wish, you can use the source's ``.yaml()`` method to find the spec that describes
+the source, so you can insert it into a catalog (with appropriate description and
+metadata). Alternatively, you can open a YAML file as a catalog with ``intake.open_catalog``
+and use its ``.add()`` method to insert the source into the corresponding file.
+
+If, instead, you have data in your session in one of the containers supported by Intake
+(e.g., array, data-frame), you can use the ``intake.upload()`` function to save it to
+files in an appropriate format and a location you specify, and give you back a data-source
+instance, which, again, you can use with ``.yaml()`` or ``.add()``, as above.
