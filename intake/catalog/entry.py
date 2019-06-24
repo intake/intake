@@ -121,7 +121,7 @@ class CatalogEntry(DictSerialiseMixin):
             return getattr(self._get_default_source(), attr)
 
     def __dir__(self):
-        selflist = {'describe', 'describe_open', 'get',
+        selflist = {'describe', 'describe_open', 'get', 'gui',
                     'has_been_persisted', 'plots'}
         selflist.update(set(dir(self._get_default_source())))
         return list(sorted(selflist))

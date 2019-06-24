@@ -81,6 +81,11 @@ class GUI(Base):
         return self.source.sources
 
     @property
+    def source_instance(self):
+        """DataSource instance for the current selection and any parameters"""
+        return self.source.source_instance
+
+    @property
     def item(self):
         """Item that is selected"""
         if len(self.sources) == 0:
