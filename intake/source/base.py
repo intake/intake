@@ -281,9 +281,11 @@ class DataSource(DictSerialiseMixin):
         """Save this data for sharing with other people
 
         Creates a copy of the data in a format appropriate for its container,
-        in the location specified (which can be remote, e.g., s3). Returns
-        a YAML representation of this saved dataset, so that it can be put
-        into a catalog file.
+        in the location specified (which can be remote, e.g., s3).
+
+        Returns the resultant source object, so that you can, for instance,
+        add it to a catalog (``catalog.add(source)``) or get its YAML
+        representation (``.yaml()``).
         """
         from ..container import container_map
         import time
@@ -299,7 +301,7 @@ class DataSource(DictSerialiseMixin):
                     'persist_kwargs': kwargs}
         out.metadata = metadata
         out.name = self.name
-        return out.yaml()
+        return out
 
     def get_persisted(self):
         from ..container.persist import store

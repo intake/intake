@@ -6,6 +6,7 @@ These are reference class and function definitions likely to be useful to everyo
 .. autosummary::
    intake.open_catalog
    intake.registry
+   intake.upload
    intake.open_
    intake.source.csv.CSVSource
    intake.source.textfiles.TextFilesSource
@@ -29,6 +30,15 @@ These are reference class and function definitions likely to be useful to everyo
    Set of functions, one for each plugin, for direct opening of a data source. The names are derived from the names of
    the plugins in the registry at import time.
 
+.. autofunction::
+   intake.upload
+
+.. autoclass:: intake.gui.gui.GUI
+   :members:
+
+Source classes
+''''''''''''''
+
 .. autoclass:: intake.source.csv.CSVSource
    :members: __init__, discover, read_partition, read, to_dask, persist, export
 
@@ -46,6 +56,3 @@ These are reference class and function definitions likely to be useful to everyo
 
 .. autoclass:: intake.catalog.local.YAMLFilesCatalog
    :members: __init__, reload, search, walk, persist, export
-
-.. autoclass:: intake.gui.gui.GUI
-   :members:

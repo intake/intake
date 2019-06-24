@@ -45,7 +45,8 @@ class SourceGUI(Base):
     def __init__(self, cats=None, sources=None, done_callback=None, **kwargs):
         self._cats = cats
         self._sources = sources
-        self.panel = pn.Column(name='Entries', width_policy='max', max_width=MAX_WIDTH)
+        self.panel = pn.Column(name='Entries', width_policy='max',
+                               max_width=MAX_WIDTH)
         self.done_callback = done_callback
 
         self.plot_widget = pn.widgets.Toggle(
@@ -53,9 +54,15 @@ class SourceGUI(Base):
             value=False,
             disabled=True,
             width=50)
-        self.controls = [self.plot_widget]
+        self.pars_widget = pn.widgets.Toggle(
+            name='⚙',
+            value=False,
+            disabled=True,
+            width=50)
+        self.controls = [self.plot_widget, self.pars_widget]
         self.control_panel = pn.Row(name='Controls', margin=0)
 
+        self.pars_editor = ParsEditor()
         self.select = SourceSelector(cats=self._cats,
                                      sources=self._sources,
                                      done_callback=self.callback)
@@ -63,13 +70,15 @@ class SourceGUI(Base):
 
         self.plot = DefinedPlots(source=self.sources,
                                  visible=self.plot_widget.value,
-                                 visible_callback=partial(setattr, self.plot_widget, 'value'))
+                                 visible_callback=partial(
+                                     setattr, self.plot_widget, 'value'))
 
         super().__init__(**kwargs)
 
     def setup(self):
         self.watchers = [
             self.plot_widget.param.watch(self.on_click_plot_widget, 'value'),
+            self.pars_widget.param.watch(self.on_click_pars_widget, 'value'),
             self.select.widget.link(self.description, value='source'),
         ]
 
@@ -117,7 +126,11 @@ class SourceGUI(Base):
             self.plot.visible = False
         enable = bool(sources)
         self.plot_widget.value = False
+        self.pars_widget.value = False
+
         enable_widget(self.plot_widget, enable)
+        enable_widget(self.pars_widget, enable and sources[0]._user_parameters)
+        self.pars_editor.dirty = True  # reset pars editor
 
         if self.done_callback:
             self.done_callback(sources)
@@ -126,14 +139,27 @@ class SourceGUI(Base):
         """ When the plot control is toggled, set visibility and hand down source"""
         self.plot.source = self.sources
         self.plot.visible = event.new
-        if self.plot.visible:
-            self.plot.watchers.append(
-                self.select.widget.link(self.plot, value='source'))
+
+    def on_click_pars_widget(self, event):
+        if event.new:
+            pars = self.sources[0]._user_parameters
+            self.pars_editor.remake(pars)
+            self.description.panel.append(self.pars_editor.panel)
+        else:
+            self.description.panel.remove(self.pars_editor.panel)
 
     @property
     def sources(self):
         """Sources that have been selected from the source GUI"""
         return self.select.selected
+
+    @property
+    def source_instance(self):
+        """DataSource from the current selection using current parameters"""
+        sel = self.select.selected
+        args = self.pars_editor.kwargs
+        if sel:
+            return sel[0](**args)
 
     def __getstate__(self):
         """Serialize the current state of the object"""
@@ -165,3 +191,44 @@ class SourceGUI(Base):
         copy = SourceGUI.from_state(original.__getstate__())
         """
         return cls(cats=[], sources=[]).__setstate__(state)
+
+
+class ParsEditor(Base):
+    """Edit user parameters using widgets"""
+
+    def __init__(self):
+        self.panel = pn.Column(pn.Spacer())
+        self.dirty = True  # don't use kwargs until source is set
+
+    def remake(self, upars):
+        """Set up parameter widgets for given list of UserParameter objects"""
+        self.panel.clear()
+        for upar in upars:
+            self.panel.append(self.par_to_widget(upar))
+        self.dirty = False
+
+    @property
+    def kwargs(self):
+        """The current selections"""
+        if self.dirty:
+            return {}
+        else:
+            return {w.name: w.value for w in self.panel}
+
+    @staticmethod
+    def par_to_widget(par):
+        if par.allowed:
+            w = pn.widgets.Select(options=par.allowed)
+        elif par.type in ['str', 'unicode']:
+            w = pn.widgets.TextInput()
+        elif par.type == 'int':
+            w = pn.widgets.IntSlider(start=par.min, end=par.max, step=1)
+        elif par.type == 'float':
+            w = pn.widgets.FloatSlider(start=par.min, end=par.max)
+        elif par.type == 'datetime':
+            w = pn.widgets.DatetimeInput()
+        else:
+            w = pn.widgets.LiteralInput()
+        w.name = par.name
+        w.value = par.default
+        return w
