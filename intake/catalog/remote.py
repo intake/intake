@@ -8,8 +8,8 @@
 from ..source import registry as plugin_registry
 from .entry import CatalogEntry
 from .utils import expand_defaults, coerce
-from ..compat import unpack_kwargs
-from ..utils import remake_instance, decode_datetime, encode_datetime
+from ..compat import unpack_kwargs, pack_kwargs
+from ..utils import remake_instance
 
 class RemoteCatalogEntry(CatalogEntry):
     """An entry referring to a remote data definition"""
@@ -98,10 +98,10 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
                    parameters=user_parameters,
                    available_plugins=list(plugin_registry.keys()))
     req = requests.post(urljoin(url, '/v1/source'),
-                        data=msgpack.packb(payload, default=encode_datetime, use_bin_type=True),
+                        data=msgpack.packb(payload, **pack_kwargs),
                         **http_args)
     if req.ok:
-        response = msgpack.unpackb(req.content, object_hook=decode_datetime, **unpack_kwargs)
+        response = msgpack.unpackb(req.content, **unpack_kwargs)
 
         if 'plugin' in response:
             pl = response['plugin']

@@ -21,8 +21,7 @@ from ..auth.base import BaseClientAuth
 from .remote import RemoteCatalogEntry
 from .utils import flatten, reload_on_change, RemoteCatalogError
 from ..source.base import DataSource
-from ..compat import unpack_kwargs
-from ..utils import encode_datetime, decode_datetime
+from ..compat import unpack_kwargs, pack_kwargs
 logger = logging.getLogger('intake')
 
 
@@ -609,7 +608,7 @@ class RemoteCatalog(Catalog):
             raise RemoteCatalogError(
                 "Failed to fetch page of entries {}-{}."
                 "".format(page_offset, page_offset + self._page_size)) from err
-        info = msgpack.unpackb(response.content, object_hook=decode_datetime, **unpack_kwargs)
+        info = msgpack.unpackb(response.content, **unpack_kwargs)
         page = {}
         for source in info['sources']:
             user_parameters = source.get('user_parameters', [])
@@ -638,7 +637,7 @@ class RemoteCatalog(Catalog):
         except requests.HTTPError as err:
             raise RemoteCatalogError(
                 "Failed to fetch entry {!r}.".format(name)) from err
-        info = msgpack.unpackb(response.content, object_hook=decode_datetime, **unpack_kwargs)
+        info = msgpack.unpackb(response.content, **unpack_kwargs)
         return RemoteCatalogEntry(
             url=self.url,
             getenv=self.getenv,
@@ -693,7 +692,7 @@ class RemoteCatalog(Catalog):
         except requests.HTTPError as err:
             raise RemoteCatalogError(
                 "Failed to fetch metadata.") from err
-        info = msgpack.unpackb(response.content, object_hook=decode_datetime, **unpack_kwargs)
+        info = msgpack.unpackb(response.content, **unpack_kwargs)
         self.metadata = info['metadata']
         # The intake server now always provides a length, but the server may be
         # running an older version of intake.
@@ -722,12 +721,12 @@ class RemoteCatalog(Catalog):
                    'source_id': self._source_id}
         response = requests.post(
             url=self.source_url, **self._get_http_args({}),
-            data=msgpack.packb(request, default=encode_datetime, use_bin_type=True))
+            data=msgpack.packb(request, **pack_kwargs))
         try:
             response.raise_for_status()
         except requests.HTTPError as err:
             raise RemoteCatalogError("Failed search query.") from err
-        source = msgpack.unpackb(response.content, object_hook=decode_datetime, **unpack_kwargs)
+        source = msgpack.unpackb(response.content, **unpack_kwargs)
         source_id = source['source_id']
         cat = RemoteCatalog(
             url=self.url,
