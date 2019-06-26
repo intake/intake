@@ -24,7 +24,7 @@ def test_info_describe(intake_server):
 
     assert_items_equal(list(catalog), ['use_example1', 'nested', 'entry1',
                                        'entry1_part', 'remote_env',
-                                       'local_env', 'text', 'arr'])
+                                       'local_env', 'text', 'arr', 'datetime'])
 
     info = catalog['entry1'].describe()
 
@@ -426,3 +426,26 @@ def test_len(intake_server):
     remote_catalog = Catalog(intake_server)
     local_catalog = Catalog(TEST_CATALOG_PATH)
     assert sum(1 for entry in local_catalog) == len(remote_catalog)
+
+
+def test_datetime(intake_server):
+    catalog = Catalog(intake_server)
+    info = catalog["datetime"].describe()
+    print(info)
+    expected = {
+        'name': 'datetime',
+        'container': 'dataframe',
+        'description': 'datetime parameters',
+        'direct_access': 'forbid',
+        'user_parameters': [
+            {'name': 'time',
+             'description': 'some time',
+             'type': 'datetime',
+             'default': pd.Timestamp('1970-01-01 00:00:00')}
+        ],
+        'metadata': {},
+    }
+    for k in expected:
+        assert info[k] == expected[k]
+
+

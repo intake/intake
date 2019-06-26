@@ -12,6 +12,7 @@ import pickle
 
 import msgpack
 
+from ..compat import unpack_kwargs, pack_kwargs, np_unpack_kwargs, np_pack_kwargs
 
 class NoneCompressor(object):
     name = 'none'
@@ -50,16 +51,16 @@ class MsgPackSerializer(object):
 
     def encode(self, obj, container):
         if container in ['ndarray', 'xarray'] and msgpack_numpy:
-            return msgpack.packb(obj, default=msgpack_numpy.encode)
+            return msgpack.packb(obj, **np_pack_kwargs)
         elif container == 'dataframe':
             return obj.to_msgpack()
         else:
-            return msgpack.packb(obj, use_bin_type=True)
+            return msgpack.packb(obj, **pack_kwargs)
 
     def decode(self, bytestr, container):
         from ..compat import unpack_kwargs
         if container in ['ndarray', 'xarray'] and msgpack_numpy:
-            return msgpack.unpackb(bytestr, object_hook=msgpack_numpy.decode)
+            return msgpack.unpackb(bytestr, **np_unpack_kwargs)
         elif container == 'dataframe':
             import pandas as pd
             return pd.read_msgpack(bytestr)

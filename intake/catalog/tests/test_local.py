@@ -30,7 +30,7 @@ def abspath(filename):
 def test_local_catalog(catalog1):
     assert_items_equal(list(catalog1),
                        ['use_example1', 'nested', 'entry1', 'entry1_part',
-                        'remote_env', 'local_env', 'text', 'arr'])
+                        'remote_env', 'local_env', 'text', 'arr', 'datetime'])
     assert catalog1['entry1'].describe() == {
         'name': 'entry1',
         'container': 'dataframe',

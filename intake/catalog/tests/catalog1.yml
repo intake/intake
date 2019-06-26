@@ -70,3 +70,12 @@ sources:
     args:
       path: "{{ CATALOG_DIR }}/small.npy"
       chunks: 5
+  datetime:
+    description: datetime parameters
+    driver: csv
+    args:
+      time: "{{time}}"
+    parameters:
+      time:
+        description: some time
+        type: datetime
