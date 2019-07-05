@@ -141,7 +141,7 @@ data-frame::
 
         def read(self):
             self._load_metadata()
-            return pd.concat([self.read_partition(i) for i in self.npartitions])
+            return pd.concat([self.read_partition(i) for i in range(self.npartitions)])
 
         def _close(self):
             # close any files, sockets, etc
