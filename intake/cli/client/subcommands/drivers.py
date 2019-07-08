@@ -73,12 +73,7 @@ class Drivers(Subcommand):
 
     def _enable(self, args):
         drivers_d = os.path.join(confdir, 'drivers.d')
-        # In Python 3 you can use exist_ok=True for this.
-        try:
-            os.makedirs(drivers_d)
-        except OSError as err:
-            if err.errno != errno.EEXIST:
-                raise
+        os.makedirs(drivers_d, exist_ok=True)
         for driver in args.drivers:
             filepath = '{}.yml'.format(os.path.join(drivers_d, driver))
             if os.path.isfile(filepath):
@@ -92,12 +87,7 @@ class Drivers(Subcommand):
 
     def _disable(self, args):
         drivers_d = os.path.join(confdir, 'drivers.d')
-        # In Python 3 you can use exist_ok=True for this.
-        try:
-            os.makedirs(drivers_d)
-        except OSError as err:
-            if err.errno != errno.EEXIST:
-                raise
+        os.makedirs(drivers_d, exist_ok=True)
         for driver in args.drivers:
             filepath = '{}.yml'.format(os.path.join(drivers_d, driver))
             if os.path.isfile(filepath):
