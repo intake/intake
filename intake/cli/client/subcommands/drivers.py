@@ -29,7 +29,7 @@ import sys
 # Intake imports
 from intake import __version__
 from intake.cli.util import Subcommand
-from intake.source.discovery import all_enabled_drivers, enable, disable
+from intake.source.discovery import autodiscover, enable, disable
 from intake.config import confdir
 
 #-----------------------------------------------------------------------------
@@ -66,7 +66,7 @@ class Drivers(Subcommand):
             fmt = '{name:<30}{cls.__module__}.{cls.__name__} @ {file}'
         else:
             fmt = '{name:<30}{cls.__module__}.{cls.__name__}'
-        for name, cls in all_enabled_drivers().items():
+        for name, cls in autodiscover().items():
             print(fmt.format(name=name, cls=cls, file=inspect.getfile(cls)),
                   file=sys.stderr)
 

@@ -14,6 +14,7 @@ import inspect
 import time
 import logging
 
+import entrypoints
 import yaml
 
 from .base import DataSource
@@ -24,13 +25,14 @@ logger = logging.getLogger('intake')
 
 
 def autodiscover(path=None, plugin_prefix='intake_'):
-    """Scan for Intake plugin packages and return a dict of plugins.
+    """Scan for intake drivers and return a dict of plugins.
 
-    This function searches path (or sys.path) for packages with names that
-    start with plugin_prefix.  Those modules will be imported and scanned for
-    subclasses of intake.source.base.Plugin.  Any subclasses found will be
-    instantiated and returned in a dictionary, with the plugin's name attribute
-    as the key.
+    This wraps ``entrypoints.get_group_named('intake.drivers')``. In addition,
+    for backward-compatibility, this also searches path (or sys.path) for
+    packages with names that start with plugin_prefix.  Those modules will be
+    imported and scanned for subclasses of intake.source.base.Plugin.  Any
+    subclasses found will be instantiated and returned in a dictionary, with
+    the plugin's name attribute as the key.
     """
 
     plugins = {}
@@ -54,115 +56,16 @@ def autodiscover(path=None, plugin_prefix='intake_'):
                     plugins[plugin_name] = plugin
             logger.debug("Import %s took: %7.2f s" % (name, time.time() - t))
 
+    group = entrypoints.get_group_all('intake.drivers')
+    for entrypoint in group:
+        # TODO Refer to intake configuration file to enable only a *subset* of
+        # the installed extensions and/or to give precedence to a specific
+        # driver in the event of a name collision.
+        plugins[entrypoint.name] = entrypoint.load()
     return plugins
 
 
-def autodiscover_with_duplicates(path=None, plugin_prefix='intake_'):
-    """Scan for Intake plugin packages and return a list of plugins.
-
-    Unlike autodiscover, this will include name collisions.
-
-    This function searches path (or sys.path) for packages with names that
-    start with plugin_prefix.  Those modules will be imported and scanned for
-    subclasses of intake.source.base.Plugin.  Any subclasses found will be
-    instantiated and returned in a dictionary, with the plugin's name attribute
-    as the key.
-    """
-
-    plugins = []
-
-    for importer, name, ispkg in pkgutil.iter_modules(path=path):
-        if name.startswith(plugin_prefix):
-            t = time.time()
-            new_plugins = load_plugins_from_module(name)
-
-            for plugin_name, plugin in new_plugins.items():
-                plugins.append((plugin_name, plugin))
-            logger.debug("Import %s took: %7.2f s" % (name, time.time() - t))
-
-    return plugins
-
-
-def all_enabled_drivers():
-    """
-    Return all enabled drivers as mapping of names to classes.
-
-    Find drivers (plugins) that are autodiscoverable (i.e. start with 'intake')
-    and those that are not autodiscovered but have enabled configuration in
-    drivers.d. Do not exclude any plugs that have explicitly disable
-    configuration, regardless of autodiscoverability.
-    """
-    drivers = {}
-    autodiscovered = autodiscover_with_duplicates()
-    # Add each autodiscovered driver after checking that it is not disabled.
-    # In the event of a name collision, give precedence to the first one found.
-    drivers_d = os.path.join(confdir, 'drivers.d')
-    for name, cls in autodiscovered:
-        filename = '{cls.__module__}.{cls.__name__}.yml'.format(cls=cls)
-        filepath = os.path.join(drivers_d, filename)
-        if os.path.isfile(filepath):
-            try:
-                driver = enabled_driver(filepath)
-            except ConfigurationError:
-                logger.exception("Error reading %s", filepath)
-                continue
-            else:
-                if driver and name not in drivers:
-                    drivers[name] = cls
-        else:
-            # This is not explicitly enabled or disabled. Enable it by default.
-            if name not in drivers:
-                drivers[name] = cls
-    # Now add drivers that are not autodiscoverable (i.e. do not begin with
-    # 'intake') but do have enabled configuration as drivers.d.
-    # If these collide with any autodiscovered drivers, the explicitly
-    # enabled ones take precedence.
-    for filepath in glob.glob(os.path.join(drivers_d, '*.yml')):
-        try:
-            driver = enabled_driver(filepath)
-        except ConfigurationError:
-            logger.exception("Error reading %s", filepath)
-            continue
-        if driver:
-            drivers[driver.name] = driver
-    return drivers
-
-
-def enabled_driver(filepath):
-    """
-    From a driver.d config, load driver class if its configuration is enabled.
-    """
-    with open(filepath) as f:
-        try:
-            conf = yaml_load(f.read())
-        except Exception as err:
-            raise ConfigurationError(
-                "Could not parse {} as YAML.".format(filepath)) from err
-    try:
-        # Conf looks like:
-        # {'some.module.path.ClassName': {'enabled': <boolean>}}
-        (module_and_class, val), = conf.items()
-        enabled = val['enabled']
-    except KeyError as err:
-        raise ConfigurationError("Could not find expected structure in "
-                                 "{}".format(filepath)) from err
-    if not enabled:
-        return False
-    pieces = module_and_class.split('.')
-    module_name = '.'.join(pieces[:-1])
-    class_name = pieces[-1]
-    try:
-        mod = importlib.import_module(module_name)
-    except ModuleNotFoundError as err:
-        raise ConfigurationError(
-            "Could not import module {}".format(module_name)) from err
-    try:
-        cls = getattr(mod, class_name)
-    except AttributeError as err:
-        raise ConfigurationError(
-            "Could not find object named {} in module {}"
-            "".format(class_name, module_name)) from err
-    return cls
+all_enabled_drivers = autodiscover
 
 
 def load_plugins_from_module(module_name):
