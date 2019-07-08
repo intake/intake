@@ -103,6 +103,7 @@ def all_enabled_drivers():
                 driver = enabled_driver(filepath)
             except ConfigurationError:
                 logger.exception("Error reading %s", filepath)
+                continue
             else:
                 if driver and name not in drivers:
                     drivers[name] = cls
