@@ -14,6 +14,8 @@ import inspect
 import time
 import logging
 
+import yaml
+
 from .base import DataSource
 from ..catalog.base import Catalog
 from ..config import confdir
@@ -190,3 +192,31 @@ def load_plugins_from_module(module_name):
 
 class ConfigurationError(Exception):
     pass
+
+
+def enable(driver):
+    drivers_d = os.path.join(confdir, 'drivers.d')
+    os.makedirs(drivers_d, exist_ok=True)
+    filepath = '{}.yml'.format(os.path.join(drivers_d, driver))
+    if os.path.isfile(filepath):
+        with open(filepath, 'r') as f:
+            conf = yaml_load(f.read())
+    else:
+        conf = {}
+    conf.update({driver: {'enabled': True}})
+    with open(filepath, 'w') as f:
+        f.write(yaml.dump(conf, default_flow_style=False))
+
+
+def disable(driver):
+    drivers_d = os.path.join(confdir, 'drivers.d')
+    os.makedirs(drivers_d, exist_ok=True)
+    filepath = '{}.yml'.format(os.path.join(drivers_d, driver))
+    if os.path.isfile(filepath):
+        with open(filepath, 'r') as f:
+            conf = yaml_load(f.read())
+    else:
+        conf = {}
+    conf.update({driver: {'enabled': False}})
+    with open(filepath, 'w') as f:
+        f.write(yaml.dump(conf, default_flow_style=False))

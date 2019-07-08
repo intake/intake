@@ -25,14 +25,12 @@ import os
 import sys
 
 # External imports
-import yaml
 
 # Intake imports
 from intake import __version__
 from intake.cli.util import Subcommand
-from intake.source.discovery import all_enabled_drivers
+from intake.source.discovery import all_enabled_drivers, enable, disable
 from intake.config import confdir
-from ....utils import yaml_load
 
 #-----------------------------------------------------------------------------
 # API
@@ -69,32 +67,13 @@ class Drivers(Subcommand):
         else:
             fmt = '{name:<30}{cls.__module__}.{cls.__name__}'
         for name, cls in all_enabled_drivers().items():
-            print(fmt.format(name=name, cls=cls, file=inspect.getfile(cls)))
+            print(fmt.format(name=name, cls=cls, file=inspect.getfile(cls)),
+                  file=sys.stderr)
 
     def _enable(self, args):
-        drivers_d = os.path.join(confdir, 'drivers.d')
-        os.makedirs(drivers_d, exist_ok=True)
         for driver in args.drivers:
-            filepath = '{}.yml'.format(os.path.join(drivers_d, driver))
-            if os.path.isfile(filepath):
-                with open(filepath, 'r') as f:
-                    conf = yaml_load(f.read())
-            else:
-                conf = {}
-            conf.update({driver: {'enabled': True}})
-            with open(filepath, 'w') as f:
-                f.write(yaml.dump(conf, default_flow_style=False))
+            enable(driver)
 
     def _disable(self, args):
-        drivers_d = os.path.join(confdir, 'drivers.d')
-        os.makedirs(drivers_d, exist_ok=True)
         for driver in args.drivers:
-            filepath = '{}.yml'.format(os.path.join(drivers_d, driver))
-            if os.path.isfile(filepath):
-                with open(filepath, 'r') as f:
-                    conf = yaml_load(f.read())
-            else:
-                conf = {}
-            conf.update({driver: {'enabled': False}})
-            with open(filepath, 'w') as f:
-                f.write(yaml.dump(conf, default_flow_style=False))
+            disable(driver)
