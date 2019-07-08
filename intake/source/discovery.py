@@ -14,12 +14,10 @@ import inspect
 import time
 import logging
 
-import six
-import yaml
-
 from .base import DataSource
 from ..catalog.base import Catalog
 from ..config import confdir
+from ..utils import yaml_load
 logger = logging.getLogger('intake')
 
 
@@ -133,27 +131,34 @@ def enabled_driver(filepath):
     """
     with open(filepath) as f:
         try:
-            conf = yaml.load(f.read())
+            conf = yaml_load(f.read())
         except Exception as err:
-            six.raise_from(
-                ConfigurationError("Could not parse {} as YAML."
-                .format(filepath)), err)
+            raise ConfigurationError(
+                "Could not parse {} as YAML.".format(filepath)) from err
     try:
         # Conf looks like:
         # {'some.module.path.ClassName': {'enabled': <boolean>}}
         (module_and_class, val), = conf.items()
         enabled = val['enabled']
     except KeyError as err:
-        six.raise_from(
-            ConfigurationError("Could not find expected structure in "
-                               "{}".format(filepath)), err)
+        raise ConfigurationError("Could not find expected structure in "
+                                 "{}".format(filepath)) from err
     if not enabled:
         return False
     pieces = module_and_class.split('.')
     module_name = '.'.join(pieces[:-1])
     class_name = pieces[-1]
-    mod = importlib.import_module(module_name)
-    cls = getattr(mod, class_name)
+    try:
+        mod = importlib.import_module(module_name)
+    except ModuleNotFoundError as err:
+        raise ConfigurationError(
+            "Could not import module {}".format(module_name)) from err
+    try:
+        cls = getattr(mod, class_name)
+    except AttributeError as err:
+        raise ConfigurationError(
+            "Could not find object named {} in module {}"
+            "".format(class_name, module_name)) from err
     return cls
 
 

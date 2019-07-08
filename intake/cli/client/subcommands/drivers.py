@@ -32,6 +32,7 @@ from intake import __version__
 from intake.cli.util import Subcommand
 from intake.source.discovery import all_enabled_drivers
 from intake.config import confdir
+from ....utils import yaml_load
 
 #-----------------------------------------------------------------------------
 # API
@@ -82,7 +83,7 @@ class Drivers(Subcommand):
             filepath = '{}.yml'.format(os.path.join(drivers_d, driver))
             if os.path.isfile(filepath):
                 with open(filepath, 'r') as f:
-                    conf = yaml.load(f.read())
+                    conf = yaml_load(f.read())
             else:
                 conf = {}
             conf.update({driver: {'enabled': True}})
@@ -101,7 +102,7 @@ class Drivers(Subcommand):
             filepath = '{}.yml'.format(os.path.join(drivers_d, driver))
             if os.path.isfile(filepath):
                 with open(filepath, 'r') as f:
-                    conf = yaml.load(f.read())
+                    conf = yaml_load(f.read())
             else:
                 conf = {}
             conf.update({driver: {'enabled': False}})
