@@ -20,7 +20,7 @@ from .catalog.default import load_combo_catalog
 from .container import upload
 from .source import registry
 from .source.discovery import all_enabled_drivers
-from .gui import DataBrowser, InstanceMaker
+from .gui import InstanceMaker
 
 # Populate list of autodetected or explicitly configured drivers (plugins).
 registry.update(all_enabled_drivers())
