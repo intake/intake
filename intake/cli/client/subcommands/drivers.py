@@ -50,12 +50,13 @@ class Drivers(Subcommand):
         list.add_argument('-v', '--verbose', action='store_true', help='Show module path.')
         list.set_defaults(invoke=self._list)
 
-        enable = sub_parser.add_parser('enable', help='Enable one or more intake drivers.')
-        enable.add_argument('drivers', type=str, help='Module path and class name, as in package.submodule.ClassName', nargs='+')
+        enable = sub_parser.add_parser('enable', help='Enable an intake driver.')
+        enable.add_argument('name', type=str, help='Driver name')
+        enable.add_argument('driver', type=str, help='Module path and class name, as in package.submodule.ClassName')
         enable.set_defaults(invoke=self._enable)
 
         disable = sub_parser.add_parser('disable', help='Disable one or more intake drivers.')
-        disable.add_argument('drivers', type=str, help='Module path and class name, as in package.submodule.ClassName', nargs='+')
+        disable.add_argument('names', type=str, help='Driver names', nargs='+')
         disable.set_defaults(invoke=self._disable)
 
     def invoke(self, args):
@@ -71,9 +72,8 @@ class Drivers(Subcommand):
                   file=sys.stderr)
 
     def _enable(self, args):
-        for driver in args.drivers:
-            enable(driver)
+        enable(args.name, args.driver)
 
     def _disable(self, args):
-        for driver in args.drivers:
-            disable(driver)
+        for name in args.names:
+            disable(name)

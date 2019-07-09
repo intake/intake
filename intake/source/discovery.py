@@ -19,7 +19,7 @@ import yaml
 
 from .base import DataSource
 from ..catalog.base import Catalog
-from ..config import load_conf, save_conf
+from ..config import save_conf, conf
 from ..utils import yaml_load
 logger = logging.getLogger('intake')
 
@@ -58,24 +58,13 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
     drivers = {}
     group = entrypoints.get_group_all('intake.drivers', path=path)
     for entrypoint in group:
-        # TODO Refer to intake configuration file to enable only a *subset* of
-        # the installed extensions and/or to give precedence to a specific
-        # driver in the event of a name collision.
         try:
-            drivers[entrypoint.name] = entrypoint.load()
-        except ModuleNotFoundError:
-            log.error(
-                f"Failed to load {entrypoint.name} driver because module "
-                f"{entrypoint.module_name} could not be found.")
-            continue
-        except ModuleNotFoundError:
-            log.error(
-                f"Failed to load {entrypoint.name} driver because no object "
-                f"named {entrypoint.object_name} could be found in the module "
-                f"{entrypoint.module_name}.")
+            drivers[entrypoint.name] = _load_entrypoint(entrypoint)
+        except ConfigurationError:
+            logger.exception()
             continue
 
-    # TODO Un-comment this code to unleash warnings after most known intake-*
+    # TODO Un-comment this code to unleash warnings after most known intake_*
     # packages have been updated to provide 'intake.drivers' entrypoints.
     # missing_entry_points = set(package_scan_results) - set(drivers)
     # if missing_entry_points:
@@ -83,19 +72,44 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
     #         f"The drivers {missing_entry_points} do not specify entry_points "
     #         f"and were only discovered via a package scan. This may break in a "
     #         f"future release of intake. The packages should be updated.")
-    drivers.update(package_scan_results)
+    for name, driver in package_scan_results.items():
+        # In the event of a name collision, give the package scane results
+        # lower precedence than entrypoints.
+        drivers.setdefault(name, driver)
 
-    drivers_conf = (load_conf() or {}).get('drivers', {})
+    drivers_conf = conf.get('drivers', {})
     for name, dotted_object_name in drivers_conf.items():
         if not dotted_object_name:
+            logger.debug('Driver %s disabled in config file', name)
             # This driver is disabled.
             drivers.pop(name, None)
-        module_name, object_name = dotted_object_name.rpartition('.')
-        mock_entrypoint = entrypoint.EntryPoint(name, module_name, object_name)
-        # If the user has a broken config and this fails, let this raise
-        # instead of just logging.
-        drivers[entrypoint.name] = entrypoint.load()
+            continue
+        module_name, object_name = dotted_object_name.rsplit('.', 1)
+        entrypoint = entrypoints.EntryPoint(name, module_name, object_name)
+        try:
+            drivers[entrypoint.name] = _load_entrypoint(entrypoint)
+        except ConfigurationError:
+            logger.exception()
+            continue
     return drivers
+
+
+def _load_entrypoint(entrypoint):
+    """
+    Call entrypoint.load() and, if it fails, raise context-specific errors.
+    """
+    try:
+        return entrypoint.load()
+    except ModuleNotFoundError:
+        raise ConfigurationError(
+            f"Failed to load {entrypoint.name} driver because module "
+            f"{entrypoint.module_name} could not be found.")
+    except ModuleNotFoundError:
+        raise ConfigurationError(
+            f"Failed to load {entrypoint.name} driver because no object "
+            f"named {entrypoint.object_name} could be found in the module "
+            f"{entrypoint.module_name}.")
+
 
 def _package_scan(path=None, plugin_prefix='intake_'):
     """Scan for intake drivers and return a dict of plugins.
@@ -161,29 +175,32 @@ class ConfigurationError(Exception):
     pass
 
 
-def enable(driver):
-    drivers_d = os.path.join(confdir, 'drivers.d')
-    os.makedirs(drivers_d, exist_ok=True)
-    filepath = '{}.yml'.format(os.path.join(drivers_d, driver))
-    if os.path.isfile(filepath):
-        with open(filepath, 'r') as f:
-            conf = yaml_load(f.read())
-    else:
-        conf = {}
-    conf.update({driver: {'enabled': True}})
-    with open(filepath, 'w') as f:
-        f.write(yaml.dump(conf, default_flow_style=False))
+def enable(name, driver):
+    """
+    Update config file drivers seciton to explicitly assign a driver to a name.
+
+    Parameters
+    ----------
+    name : string
+        As in ``'zarr'``
+    driver : string
+        Dotted object name, as in ``'intake_xarray.xzarr.ZarrSource'``
+    """
+    if 'drivers' not in conf:
+        conf['drivers'] = {}
+    conf['drivers'][name] = driver
+    save_conf()
 
 
-def disable(driver):
-    drivers_d = os.path.join(confdir, 'drivers.d')
-    os.makedirs(drivers_d, exist_ok=True)
-    filepath = '{}.yml'.format(os.path.join(drivers_d, driver))
-    if os.path.isfile(filepath):
-        with open(filepath, 'r') as f:
-            conf = yaml_load(f.read())
-    else:
-        conf = {}
-    conf.update({driver: {'enabled': False}})
-    with open(filepath, 'w') as f:
-        f.write(yaml.dump(conf, default_flow_style=False))
+def disable(name):
+    """Update config file drivers seciton to disable a name.
+
+    Parameters
+    ----------
+    name : string
+        As in ``'zarr'``
+    """
+    if 'drivers' not in conf:
+        conf['drivers'] = {}
+    conf['drivers'][name] = False
+    save_conf()
