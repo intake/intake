@@ -17,7 +17,6 @@ import entrypoints
 from .base import DataSource
 from ..catalog.base import Catalog
 from ..config import save_conf, conf
-from ..utils import yaml_load
 logger = logging.getLogger('intake')
 
 
