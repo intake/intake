@@ -5,8 +5,6 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-import glob
-import os
 import pkgutil
 import warnings
 import importlib
@@ -15,7 +13,6 @@ import time
 import logging
 
 import entrypoints
-import yaml
 
 from .base import DataSource
 from ..catalog.base import Catalog
@@ -141,9 +138,6 @@ def _package_scan(path=None, plugin_prefix='intake_'):
                     plugins[plugin_name] = plugin
             logger.debug("Import %s took: %7.2f s" % (name, time.time() - t))
     return plugins
-
-
-all_enabled_drivers = autodiscover
 
 
 def load_plugins_from_module(module_name):
