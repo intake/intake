@@ -63,8 +63,8 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
         if entrypoint.name in package_scan_results:
             cls = package_scan_results[name]
             del package_scan_results[name]
-            logger.debug("Entrypoint shadowed package_scan result '%s = %s'",
-                         name_, cls.__name__)
+            logger.debug("Entrypoint shadowed package_scan result '%s = %s.%s'",
+                         name_, cls.__module__, cls.__name__)
 
     # Discover drivers via config.
     drivers_conf = conf.get('drivers', {})
@@ -82,8 +82,8 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
             if name in package_scan_results:
                 cls = package_scan_results[name]
                 del package_scan_results[name]
-                logger.debug("Disabled package_scan result '%s = %s'",
-                             name_, cls.__name__)
+                logger.debug("Disabled package_scan result '%s = %s.%s'",
+                             name_, cls.__module__, cls.__name__)
             continue
         module_name, object_name = dotted_object_name.rsplit('.', 1)
         entrypoint = entrypoints.EntryPoint(name, module_name, object_name)
@@ -100,8 +100,8 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
         if name in package_scan_results:
             cls = package_scan_results[name]
             del package_scan_results[name]
-            logger.debug("Config shadowed package scan result '%s = %s'",
-                         name, cls.__name__)
+            logger.debug("Config shadowed package scan result '%s = %s.%s'",
+                         name, cls.__module__, cls.__name__)
         group[name] = entrypoint
 
     # Discovery is complete.
@@ -130,11 +130,12 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
 
     # Now include any package scan results. Any that were shadowed or
     # banned have already been removed above.
-    for name, driver in package_scan_results.items():
-        drivers[name] = driver
-        logger.debug("Loaded package scan result '%s = %s'",
+    for name, cls in package_scan_results.items():
+        drivers[name] = cls
+        logger.debug("Loaded package scan result '%s = %s.%s'",
                      name,
-                     driver.__name__)
+                     cls.__module__,
+                     cls.__name__)
 
     return drivers
 
