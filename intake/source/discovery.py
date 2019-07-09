@@ -149,7 +149,7 @@ def _load_entrypoint(entrypoint):
         raise ConfigurationError(
             f"Failed to load {entrypoint.name} driver because module "
             f"{entrypoint.module_name} could not be found.")
-    except ModuleNotFoundError:
+    except AttributeError:
         raise ConfigurationError(
             f"Failed to load {entrypoint.name} driver because no object "
             f"named {entrypoint.object_name} could be found in the module "
