@@ -16,7 +16,7 @@ import entrypoints
 
 from .base import DataSource
 from ..catalog.base import Catalog
-from ..config import save_conf, conf
+from ..config import save_conf, conf, cfile
 logger = logging.getLogger('intake')
 
 
@@ -48,45 +48,92 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
     drivers : dict
         Name mapped to driver class.
     """
+    # Discover drivers via package scan.
     if do_package_scan:
         package_scan_results = _package_scan(path, plugin_prefix)
 
-    drivers = {}
-    group = entrypoints.get_group_all('intake.drivers', path=path)
-    for entrypoint in group:
-        try:
-            drivers[entrypoint.name] = _load_entrypoint(entrypoint)
-        except ConfigurationError:
-            logger.exception()
-            continue
 
-    # TODO Un-comment this code to unleash warnings after most known intake_*
-    # packages have been updated to provide 'intake.drivers' entrypoints.
-    # missing_entry_points = set(package_scan_results) - set(drivers)
-    # if missing_entry_points:
-    #     warnings.warn(
-    #         f"The drivers {missing_entry_points} do not specify entry_points "
-    #         f"and were only discovered via a package scan. This may break in a "
-    #         f"future release of intake. The packages should be updated.")
-    for name, driver in package_scan_results.items():
-        # In the event of a name collision, give the package scane results
-        # lower precedence than entrypoints.
-        drivers.setdefault(name, driver)
+    # Discover drivers via entrypoints.
+    group = entrypoints.get_group_named('intake.drivers', path=path)
+    for entrypoint in group.values():
+        logger.debug("Discovered entrypoint '%s = %s.%s'",
+                     entrypoint.name,
+                     entrypoint.module_name,
+                     entrypoint.object_name)
+        if entrypoint.name in package_scan_results:
+            cls = package_scan_results[name]
+            del package_scan_results[name]
+            logger.debug("Entrypoint shadowed package_scan result '%s = %s'",
+                         name_, cls.__name__)
 
+    # Discover drivers via config.
     drivers_conf = conf.get('drivers', {})
+    logger.debug("Using configuration file at %s", cfile())
     for name, dotted_object_name in drivers_conf.items():
         if not dotted_object_name:
-            logger.debug('Driver %s disabled in config file', name)
-            # This driver is disabled.
-            drivers.pop(name, None)
+            logger.debug('Name %s is banned in config file', name)
+            if name in group:
+                entrypoint = group[name]
+                del group[name]
+                logger.debug("Disabled entrypoint '%s = %s.%s'",
+                             entrypoint.name,
+                             entrypoint.module_name,
+                             entrypoint.object_name)
+            if name in package_scan_results:
+                cls = package_scan_results[name]
+                del package_scan_results[name]
+                logger.debug("Disabled package_scan result '%s = %s'",
+                             name_, cls.__name__)
             continue
         module_name, object_name = dotted_object_name.rsplit('.', 1)
         entrypoint = entrypoints.EntryPoint(name, module_name, object_name)
+        logger.debug("Discovered config-specified '%s = %s.%s'",
+                     entrypoint.name,
+                     entrypoint.module_name,
+                     entrypoint.object_name)
+        if name in group:
+            logger.debug("Config shadowed entrypoint '%s = %s.%s'",
+                            entrypoint.name,
+                            entrypoint.module_name,
+                            entrypoint.object_name)
+        if name in package_scan_results:
+            cls = package_scan_results[name]
+            del package_scan_results[name]
+            logger.debug("Config shadowed package scan result '%s = %s'",
+                         name, cls.__name__)
+
+    # Discovery is complete.
+    
+    # Load entrypoints. Any that were shadowed or banned have already been
+    # removed above.
+    drivers = {}
+    for entrypoint in group.values():
         try:
             drivers[entrypoint.name] = _load_entrypoint(entrypoint)
         except ConfigurationError:
             logger.exception()
             continue
+        logger.debug("Loaded entrypoint '%s = %s.%s'",
+                     entrypoint.name,
+                     entrypoint.module_name,
+                     entrypoint.object_name)
+
+    # TODO Un-comment this code to unleash warnings after most known intake_*
+    # packages have been updated to provide 'intake.drivers' entrypoints.
+    # if package_scan_results:
+    #     warnings.warn(
+    #         f"The drivers {package_scan_results} do not specify entry_points "
+    #         f"and were only discovered via a package scan. This may break in a "
+    #         f"future release of intake. The packages should be updated.")
+
+    # Now include any package scan results. Any that were shadowed or
+    # banned have already been removed above.
+    for name, driver in package_scan_results.items():
+        drivers[name] = driver
+        logger.debug("Loaded package scan result '%s = %s'",
+                     name,
+                     driver.__name__)
+
     return drivers
 
 
