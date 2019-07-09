@@ -202,18 +202,94 @@ It is also important to note that source attributes should be set after ``read()
 Driver Discovery
 ----------------
 
+Intake discovers available drivers in three different ways, described below.
+After the discovery phase, Intake will automatically create
+``open_[driver_name]`` convenience functions under the ``intake`` module
+namespace.  Calling a function like ``open_csv()`` is equivalent to
+instantiating the corresponding data-source class.
+
+Entrypoints
+'''''''''''
+
+If you are packaging your driver into an installable package to be shared, you
+should add the following to the package's ``setup.py``:
+
+.. code-block:: python
+
+   setup(
+       ...
+       entry_points={
+           'intake.drivers': [
+               'some_format_name = some_package.and_maybe_a_submodule.YourDriverClass',
+               ...
+           ]
+       },
+   )
+
+Entry points are a way for Python packages to advertise objects with some
+common interface. When Intake is imported, it discovers all packages installed
+in the current environment that advertise ``'intake.drivers'`` in this way.
+
+Configuration
+'''''''''''''
+
+The intake configuration file can be used to:
+
+* Specify precedence in the event of name collisions---for example, if two different
+  ``csv`` drivers are installed.
+* Disable a troublesome driver.
+* Manually make intake aware of a driver, which can be useful for
+  experimentation and early development until a ``setup.py`` with an
+  entrypoint is prepared.
+* Assign a driver to a name other than the one assigned by the driver's
+  author.
+
+The commandline invocation
+
+.. code-block:: bash
+
+   intake drivers enable some_format_name some_package.and_maybe_a_submodule.YourDriverClass
+
+is equivalent to adding this to your intake configuration file:
+
+.. code-block:: yaml
+
+   drivers:
+     some_format_name: some_package.and_maybe_a_submodule.YourDriverClass
+
+You can also disable a troublesome driver
+
+.. code-block:: bash
+
+   intake drivers disable some_format_name
+
+which is equivalent to
+
+.. code-block:: yaml
+
+   drivers:
+     your_format_name: false
+
+Deprecated: Package Scan
+''''''''''''''''''''''''
+
 When Intake is imported, it will search the Python module path (by default includes ``site-packages`` and other
 directories in your ``$PYTHONPATH``) for packages starting with ``intake_`` and discover DataSource subclasses inside
 those packages to register.  drivers will be registered based on the``name`` attribute of the object.
 By convention, drivers should have names that are lowercase, valid Python identifiers that do not contain the word
 ``intake``.
 
-After the discovery phase, Intake will automatically create ``open_[driver_name]`` convenience functions under the
-``intake`` module namespace.  Calling a function like ``open_csv()`` is equivalent to instantiating the
-corresponding data-source class.
+This approach is deprecated because it is limiting (requires the package to
+begin with "intake_") and because the package scan can be slow. Using
+entrypoints is strongly encouraged. The package scan *may* be disabled by
+default in some future release of intake.
 
-To take advantage of driver discovery, give your installed package a name that starts with ``intake_`` and define
-your driver class(es) in the ``__init__.py`` of the package.
+Python API to Driver Discovery
+''''''''''''''''''''''''''''''
+
+.. autofunction:: intake.source.discovery.autodiscover
+.. autofunction:: intake.source.discovery.enable
+.. autofunction:: intake.source.discovery.disable
 
 .. _remote_data:
 
