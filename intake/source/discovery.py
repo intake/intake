@@ -92,15 +92,17 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
                      entrypoint.module_name,
                      entrypoint.object_name)
         if name in group:
+            shadowed = group[name]
             logger.debug("Config shadowed entrypoint '%s = %s.%s'",
-                            entrypoint.name,
-                            entrypoint.module_name,
-                            entrypoint.object_name)
+                         shadowed.name,
+                         shadowed.module_name,
+                         shadowed.object_name)
         if name in package_scan_results:
             cls = package_scan_results[name]
             del package_scan_results[name]
             logger.debug("Config shadowed package scan result '%s = %s'",
                          name, cls.__name__)
+        group[name] = entrypoint
 
     # Discovery is complete.
     
