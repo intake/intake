@@ -220,7 +220,7 @@ class ConfigurationError(Exception):
 
 def enable(name, driver):
     """
-    Update config file drivers seciton to explicitly assign a driver to a name.
+    Update config file drivers section to explicitly assign a driver to a name.
 
     Parameters
     ----------
@@ -236,7 +236,7 @@ def enable(name, driver):
 
 
 def disable(name):
-    """Update config file drivers seciton to disable a name.
+    """Update config file drivers section to disable a name.
 
     Parameters
     ----------
