@@ -29,7 +29,7 @@ import sys
 # Intake imports
 from intake import __version__
 from intake.cli.util import Subcommand
-from intake.source.discovery import autodiscover, enable, disable
+from intake.source.discovery import autodiscover, autodiscover_all, enable, disable
 from intake.config import confdir
 
 #-----------------------------------------------------------------------------
@@ -67,9 +67,17 @@ class Drivers(Subcommand):
             fmt = '{name:<30}{cls.__module__}.{cls.__name__} @ {file}'
         else:
             fmt = '{name:<30}{cls.__module__}.{cls.__name__}'
-        for name, cls in autodiscover().items():
+        drivers_by_name = autodiscover()   # dict mapping name to driver
+        all_drivers = autodiscover_all()  # listof (name, driver)
+        print("Enabled:", file=sys.stderr)
+        for name, cls in drivers_by_name.items():
             print(fmt.format(name=name, cls=cls, file=inspect.getfile(cls)),
                   file=sys.stderr)
+        print("\nNot enabled:", file=sys.stderr)
+        for name, cls in all_drivers:
+            if drivers_by_name[name] is not cls:
+                print(fmt.format(name=name, cls=cls, file=inspect.getfile(cls)),
+                    file=sys.stderr)
 
     def _enable(self, args):
         enable(args.name, args.driver)
