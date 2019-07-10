@@ -5,7 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 '''
-
+CLI for listing, enabling, disabling intake drivers
 '''
 
 from __future__ import print_function
