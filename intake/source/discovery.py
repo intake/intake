@@ -145,15 +145,15 @@ def _load_entrypoint(entrypoint):
     """
     try:
         return entrypoint.load()
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as err:
         raise ConfigurationError(
             f"Failed to load {entrypoint.name} driver because module "
-            f"{entrypoint.module_name} could not be found.")
-    except AttributeError:
+            f"{entrypoint.module_name} could not be found.") from err
+    except AttributeError as err:
         raise ConfigurationError(
             f"Failed to load {entrypoint.name} driver because no object "
             f"named {entrypoint.object_name} could be found in the module "
-            f"{entrypoint.module_name}.")
+            f"{entrypoint.module_name}.") from err
 
 
 def _package_scan(path=None, plugin_prefix='intake_'):
