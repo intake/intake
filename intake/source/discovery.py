@@ -64,7 +64,7 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
             cls = package_scan_results[name]
             del package_scan_results[name]
             logger.debug("Entrypoint shadowed package_scan result '%s = %s.%s'",
-                         name_, cls.__module__, cls.__name__)
+                         name, cls.__module__, cls.__name__)
 
     # Discover drivers via config.
     drivers_conf = conf.get('drivers', {})
@@ -83,7 +83,7 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
                 cls = package_scan_results[name]
                 del package_scan_results[name]
                 logger.debug("Disabled package_scan result '%s = %s.%s'",
-                             name_, cls.__module__, cls.__name__)
+                             name, cls.__module__, cls.__name__)
             continue
         module_name, object_name = dotted_object_name.rsplit('.', 1)
         entrypoint = entrypoints.EntryPoint(name, module_name, object_name)
