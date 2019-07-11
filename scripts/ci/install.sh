@@ -24,6 +24,6 @@ conda config --set auto_update_conda off
 conda install --yes ${CONDA_REQS}
 
 echo "Installing test dependencies."
-conda install --yes appdirs dask>=1.0 jinja2 numpy pyyaml requests msgpack fsspec intake-parquet zarr notebook panel==0.5.1 hvplot==0.4.0 -c defaults -c conda-forge
+conda install --yes appdirs dask>=1.0 jinja2 numpy pyyaml requests msgpack-numpy fsspec intake-parquet zarr notebook panel==0.5.1 hvplot==0.4.0 -c defaults -c conda-forge
 conda install -y -c conda-forge nodejs
 npm install -g dat
