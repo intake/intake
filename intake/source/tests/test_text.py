@@ -10,7 +10,7 @@ import pytest
 import intake
 from intake.source.textfiles import TextFilesSource
 from intake.source import import_name
-from dask.bytes import open_files
+from fsspec import open_files
 here = os.path.abspath(os.path.dirname(__file__))
 
 

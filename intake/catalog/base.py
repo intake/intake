@@ -286,7 +286,7 @@ class Catalog(DataSource):
         storage_options : dict
             Extra arguments for the file-system
         """
-        from dask.bytes import open_files
+        from fsspec import open_files
         with open_files([url], **(storage_options or {}), mode='wt')[0] as f:
             f.write(self.serialize())
 
@@ -748,7 +748,7 @@ class RemoteCatalog(Catalog):
     @staticmethod
     def _persist(source, path, **kwargs):
         from intake.catalog.local import YAMLFileCatalog
-        from dask.bytes.core import open_files
+        from fsspec import open_files
         import yaml
         out = {}
         for name in source:

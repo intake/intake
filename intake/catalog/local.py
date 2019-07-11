@@ -11,7 +11,7 @@ import os
 import posixpath
 
 from jinja2 import Template
-from dask.bytes import open_files
+from fsspec import open_files
 
 from .. import __version__
 from .base import Catalog, DataSource

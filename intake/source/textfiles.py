@@ -71,7 +71,7 @@ class TextFilesSource(base.DataSource):
         super(TextFilesSource, self).__init__(metadata=metadata)
 
     def _get_schema(self):
-        from dask.bytes import open_files
+        from fsspec import open_files
         if self._files is None:
 
             urlpath = self._get_cache(self._urlpath)[0]

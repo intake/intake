@@ -59,7 +59,7 @@ class RemoteSequenceSource(RemoteSource):
             None is equivalent to str
         """
         import posixpath
-        from dask.bytes import open_files
+        from fsspec import open_files
         import dask
         import pickle
         import json
