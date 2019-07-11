@@ -280,8 +280,11 @@ class CatAdder(Base):
     def cat(self):
         """Catalog object initialized from from cat_url"""
         # might want to do some validation in here
-        url, fs =  self.cat_url
-        return intake.open_catalog(url, fs=fs)
+        url, fs = self.cat_url
+        if fs:
+            return intake.open_catalog(url, fs=fs)
+        else:
+            return intake.open_catalog(url)
 
     def add_cat(self, arg=None):
         """Add cat and close panel"""

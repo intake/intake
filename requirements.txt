@@ -6,3 +6,4 @@ numpy
 pyyaml
 requests
 msgpack
+fsspec

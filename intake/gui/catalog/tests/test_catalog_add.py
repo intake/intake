@@ -41,21 +41,11 @@ def test_file_selector_raises_error_if_no_file_selected(file_selector):
 
 
 def test_file_selector_edit_path(file_selector):
-    expected = os.getcwd() + '/'
+    expected = os.getcwd()
     file_selector.move_up()
     file_selector.path_text.value = os.getcwd()
     assert file_selector.validator.object is None
     assert file_selector.path == expected
-
-
-def test_file_selector_edit_path_bad_value(file_selector):
-    file_selector.done_callback = callback
-    with pytest.raises(ValueError, match='False'):
-        file_selector.path_text.value = 'blah/foo/blah'
-        assert 'error' in file_selector.validator.object
-        assert file_selector.is_valid is False
-        assert file_selector.main.value == []
-        assert file_selector.main.options == {}
 
 
 def test_file_selector_go_home(file_selector):
@@ -69,7 +59,7 @@ def test_file_selector_go_home(file_selector):
 def test_file_selector_move_up(file_selector):
     assert file_selector.path == os.getcwd() + '/'
     file_selector.move_up()
-    expected = os.path.abspath('..') + '/'
+    expected = os.path.abspath('..')
     assert file_selector.path == expected
 
 
@@ -106,7 +96,7 @@ def test_cat_adder(cat_adder):
     assert len(cat_adder.panel.objects) == 2
 
     cat_adder.tabs.active = 1
-    assert cat_adder.cat_url == ''
+    assert cat_adder.cat_url[0] == ''
     assert cat_adder.cat.name is None
     assert cat_adder.widget.disabled is False
 
@@ -118,7 +108,7 @@ def test_cat_adder_add_real_cat(cat_adder, cat1_url, cat1):
     cat_adder.tabs.active = 1
     cat_adder.url.main.value = cat1_url
 
-    assert cat_adder.cat_url == cat1_url
+    assert cat_adder.cat_url[0] == cat1_url
     assert cat_adder.cat == cat1
 
     cat_adder.done_callback = callback
