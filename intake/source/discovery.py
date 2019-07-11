@@ -56,7 +56,7 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
     # Discover drivers via entrypoints.
     group = entrypoints.get_group_named('intake.drivers', path=path)
     group_all = entrypoints.get_group_all('intake.drivers', path=path)
-    if group_all != group:
+    if len(group_all) != len(group):
         # There are some name collisions. Let's go digging for them.
         for name, matches in itertools.groupby(group_all, lambda ep: ep.name):
             matches = list(matches)
