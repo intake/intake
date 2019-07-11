@@ -231,7 +231,7 @@ class BaseSelector(Base):
 
     @property
     def selected(self):
-        """Value sepected on the widget"""
+        """Value selected on the widget"""
         return self.widget.value
 
     @selected.setter

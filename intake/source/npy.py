@@ -114,6 +114,7 @@ class NumpyAccess(object):
         self.offset = None
         if self.shape is None or dtype is None or offset is None:
             self._get_info()
+        self.ndim = len(self.shape)
 
     def __getitem__(self, item):
         import numpy as np

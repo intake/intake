@@ -5,6 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+from pathlib import Path
 import sys
 from intake.catalog import default
 from intake.catalog.base import Catalog
@@ -12,7 +13,7 @@ from intake.catalog.base import Catalog
 
 def test_which():
     p = default.which('python')
-    assert p == sys.executable
+    assert Path(p).resolve() == Path(sys.executable).resolve()
 
 
 def test_load():

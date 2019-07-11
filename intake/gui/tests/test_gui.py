@@ -42,7 +42,7 @@ def test_gui_open_plot_panel(gui, cat1, cat2, sources1, sources2):
     pytest.importorskip('hvplot')
     gui.source.plot_widget.value = True
     assert gui.source.plot.visible is True
-    assert len(gui.source.plot.watchers) == 3
+    assert len(gui.source.plot.watchers) == 2
     assert len(gui.source.plot.panel.objects) == 3
     assert gui.source.plot.source == sources1[0]
 
@@ -52,7 +52,7 @@ def test_gui_open_plot_panel(gui, cat1, cat2, sources1, sources2):
     assert not gui.source.plot.watchers
 
     gui.source.plot_widget.value = True
-    assert len(gui.source.plot.watchers) == 3
+    assert len(gui.source.plot.watchers) == 2
     assert len(gui.source.plot.panel.objects) == 3
 
 
@@ -100,7 +100,7 @@ def test_gui_close_and_open_source(gui, cat2, sources2):
 
     gui.source.visible = True
     assert gui.source.select.visible is True
-    assert len(gui.source.control_panel.objects) == 1
+    assert len(gui.source.control_panel.objects) == 2
     assert gui.source.description.visible is True
     assert gui.source.plot.visible is False
     assert gui.source.sources == [sources2[0]]

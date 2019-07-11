@@ -8,6 +8,7 @@
 import collections
 import collections.abc
 import copy
+import datetime
 import keyword
 import logging
 import posixpath
@@ -21,7 +22,7 @@ from ..auth.base import BaseClientAuth
 from .remote import RemoteCatalogEntry
 from .utils import flatten, reload_on_change, RemoteCatalogError
 from ..source.base import DataSource
-from ..compat import unpack_kwargs
+from ..compat import unpack_kwargs, pack_kwargs
 logger = logging.getLogger('intake')
 
 
@@ -721,7 +722,7 @@ class RemoteCatalog(Catalog):
                    'source_id': self._source_id}
         response = requests.post(
             url=self.source_url, **self._get_http_args({}),
-            data=msgpack.packb(request, use_bin_type=True))
+            data=msgpack.packb(request, **pack_kwargs))
         try:
             response.raise_for_status()
         except requests.HTTPError as err:
@@ -747,12 +748,18 @@ class RemoteCatalog(Catalog):
 
     @staticmethod
     def _persist(source, path, **kwargs):
+        return RemoteCatalog._data_to_source(source, path, **kwargs)
+
+    @staticmethod
+    def _data_to_source(cat, path, **kwargs):
         from intake.catalog.local import YAMLFileCatalog
         from fsspec import open_files
         import yaml
+        if not isinstance(cat, Catalog):
+            raise NotImplementedError
         out = {}
-        for name in source:
-            entry = source[name]
+        for name in cat:
+            entry = cat[name]
             out[name] = entry.__getstate__()
             out[name]['parameters'] = [up._captured_init_kwargs for up
                                        in entry._user_parameters]

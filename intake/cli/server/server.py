@@ -20,7 +20,7 @@ from intake.config import conf
 from intake.container import serializer
 from intake.utils import remake_instance
 from intake import __version__
-from intake.compat import unpack_kwargs
+from intake.compat import unpack_kwargs, pack_kwargs
 logger = logging.getLogger('intake')
 
 
@@ -115,7 +115,7 @@ class ServerInfoHandler(tornado.web.RequestHandler):
                     info['name'] = name
                     for k, v in info['args'].items():
                         try:
-                            msgpack.packb(v, use_bin_type=True)
+                            msgpack.packb(v, **pack_kwargs)
                         except TypeError:
                             modified_args[k] = 'UNSERIALIZABLE_VALUE'
                     info['args'] = modified_args
@@ -131,7 +131,7 @@ class ServerInfoHandler(tornado.web.RequestHandler):
             msg = 'Access forbidden'
             raise tornado.web.HTTPError(status_code=403, log_message=msg,
                                         reason=msg)
-        self.write(msgpack.packb(server_info, use_bin_type=True))
+        self.write(msgpack.packb(server_info, **pack_kwargs))
 
 
 class SourceCache(object):
@@ -217,18 +217,17 @@ class ServerSourceHandler(tornado.web.RequestHandler):
 
                 source_info = dict(source=info)
                 try:
-                    out = msgpack.packb(source_info, use_bin_type=True)
+                    out = msgpack.packb(source_info, **pack_kwargs)
                 except TypeError:
                     info['direct_access'] = 'forbid'
                     modified_args = source_info['source']['args'].copy()
                     for k, v in source_info['source']['args'].items():
                         try:
-                            msgpack.packb(v, use_bin_type=True)
+                            msgpack.packb(v, **pack_kwargs)
                         except TypeError:
                             modified_args[k] = 'UNSERIALIZABLE_VALUE'
                     source_info['source']['args'] = modified_args
-                    out = msgpack.packb(source_info,
-                                        use_bin_type=True)
+                    out = msgpack.packb(source_info, **pack_kwargs)
                 self.write(out)
                 return
 
@@ -268,7 +267,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                         reason=str(err))
                 self._cache.add(results_cat, source_id=query_source_id)
             response = {'source_id': query_source_id}
-            self.write(msgpack.packb(response, use_bin_type=True))
+            self.write(msgpack.packb(response, **pack_kwargs))
             self.finish()
         elif action == 'open':
             if 'source_id' in head:
@@ -318,7 +317,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 response.update(dict(container=source.container,
                                      source_id=source_id,
                                      metadata=source.metadata))
-                self.write(msgpack.packb(response, use_bin_type=True))
+                self.write(msgpack.packb(response, **pack_kwargs))
                 self.finish()
             elif direct_access == 'force' and not client_has_plugin:
                 msg = 'client must have plugin "%s" to access source "%s"' \
@@ -331,7 +330,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 response = open_desc
                 user_parameters['plugin'] = plugin_name
                 response['args'] = (entry._create_open_args(user_parameters)[1])
-                self.write(msgpack.packb(response, use_bin_type=True))
+                self.write(msgpack.packb(response, **pack_kwargs))
                 self.finish()
 
         elif action == 'read':
@@ -356,7 +355,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             msg = dict(format=chunk_encoder.format_name,
                        compression=chunk_encoder.compressor_name,
                        container=source.container, data=data)
-            self.write(msgpack.packb(msg, use_bin_type=True))
+            self.write(msgpack.packb(msg, **pack_kwargs))
             self.flush()
             self._cache.touch(source_id)  # keep source alive
 
@@ -392,4 +391,4 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             msg = dict(error=str(error_exception[1]))
         else:
             msg = dict(error='unknown error')
-        self.write(msgpack.packb(msg, use_bin_type=True))
+        self.write(msgpack.packb(msg, **pack_kwargs))

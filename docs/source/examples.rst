@@ -65,6 +65,18 @@ More specific examples of Intake functionality
       [`Static <https://github.com/CityOfLosAngeles/intake-dcat/blob/master/examples/demo.ipynb>`__]
       [`Executable <https://mybinder.org/v2/gh/CityOfLosAngeles/intake-dcat/master?urlpath=lab%2Ftree%2Fexamples%2Fdemo.ipynb>`__]
 
+
+Data
+----
+
+- `Anaconda package data`_, originally announced in `this blog`_
+- `Planet Four Catalog`_, originally from https://www.planetfour.org/results
+- The official Intake `examples`_
+
+.. _Anaconda package data: https://github.com/ContinuumIO/anaconda-package-data
+.. _this blog: https://www.anaconda.com/announcing-public-anaconda-package-download-data/
+.. _Planet Four Catalog: https://github.com/michaelaye/p4catalog
+
 Blogs
 -----
 
@@ -87,11 +99,13 @@ These are Intake-related articles that may be of interest.
 Talks
 -----
 
+- `__init__ podcast interview (May 2019)`_
 - `AnacondaCon (March 2019)`_
 - `PyData DC (November 2018)`_
 - `PyData NYC (October 2018)`_
 - `ESIP tech dive (November 2018)`_
 
+.. _\__init__ podcast interview (May 2019): https://www.pythonpodcast.com/intake-data-catalog-episode-213/
 .. _ESIP tech dive (November 2018): https://www.youtube.com/watch?v=PSD7r3JFml0&feature=youtu.be
 .. _PyData DC (November 2018): https://www.youtube.com/watch?v=OvZFtePHKXw
 .. _PyData NYC (October 2018): https://www.youtube.com/watch?v=pjkMmJQfTb8

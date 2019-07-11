@@ -21,7 +21,7 @@ import msgpack
 from intake import Catalog, open_catalog
 from intake.container.serializer import MsgPackSerializer, GzipCompressor
 from intake.cli.server.server import IntakeServer
-from intake.compat import unpack_kwargs
+from intake.compat import unpack_kwargs, pack_kwargs
 from intake.utils import make_path_posix
 
 catalog_file = make_path_posix(
@@ -35,7 +35,7 @@ class TestServerV1Base(AsyncHTTPTestCase):
         return self.server.make_app()
 
     def encode(self, msg):
-        return msgpack.packb(msg, use_bin_type=True)
+        return msgpack.packb(msg, **pack_kwargs)
 
     def decode(self, bytestr):
         return msgpack.unpackb(bytestr, **unpack_kwargs)

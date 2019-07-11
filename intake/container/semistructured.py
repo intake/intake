@@ -5,6 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import datetime
 from intake.container.base import RemoteSource, get_partition
 from intake.source.base import Schema
 
@@ -52,25 +53,35 @@ class RemoteSequenceSource(RemoteSource):
         self.bag = None
 
     @staticmethod
-    def _persist(source, path, encoder=None):
+    def _persist(source, path, encoder=None, **kwargs):
         """Save list to files using encoding
 
         encoder : None or one of str|json|pickle
             None is equivalent to str
         """
-        import posixpath
-        from fsspec import open_files
-        import dask
         import pickle
         import json
-        from intake.source.textfiles import TextFilesSource
         encoder = {None: str, 'str': str, 'json': json.dumps,
                    'pickle': pickle.dumps}[encoder]
         try:
             b = source.to_dask()
         except NotImplementedError:
-            import dask.bag as db
-            b = db.from_sequence(source.read(), npartitions=1)
+            b = source.read()
+        return RemoteSequenceSource._data_to_source(b, path, encoder, **kwargs)
+
+    @staticmethod
+    def _data_to_source(b, path, encoder=None, **kwargs):
+        import dask.bag as db
+        import posixpath
+        from dask.bytes import open_files
+        import dask
+        from intake.source.textfiles import TextFilesSource
+        if not hasattr(b, 'to_textfiles'):
+            try:
+                b = db.from_sequence(b, npartitions=1)
+            except TypeError:
+                raise NotImplementedError
+
         files = open_files(posixpath.join(path, 'part.*'), mode='wt',
                            num=b.npartitions)
         dwrite = dask.delayed(write_file)
