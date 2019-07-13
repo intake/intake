@@ -5,7 +5,6 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from __future__ import absolute_import
 import re
 import warnings
 
