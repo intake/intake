@@ -42,7 +42,8 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
     plugin_prefix : str
         DEPRECATED. Default is 'intake_'.
     do_package_scan : boolean
-        Default is True.
+        Default is True. In the future, the default will be changed to False,
+        and the option may eventually be removed entirely.
 
     Returns
     -------
@@ -164,7 +165,8 @@ def autodiscover_all(path=None, plugin_prefix='intake_', do_package_scan=True):
     plugin_prefix : str
         DEPRECATED. Default is 'intake_'.
     do_package_scan : boolean
-        Default is True.
+        Default is True. In the future, the default will be changed to False,
+        and the option may eventually be removed entirely.
 
     Returns
     -------
