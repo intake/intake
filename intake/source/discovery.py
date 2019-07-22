@@ -139,7 +139,9 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
         try:
             drivers[entrypoint.name] = _load_entrypoint(entrypoint)
         except ConfigurationError:
-            logger.exception()
+            logger.exception(
+                "Error while loading entrypoint %s",
+                entrypoint.name)
             continue
         logger.debug("Loaded entrypoint '%s = %s.%s'",
                      entrypoint.name,
@@ -221,7 +223,9 @@ def autodiscover_all(path=None, plugin_prefix='intake_', do_package_scan=True):
         try:
             drivers.append((entrypoint.name, _load_entrypoint(entrypoint)))
         except ConfigurationError:
-            logger.exception()
+            logger.exception(
+                "Error while loading entrypoint %s",
+                entrypoint.name)
             continue
         logger.debug("Loaded entrypoint '%s = %s.%s'",
                      entrypoint.name,
