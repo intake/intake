@@ -15,5 +15,7 @@ from .get import Get
 from .info import Info
 from .list import List
 from .precache import Precache
+from .drivers import Drivers
 
-all  = (Cache, Config, Describe, Discover, Example, Exists, Get, Info, List, Precache)
+all  = (Cache, Config, Describe, Discover, Example, Exists, Get, Info, List,
+        Precache, Drivers)
