@@ -74,12 +74,12 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
                     matches,
                     winner)
 
-    for entrypoint in group.values():
+    for name, entrypoint in group.items():
         logger.debug("Discovered entrypoint '%s = %s.%s'",
-                     entrypoint.name,
+                     name,
                      entrypoint.module_name,
                      entrypoint.object_name)
-        if entrypoint.name in package_scan_results:
+        if name in package_scan_results:
             cls = package_scan_results[name]
             del package_scan_results[name]
             logger.debug("Entrypoint shadowed package_scan result '%s = %s.%s'",
