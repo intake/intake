@@ -56,6 +56,8 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
             "The option `do_package_scan` may be removed in a future release.",
             PendingDeprecationWarning)
         package_scan_results = _package_scan(path, plugin_prefix)
+    else:
+        package_scan_results = {}
 
     # Discover drivers via entrypoints.
     group = entrypoints.get_group_named('intake.drivers', path=path)
@@ -184,6 +186,8 @@ def autodiscover_all(path=None, plugin_prefix='intake_', do_package_scan=True):
             "The option `do_package_scan` may be removed in a future release.",
             PendingDeprecationWarning)
         package_scan_results = _package_scan(path, plugin_prefix)
+    else:
+        package_scan_results = {}
 
     # Discover drivers via entrypoints.
     group_all = entrypoints.get_group_all('intake.drivers', path=path)
