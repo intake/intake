@@ -1,0 +1,2 @@
+[intake.drivers]
+some_test_driver = driver_with_entrypoints:SomeTestDriver
