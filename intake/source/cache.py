@@ -17,7 +17,7 @@ import re
 import shutil
 import warnings
 
-from dask.bytes.utils import infer_storage_options
+from dask.bytes.core import infer_storage_options
 from intake.config import conf
 from intake.utils import make_path_posix
 
