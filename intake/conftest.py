@@ -14,7 +14,7 @@ import requests
 
 from intake import config
 from intake.util_tests import ex, PY2
-from intake.utils import make_path_posix, yaml_load
+from intake.utils import make_path_posix
 
 here = os.path.dirname(__file__)
 
