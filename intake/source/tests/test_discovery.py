@@ -12,19 +12,6 @@ import sys
 import pytest
 
 from intake.source import discovery
-from intake.config import cfile
-
-
-@pytest.fixture
-def config(tmp_path):
-    key = 'INTAKE_CONF_FILE'
-    original = os.getenv(key)
-    temp_config_path = os.path.join(tmp_path, 'test_config.yml')
-    os.environ[key] = temp_config_path
-    assert cfile() == temp_config_path
-    yield temp_config_path
-    if original:
-        os.environ[key] = original
 
 
 @pytest.fixture
@@ -41,7 +28,7 @@ def extra_pythonpath():
     sys.path.remove(extra_path)
 
 
-def test_package_scan(extra_pythonpath, config):
+def test_package_scan(extra_pythonpath, tmp_config_path):
     "This tests a non-public function."
     # Default path (sys.path)
     results = discovery._package_scan()
@@ -52,7 +39,7 @@ def test_package_scan(extra_pythonpath, config):
     assert 'foo' in results
 
 
-def test_discover(extra_pythonpath, config):
+def test_discover(extra_pythonpath, tmp_config_path):
     with pytest.warns(PendingDeprecationWarning):
         registry = discovery.autodiscover()
 
@@ -87,7 +74,7 @@ def test_discover(extra_pythonpath, config):
     assert 'some_test_driver' in registry
     registry['some_test_driver']()
 
-def test_enable_and_disable(extra_pythonpath, config):
+def test_enable_and_disable(extra_pythonpath, tmp_config_path):
     # Disable and then enable a package scan result.
 
     try:
@@ -124,7 +111,7 @@ def test_enable_and_disable(extra_pythonpath, config):
 
 
 
-def test_discover_pluginprefix(extra_pythonpath, config):
+def test_discover_pluginprefix(extra_pythonpath, tmp_config_path):
     with pytest.warns(PendingDeprecationWarning):
         registry = discovery.autodiscover(plugin_prefix='not_intake_')
 
@@ -133,6 +120,6 @@ def test_discover_pluginprefix(extra_pythonpath, config):
     registry.pop('otherfoo', None)
 
 
-def test_discover_collision(extra_pythonpath, config):
+def test_discover_collision(extra_pythonpath, tmp_config_path):
     with pytest.warns(UserWarning):
         discovery.autodiscover(plugin_prefix='collision_')

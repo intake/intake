@@ -9,12 +9,12 @@ import os
 import subprocess
 import time
 
-import posixpath
 import pytest
 import requests
 
+from intake import config
 from intake.util_tests import ex, PY2
-from intake.utils import make_path_posix
+from intake.utils import make_path_posix, yaml_load
 
 here = os.path.dirname(__file__)
 
@@ -22,6 +22,23 @@ here = os.path.dirname(__file__)
 MIN_PORT = 7480
 MAX_PORT = 7489
 PORT = MIN_PORT
+
+
+@pytest.fixture
+def tmp_config_path(tmp_path):
+    key = 'INTAKE_CONF_FILE'
+    original = os.getenv(key)
+    temp_config_path = os.path.join(tmp_path, 'test_config.yml')
+    os.environ[key] = temp_config_path
+    assert config.cfile() == temp_config_path
+    yield temp_config_path
+    config.reset_conf()
+    if original:
+        os.environ[key] = original
+    else:
+        del os.environ[key]
+    assert config.cfile() != temp_config_path
+
 
 
 def ping_server(url, swallow_exception, head=None):
