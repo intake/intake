@@ -5,7 +5,6 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from __future__ import absolute_import
 import re
 import warnings
 
@@ -22,7 +21,7 @@ from .source import registry
 from .source.discovery import autodiscover
 from .gui import InstanceMaker
 
-# Populate list of autodetected plugins
+# Populate list of autodetected drivers (plugins).
 registry.update(autodiscover())
 
 from .source import csv, textfiles, npy, zarr
