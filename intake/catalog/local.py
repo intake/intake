@@ -11,7 +11,8 @@ import os
 import posixpath
 
 from jinja2 import Template
-from fsspec import open_files
+from fsspec import open_files, get_filesystem_class
+from fsspec.core import split_protocol
 
 from .. import __version__
 from .base import Catalog, DataSource
@@ -175,6 +176,7 @@ class LocalCatalogEntry(CatalogEntry):
         self._user_parameters = parameters
         self._metadata = metadata or {}
         self._catalog_dir = catalog_dir
+        self._filesystem = None
         self._catalog = catalog
         if isinstance(driver, str):
             dr = get_plugin_class(driver)
@@ -241,7 +243,10 @@ class LocalCatalogEntry(CatalogEntry):
         if user_parameters.pop('cache', None) or self._cache:
             md['cache'] = user_parameters.pop('cache', None) or self._cache
         params = {'metadata': md,
-                  'CATALOG_DIR': self._catalog_dir}
+                  'CATALOG_DIR': self._catalog_dir,
+                  }
+        if self._filesystem is not None:
+            params['storage_options'] = self._filesystem.storage_options
         params.update(self._open_args)
 
         open_args = merge_pars(params, user_parameters, self._user_parameters,
@@ -266,7 +271,7 @@ class LocalCatalogEntry(CatalogEntry):
             try:
                 plugin = self._plugin[plugin]
             except KeyError:
-                raise ValueError('Attempt to select not available plugin %s, '
+                raise ValueError('Attempt to select unavailable plugin %s, '
                                  'perhaps import of plugin failed' % plugin)
         return plugin, open_args
 
@@ -521,7 +526,12 @@ def register_plugin_dir(path):
 
 def get_dir(path):
     if '://' in path:
-        return posixpath.dirname(path)
+        protocol, _ = split_protocol(path)
+        out = get_filesystem_class(protocol)._parent(path)
+        if "://" not in out:
+            # some FSs strip this, some do not
+            out = protocol + "://" + out
+        return out
     path = make_path_posix(
         os.path.join(os.getcwd(), os.path.dirname(path)))
     if path[-1] != '/':
@@ -570,6 +580,7 @@ class YAMLFileCatalog(Catalog):
                 file_open = open_files(self.path, mode='rb', **options)
                 assert len(file_open) == 1
                 file_open = file_open[0]
+                self.filesystem = file_open.fs
             else:
                 file_open = self.filesystem.open(self.path, mode='rb')
             self._dir = get_dir(self.path)
@@ -668,6 +679,7 @@ class YAMLFileCatalog(Catalog):
         for entry in cfg['data_sources']:
             entry._catalog = self
             self._entries[entry.name] = entry
+            entry._filesystem = self.filesystem
 
         self.metadata = cfg.get('metadata', {})
         self.name = self.name or cfg.get('name') or self.name_from_path

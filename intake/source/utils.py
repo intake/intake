@@ -273,10 +273,11 @@ def path_to_pattern(path, metadata=None):
     pattern : str
         Pattern style path stripped of everything to the left of cache regex.
     """
+    from fsspec.core import strip_protocol
     if not isinstance(path, str):
         return
 
-    pattern = path
+    pattern = strip_protocol(path)
     if metadata:
         cache = metadata.get('cache')
         if cache:
