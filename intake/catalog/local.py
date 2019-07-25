@@ -245,9 +245,9 @@ class LocalCatalogEntry(CatalogEntry):
         params = {'metadata': md,
                   'CATALOG_DIR': self._catalog_dir,
                   }
-        if self._filesystem is not None:
-            params['storage_options'] = self._filesystem.storage_options
         params.update(self._open_args)
+        if 'storage_options' not in params and self._filesystem is not None:
+            params['storage_options'] = self._filesystem.storage_options
 
         open_args = merge_pars(params, user_parameters, self._user_parameters,
                                getshell=self.getshell, getenv=self.getenv,
