@@ -120,7 +120,7 @@ def test_use_source_plugin_from_config(catalog1):
 
 
 def test_get_dir():
-    assert get_dir('s3://path/catalog.yml') == 's3://path'
+    assert get_dir('file://path/catalog.yml') == 'file://path'
     assert get_dir('https://example.com/catalog.yml') == 'https://example.com'
     path = 'example/catalog.yml'
     out = get_dir(path)
