@@ -109,6 +109,12 @@ class TextFilesSource(base.DataSource):
         return db.from_delayed([dfile(f, self.decoder, self._read)
                                 for f in self._files])
 
+    def to_ibis(self):
+        import ibis.pandas
+        df = self.read()
+        con = ibis.pandas.connect({'source': df })
+        return con.table('source')
+
 
 def get_file(f, decoder, read):
     """Serializable function to take an OpenFile object and read lines"""

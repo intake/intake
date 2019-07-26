@@ -203,12 +203,21 @@ class DataSource(DictSerialiseMixin):
         """Return a dask container for this data source"""
         raise NotImplementedError
 
+    def to_ibis(self):
+        """Return an ibis expression for this data source
+
+        Ibis expressions allow construction and lazy evaluation of queries
+        on SQL-like backends. Drivers that target such backends may be able
+        to produce ibis expressions.
+        """
+        raise NotImplementedError
+
     def to_spark(self):
         """Provide an equivalent data object in Apache Spark
 
         The mapping of python-oriented data containers to Spark ones will be
         imperfect, and only a small number of drivers are expected to be able
-        to produce Spark objects. The standard arguments may b translated,
+        to produce Spark objects. The standard arguments may be translated,
         unsupported or ignored, depending on the specific driver.
 
         This method requires the package intake-spark
@@ -447,3 +456,7 @@ class AliasSource(DataSource):
     def to_dask(self):
         self._get_source()
         return self.source.to_dask()
+
+    def to_ibis(self):
+        self._get_source()
+        return self.source.to_ibis()

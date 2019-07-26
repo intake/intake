@@ -51,6 +51,12 @@ class RemoteDataFrame(RemoteSource):
         self._load_metadata()
         return self.dataframe
 
+    def to_ibis(self):
+        import ibis.pandas
+        df = self.read()
+        con = ibis.pandas.connect({'source': df })
+        return con.table('source')
+
     def _close(self):
         self.dataframe = None
 
@@ -177,6 +183,12 @@ class GenericDataFrame(DataSource):
     def to_dask(self):
         self._load_metadata()
         return self.dataframe
+
+    def to_ibis(self):
+        import ibis.pandas
+        df = self.read()
+        con = ibis.pandas.connect({'source': df })
+        return con.table('source')
 
     def _close(self):
         self.dataframe = None

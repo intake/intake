@@ -146,6 +146,12 @@ class CSVSource(base.DataSource, base.PatternMixin):
         self._get_schema()
         return self._dataframe
 
+    def to_ibis(self):
+        import ibis.pandas
+        df = self.read()
+        con = ibis.pandas.connect({'source': df })
+        return con.table('source')
+
     def to_spark(self):
         from intake_spark.base import SparkHolder
         h = SparkHolder(True, [
