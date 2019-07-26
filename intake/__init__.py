@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 import re
+import logging
 import warnings
 
 from ._version import get_versions
@@ -31,20 +32,25 @@ registry['catalog'] = Catalog
 registry['intake_remote'] = RemoteCatalog
 registry['numpy'] = npy.NPySource
 registry['ndzarr'] = zarr.ZarrArraySource
+logger = logging.getLogger('intake')
 
 
 def make_open_functions():
     """From the current state of ``registry``, create open_* functions"""
     for plugin_name, plugin in registry.items():
-        func_name = 'open_' + plugin_name
-        if not func_name.isidentifier():
-            # primitive name normalization
-            func_name = re.sub('[-=~^&|@+]', '_', func_name)
-        if func_name.isidentifier():
-            globals()[func_name] = plugin
-        else:
-            warnings.warn('Invalid Intake plugin name "%s" found.' %
-                          plugin_name)
+        try:
+            func_name = 'open_' + plugin_name
+            if not func_name.isidentifier():
+                # primitive name normalization
+                func_name = re.sub('[-=~^&|@+]', '_', func_name)
+            if func_name.isidentifier():
+                globals()[func_name] = plugin
+            else:
+                warnings.warn('Invalid Intake plugin name "%s" found.' %
+                              plugin_name)
+        except:
+            logger.warning("Creation of open function failed for %s"
+                           "" % plugin_name)
 
 
 def output_notebook(inline=True, logo=False):
