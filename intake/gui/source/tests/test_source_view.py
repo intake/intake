@@ -66,7 +66,6 @@ def test_description_source_with_plots(sources2):
         'description: US Crime data [UCRDataTool](https://www.ucrdatatool.gov'
         '/Search/Crime/State/StatebyState.cfm)\n'
         'direct_access: forbid\n'
-        'user_parameters: []\n'
         'metadata: \n'
         'args:\nurlpath: {{ CATALOG_DIR }}../data/crime.csv').split('\n')
     for line in lines:

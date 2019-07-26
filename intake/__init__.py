@@ -35,19 +35,12 @@ registry['ndzarr'] = zarr.ZarrArraySource
 
 def make_open_functions():
     """From the current state of ``registry``, create open_* functions"""
-    # Create shortcut open methods
-    if hasattr(str, 'isidentifier'):
-        def isidentifier(x):
-            return x.isidentifier()
-    else:
-        IDENTIFIER_REGEX = re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*$')
-        isidentifier = IDENTIFIER_REGEX.match
     for plugin_name, plugin in registry.items():
         func_name = 'open_' + plugin_name
-        if not isidentifier(func_name):
+        if not func_name.isidentifier():
             # primitive name normalization
             func_name = re.sub('[-=~^&|@+]', '_', func_name)
-        if isidentifier(func_name):
+        if func_name.isidentifier():
             globals()[func_name] = plugin
         else:
             warnings.warn('Invalid Intake plugin name "%s" found.' %

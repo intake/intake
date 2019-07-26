@@ -690,3 +690,22 @@ sources:
     assert cat.explicit.read().equals(expected)
     s = cat.extra()
     assert s._storage_options['other']
+
+
+def test_cat_add(tmpdir):
+    tmpdir = str(tmpdir)
+    fn = os.path.join(tmpdir, 'cat.yaml')
+    with open(fn, 'w') as f:
+        f.write('sources: {}')
+    cat = open_catalog(fn)
+    assert list(cat) == []
+
+    # was added in memory
+    cat.add(cat)
+    cat._load()  # this would happen automatically, but not immediately
+    assert list(cat) == ['cat']
+
+    # was added to the file
+    cat = open_catalog(fn)
+    assert list(cat) == ['cat']
+
