@@ -20,7 +20,7 @@ from ..utils import make_path_posix
 def _maybe_add_rm(fs):
     # monkey-path local filesystem
     # this goes away if we can use fsspec's local file-system
-    from dask.bytes.local import LocalFileSystem
+    from fsspec.implementations.local import LocalFileSystem
     if isinstance(fs, LocalFileSystem):
         def rm(path, recursive=False):
             if recursive:
@@ -49,12 +49,12 @@ class PersistStore(YAMLFileCatalog):
 
     def __init__(self, path=None):
         # from fsspec.registry import filesystem
-        from dask.bytes.core import get_fs
+        from fsspec import filesystem
         self.pdir = make_path_posix(path or conf.get('persist_path'))
         path = posixpath.join(self.pdir, 'cat.yaml')
         protocol = (self.pdir.split('://', 1)[0]
                     if "://" in self.pdir else 'file')
-        self.fs = get_fs(protocol)[0]
+        self.fs = filesystem(protocol)
         _maybe_add_rm(self.fs)
         super(PersistStore, self).__init__(path)
 

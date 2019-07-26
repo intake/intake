@@ -120,7 +120,7 @@ def test_use_source_plugin_from_config(catalog1):
 
 
 def test_get_dir():
-    assert get_dir('s3://path/catalog.yml') == 's3://path'
+    assert get_dir('file://path/catalog.yml') == 'file://path'
     assert get_dir('https://example.com/catalog.yml') == 'https://example.com'
     path = 'example/catalog.yml'
     out = get_dir(path)
@@ -655,3 +655,38 @@ def test_no_instance():
 
     # this would error on instantiation with driver not found
     assert e0 != e1
+
+
+def test_fsspec_integration():
+    import fsspec
+    import pandas as pd
+    mem = fsspec.filesystem('memory')
+    with mem.open('cat.yaml', 'wt') as f:
+        f.write("""
+sources:
+  implicit:
+    driver: csv
+    description: o
+    args:
+      urlpath: "{{CATALOG_DIR}}/file.csv"
+  explicit:
+    driver: csv
+    description: o
+    args:
+      urlpath: "memory:///file.csv"
+  extra:
+    driver: csv
+    description: o
+    args:
+      urlpath: "{{CATALOG_DIR}}/file.csv"
+      storage_options: {other: option}"""
+                )
+    with mem.open('/file.csv', 'wt') as f:
+        f.write("a,b\n0,1")
+    expected = pd.DataFrame({'a': [0], 'b': [1]})
+    cat = open_catalog("memory://cat.yaml")
+    assert list(cat) == ['implicit', 'explicit', 'extra']
+    assert cat.implicit.read().equals(expected)
+    assert cat.explicit.read().equals(expected)
+    s = cat.extra()
+    assert s._storage_options['other']

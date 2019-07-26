@@ -53,7 +53,7 @@ class NPySource(DataSource):
         super(NPySource, self).__init__(metadata=metadata)
 
     def _get_schema(self):
-        from dask.bytes import open_files
+        from fsspec import open_files
         import dask.array as da
         if self._arr is None:
             path = self._get_cache(self.path)[0]

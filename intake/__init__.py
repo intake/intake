@@ -146,6 +146,8 @@ def open_catalog(uri=None, **kwargs):
         else:
             # empty cat
             driver = 'catalog'
+    if '_file' not in driver:
+        kwargs.pop('fs', None)
     if driver not in registry:
         raise ValueError('Unknown catalog driver (%s), supply one of: %s'
                          % (driver, list(sorted(registry))))

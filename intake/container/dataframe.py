@@ -141,7 +141,7 @@ class GenericDataFrame(DataSource):
     def _load_metadata(self):
         import dask.dataframe as dd
         import dask.delayed
-        from dask.bytes import open_files
+        from fsspec import open_files
         self.files = open_files(self.url, **self.storage_options)
 
         def read_a_file(open_file, reader, kwargs):

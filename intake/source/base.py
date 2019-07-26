@@ -69,7 +69,7 @@ class DataSource(DictSerialiseMixin):
         for c in self.cache:
             c._cache_dir = make_path_posix(cache_dir)
 
-    def __init__(self, metadata=None):
+    def __init__(self, storage_options=None, metadata=None):
         # default data
         self.metadata = metadata or {}
         if isinstance(self.metadata, dict):
