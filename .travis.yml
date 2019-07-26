@@ -21,7 +21,7 @@ matrix:
         - export PATH="$HOME/miniconda3/bin:$PATH"
         - export CONDA_PY=36
       install: scripts/ci/install.sh
-      script: pytest
+      script: pytest --cov=intake
       after_success:
         - coveralls
     # PYTHON

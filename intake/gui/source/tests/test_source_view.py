@@ -67,7 +67,8 @@ def test_description_source_with_plots(sources2):
         '/Search/Crime/State/StatebyState.cfm)\n'
         'direct_access: forbid\n'
         'metadata: \n'
-        'args:\nurlpath: {{ CATALOG_DIR }}../data/crime.csv').split('\n')
+        'args:\nurlpath: {{ CATALOG_DIR }}../data/crime{{selector}}.csv'
+        '').split('\n')
     for line in lines:
         assert line in description.contents
     assert 'plots' in description.contents
