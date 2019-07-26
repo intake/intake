@@ -34,6 +34,7 @@ matrix:
         - sudo apt update
         - sudo apt install libsnappy-dev
         - pip install -e .[complete]
+        - pip install git+https://github.com/dask/dask --upgrade --no-deps
         - pip install pytest
       script:
         - pytest
