@@ -40,11 +40,18 @@ def no_duplicates_constructor(loader, node, deep=False):
     return loader.construct_mapping(node, deep)
 
 
+def tuple_constructor(loader, node, deep=False):
+    return tuple(loader.construct_object(node, deep=deep)
+                 for node in node.value)
+
+
 @contextmanager
 def no_duplicate_yaml():
     yaml.SafeLoader.add_constructor(
         yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
         no_duplicates_constructor)
+    yaml.SafeLoader.add_constructor('tag:yaml.org,2002:python/tuple',
+                                    tuple_constructor)
     try:
         yield
     finally:
