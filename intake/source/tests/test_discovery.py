@@ -7,6 +7,8 @@
 
 import os
 import os.path
+import shlex
+import subprocess
 import sys
 
 import pytest
@@ -37,6 +39,29 @@ def test_package_scan(extra_pythonpath, tmp_config_path):
     # Explicit path
     results = discovery._package_scan(path=[extra_pythonpath])
     assert 'foo' in results
+
+
+def test_discover_cli(extra_pythonpath, tmp_config_path):
+    env = os.environ.copy()
+    env["INTAKE_CONF_FILE"] = tmp_config_path
+    env['PYTHONPATH'] = extra_pythonpath
+
+    out = subprocess.check_output(shlex.split(
+        "intake drivers list"
+    ), stderr=subprocess.STDOUT, env=env)
+
+    assert b'foo' in out
+    assert out.index(b'Not enabled') > out.index(b'foo')
+
+    subprocess.check_output(shlex.split(
+        "intake drivers disable foo"
+    ), stderr=subprocess.STDOUT, env=env)
+
+    out = subprocess.check_output(shlex.split(
+        "intake drivers list"
+    ), stderr=subprocess.STDOUT, env=env)
+    assert b'foo' in out
+    assert b'foo' in out[out.index(b'Not enabled'):]
 
 
 def test_discover(extra_pythonpath, tmp_config_path):

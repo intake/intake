@@ -29,6 +29,7 @@ from intake import __version__
 from intake.cli.util import Subcommand
 from intake.source.discovery import autodiscover, autodiscover_all, enable, disable
 from intake.config import confdir
+import intake
 
 #-----------------------------------------------------------------------------
 # API
@@ -45,15 +46,19 @@ class Drivers(Subcommand):
         sub_parser = self.parser.add_subparsers()
 
         list = sub_parser.add_parser('list', help='Show all intake drivers.')
-        list.add_argument('-v', '--verbose', action='store_true', help='Show module path.')
+        list.add_argument(
+            '-v', '--verbose', action='store_true', help='Show module path.')
         list.set_defaults(invoke=self._list)
 
         enable = sub_parser.add_parser('enable', help='Enable an intake driver.')
         enable.add_argument('name', type=str, help='Driver name')
-        enable.add_argument('driver', type=str, help='Module path and class name, as in package.submodule.ClassName')
+        enable.add_argument('driver', type=str,
+                            help='Module path and class name, as in '
+                                 'package.submodule.ClassName')
         enable.set_defaults(invoke=self._enable)
 
-        disable = sub_parser.add_parser('disable', help='Disable one or more intake drivers.')
+        disable = sub_parser.add_parser(
+            'disable', help='Disable one or more intake drivers.')
         disable.add_argument('names', type=str, help='Driver names', nargs='+')
         disable.set_defaults(invoke=self._disable)
 
@@ -67,15 +72,24 @@ class Drivers(Subcommand):
             fmt = '{name:<30}{cls.__module__}.{cls.__name__}'
         drivers_by_name = autodiscover()   # dict mapping name to driver
         all_drivers = autodiscover_all()  # listof (name, driver)
-        print("Enabled:", file=sys.stderr)
-        for name, cls in drivers_by_name.items():
-            print(fmt.format(name=name, cls=cls, file=inspect.getfile(cls)),
+        direct = {k: v for k, v in intake.registry.items()
+                  if k not in all_drivers and k not in drivers_by_name}
+
+        print("Direct:", file=sys.stderr)
+        for name, cls in direct.items():
+            print(fmt.format(name=str(name), cls=cls, file=inspect.getfile(cls)),
                   file=sys.stderr)
+
+        print("\nEnabled:", file=sys.stderr)
+        for name, cls in drivers_by_name.items():
+            print(fmt.format(name=str(name), cls=cls, file=inspect.getfile(cls)),
+                  file=sys.stderr)
+
         print("\nNot enabled:", file=sys.stderr)
         for name, cls in all_drivers:
-            if drivers_by_name[name] is not cls:
-                print(fmt.format(name=name, cls=cls, file=inspect.getfile(cls)),
-                    file=sys.stderr)
+            if drivers_by_name.get(name, None) is not cls:
+                print(fmt.format(name=str(name), cls=cls, file=inspect.getfile(cls)),
+                      file=sys.stderr)
 
     def _enable(self, args):
         enable(args.name, args.driver)

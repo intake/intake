@@ -82,7 +82,6 @@ class CatSelector(BaseSelector):
 
         self.children = [label, self.widget]
 
-
     def callback(self, event):
         self.expand_nested(event.new)
         if self.done_callback:

@@ -8,6 +8,7 @@ import pytest
 import intake.catalog.utils as utils
 import pandas as pd
 
+
 def test_expand_templates():
     pars = {'a': "{{par}} hi"}
     context = {'b': 1, 'par': 'ho'}
@@ -35,3 +36,7 @@ def test_expand_nested_template():
 ])
 def test_coerce_datetime(test_input, expected):
     assert utils.coerce_datetime(test_input) == expected
+
+
+def test_flatten():
+    assert list(utils.flatten([["hi"], ["oi"]])) == ['hi', 'oi']

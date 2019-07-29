@@ -129,9 +129,10 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
 
     if package_scan_results:
         warnings.warn(
-            f"The drivers {package_scan_results} do not specify entry_points "
-            f"and were only discovered via a package scan. This may break in a "
-            f"future release of intake. The packages should be updated.",
+            f"The drivers {list(package_scan_results)} do not specify entry_"
+            f"points and were only discovered via a package scan. This may "
+            f"break in a future release of intake. The packages should be "
+            f"updated.",
             FutureWarning)
 
     # Load entrypoints. Any that were shadowed or banned have already been
@@ -210,15 +211,6 @@ def autodiscover_all(path=None, plugin_prefix='intake_', do_package_scan=True):
                      entrypoint.module_name,
                      entrypoint.object_name)
         group_all.append(entrypoint)
-
-    # Discovery is complete.
-    
-    if package_scan_results:
-        warnings.warn(
-            f"The drivers {package_scan_results} do not specify entry_points "
-            f"and were only discovered via a package scan. This may break in a "
-            f"future release of intake. The packages should be updated.",
-            FutureWarning)
 
     # Load entrypoints. Any that were shadowed or banned have already been
     # removed above.

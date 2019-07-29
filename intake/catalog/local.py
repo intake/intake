@@ -643,7 +643,7 @@ class YAMLFileCatalog(Catalog):
         if path:
             return self
         else:
-            return YAMLFileCatalog(path, storage_options=storage_options,
+            return YAMLFileCatalog(self.path, storage_options=storage_options,
                                    autoreload=self.autoreload)
 
     def parse(self, text):

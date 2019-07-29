@@ -4,3 +4,9 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
+
+import os
+
+if os.getenv("COVERAGE_PROCESS_START", False):
+    import coverage
+    coverage.process_startup()

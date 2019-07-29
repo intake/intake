@@ -13,6 +13,7 @@ def gui(cat1, cat2):
     from ..gui import GUI
     return GUI(cats=[cat1, cat2])
 
+
 def test_gui(gui, cat1, cat2, sources1):
     assert gui.cat.select.items == [cat1, cat2]
     assert gui.cats == [cat1]
@@ -29,6 +30,21 @@ def test_gui(gui, cat1, cat2, sources1):
     assert not gui.source.plot.watchers
     assert gui.source.plot.visible is False
     assert gui.source.plot_widget.disabled is False
+
+
+def test_par_selector(gui, cat2):
+    gui.cat.select.selected = [cat2]
+    assert gui.source.pars_widget.disabled is False
+
+    gui.source.pars_widget.value = True
+    wid = gui.source.pars_editor.panel[0]
+    assert isinstance(wid, pn.widgets.Select)
+    assert wid.value == ''
+    s = gui.source_instance
+    assert s.urlpath.endswith("crime.csv")
+    wid.value = "2"
+    s = gui.source_instance
+    assert s.urlpath.endswith("crime2.csv")
 
 
 def test_gui_remove_selected_cat(gui, cat1):

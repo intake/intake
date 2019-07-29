@@ -53,6 +53,7 @@ def tmp_path_catalog():
     # files already there)
     os.remove(target_catalog)
 
+
 def test_autoregister_open():
     assert hasattr(intake, 'open_csv')
 
@@ -65,8 +66,29 @@ def test_default_catalogs():
 
 def test_user_catalog(user_catalog):
     cat = intake.load_combo_catalog()
-    time.sleep(2) # wait 2 seconds for catalog to refresh
     assert set(cat) >= set(['ex1', 'ex2'])
+
+
+def test_open_styles(tmp_path_catalog):
+    cat = intake.Catalog(tmp_path_catalog)
+    cat2 = intake.open_catalog(tmp_path_catalog)
+    assert list(cat) == list(cat2)
+    cat2 = intake.open_catalog([tmp_path_catalog])
+    assert list(cat) == list(cat2)
+    cat2 = intake.open_catalog(os.path.join(
+        os.path.dirname(tmp_path_catalog), "*"))
+    assert list(cat) == list(cat2)
+    assert type(cat2).name == 'yaml_files_cat'
+    cat2 = intake.open_catalog(os.path.dirname(tmp_path_catalog))
+    assert list(cat) == list(cat2)
+    assert type(cat2).name == 'yaml_files_cat'
+    cat2 = intake.open_yaml_file_cat(tmp_path_catalog)
+    assert list(cat) == list(cat2)
+    cat2 = intake.open_yaml_files_cat([tmp_path_catalog])
+    assert list(cat) == list(cat2)
+    cat2 = intake.open_yaml_files_cat(os.path.join(
+        os.path.dirname(tmp_path_catalog), "*"))
+    assert list(cat) == list(cat2)
 
 
 def test_path_catalog(tmp_path_catalog):
