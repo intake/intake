@@ -82,7 +82,7 @@ class Drivers(Subcommand):
 
         print("Direct:", file=sys.stderr)
         none = True
-        for name in sorted(direct):
+        for name in sorted(direct, key=str):
             cls = direct[name]
             print(fmt.format(name=str(name), cls=cls, file=inspect.getfile(cls)),
                   file=sys.stderr)
@@ -92,7 +92,7 @@ class Drivers(Subcommand):
 
         print("\nEnabled:", file=sys.stderr)
         none = True
-        for name in sorted(drivers_by_name):
+        for name in sorted(drivers_by_name, key=str):
             cls = drivers_by_name[name]
             print(fmt.format(name=str(name), cls=cls, file=inspect.getfile(cls)),
                   file=sys.stderr)
@@ -102,7 +102,7 @@ class Drivers(Subcommand):
 
         print("\nNot enabled:", file=sys.stderr)
         none = True
-        for name, cls in sorted(all_drivers, key=lambda x: x[0]):
+        for name, cls in sorted(all_drivers, key=lambda x: str(x[0])):
             if drivers_by_name.get(name, None) is not cls:
                 print(fmt.format(name=str(name), cls=cls, file=inspect.getfile(cls)),
                       file=sys.stderr)
