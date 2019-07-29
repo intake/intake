@@ -42,6 +42,16 @@ setup(
         'console_scripts': [
             'intake-server = intake.cli.server.__main__:main',
             'intake = intake.cli.client.__main__:main'
+        ],
+        'intake.drivers': [
+            'yaml_file_cat = intake.catalog.local:YAMLFileCatalog',
+            'yaml_files_cat = intake.catalog.local:YAMLFilesCatalog',
+            'csv = intake.source.csv:CSVSource',
+            'textfiles = intake.source.textfiles:TextFilesSource',
+            'catalog = intake.catalog.base:Catalog',
+            'intake_remote = intake.catalog.base:RemoteCatalog',
+            'numpy = intake.source.npy:NPySource',
+            'ndzarr = intake.source.zarr:ZarrArraySource'
         ]
     },
     classifiers=[
