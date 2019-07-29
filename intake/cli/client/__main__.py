@@ -5,8 +5,6 @@
 # The full license is in the LICENSE file, distributed with this software.
 #----------------------------------------------------------------------------
 
-import logging
-log = logging.getLogger(__name__)
 
 #-----------------------------------------------------------------------------
 # Imports
@@ -19,18 +17,22 @@ import sys
 
 # Intake imports
 from . import subcommands
+import logging
+log = logging.getLogger('intake')
 
 #-----------------------------------------------------------------------------
 # API
 #-----------------------------------------------------------------------------
 
-def main(argv=None):
-    ''' Execute the "intake" command line program.
 
-    '''
+def main(argv=None):
+    """ Execute the "intake" command line program.
+
+    """
     from intake.cli.bootstrap import main as _main
 
     return _main('Intake Catalog CLI', subcommands.all, argv or sys.argv)
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

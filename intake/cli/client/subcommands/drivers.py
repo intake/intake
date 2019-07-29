@@ -35,17 +35,22 @@ import intake
 # API
 #-----------------------------------------------------------------------------
 
+
 class Drivers(Subcommand):
-    '''
+    """
     List, enable, and disable intake drivers.
-    '''
+    """
 
     name = "drivers"
 
     def initialize(self):
         sub_parser = self.parser.add_subparsers()
 
-        list = sub_parser.add_parser('list', help='Show all intake drivers.')
+        list = sub_parser.add_parser(
+            'list',
+            help='Show all intake drivers, whether enabled, disabled, '
+                 'or directly inserted into the registry'
+        )
         list.add_argument(
             '-v', '--verbose', action='store_true', help='Show module path.')
         list.set_defaults(invoke=self._list)
@@ -76,20 +81,34 @@ class Drivers(Subcommand):
                   if k not in all_drivers and k not in drivers_by_name}
 
         print("Direct:", file=sys.stderr)
-        for name, cls in direct.items():
+        none = True
+        for name in sorted(direct):
+            cls = direct[name]
             print(fmt.format(name=str(name), cls=cls, file=inspect.getfile(cls)),
                   file=sys.stderr)
+            none = False
+        if none:
+            print("<none>")
 
         print("\nEnabled:", file=sys.stderr)
-        for name, cls in drivers_by_name.items():
+        none = True
+        for name in sorted(drivers_by_name):
+            cls = drivers_by_name[name]
             print(fmt.format(name=str(name), cls=cls, file=inspect.getfile(cls)),
                   file=sys.stderr)
+            none = False
+        if none:
+            print("<none>")
 
         print("\nNot enabled:", file=sys.stderr)
-        for name, cls in all_drivers:
+        none = True
+        for name, cls in sorted(all_drivers, key=lambda x: x[0]):
             if drivers_by_name.get(name, None) is not cls:
                 print(fmt.format(name=str(name), cls=cls, file=inspect.getfile(cls)),
                       file=sys.stderr)
+                none = False
+        if none:
+            print("<none>")
 
     def _enable(self, args):
         enable(args.name, args.driver)
