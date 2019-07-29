@@ -6,7 +6,8 @@
 #-----------------------------------------------------------------------------
 import pytest
 import os
-from intake.utils import make_path_posix
+from intake.utils import make_path_posix, no_duplicate_yaml
+import yaml
 
 
 def test_windows_file_path():
@@ -38,3 +39,9 @@ def test_roundtrip_file_path():
     assert '\\' not in actual
     assert os.path.samefile(actual, path)
 
+
+def test_yaml_tuples():
+    data = (1, 2)
+    text = yaml.dump(data)
+    with no_duplicate_yaml():
+        assert yaml.safe_load(text) == data

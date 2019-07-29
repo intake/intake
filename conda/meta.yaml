@@ -31,6 +31,7 @@ requirements:
     - pyyaml
     - dask >=1.0
     - appdirs
+    - fsspec
 
 test:
   requires:

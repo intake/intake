@@ -22,7 +22,7 @@ from ..auth.base import BaseClientAuth
 from .remote import RemoteCatalogEntry
 from .utils import flatten, reload_on_change, RemoteCatalogError
 from ..source.base import DataSource
-from ..compat import unpack_kwargs
+from ..compat import unpack_kwargs, pack_kwargs
 logger = logging.getLogger('intake')
 
 
@@ -287,7 +287,7 @@ class Catalog(DataSource):
         storage_options : dict
             Extra arguments for the file-system
         """
-        from dask.bytes import open_files
+        from fsspec import open_files
         with open_files([url], **(storage_options or {}), mode='wt')[0] as f:
             f.write(self.serialize())
 
@@ -722,7 +722,7 @@ class RemoteCatalog(Catalog):
                    'source_id': self._source_id}
         response = requests.post(
             url=self.source_url, **self._get_http_args({}),
-            data=msgpack.packb(request, use_bin_type=True))
+            data=msgpack.packb(request, **pack_kwargs))
         try:
             response.raise_for_status()
         except requests.HTTPError as err:
@@ -753,7 +753,7 @@ class RemoteCatalog(Catalog):
     @staticmethod
     def _data_to_source(cat, path, **kwargs):
         from intake.catalog.local import YAMLFileCatalog
-        from dask.bytes.core import open_files
+        from fsspec import open_files
         import yaml
         if not isinstance(cat, Catalog):
             raise NotImplementedError

@@ -105,7 +105,7 @@ def test_roundtrip_reverse_formats(pattern):
 
 
 @pytest.mark.parametrize('path,metadata,expected', [
-    ('s3://data/band{band:1d}.tif',
+    ('http://data/band{band:1d}.tif',
      {'cache': [{'argkey': 'urlpath', 'regex': 'data'}]},
      '/band{band:1d}.tif'),
     ('data/band{band:1d}.tif', {},

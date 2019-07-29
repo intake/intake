@@ -5,8 +5,8 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from __future__ import absolute_import
 import re
+import logging
 import warnings
 
 from ._version import get_versions
@@ -22,7 +22,7 @@ from .source import registry
 from .source.discovery import autodiscover
 from .gui import InstanceMaker
 
-# Populate list of autodetected plugins
+# Populate list of autodetected drivers (plugins).
 registry.update(autodiscover())
 
 from .source import csv, textfiles, npy, zarr
@@ -32,27 +32,25 @@ registry['catalog'] = Catalog
 registry['intake_remote'] = RemoteCatalog
 registry['numpy'] = npy.NPySource
 registry['ndzarr'] = zarr.ZarrArraySource
+logger = logging.getLogger('intake')
 
 
 def make_open_functions():
     """From the current state of ``registry``, create open_* functions"""
-    # Create shortcut open methods
-    if hasattr(str, 'isidentifier'):
-        def isidentifier(x):
-            return x.isidentifier()
-    else:
-        IDENTIFIER_REGEX = re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*$')
-        isidentifier = IDENTIFIER_REGEX.match
     for plugin_name, plugin in registry.items():
-        func_name = 'open_' + plugin_name
-        if not isidentifier(func_name):
-            # primitive name normalization
-            func_name = re.sub('[-=~^&|@+]', '_', func_name)
-        if isidentifier(func_name):
-            globals()[func_name] = plugin
-        else:
-            warnings.warn('Invalid Intake plugin name "%s" found.' %
-                          plugin_name)
+        try:
+            func_name = 'open_' + plugin_name
+            if not func_name.isidentifier():
+                # primitive name normalization
+                func_name = re.sub('[-=~^&|@+]', '_', func_name)
+            if func_name.isidentifier():
+                globals()[func_name] = plugin
+            else:
+                warnings.warn('Invalid Intake plugin name "%s" found.' %
+                              plugin_name)
+        except:
+            logger.warning("Creation of open function failed for %s"
+                           "" % plugin_name)
 
 
 def output_notebook(inline=True, logo=False):
@@ -147,6 +145,8 @@ def open_catalog(uri=None, **kwargs):
         else:
             # empty cat
             driver = 'catalog'
+    if '_file' not in driver:
+        kwargs.pop('fs', None)
     if driver not in registry:
         raise ValueError('Unknown catalog driver (%s), supply one of: %s'
                          % (driver, list(sorted(registry))))

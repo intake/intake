@@ -16,8 +16,8 @@ import re
 import shutil
 import warnings
 
-from dask.bytes.utils import infer_storage_options
 from dask.base import tokenize
+from fsspec.utils import infer_storage_options
 from intake.config import conf
 from intake.utils import make_path_posix
 
@@ -311,7 +311,7 @@ class FileCache(BaseCache):
     """
 
     def _make_files(self, urlpath, **kwargs):
-        from dask.bytes import open_files
+        from fsspec import open_files
 
         self._ensure_cache_dir()
         subdir = self._hash(urlpath)
@@ -331,7 +331,7 @@ class DirCache(BaseCache):
     """
 
     def _make_files(self, urlpath, **kwargs):
-        from dask.bytes import open_files
+        from fsspec import open_files
 
         self._ensure_cache_dir()
         subdir = self._hash(urlpath)
@@ -377,7 +377,7 @@ class CompressedCache(BaseCache):
     def _make_files(self, urlpath, **kwargs):
         import tempfile
         d = tempfile.mkdtemp()
-        from dask.bytes import open_files
+        from fsspec import open_files
 
         self._ensure_cache_dir()
         self._urlpath = urlpath
@@ -451,7 +451,7 @@ class DATCache(BaseCache):
 
     def _load(self, _, __, urlpath, meta=True):
         import subprocess
-        from dask.bytes import open_files
+        from fsspec import open_files
 
         path = os.path.join(self._cache_dir, self._hash(urlpath))
         dat, part = os.path.split(urlpath)

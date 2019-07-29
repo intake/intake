@@ -73,7 +73,7 @@ class RemoteSequenceSource(RemoteSource):
     def _data_to_source(b, path, encoder=None, **kwargs):
         import dask.bag as db
         import posixpath
-        from dask.bytes import open_files
+        from fsspec import open_files
         import dask
         from intake.source.textfiles import TextFilesSource
         if not hasattr(b, 'to_textfiles'):

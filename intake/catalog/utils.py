@@ -257,7 +257,19 @@ def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True,
 
 def coerce_datetime(v=None):
     import pandas
-    return pandas.to_datetime(v) if v else pandas.to_datetime(0)
+
+    if not v:
+        v = 0
+
+    try:
+        iter(v)
+    except TypeError: # not iterable
+        pass
+    else:
+        if "__datetime__" in v:
+            v = v["as_str"]
+
+    return pandas.to_datetime(v)
 
 
 COERCION_RULES = {

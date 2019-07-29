@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 import collections
+import datetime
 from contextlib import contextmanager
 import yaml
 
@@ -39,11 +40,18 @@ def no_duplicates_constructor(loader, node, deep=False):
     return loader.construct_mapping(node, deep)
 
 
+def tuple_constructor(loader, node, deep=False):
+    return tuple(loader.construct_object(node, deep=deep)
+                 for node in node.value)
+
+
 @contextmanager
 def no_duplicate_yaml():
     yaml.SafeLoader.add_constructor(
         yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
         no_duplicates_constructor)
+    yaml.SafeLoader.add_constructor('tag:yaml.org,2002:python/tuple',
+                                    tuple_constructor)
     try:
         yield
     finally:
@@ -131,3 +139,23 @@ def pretty_describe(object, nestedness=0, indent=2):
     if nestedness > 0 and out:
         return f'{sep}{out}'
     return out
+
+def decode_datetime(obj):
+    import numpy
+    if not isinstance(obj, numpy.ndarray) and "__datetime__" in obj:
+        try:
+            obj = datetime.datetime.strptime(
+                    obj["as_str"],
+                    "%Y%m%dT%H:%M:%S.%f%z",
+            )
+        except ValueError: # Perhaps lacking tz info
+            obj = datetime.datetime.strptime(
+                    obj["as_str"],
+                    "%Y%m%dT%H:%M:%S.%f",
+            )
+    return obj
+
+def encode_datetime(obj):
+    if isinstance(obj, datetime.datetime):
+        return {"__datetime__": True, "as_str": obj.strftime("%Y%m%dT%H:%M:%S.%f%z")}
+    return obj
