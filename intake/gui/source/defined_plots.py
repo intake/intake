@@ -14,6 +14,7 @@ except ImportError:
 
 try:
     import xrviz
+    from xrviz.dashboard import Dashboard as XRViz
     assert LooseVersion(xrviz.__version__) >= LooseVersion("0.1.1")
 except ImportError:
     xrviz = False
@@ -52,7 +53,6 @@ class Plots(BaseView):
         is set to false.
     """
     select = None
-    show_desc = None
 
     def __init__(self, source=None, **kwargs):
         self.custom = pn.widgets.Button(name='Customize...')
@@ -89,11 +89,13 @@ class Plots(BaseView):
         """When the source gets updated, update the the options in
         the selector"""
         BaseView.source.fset(self, source)
+        if source and isinstance(source, list):
+            source = source[0]
         if self.select:
             self.select.options = self.options
-        if source and dfviz and source[0].container == 'dataframe':
+        if source and dfviz and source.container == 'dataframe':
             self.custom.disabled = False
-        elif source and xrviz and source[0].container in ['xarray', 'ndarray']:
+        elif source and xrviz and source.container in ['xarray', 'ndarray']:
             self.custom.disabled = False
         else:
             self.custom.disabled = True
@@ -135,16 +137,21 @@ class Plots(BaseView):
 
     def interact(self, _):
         # "customize" was pressed
+        if self.selected == 'None':
+            kwargs = {}
+        else:
+            kwargs = self.source.metadata['plots'][self.selected]
         if self.source.container == 'dataframe':
             df = self.source.to_dask()
             if df.npartitions == 1:
                 df = df.compute()
-            if self.selected == 'None':
-                kwargs = {}
-            else:
-                kwargs = self.source.metadata['plots'][self.selected]
             viz = dfviz.DFViz(df, **kwargs)
-            self.out[0] = viz.panel
+        elif self.source.container in ['xarray', 'ndarray']:
+            df = self.source.to_dask()
+            viz = XRViz(df, **kwargs)
+        else:
+            return
+        self.out[0] = viz.panel
 
     def _plot_object(self, selected):
         if selected and str(selected) != "None":
@@ -164,7 +171,6 @@ class Plots(BaseView):
         state = super().__getstate__(include_source)
         state.update({
             'selected': self.selected,
-            'show_yaml': self.show_yaml,
         })
         return state
 
@@ -175,5 +181,4 @@ class Plots(BaseView):
         super().__setstate__(state)
         if self.visible:
             self.selected = state.get('selected')
-            self.show_yaml = state.get('show_yaml', False)
         return self

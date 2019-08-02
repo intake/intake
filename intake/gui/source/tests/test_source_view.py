@@ -85,8 +85,8 @@ def assert_is_empty(plots, visible=True):
         assert plots.instructions.object == plots.instructions_contents
         assert plots.desc.object is None
         assert plots.pane.object is None
-        assert len(plots.children) == 3
-        assert isinstance(plots.children[-1], pn.pane.HoloViews)
+        assert len(plots.children) == 2
+        assert isinstance(plots.children[-1][0][0], pn.pane.HoloViews)
         assert plots.panel.objects == plots.children
         assert len(plots.watchers) == 2
     else:
@@ -98,19 +98,17 @@ def assert_is_empty(plots, visible=True):
 def assert_plotting_source2_0_line(plots, visible=True, desc=False):
     assert plots.has_plots is True
     assert plots.instructions_contents == '**Select from the predefined plots:**'
-    assert plots.options == ['line_example', 'violin_example']
+    assert plots.options == ["None", 'line_example', 'violin_example']
     if visible:
-        assert plots.selected == 'line_example'
+        assert plots.selected == 'None'
+        plots.selected = 'line_example'
         assert plots.instructions.object == plots.instructions_contents
-        if desc:
-            assert plots.desc.object == ("kind: line\n"
-                                         "y: ['Robbery', 'Burglary']\n"
-                                         "x: Year")
-        else:
-            assert plots.desc.object == None
+        assert plots.desc.object == ("kind: line\n"
+                                     "y: ['Robbery', 'Burglary']\n"
+                                     "x: Year")
         assert plots.pane.object is not None
-        assert len(plots.children) == 3
-        assert isinstance(plots.children[-1], pn.pane.HoloViews)
+        assert len(plots.children) == 2
+        assert isinstance(plots.children[-1][0][0], pn.pane.HoloViews)
         assert plots.panel.objects == plots.children
         assert len(plots.watchers) == 2
     else:
@@ -122,22 +120,14 @@ def assert_plotting_source2_0_line(plots, visible=True, desc=False):
 @pytest.fixture
 def defined_plots(sources2):
     pytest.importorskip('hvplot')
-    from ..defined_plots import DefinedPlots
-    return DefinedPlots(source=sources2[0])
-
-
-def test_defined_plots_toggle_desc(defined_plots, sources2):
-    assert defined_plots.source == sources2[0]
-    assert_plotting_source2_0_line(defined_plots, visible=True)
-
-    defined_plots.show_desc.value = True
-    assert_plotting_source2_0_line(defined_plots, visible=True, desc=True)
+    from ..defined_plots import Plots
+    return Plots(source=sources2[0])
 
 
 def test_defined_plots_init_empty_and_not_visible_set_source(sources2):
     pytest.importorskip('hvplot')
-    from ..defined_plots import DefinedPlots
-    defined_plots = DefinedPlots(source=[], visible=False)
+    from ..defined_plots import Plots
+    defined_plots = Plots(source=[], visible=False)
     defined_plots.source = sources2
     assert defined_plots.source == sources2[0]
     assert_plotting_source2_0_line(defined_plots, visible=False)
@@ -145,8 +135,8 @@ def test_defined_plots_init_empty_and_not_visible_set_source(sources2):
 
 def test_defined_plots_init_with_source_not_visible_make_visible(sources2):
     pytest.importorskip('hvplot')
-    from ..defined_plots import DefinedPlots
-    defined_plots = DefinedPlots(source=sources2, visible=False)
+    from ..defined_plots import Plots
+    defined_plots = Plots(source=sources2, visible=False)
     defined_plots.source = sources2
     assert defined_plots.source == sources2[0]
     assert_plotting_source2_0_line(defined_plots, visible=False)
@@ -156,14 +146,14 @@ def test_defined_plots_init_with_source_not_visible_make_visible(sources2):
 
 
 def test_defined_plots_init_empty_and_visible():
-    from ..defined_plots import DefinedPlots
-    defined_plots = DefinedPlots()
+    from ..defined_plots import Plots
+    defined_plots = Plots()
     assert_is_empty(defined_plots, visible=True)
 
 
 def test_defined_plots_init_empty_and_not_visible():
-    from ..defined_plots import DefinedPlots
-    defined_plots = DefinedPlots(visible=False)
+    from ..defined_plots import Plots
+    defined_plots = Plots(visible=False)
     assert_is_empty(defined_plots, visible=False)
 
 
