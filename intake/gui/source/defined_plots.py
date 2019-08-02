@@ -4,14 +4,26 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-from copy import deepcopy
+from distutils.version import LooseVersion
+
+try:
+    import dfviz
+    assert LooseVersion(dfviz.__version__) >= LooseVersion("0.1.0")
+except ImportError:
+    dfviz = False
+
+try:
+    import xrviz
+    assert LooseVersion(xrviz.__version__) >= LooseVersion("0.1.1")
+except ImportError:
+    xrviz = False
 
 import panel as pn
 from ..base import BaseView
 from ...utils import pretty_describe
 
 
-class DefinedPlots(BaseView):
+class Plots(BaseView):
     """
     Panel for displaying pre-defined plots from catalog.
 
@@ -43,9 +55,9 @@ class DefinedPlots(BaseView):
     show_desc = None
 
     def __init__(self, source=None, **kwargs):
+        self.custom = pn.widgets.Button(name='Customize...')
         self.source = source
         self.panel = pn.Column(name='Plot', width_policy='max', margin=0)
-        self._show_yaml = False
         super().__init__(**kwargs)
 
     def setup(self):
@@ -53,42 +65,38 @@ class DefinedPlots(BaseView):
             self.instructions_contents, align='center', width_policy='max')
         self.select = pn.widgets.Select(options=self.options, height=30,
                                         align='center', width=200)
-        self.desc = pn.pane.Str()
-        self.pane = pn.pane.HoloViews(self._plot_object(self.selected))
-        self.show_desc = pn.widgets.Checkbox(value=False,
-                                             width_policy='min',
-                                             align='center')
+        self.desc = pn.pane.Str(name='YAML')
+        self.pane = pn.pane.HoloViews(self._plot_object(self.selected),
+                                      name="Plot")
 
         self.watchers = [
-            self.select.param.watch(self.callback, ['options','value']),
-            self.show_desc.param.watch(self._toggle_desc, 'value')
+            self.select.param.watch(self.callback, ['options', 'value']),
+            self.custom.param.watch(self.interact, ['clicks'])
         ]
+        self.out = pn.Row(self.pane, name="Plot")
 
         self.children = [
             pn.Row(
                 self.instructions,
                 self.select,
-                self.show_desc,
-                "show yaml",
+                self.custom
             ),
-            self.desc,
-            self.pane,
+            pn.Tabs(self.out, self.desc),
         ]
-
-    @property
-    def show_yaml(self):
-        return self.show_desc.value if self.show_desc else self._show_yaml
-
-    @show_yaml.setter
-    def show_yaml(self, show):
-        self.show_desc.value = show
 
     @BaseView.source.setter
     def source(self, source):
-        """When the source gets updated, update the the options in the selector"""
+        """When the source gets updated, update the the options in
+        the selector"""
         BaseView.source.fset(self, source)
         if self.select:
             self.select.options = self.options
+        if source and dfviz and source[0].container == 'dataframe':
+            self.custom.disabled = False
+        elif source and xrviz and source[0].container in ['xarray', 'ndarray']:
+            self.custom.disabled = False
+        else:
+            self.custom.disabled = True
 
     @property
     def has_plots(self):
@@ -105,7 +113,7 @@ class DefinedPlots(BaseView):
     @property
     def options(self):
         """Plots options defined on the source"""
-        return self.source.plots if self.source is not None else []
+        return (['None'] + self.source.plots) if self.source is not None else []
 
     @property
     def selected(self):
@@ -114,35 +122,41 @@ class DefinedPlots(BaseView):
 
     @selected.setter
     def selected(self, selected):
-        """When plot is selected set, make sure widget stays uptodate"""
+        """When plot is selected set, make sure widget stays upto date"""
         self.select.value = selected
 
     def callback(self, *events):
         for event in events:
             if event.name == 'value':
-                if self.show_desc.value:
-                    self.desc.object = self._desc_contents(event.new)
+                self.desc.object = self._desc_contents(event.new)
                 self.pane.object = self._plot_object(event.new)
             if event.name == 'options':
                 self.instructions.object = self.instructions_contents
 
+    def interact(self, _):
+        # "customize" was pressed
+        if self.source.container == 'dataframe':
+            df = self.source.to_dask()
+            if df.npartitions == 1:
+                df = df.compute()
+            if self.selected == 'None':
+                kwargs = {}
+            else:
+                kwargs = self.source.metadata['plots'][self.selected]
+            viz = dfviz.DFViz(df, **kwargs)
+            self.out[0] = viz.panel
+
     def _plot_object(self, selected):
-        if selected:
+        if selected and str(selected) != "None":
             plot_method = getattr(self.source.plot, selected)
+            self.out[0] = self.pane
             if plot_method:
                 return plot_method()
 
     def _desc_contents(self, selected):
-        if selected:
+        if selected and selected != "None":
             contents = self.source.metadata['plots'][selected]
             return pretty_describe(contents)
-
-    def _toggle_desc(self, event):
-        if event.new:
-            self.desc.object = self._desc_contents(self.selected)
-        else:
-            self.desc.object = None
-
 
     def __getstate__(self, include_source=True):
         """Serialize the current state of the object. Set include_source

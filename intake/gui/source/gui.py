@@ -10,7 +10,7 @@ from intake.utils import remake_instance
 
 from ..base import Base, enable_widget, MAX_WIDTH
 from .select import SourceSelector
-from .defined_plots import DefinedPlots
+from .defined_plots import Plots
 from .description import Description
 
 
@@ -68,10 +68,10 @@ class SourceGUI(Base):
                                      done_callback=self.callback)
         self.description = Description(source=self.sources)
 
-        self.plot = DefinedPlots(source=self.sources,
-                                 visible=self.plot_widget.value,
-                                 visible_callback=partial(
-                                     setattr, self.plot_widget, 'value'))
+        self.plot = Plots(source=self.sources,
+                          visible=self.plot_widget.value,
+                          visible_callback=partial(
+                          setattr, self.plot_widget, 'value'))
 
         super().__init__(**kwargs)
 

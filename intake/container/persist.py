@@ -17,21 +17,6 @@ from ..source import import_name
 from ..utils import make_path_posix
 
 
-def _maybe_add_rm(fs):
-    # monkey-path local filesystem
-    # this goes away if we can use fsspec's local file-system
-    from fsspec.implementations.local import LocalFileSystem
-    if isinstance(fs, LocalFileSystem):
-        def rm(path, recursive=False):
-            if recursive:
-                import shutil
-                shutil.rmtree(path)
-            else:
-                import os
-                os.remove(path)
-        fs.rm = rm
-
-
 class PersistStore(YAMLFileCatalog):
     """
     Specialised catalog for persisted data-sources
@@ -47,15 +32,13 @@ class PersistStore(YAMLFileCatalog):
             cls._singleton[0] = o
         return cls._singleton[0]
 
-    def __init__(self, path=None):
-        # from fsspec.registry import filesystem
+    def __init__(self, path=None, **storage_options):
         from fsspec import filesystem
+        from fsspec.core import split_protocol
         self.pdir = make_path_posix(path or conf.get('persist_path'))
+        protocol, _ = split_protocol(self.pdir)
         path = posixpath.join(self.pdir, 'cat.yaml')
-        protocol = (self.pdir.split('://', 1)[0]
-                    if "://" in self.pdir else 'file')
-        self.fs = filesystem(protocol)
-        _maybe_add_rm(self.fs)
+        self.fs = filesystem(protocol, **storage_options)
         super(PersistStore, self).__init__(path)
 
     def _load(self):
