@@ -369,6 +369,12 @@ should specify this.  Further parameters
 may be necessary for communicating with the storage backend and, by convention, the driver should take
 a parameter ``storage_options`` containing arguments to pass to the backend.
 
+The special template variable "CATALOG_DIR" may be used to construct relative URLs in the arguments to
+a source. In such cases, if the filesystem used to load that catalog contained arguments, then
+the ``storage_options`` of that file system will be extracted and passed to the source. Therefore, all
+sources which can accept general URLs (beyond just local paths) must make sure to accept this
+argument.
+
 As an example of using ``storage_options``, the following
 two sources would allow for reading CSV data from S3 and GCS backends without
 authentication (anonymous access), respectively
