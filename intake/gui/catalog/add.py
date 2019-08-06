@@ -136,7 +136,7 @@ class FileSelector(Base):
             print(e)
 
         self.main.value = []
-        self.main.options = out
+        self.main.options = sorted(out)
 
     def move_down(self, *events):
         for event in events:

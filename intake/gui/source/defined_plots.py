@@ -147,7 +147,7 @@ class Plots(BaseView):
                 df = df.compute()
             viz = dfviz.DFViz(df, **kwargs)
         elif self.source.container in ['xarray', 'ndarray']:
-            df = self.source.to_dask()
+            df = self.source.read()
             viz = XRViz(df, **kwargs)
         else:
             return
