@@ -246,7 +246,7 @@ def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True,
     user_inputs = expand_templates(user_inputs, context, False, client, getenv,
                                    getshell)
     params.update({k: v for k, v in user_inputs.items() if k in left})
-    params.pop('CATALOG_DIR')
+    params.pop('CATALOG_DIR', None)
     for k, v in params.copy().items():
         # final validation/coersion
         for sp in [p for p in spec_pars if p.name == k]:
@@ -302,3 +302,14 @@ def coerce(dtype, value):
 
 class RemoteCatalogError(Exception):
     pass
+
+
+def _has_catalog_dir(args):
+    """Check is any value in args dict needs CATALOG_DIR variable"""
+    env = Environment()
+    for k, arg in args.items():
+        parsed_content = env.parse(arg)
+        vars = meta.find_undeclared_variables(parsed_content)
+        if 'CATALOG_DIR' in vars:
+            return True
+    return False

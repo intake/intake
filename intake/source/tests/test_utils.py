@@ -108,10 +108,10 @@ def test_roundtrip_reverse_formats(pattern):
     ('http://data/band{band:1d}.tif',
      {'cache': [{'argkey': 'urlpath', 'regex': 'data'}]},
      '/band{band:1d}.tif'),
-    ('data/band{band:1d}.tif', {},
-     'data/band{band:1d}.tif'),
-    ('data/band{band:1d}.tif', None,
-     'data/band{band:1d}.tif')
+    ('/data/band{band:1d}.tif', {},
+     '/data/band{band:1d}.tif'),
+    ('/data/band{band:1d}.tif', None,
+     '/data/band{band:1d}.tif')
 ])
 def test_path_to_pattern(path, metadata, expected):
     assert path_to_pattern(path, metadata) == expected

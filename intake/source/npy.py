@@ -64,7 +64,8 @@ class NPySource(DataSource):
                 arr = NumpyAccess(files[0])
                 self.shape = arr.shape
                 self.dtype = arr.dtype
-                arrs = [arr] + [NumpyAccess(f, self.shape, self.dtype)
+                arrs = [arr] + [NumpyAccess(f, self.shape, self.dtype,
+                                            offset=arr.offset)
                                 for f in files[1:]]
             else:
                 arrs = [NumpyAccess(f, self.shape, self.dtype)
@@ -111,7 +112,7 @@ class NumpyAccess(object):
         self.shape = shape
         self.dtype = dtype
         self.order = order
-        self.offset = None
+        self.offset = offset
         if self.shape is None or dtype is None or offset is None:
             self._get_info()
         self.ndim = len(self.shape)
@@ -119,20 +120,26 @@ class NumpyAccess(object):
     def __getitem__(self, item):
         import numpy as np
         import copy
-        item = item[0]
-        first = item.stop - item.start
-        block = item.start
+        if isinstance(item, tuple):
+            item = item[0]
+        first = (item.stop or self.shape[0]) - (item.start or 0)
+        block = item.start or 0
         count = first
         for i in self.shape[1:]:
             block *= i
             count *= i
+        if count == 0:
+            return np.array([], dtype=self.dtype).reshape(
+                *(-1, ) + self.shape[1:])
 
         start = self.offset + block * self.dtype.itemsize
         shape = (first, ) + self.shape[1:]
         fn = copy.copy(self.f)  # makes local copy to avoid close while reading
+        print(start, count, shape)
         with fn as f:
             f.seek(start)
-            return np.fromfile(f, dtype=self.dtype, count=count).reshape(shape)
+            data = f.read(count * self.dtype.itemsize)
+            return np.frombuffer(data, dtype=self.dtype).reshape(shape)
 
     def _get_info(self):
         from numpy.lib import format
