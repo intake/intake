@@ -9,6 +9,7 @@ import collections
 import datetime
 from contextlib import contextmanager
 import yaml
+from yaml.nodes import MappingNode
 
 
 def make_path_posix(path):
@@ -25,17 +26,20 @@ def no_duplicates_constructor(loader, node, deep=False):
     """
 
     mapping = {}
+    if isinstance(node, MappingNode):
+        loader.flatten_mapping(node)
     for key_node, value_node in node.value:
-        key = loader.construct_object(key_node, deep=deep)
-        value = loader.construct_object(value_node, deep=deep)
-        if key in mapping:
-            from intake.catalog.exceptions import DuplicateKeyError
+        if nod.name != 'sources':
+            key = loader.construct_object(key_node, deep=deep)
+            value = loader.construct_object(value_node, deep=deep)
+            if key in mapping:
+                from intake.catalog.exceptions import DuplicateKeyError
 
-            raise DuplicateKeyError("while constructing a mapping",
-                                    node.start_mark,
-                                    "found duplicate key (%s)" % key,
-                                    key_node.start_mark)
-        mapping[key] = value
+                raise DuplicateKeyError("while constructing a mapping",
+                                        node.start_mark,
+                                        "found duplicate key (%s)" % key,
+                                        key_node.start_mark)
+            mapping[key] = value
 
     return loader.construct_mapping(node, deep)
 
@@ -48,7 +52,7 @@ def tuple_constructor(loader, node, deep=False):
 @contextmanager
 def no_duplicate_yaml():
     yaml.SafeLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+        yaml.resolver.Resolver.DEFAULT_MAPPING_TAG,
         no_duplicates_constructor)
     yaml.SafeLoader.add_constructor('tag:yaml.org,2002:python/tuple',
                                     tuple_constructor)
