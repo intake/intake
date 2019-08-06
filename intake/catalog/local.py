@@ -8,7 +8,6 @@
 import inspect
 import logging
 import os
-import posixpath
 
 from jinja2 import Template
 from fsspec import open_files, get_filesystem_class
@@ -21,7 +20,8 @@ from .entry import CatalogEntry
 from ..source import registry as global_registry
 from ..source import get_plugin_class
 from ..source.discovery import load_plugins_from_module
-from .utils import expand_defaults, coerce, COERCION_RULES, merge_pars
+from .utils import (expand_defaults, coerce, COERCION_RULES, merge_pars,
+                    _has_catalog_dir)
 from ..utils import yaml_load, DictSerialiseMixin, make_path_posix, classname
 
 logger = logging.getLogger('intake')
@@ -246,9 +246,11 @@ class LocalCatalogEntry(CatalogEntry):
                   'CATALOG_DIR': self._catalog_dir,
                   }
         params.update(self._open_args)
-        if 'storage_options' not in params and self._filesystem is not None:
+        if ('storage_options' not in params
+                and self._filesystem is not None
+                and self._filesystem.storage_options
+                and _has_catalog_dir(params)):
             params['storage_options'] = self._filesystem.storage_options
-
         open_args = merge_pars(params, user_parameters, self._user_parameters,
                                getshell=self.getshell, getenv=self.getenv,
                                client=False)
