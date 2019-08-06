@@ -383,12 +383,14 @@ authentication (anonymous access), respectively
 
    sources:
      s3_csv:
+       driver: csv
        description: "Publicly accessible CSV data on S3; requires s3fs"
        args:
          urlpath: s3://bucket/path/*.csv
          storage_options:
            anon: true
      gcs_csv:
+       driver: csv
        description: "Publicly accessible CSV data on GCS; requires gcsfs"
        args:
          urlpath: gcs://bucket/path/*.csv
