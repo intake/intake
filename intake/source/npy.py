@@ -139,7 +139,7 @@ class NumpyAccess(object):
         with fn as f:
             f.seek(start)
             data = f.read(count * self.dtype.itemsize)
-            return np.fromstring(data, dtype=self.dtype).reshape(shape)
+            return np.frombuffer(data, dtype=self.dtype).reshape(shape)
 
     def _get_info(self):
         from numpy.lib import format
