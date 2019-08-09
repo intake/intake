@@ -1,3 +1,5 @@
+.. _usecases:
+
 Use Cases - I want to...
 ========================
 
@@ -311,7 +313,7 @@ new containers is not hard, though, and we foresee more coming, such as
 machine-learning models and streaming/real-time data.
 
 Create Intake data-sets from scratch
------------------------------------
+------------------------------------
 
 If you have a set of files or a data service which you wish to make into a data-set,
 so that you can include it in a catalog, you should use the set of functions

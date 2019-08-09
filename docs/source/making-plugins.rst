@@ -280,7 +280,7 @@ By convention, drivers should have names that are lowercase, valid Python identi
 ``intake``.
 
 This approach is deprecated because it is limiting (requires the package to
-begin with "intake_") and because the package scan can be slow. Using
+begin with "intake_*") and because the package scan can be slow. Using
 entrypoints is strongly encouraged. The package scan *may* be disabled by
 default in some future release of intake. During the transition period, if a
 package named ``intake_*`` provides an entrypoint for a given name, that will

@@ -88,6 +88,8 @@ See the executable tutorial:
 First steps
 ===========
 
+The :doc:`start` document contains the sections that all users new to Intake should
+read through. `usecases`_ shows specific problems that Inatke solves.
 For a brief demonstration, which you can execute locally, go to :doc:`quickstart`.
 For a general description of all of the components of Intake and how they fit together, fo
 to :doc:`overview`. Finally, for some notebooks using Intake and articles about Intake, go
@@ -103,25 +105,13 @@ are defined in the :doc:`glossary`.
 
 .. toctree::
     :maxdepth: 1
-    :caption: Documentation Contents
+    :hidden:
 
-    quickstart.rst
-    use_cases.rst
-    overview.rst
-    examples.rst
-    gui.rst
-    api.rst
-    catalog.rst
-    tools.rst
-    persisting.rst
-    making-plugins.rst
-    auth-plugins.rst
-    data-packages.rst
-    plotting.rst
-    plugin-directory.rst
+    start.rst
+    guide.rst
+    reference.rst
     roadmap.rst
     glossary.rst
-    server.rst
 
 
 Indices and tables
