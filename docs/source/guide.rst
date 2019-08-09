@@ -6,7 +6,6 @@ how to use the graphical interface, plotting, etc.
 
 .. toctree::
     :maxdepth: 1
-    :hidden:
 
     gui.rst
     catalog.rst

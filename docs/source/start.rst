@@ -13,3 +13,4 @@ and describe Intake's place in the wider python data world.
     use_cases.rst
     overview.rst
     examples.rst
+    deployments.rst
