@@ -89,7 +89,7 @@ First steps
 ===========
 
 The :doc:`start` document contains the sections that all users new to Intake should
-read through. `usecases`_ shows specific problems that Inatke solves.
+read through. :ref:`usecases` shows specific problems that Inatke solves.
 For a brief demonstration, which you can execute locally, go to :doc:`quickstart`.
 For a general description of all of the components of Intake and how they fit together, fo
 to :doc:`overview`. Finally, for some notebooks using Intake and articles about Intake, go

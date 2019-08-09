@@ -6,6 +6,20 @@ production systems. These go well beyond the typical YAML files presented in the
 and examples sections, which are necessarily short and simple, and do not demonstrate the
 full power of Intake.
 
+Sharing YAML files
+~~~~~~~~~~~~~~~~~~
+
+This is the simplest scenario, and amply described in these documents. The primary
+advantage is simplicity: it is enough to put a file in an accessible place (even
+a gist or repo), in order
+for someone else to be able to discover and load that data. Furthermore, such
+files can easily refer to one-another, to build up a full tree of data assets with
+minimum pain Since YAML files are
+text, this also lends itself to working well with version control systems.
+Furthermore, all sources can describe themselves as YAML, and the
+``export`` and ``upload`` commands can produce an efficient format (possibly remote) together
+with YAML definition in a single step.
+
 Pangeo
 ~~~~~~
 
@@ -64,3 +78,10 @@ to encapsulate the highly hierarchical nature of their data. Of particular impor
 is the ability to provide different version (testing/production, and different
 storage formats) of the same logical dataset, depending on
 whether it is being read on a laptop versus the production infrastructure ...
+
+Intake Server
+~~~~~~~~~~~~~
+
+The server protocol (see :ref:`server`) is simple enough that anyone can write their
+own implementation with full customisation and behaviour. In particular, auth and
+monitoring would be essential for a production-grade deployment.
