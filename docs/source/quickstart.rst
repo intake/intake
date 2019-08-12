@@ -157,7 +157,7 @@ the entry, or passing extra keyword arguments to be passed to the driver. The ke
 be passed are limited to the user_parameters defined and the inputs expected by the specific
 driver - such usage is expected only from those already familiar with the specifics of the given
 format. In the following example, the user overrides the "csv_kwargs" keyword, which is described
-in the documentation for :func:`CSVSource`_ and gets passed down to the CSV reader::
+in the documentation for :func:`CSVSource <intake.source.csv.CSVSource>` and gets passed down to the CSV reader::
 
     # pass extra kwargs understood by the csv driver
     >>> intake.cat.states(csv_kwargs={'header': None, 'skiprows': 1}).read().head()
