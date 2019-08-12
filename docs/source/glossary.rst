@@ -20,7 +20,8 @@ Glossary
         catalog can contain other, nested catalogs.
 
     Catalog file
-        A specification file which contains a list of named entries describing how to load data sources.
+        A :term:`YAML` specification file which contains a list of named entries describing how to load data
+        sources. :doc:`catalog`.
 
     Conda
         A package and environment management package for the python ecosystem, see the `conda website`_. Conda ensures
