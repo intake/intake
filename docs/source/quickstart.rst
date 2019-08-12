@@ -112,7 +112,8 @@ Opening a Catalog
 
 It is often useful to move the descriptions of data sources out of your code and into a specification
 file that can be
-reused and shared with other projects and people.  Intake calls this a ":term:`Catalog`", which contains
+reused and shared with other projects and people.  Intake calls this a
+":term:`Catalog file`", which contains
 a list of named
 entries describing how to load data sources.  The ``intake example`` command, above, created a catalog file
 with the following :term:`YAML`-syntax content:
@@ -128,7 +129,7 @@ with the following :term:`YAML`-syntax content:
         metadata:
           origin_url: 'https://github.com/CivilServiceUSA/us-states/blob/v1.0.0/data/states.csv'
 
-To load a catalog from a catalog file::
+To load a :term:`Catalog` from a :term:`Catalog file`::
 
     >>> cat = intake.open_catalog('us_states.yml')
     >>> list(cat)
