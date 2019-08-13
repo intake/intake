@@ -19,6 +19,10 @@ Glossary
         server or another third-party data service, like a SQL database. Thus, catalogs form a hierarchy: any
         catalog can contain other, nested catalogs.
 
+    Catalog file
+        A :term:`YAML` specification file which contains a list of named entries describing how to load data
+        sources. :doc:`catalog`.
+
     Conda
         A package and environment management package for the python ecosystem, see the `conda website`_. Conda ensures
         dependencies and correct versions are installed for you, provides precompiled, binary-compatible software,
