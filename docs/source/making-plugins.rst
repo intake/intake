@@ -313,7 +313,7 @@ or remote data, based on a URL, which will have a protocol designation and possi
 glob "*" characters. Additional parameters may be passed to ``open_files``, which should,
 by convention, be supplied by a driver argument named ``storage_options`` (a dictionary).
 
-.. _dask.bytes.open_files: http://dask.pydata.org/en/latest/bytes.html#dask.bytes.open_files
+.. _dask.bytes.open_files: https://docs.dask.org/en/latest/remote-data-services.html?highlight=open_files#dask.bytes.open_files
 
 To use an ``OpenFile`` object, make it concrete by using a context:
 
