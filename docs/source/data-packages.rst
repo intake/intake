@@ -4,7 +4,7 @@ Making Data Packages
 Combined with the `Conda Package Manger <https://conda.io/docs/>`_, Intake makes it possible to create *data packages*
 which can be installed and upgraded just like software packages.  This offers several advantages:
 
-  * Distributing Catalogs and Drivers becomes as easy ``conda install``
+  * Distributing Catalogs and Drivers becomes as easy as ``conda install``
   * Data packages can be versioned, improving reproducibility in some cases
   * Data packages can depend on the libraries required for reading
   * Data packages can be self-describing using Intake catalog files
