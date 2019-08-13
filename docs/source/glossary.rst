@@ -58,6 +58,12 @@ Glossary
         easily as possible. In many organisations, the appropriate job title may be Data Scientist, but
         research scientists and BI/analysts also fit this description.
 
+    Data packages
+        Data packages are standard conda packages that install an Intake catalog file into the user’s conda
+        environment ($CONDA_PREFIX/share/intake). A data package does not necessarily imply there are data files
+        inside the package. A data package could describe remote data sources (such as files in S3) and take up
+        very little space on disk.
+
     Data Provider
         A person whose main objective is to curate data sources, get them into appropriate
         formats, describe the contents, and disseminate the data to those that need to use them. Such a person
