@@ -3,9 +3,8 @@
 Roadmap
 =======
 
-Some high-level work that we expect to be achieved ont he time-scale of months. This list
-is not exhaustive, but
-rather aims to whet the appetite for what Intake can be in the future.
+Some high-level work that we expect to be achieved on the time-scale of months. This list
+is not exhaustive, but rather aims to whet the appetite for what Intake can be in the future.
 
 Since Intake aims to be a community of data-oriented pythoneers, nothing written here is laid in
 stone, and users and devs are encouraged to make their opinions known!
@@ -21,7 +20,8 @@ impetus to get the work done. Conversations over the coming months can help dete
 drivers that should be created by the Intake team, and those that might be contributed by the
 community.
 
-The next type that we would specifically like to consider is machine learning model artefacts.
+The next type that we would specifically like to consider is machine learning
+model artifacts.
 
 Streaming Source
 ----------------
