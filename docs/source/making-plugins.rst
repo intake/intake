@@ -230,6 +230,16 @@ Entry points are a way for Python packages to advertise objects with some
 common interface. When Intake is imported, it discovers all packages installed
 in the current environment that advertise ``'intake.drivers'`` in this way.
 
+Most packages that define intake drivers have a dependency on ``intake``
+itself, for example in order to use intake's base classes. This can create a
+ciruclar dependency: importing the package imports intake, which tries
+to discover and import packages that define drivers. To avoid this pitfall,
+just ensure that ``intake`` is imported first thing in your package's
+``__init__.py``. This ensures that the driver-discovery code runs first. Note
+that you are *not* required to make your package depend on intake. The rule is
+that *if* you import ``intake`` you must import it first thing. If you do not
+import intake, there is no circularity.
+
 Configuration
 '''''''''''''
 
