@@ -318,12 +318,12 @@ and use the ``storage_options`` as required (see the Dask documentation on `remo
 .. _remote data: http://dask.pydata.org/en/latest/remote-data-services.html
 
 More advanced usage, where a Dask loader does not already exist, will likely rely on
-`dask.bytes.open_files`_ . Use this function to produce lazy ``OpenFile`` object for local
+`fsspec.open_files`_ . Use this function to produce lazy ``OpenFile`` object for local
 or remote data, based on a URL, which will have a protocol designation and possibly contain
 glob "*" characters. Additional parameters may be passed to ``open_files``, which should,
 by convention, be supplied by a driver argument named ``storage_options`` (a dictionary).
 
-.. _dask.bytes.open_files: http://dask.pydata.org/en/latest/bytes.html#dask.bytes.open_files
+.. _fsspec.open_files: https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.open_files
 
 To use an ``OpenFile`` object, make it concrete by using a context:
 

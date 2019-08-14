@@ -1,17 +1,19 @@
 Making Data Packages
 ====================
 
-Combined with the `Conda Package Manger <https://conda.io/docs/>`_, Intake makes it possible to create *data packages*
-which can be installed and upgraded just like software packages.  This offers several advantages:
+Combined with the `Conda Package Manger <https://conda.io/docs/>`_, Intake
+makes it possible to create :term:`Data packages` which can be installed and upgraded just like
+software packages.  This offers several advantages:
 
-  * Distributing datasets becomes as easy ``conda install``
+  * Distributing Catalogs and Drivers becomes as easy as ``conda install``
   * Data packages can be versioned, improving reproducibility in some cases
   * Data packages can depend on the libraries required for reading
   * Data packages can be self-describing using Intake catalog files
-  * Applications that need certain datasets can include data packages in their dependency list
+  * Applications that need certain Catalogs can include data packages in their dependency list
 
-In this tutorial, we give a walkthrough to enable you to distribute any dataset to others, so that they can access the
-data using Intake without worrying about where it resides or how it should be loaded.
+In this tutorial, we give a walkthrough to enable you to distribute any
+Catalogs to others, so that they can access the data using Intake without worrying about where it
+resides or how it should be loaded.
 
 Implementation
 ''''''''''''''
