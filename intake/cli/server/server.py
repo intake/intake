@@ -105,7 +105,7 @@ class ServerInfoHandler(tornado.web.RequestHandler):
             else:
                 start = int(page_offset)
                 stop = int(page_offset) + int(page_size)
-            page = itertools.islice(cat.walk(depth=1).items(), start, stop)
+            page = itertools.islice(cat.items(), start, stop)
             for name, source in page:
                 if self.auth.allow_access(head, source, self.catalog):
                     info = source.describe().copy()
