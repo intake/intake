@@ -220,11 +220,24 @@ should add the following to the package's ``setup.py``:
        ...
        entry_points={
            'intake.drivers': [
-               'some_format_name = some_package.and_maybe_a_submodule.YourDriverClass',
+               'some_format_name = some_package.and_maybe_a_submodule:YourDriverClass',
                ...
            ]
        },
    )
+
+.. important::
+
+   Some critical details of Python's entrypoints feature:
+
+   * Note the unusual syntax of the entrypoints. Each item is given as one long
+     string, with the ``=`` as part of the string. Modules are separated by
+     ``.``, and the final object name is preceded by ``:``.
+   * The right hand side of the equals sign must point to where the object is
+     *actually defined*. If ``YourDriverClass`` is defined in
+     ``foo/bar.py`` and imported into ``foo/__init__.py`` you might expect
+     ``foo:YourDriverClass`` to work, but it does not. You must spell out
+     ``foo.bar:YourDriverClass``.
 
 Entry points are a way for Python packages to advertise objects with some
 common interface. When Intake is imported, it discovers all packages installed
