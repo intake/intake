@@ -220,7 +220,7 @@ should add the following to the package's ``setup.py``:
        ...
        entry_points={
            'intake.drivers': [
-               'some_format_name = some_package.and_maybe_a_submodule.YourDriverClass',
+               'some_format_name = some_package.and_maybe_a_submodule:YourDriverClass',
                ...
            ]
        },
