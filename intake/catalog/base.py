@@ -544,7 +544,7 @@ class RemoteCatalog(Catalog):
             http_args = copy.deepcopy(http_args)
         secure = http_args.pop('ssl', False)
         scheme = 'https' if secure else 'http'
-        url = url.replace('intake', scheme)
+        url = url.replace('intake', scheme, 1)
         if not url.endswith('/'):
             url = url + '/'
         self.url = url
