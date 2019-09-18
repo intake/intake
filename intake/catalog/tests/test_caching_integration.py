@@ -38,6 +38,13 @@ def test_load_csv(catalog_cache):
     cache.clear_all()
 
 
+def test_list_of_files(catalog_cache):
+    pd = pytest.importorskip('pandas')
+    s1 = catalog_cache['test_cache']
+    s2 = catalog_cache['test_list_cache']
+    assert s2.read().equals(pd.concat([s1.read(), s1.read()]))
+
+
 def test_bad_type_cache(catalog_cache):
     cat = catalog_cache['test_bad_type_cache_spec']
     cache = cat.cache[0]

@@ -65,7 +65,6 @@ class Plots(BaseView):
             self.instructions_contents, align='center', width_policy='max')
         self.select = pn.widgets.Select(options=self.options, height=30,
                                         align='center', width=200)
-        self.desc = pn.pane.Str(name='YAML')
         self.pane = pn.pane.HoloViews(self._plot_object(self.selected),
                                       name="Plot")
 
@@ -81,7 +80,7 @@ class Plots(BaseView):
                 self.select,
                 self.custom
             ),
-            pn.Tabs(self.out, self.desc),
+            self.out,
         ]
 
     @BaseView.source.setter
@@ -130,7 +129,6 @@ class Plots(BaseView):
     def callback(self, *events):
         for event in events:
             if event.name == 'value':
-                self.desc.object = self._desc_contents(event.new)
                 self.pane.object = self._plot_object(event.new)
             if event.name == 'options':
                 self.instructions.object = self.instructions_contents
@@ -159,11 +157,6 @@ class Plots(BaseView):
             self.out[0] = self.pane
             if plot_method:
                 return plot_method()
-
-    def _desc_contents(self, selected):
-        if selected and selected != "None":
-            contents = self.source.metadata['plots'][selected]
-            return pretty_describe(contents)
 
     def __getstate__(self, include_source=True):
         """Serialize the current state of the object. Set include_source
