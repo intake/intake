@@ -36,7 +36,7 @@ class RemoteDataFrame(RemoteSource):
                 self.url, self.headers, self._source_id, self.container, i
             )
                           for i in range(self.npartitions)]
-            self.dataframe = dd.from_delayed(self.parts)
+            self.dataframe = dd.from_delayed(self.parts, check_meta_flag=False)
         return self._schema
 
     def _get_partition(self, i):
