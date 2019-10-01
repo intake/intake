@@ -39,7 +39,7 @@ class RemoteDataFrame(RemoteSource):
                 self.url, self.headers, self._source_id, self.container, i
             )
                           for i in range(self.npartitions)]
-            if LooseVersion(dask.__version__) <= LooseVersion("2.5.0"):
+            if LooseVersion(dask.__version__) < LooseVersion("2.5.0"):
                 self.dataframe = dd.from_delayed(self.parts)
             else:
                 self.dataframe = dd.from_delayed(self.parts, verify_meta=self.verify)
