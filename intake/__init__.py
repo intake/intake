@@ -77,7 +77,7 @@ def output_notebook(inline=True, logo=False):
 
 
 make_open_functions()
-cat = MergedCatalog(EntrypointsCatalog(), load_combo_catalog())
+cat = MergedCatalog([EntrypointsCatalog(), load_combo_catalog()])
 
 
 def open_catalog(uri=None, **kwargs):
