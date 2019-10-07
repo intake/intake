@@ -17,6 +17,7 @@ from .source.base import Schema, DataSource
 from .catalog.base import Catalog, RemoteCatalog
 from .catalog import local
 from .catalog.default import load_combo_catalog
+from .catalog.local import MergedCatalog, EntrypointsCatalog
 from .container import upload
 from .source import registry
 from .source.discovery import autodiscover
@@ -76,7 +77,7 @@ def output_notebook(inline=True, logo=False):
 
 
 make_open_functions()
-cat = load_combo_catalog()
+cat = MergedCatalog(EntrypointsCatalog(), load_combo_catalog())
 
 
 def open_catalog(uri=None, **kwargs):
