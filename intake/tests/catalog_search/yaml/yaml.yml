@@ -1,0 +1,23 @@
+description: 'DESCRIPTION_PLACEHOLDER'
+metadatastore:
+    module: databroker.headersource.mongo
+    class: MDS
+    config:
+        host: localhost
+        port: 27017
+        database: mds_database_placeholder
+        timezone: 'US/Eastern'
+assets:
+    module: databroker.assets.mongo
+    class: Registry
+    config:
+        host: localhost
+        database: assets_database_placeholder
+        port: 27017
+handlers:
+    FOO:
+        module: databroker.assets.path_only_handler
+        class: RawHandler
+root_map:
+    foo: bar
+    boo: far
