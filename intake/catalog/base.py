@@ -183,12 +183,25 @@ class Catalog(DataSource):
         return self.metadata.get('version', 1)
 
     @reload_on_change
-    def search(self, text, depth=2):
+    def search(self, key, depth=2):
+        """Search the entry metadata
+        
+        Parameters
+        ----------
+        key : str or function
+            If string perform a text search for that string in any of the metadata values.
+            If function pass each entry to the function, if the result is True add it to the
+            new catalog.
+        """
         import copy
-        words = text.lower().split()
-        entries = {k: copy.copy(v)for k, v in self.walk(depth=depth).items()
-                   if any(word in str(v.describe().values()).lower()
-                   for word in words)}
+        if isinstance(key, str):
+            words = key.lower().split()
+            entries = {k: copy.copy(v) for k, v in self.walk(depth=depth).items()
+                       if any(word in str(v.describe().values()).lower()
+                       for word in words)}
+        elif hasattr(key, '__call__'):
+            entries = {k: copy.copy(v) for k, v in self.walk(depth=depth).items()
+                       if key(v)}
         cat = Catalog.from_dict(
             entries, name=self.name + "_search",
             ttl=self.ttl,
@@ -197,7 +210,7 @@ class Catalog(DataSource):
             auth=self.auth,
             metadata=(self.metadata or {}).copy(),
             storage_options=self.storage_options)
-        cat.metadata['search'] = {'text': text, 'upstream': self.name}
+        cat.metadata['search'] = {'key': key, 'upstream': self.name}
         cat.cat = self
         for e in entries.values():
             e._catalog = cat
