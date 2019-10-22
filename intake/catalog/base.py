@@ -194,16 +194,14 @@ class Catalog(DataSource):
             new catalog.
         """
         import copy
-        if isinstance(key, str):
+        if hasattr(key, '__call__'):
+            entries = {k: copy.copy(v) for k, v in self.walk(depth=depth).items()
+                       if key(v)}
+        else:
             words = key.lower().split()
             entries = {k: copy.copy(v) for k, v in self.walk(depth=depth).items()
                        if any(word in str(v.describe().values()).lower()
                        for word in words)}
-        elif hasattr(key, '__call__'):
-            entries = {k: copy.copy(v) for k, v in self.walk(depth=depth).items()
-                       if key(v)}
-        else:
-            raise TypeError("Expected either string or callable")
         cat = Catalog.from_dict(
             entries, name=self.name + "_search",
             ttl=self.ttl,
