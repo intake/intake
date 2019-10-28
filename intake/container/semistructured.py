@@ -70,7 +70,7 @@ class RemoteSequenceSource(RemoteSource):
         return RemoteSequenceSource._data_to_source(b, path, encoder, **kwargs)
 
     @staticmethod
-    def _data_to_source(b, path, encoder=None, **kwargs):
+    def _data_to_source(b, path, encoder=None, storage_options=None, **kwargs):
         import dask.bag as db
         import posixpath
         from fsspec import open_files
@@ -83,7 +83,7 @@ class RemoteSequenceSource(RemoteSource):
                 raise NotImplementedError
 
         files = open_files(posixpath.join(path, 'part.*'), mode='wt',
-                           num=b.npartitions)
+                           num=b.npartitions, **(storage_options or {}))
         dwrite = dask.delayed(write_file)
         out = [dwrite(part, f, encoder)
                for part, f in zip(b.to_delayed(), files)]
