@@ -75,6 +75,8 @@ class RemoteSequenceSource(RemoteSource):
         import posixpath
         from fsspec import open_files
         import dask
+        import pickle
+        import json
         from intake.source.textfiles import TextFilesSource
         encoder = {None: str, 'str': str, 'json': json.dumps,
            'pickle': pickle.dumps}.get(encoder, encoder)
