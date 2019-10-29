@@ -88,7 +88,7 @@ class RemoteSequenceSource(RemoteSource):
         out = [dwrite(part, f, encoder)
                for part, f in zip(b.to_delayed(), files)]
         dask.compute(out)
-        s = TextFilesSource(posixpath.join(path, 'part.*'))
+        s = TextFilesSource(posixpath.join(path, 'part.*'), storage_options=storage_options)
         return s
 
 
