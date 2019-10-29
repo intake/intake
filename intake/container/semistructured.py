@@ -76,6 +76,9 @@ class RemoteSequenceSource(RemoteSource):
         from fsspec import open_files
         import dask
         from intake.source.textfiles import TextFilesSource
+        encoder = {None: str, 'str': str, 'json': json.dumps,
+           'pickle': pickle.dumps}.get(encoder, encoder)
+
         if not hasattr(b, 'to_textfiles'):
             try:
                 b = db.from_sequence(b, npartitions=1)
