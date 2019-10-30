@@ -70,12 +70,17 @@ class RemoteSequenceSource(RemoteSource):
         return RemoteSequenceSource._data_to_source(b, path, encoder, **kwargs)
 
     @staticmethod
-    def _data_to_source(b, path, encoder=None, **kwargs):
+    def _data_to_source(b, path, encoder=None, storage_options=None, **kwargs):
         import dask.bag as db
         import posixpath
         from fsspec import open_files
         import dask
+        import pickle
+        import json
         from intake.source.textfiles import TextFilesSource
+        encoder = {None: str, 'str': str, 'json': json.dumps,
+           'pickle': pickle.dumps}.get(encoder, encoder)
+
         if not hasattr(b, 'to_textfiles'):
             try:
                 b = db.from_sequence(b, npartitions=1)
@@ -83,12 +88,12 @@ class RemoteSequenceSource(RemoteSource):
                 raise NotImplementedError
 
         files = open_files(posixpath.join(path, 'part.*'), mode='wt',
-                           num=b.npartitions)
+                           num=b.npartitions, **(storage_options or {}))
         dwrite = dask.delayed(write_file)
         out = [dwrite(part, f, encoder)
                for part, f in zip(b.to_delayed(), files)]
         dask.compute(out)
-        s = TextFilesSource(posixpath.join(path, 'part.*'))
+        s = TextFilesSource(posixpath.join(path, 'part.*'), storage_options=storage_options)
         return s
 
 
