@@ -736,9 +736,7 @@ class RemoteCatalog(Catalog):
             # TODO: run proper walk when walk doesn't take ages
             entries = {k: self[k] for k, v in self._entries.items() if args[0](v.describe())}
             # replace args with names (they are unique)
-            cat = self.from_dict(entries, url=self.url, http_args=self.http_args, 
-                 name="")
-            cat.cat = self
+            cat = Catalog.from_dict(entries)
             return cat
         import requests
         request = {'action': 'search', 'query': (args, kwargs),
