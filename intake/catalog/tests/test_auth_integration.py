@@ -16,6 +16,7 @@ import pytest
 from intake import Catalog
 
 from intake.auth.secret import SecretClientAuth
+from intake.auth.base import AuthenticationFailure
 
 TMP_DIR = tempfile.mkdtemp()
 CONF_DIR = os.path.join(TMP_DIR, 'conf')
@@ -80,5 +81,5 @@ def test_secret_auth(intake_server_with_auth):
 
 def test_secret_auth_fail(intake_server_with_auth):
     auth = SecretClientAuth(secret='test_wrong_secret')
-    with pytest.raises(Exception):
+    with pytest.raises(AuthenticationFailure):
         Catalog(intake_server_with_auth, auth=auth)
