@@ -416,6 +416,18 @@ def test_search(intake_server):
     assert isinstance(remote_results, RemoteCatalog)
     assert list(local_results) == list(remote_results) == expected
 
+    # Test search null callable
+    remote_results = remote_catalog.search(lambda x: False)
+    local_results = local_catalog.search(lambda x: False)
+    assert list(local_results) == list(remote_resuls) == []
+
+    # test non null callable
+    f = lambda x: x.get('description', None) == 'entry1 full'
+    remote_results = remote_catalog.search(f)
+    local_results = local_catalog.search(f)
+    expected = ['nested.entry1', 'entry1']
+    assert list(local_results) == list(remote_resuls) == expected
+
 
 def test_access_subcatalog(intake_server):
     catalog = Catalog(intake_server)
