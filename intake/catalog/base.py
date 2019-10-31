@@ -18,7 +18,7 @@ import warnings
 
 import msgpack
 
-from ..auth.base import BaseClientAuth
+from ..auth.base import BaseClientAuth, AuthenticationFailure
 from .remote import RemoteCatalogEntry
 from .utils import flatten, reload_on_change, RemoteCatalogError
 from ..source.base import DataSource
@@ -690,9 +690,15 @@ class RemoteCatalog(Catalog):
         response = requests.get(self.info_url, **http_args)
         try:
             response.raise_for_status()
+            error = False
         except requests.HTTPError as err:
-            raise RemoteCatalogError(
-                "Failed to fetch metadata.") from err
+            if '403' in err.args[0]:
+                error = "Your current level of authentication does not have access"
+            else:
+                raise RemoteCatalogError(
+                    "Failed to fetch metadata.") from err
+        if error:
+            raise AuthenticationFailure(error)
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         self.metadata = info['metadata']
         # The intake server now always provides a length, but the server may be
