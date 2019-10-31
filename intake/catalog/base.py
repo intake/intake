@@ -196,7 +196,7 @@ class Catalog(DataSource):
         import copy
         if hasattr(key, '__call__'):
             entries = {k: copy.copy(v) for k, v in self.walk(depth=depth).items()
-                       if key(v)}
+                       if key(v.describe())}
         else:
             words = key.lower().split()
             entries = {k: copy.copy(v) for k, v in self.walk(depth=depth).items()
@@ -260,7 +260,7 @@ class Catalog(DataSource):
         out = sofar if sofar is not None else {}
         prefix = [] if prefix is None else prefix
         for name, item in self._entries.items():
-            if item._container == 'catalog' and depth > 1:
+            if getattr(item, '_container', None) == 'catalog' and depth > 1:
                 # recurse with default open parameters
                 try:
                     item().walk(out, prefix + [name], depth-1)
@@ -730,6 +730,14 @@ class RemoteCatalog(Catalog):
                  for source in info['sources']})
 
     def search(self, *args, **kwargs):
+        # if callable do special callable thing
+        if hasattr(args[0], '__call__'):
+            # check function against all of them
+            # TODO: run proper walk when walk doesn't take ages
+            entries = [k for k, v in self._entries.items() if args[0](v.describe())]
+            # replace args with names (they are unique)
+            args = (' '.join(entries),)
+            print(args)
         import requests
         request = {'action': 'search', 'query': (args, kwargs),
                    'source_id': self._source_id}
