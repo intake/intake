@@ -259,13 +259,26 @@ class DataSource(DictSerialiseMixin):
         return self.plot
 
     def persist(self, ttl=None, **kwargs):
-        """Save data from this source to local persistent storage"""
+        """Save data from this source to local persistent storage
+
+        Parameters
+        ----------
+        ttl: numeric, optional
+            Time to live in seconds. If provided, the original source will
+            be accessed and a new persisted version written transparently
+            when more than ``ttl`` seconds have passed since the old persisted
+            version was written.
+        kargs: passed to the _persist method on the base container.
+        """
         from ..container import container_map
         from ..container.persist import PersistStore
         import time
         if 'original_tok' in self.metadata:
             raise ValueError('Cannot persist a source taken from the persist '
                              'store')
+        if ttl is not None and not isinstance(TTL, (int, float)):
+            raise ValueError('Cannot persist using a time to live that is '
+                             f'non-numeric. User-provided ttl was {ttl}')
         method = container_map[self.container]._persist
         store = PersistStore()
         out = method(self, path=store.getdir(self), **kwargs)
