@@ -276,7 +276,7 @@ class DataSource(DictSerialiseMixin):
         if 'original_tok' in self.metadata:
             raise ValueError('Cannot persist a source taken from the persist '
                              'store')
-        if ttl is not None and not isinstance(TTL, (int, float)):
+        if ttl is not None and not isinstance(ttl, (int, float)):
             raise ValueError('Cannot persist using a time to live that is '
                              f'non-numeric. User-provided ttl was {ttl}')
         method = container_map[self.container]._persist
