@@ -23,7 +23,7 @@ def do_import():
         class GUI(object):
             def __repr__(self):
                 raise RuntimeError("Please install panel to use the GUI `conda "
-                                   "install -c conda-forge panel==0.5.1`")
+                                   "install -c conda-forge panel==0.7.0`")
 
     except Exception as e:
 
@@ -32,7 +32,7 @@ def do_import():
                 raise RuntimeError("Initialisation of GUI failed, even though "
                                    "panel is installed. Please update it "
                                    "to a more recent version (`conda install -c"
-                                   " conda-forge panel==0.5.1`).")
+                                   " conda-forge panel==0.7.0`).")
     return GUI
 
 

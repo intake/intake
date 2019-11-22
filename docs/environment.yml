@@ -18,8 +18,8 @@ dependencies:
   - dask >=0.17.0
   - python-snappy
   - pyyaml
-  - holoplot
+  - hvplot >=0.5.2
   - sphinx
   - sphinx_rtd_theme
   - numpydoc
-  - panel >=0.5.0
+  - panel >=0.7.0
