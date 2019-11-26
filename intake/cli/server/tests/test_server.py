@@ -254,3 +254,55 @@ def test_flatten_flag(multi_server):
     cat = open_catalog(multi_server)
     assert list(cat) == ['cat1', 'cat2']
     assert 'use_example1' in cat.cat1()
+
+
+@pytest.fixture()
+def port_server(tmpdir):
+    fn1 = make_path_posix(os.path.join(tmpdir, 'cat1.yaml'))
+    shutil.copyfile(catalog_file, fn1)
+    P = subprocess.Popen(['intake-server','--port', '5001'])
+    t = time.time()
+    while True:
+        try:
+            requests.get('http://localhost:5001')
+            try:
+                yield 'intake://localhost:5001'
+            finally:
+                P.terminate()
+                P.wait()
+                shutil.rmtree(tmpdir)
+            break
+        except:
+            time.sleep(0.2)
+            assert time.time() - t < 10
+
+
+def test_port_flag(port_server):
+    cat = open_catalog(multi_server)
+    assert list(cat) == ['cat1']
+
+
+@pytest.fixture()
+def address_server(tmpdir):
+    fn1 = make_path_posix(os.path.join(tmpdir, 'cat1.yaml'))
+    shutil.copyfile(catalog_file, fn1)
+    P = subprocess.Popen(['intake-server','--port', '5001', '--address', '0.0.0.0'])
+    t = time.time()
+    while True:
+        try:
+            requests.get('http://0.0.0.0:5001')
+            try:
+                yield 'intake://0.0.0.0:5001'
+            finally:
+                P.terminate()
+                P.wait()
+                shutil.rmtree(tmpdir)
+            break
+        except:
+            time.sleep(0.2)
+            assert time.time() - t < 10
+
+
+def test_address_flag(address_server):
+    cat = open_catalog(multi_server)
+    assert list(cat) == ['cat1']
