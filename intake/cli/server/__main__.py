@@ -63,7 +63,7 @@ def main(argv=None):
         # This is not a good idea if the Catalog is huge.
         logger.info('Entries:' + ','.join(list(catalog)))
 
-    logger.info('Listening on port %d' % args.port)
+    logger.info('Listening on %s:%d' % (args.address, args.port))
 
     server = IntakeServer(catalog)
     app = server.make_app()
