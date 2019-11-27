@@ -6,9 +6,38 @@
 #-----------------------------------------------------------------------------
 from functools import partial
 
+ENTRY_TEMPLATE = """
+{% extends base %}
+{% block contents %}
+<div style="display: inline-flex;">
+  <div>
+    {{ embed(roots.logo) }}
+    {{ embed(roots.controls) }}
+  </div>
+  <div>
+    {{ embed(roots.main) }}
+    {{ embed(roots.plot) }}
+  </div>
+</div>
+{% endblock %}
+"""
+
+CAT_TEMPLATE = """
+{% extends base %}
+{% block contents %}
+<div style="display: inline-flex;">
+  {{ embed(roots.logo) }}
+  <div>
+    {{ embed(roots.main) }}
+    {{ embed(roots.plot) }}
+  </div>
+</div>
+{% endblock %}
+"""
+
 try:
     import panel as pn
-    from ..gui.gui import SourceGUI, MAX_WIDTH
+    from ..gui.gui import SourceGUI, MAX_WIDTH, ICONS
     css = """
     .scrolling {
         overflow: scroll;
@@ -20,36 +49,78 @@ try:
     class EntryGUI(SourceGUI):
         def __init__(self, source=None, **kwargs):
             self.source = source
-            # set logo to false because we'll use a special logo_panel
-            kwargs['logo'] = False
             super().__init__(sources=[self.source], **kwargs)
-            self.panel = pn.Row(name='Source')
+            self.panel = pn.Template(ENTRY_TEMPLATE, {
+                'logo': pn.panel(ICONS['logo']),
+                'controls': pn.Column(*self.controls),
+                'main': self.description.panel,
+                'plot': self.plot.panel,
+            })
 
         def setup(self):
-            super().setup()
-            self.select.visible = False
-            self.children = [
-                pn.Column(
-                    self.logo_panel,
-                    *self.controls,
-                    margin=0,
-                ),
-                pn.Column(
-                    self.description.panel,
-                    self.plot.panel,
-                    width_policy='max',
-                    max_width=MAX_WIDTH,
-                ),
-            ]
+            self._setup_watchers()
+
+        @SourceGUI.visible.setter
+        def visible(self, visible):
+            self._visible = visible
+
+            if visible:
+                self.setup()
+                self.select.visible = True
+                self.description.visible = True
+            elif not visible:
+                self.unwatch()
+                # do children
+                self.select.visible = False
+                self.description.visible = False
+                self.plot.visible = False
+            if self.visible_callback:
+                self.visible_callback(visible)
 
         @property
         def item(self):
             return self.source
 
     class CatalogGUI(SourceGUI):
-        def __init__(self, cat, logo=True, **kwargs):
+        def __init__(self, cat, **kwargs):
             self.cat = cat
-            super().__init__(cats=[self.cat], logo=logo, **kwargs)
+            super().__init__(cats=[self.cat], **kwargs)
+            self.panel = pn.Template(CAT_TEMPLATE, {
+                'logo': pn.panel(ICONS['logo']),
+                'main': pn.Row(
+                    pn.Column(
+                        self.select.panel,
+                        self.control_panel,
+                        margin=0
+                    ),
+                    self.description.panel,
+                    margin=0
+                ),
+                'plot': self.plot.panel,
+            })
+
+        def setup(self):
+            self._setup_watchers()
+
+        @SourceGUI.visible.setter
+        def visible(self, visible):
+            self._visible = visible
+
+            if visible:
+                self.setup()
+                self.select.visible = True
+                self.description.visible = True
+                if len(self.control_panel.objects) == 0:
+                    self.control_panel.extend(self.controls)
+            elif not visible:
+                self.unwatch()
+                # do children
+                self.select.visible = False
+                self.control_panel.clear()
+                self.description.visible = False
+                self.plot.visible = False
+            if self.visible_callback:
+                self.visible_callback(visible)
 
         @property
         def item(self):

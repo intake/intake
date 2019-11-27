@@ -75,13 +75,15 @@ class SourceGUI(Base):
 
         super().__init__(**kwargs)
 
-    def setup(self):
+    def _setup_watchers(self):
         self.watchers = [
             self.plot_widget.param.watch(self.on_click_plot_widget, 'value'),
             self.pars_widget.param.watch(self.on_click_pars_widget, 'value'),
             self.select.widget.link(self.description, value='source'),
         ]
 
+    def setup(self):
+        self._setup_watchers()
         self.children = [
             pn.Row(
                 pn.Column(
