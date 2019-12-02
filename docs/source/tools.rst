@@ -62,18 +62,27 @@ You can see the full description of the server command with:
 ::
 
   >>> intake-server --help
-  usage: intake-server [-h] [-p PORT] [--sys-exit-on-sigterm] FILE [FILE ...]
+
+  usage: intake-server [-h] [-p PORT] [--list-entries] [--sys-exit-on-sigterm]
+                       [--flatten] [--no-flatten] [-a ADDRESS]
+                       FILE [FILE ...]
 
   Intake Catalog Server
 
   positional arguments:
-    FILE                    Name of catalog YAML file
+    FILE                  Name of catalog YAML file
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      -p PORT, --port PORT  port number for server to listen on
-      --sys-exit-on-sigterm internal flag used during unit testing to ensure
-                            .coverage file is written
+  optional arguments:
+    -h, --help            show this help message and exit
+    -p PORT, --port PORT  port number for server to listen on
+    --list-entries        list catalog entries at startup
+    --sys-exit-on-sigterm
+                          internal flag used during unit testing to ensure
+                          .coverage file is written
+    --flatten
+    --no-flatten
+    -a ADDRESS, --address ADDRESS
+                          hosting address
 
 To start the server with a local catalog file, use the following:
 
