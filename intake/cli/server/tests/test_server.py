@@ -238,12 +238,7 @@ def multi_server(tmpdir):
     while True:
         try:
             requests.get('http://localhost:5000')
-            try:
-                yield 'intake://localhost:5000'
-            finally:
-                P.terminate()
-                P.wait()
-                shutil.rmtree(tmpdir)
+            yield 'intake://localhost:5000'
             break
         except:
             time.sleep(0.2)
@@ -269,12 +264,7 @@ def port_server(tmpdir):
     while True:
         try:
             requests.get('http://localhost:5001')
-            try:
-                yield 'intake://localhost:5001'
-            finally:
-                P.terminate()
-                P.wait()
-                shutil.rmtree(tmpdir)
+            yield 'intake://localhost:5001'
             break
         except:
             time.sleep(0.2)
@@ -299,12 +289,7 @@ def address_server(tmpdir):
     while True:
         try:
             requests.get('http://0.0.0.0:5001')
-            try:
-                yield 'intake://0.0.0.0:5001'
-            finally:
-                P.terminate()
-                P.wait()
-                shutil.rmtree(tmpdir)
+            yield 'intake://0.0.0.0:5001'
             break
         except:
             time.sleep(0.2)
