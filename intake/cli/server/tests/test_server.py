@@ -242,7 +242,8 @@ def multi_server(tmpdir):
             break
         except:
             time.sleep(0.2)
-            assert time.time() - t < 10
+            if time.time() - t < 10: 
+                break
     P.terminate()
     P.wait()
     shutil.rmtree(tmpdir)
@@ -267,7 +268,8 @@ def port_server(tmpdir):
             break
         except:
             time.sleep(0.2)
-            assert time.time() - t < 10
+            if time.time() - t < 10: 
+                break
     P.terminate()
     P.wait()
     shutil.rmtree(tmpdir)
@@ -291,7 +293,8 @@ def address_server(tmpdir):
             break
         except:
             time.sleep(0.2)
-            assert time.time() - t < 10
+            if time.time() - t < 10: 
+                break
     P.terminate()
     P.wait()
     shutil.rmtree(tmpdir)
