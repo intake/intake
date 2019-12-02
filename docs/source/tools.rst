@@ -82,7 +82,11 @@ You can see the full description of the server command with:
     --flatten
     --no-flatten
     -a ADDRESS, --address ADDRESS
-                          hosting address
+                          address to use as a host, defaults to the address in
+                          the configuration file, if provide otherwise localhost
+    usage: intake-server [-h] [-p PORT] [--list-entries] [--sys-exit-on-sigterm]
+                 [--flatten] [--no-flatten] [-a ADDRESS]
+                 FILE [FILE ...]
 
 To start the server with a local catalog file, use the following:
 

@@ -41,7 +41,8 @@ def main(argv=None):
     parser.add_argument('--no-flatten', dest='flatten', action='store_false')
     parser.add_argument('-a', '--address', type=str, 
                         default=conf.get('address', 'localhost'),
-                        help='hosting address')
+                        help='address to use as a host, defaults to the address '
+                        'in the configuration file, if provide otherwise localhost')
     parser.set_defaults(flatten=True)
     args = parser.parse_args(argv[1:])
 
