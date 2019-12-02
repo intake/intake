@@ -279,7 +279,7 @@ def port_server(tmpdir):
 
 def test_port_flag(port_server):
     cat = open_catalog(port_server)
-    assert list(cat) == ['cat1']
+    assert 'use_example1' in list(cat)
 
 
 @pytest.fixture()
@@ -305,4 +305,4 @@ def address_server(tmpdir):
 
 def test_address_flag(address_server):
     cat = open_catalog(address_server)
-    assert list(cat) == ['cat1']
+    assert 'use_example1' in list(cat)
