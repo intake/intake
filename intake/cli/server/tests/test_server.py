@@ -243,10 +243,9 @@ def multi_server(tmpdir):
         except:
             time.sleep(0.2)
             assert time.time() - t < 10
-        finally:
-            P.terminate()
-            P.wait()
-            shutil.rmtree(tmpdir)
+    P.terminate()
+    P.wait()
+    shutil.rmtree(tmpdir)
 
 
 def test_flatten_flag(multi_server):
@@ -269,10 +268,9 @@ def port_server(tmpdir):
         except:
             time.sleep(0.2)
             assert time.time() - t < 10
-        finally:
-            P.terminate()
-            P.wait()
-            shutil.rmtree(tmpdir)
+    P.terminate()
+    P.wait()
+    shutil.rmtree(tmpdir)
 
 
 def test_port_flag(port_server):
@@ -294,10 +292,9 @@ def address_server(tmpdir):
         except:
             time.sleep(0.2)
             assert time.time() - t < 10
-        finally:
-            P.terminate()
-            P.wait()
-            shutil.rmtree(tmpdir)
+    P.terminate()
+    P.wait()
+    shutil.rmtree(tmpdir)
 
 
 def test_address_flag(address_server):
