@@ -260,7 +260,7 @@ def test_flatten_flag(multi_server):
 def port_server(tmpdir):
     fn1 = make_path_posix(os.path.join(tmpdir, 'cat1.yaml'))
     shutil.copyfile(catalog_file, fn1)
-    P = subprocess.Popen(['intake-server','--port', '5001'])
+    P = subprocess.Popen(['intake-server','--port', '5001', fn1])
     t = time.time()
     while True:
         try:
@@ -286,7 +286,7 @@ def test_port_flag(port_server):
 def address_server(tmpdir):
     fn1 = make_path_posix(os.path.join(tmpdir, 'cat1.yaml'))
     shutil.copyfile(catalog_file, fn1)
-    P = subprocess.Popen(['intake-server','--port', '5001', '--address', '0.0.0.0'])
+    P = subprocess.Popen(['intake-server','--port', '5001', '--address', '0.0.0.0', fn1])
     t = time.time()
     while True:
         try:
