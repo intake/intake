@@ -242,7 +242,7 @@ def multi_server(tmpdir):
             break
         except:
             time.sleep(0.2)
-            if time.time() - t < 10: 
+            if time.time() - t > 10: 
                 break
     P.terminate()
     P.wait()
@@ -268,7 +268,7 @@ def port_server(tmpdir):
             break
         except:
             time.sleep(0.2)
-            if time.time() - t < 10: 
+            if time.time() - t > 10: 
                 break
     P.terminate()
     P.wait()
@@ -293,7 +293,7 @@ def address_server(tmpdir):
             break
         except:
             time.sleep(0.2)
-            if time.time() - t < 10: 
+            if time.time() - t > 10: 
                 break
     P.terminate()
     P.wait()
