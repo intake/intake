@@ -42,7 +42,7 @@ def main(argv=None):
     parser.add_argument('-a', '--address', type=str, 
                         default=conf.get('address', 'localhost'),
                         help='address to use as a host, defaults to the address '
-                        'in the configuration file, if provide otherwise localhost')
+                        'in the configuration file, if provided otherwise localhost')
     parser.set_defaults(flatten=True)
     args = parser.parse_args(argv[1:])
 

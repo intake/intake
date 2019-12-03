@@ -83,7 +83,7 @@ You can see the full description of the server command with:
     --no-flatten
     -a ADDRESS, --address ADDRESS
                           address to use as a host, defaults to the address in
-                          the configuration file, if provide otherwise localhost
+                          the configuration file, if provided otherwise localhost
     usage: intake-server [-h] [-p PORT] [--list-entries] [--sys-exit-on-sigterm]
                  [--flatten] [--no-flatten] [-a ADDRESS]
                  FILE [FILE ...]
