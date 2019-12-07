@@ -280,7 +280,7 @@ class DataSource(DictSerialiseMixin):
             raise ValueError('Cannot persist using a time to live that is '
                              f'non-numeric. User-provided ttl was {ttl}')
         store = PersistStore()
-        out = self._export(store.get_dir(self), **kwargs)
+        out = self._export(store.getdir(self), **kwargs)
         out.metadata.update({
             'ttl': ttl,
             'cat': {} if self.cat is None else self.cat.__getstate__()
