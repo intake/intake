@@ -84,9 +84,9 @@ def assert_is_empty(plots, visible=True):
     if visible:
         assert plots.instructions.object == plots.instructions_contents
         assert plots.desc.object is None
-        assert plots.pane.object is None
+        assert len(plots.pane)<2
         assert len(plots.children) == 3
-        assert isinstance(plots.children[-1], pn.pane.HoloViews)
+        assert isinstance(plots.children[-1], pn.Column)
         assert plots.panel.objects == plots.children
         assert len(plots.watchers) == 2
     else:
@@ -108,9 +108,9 @@ def assert_plotting_source2_0_line(plots, visible=True, desc=False):
                                          "x: Year")
         else:
             assert plots.desc.object == None
-        assert plots.pane.object is not None
+        assert plots.pane.objects is not None
         assert len(plots.children) == 3
-        assert isinstance(plots.children[-1], pn.pane.HoloViews)
+        assert isinstance(plots.children[-1], pn.Column)
         assert plots.panel.objects == plots.children
         assert len(plots.watchers) == 2
     else:
@@ -183,6 +183,6 @@ def test_defined_plots_select_a_different_plot(defined_plots):
     defined_plots.selected = 'violin_example'
     assert defined_plots.desc.object.startswith("kind: violin")
     assert len(defined_plots.children) == 2
-    assert isinstance(defined_plots.children[1], pn.pane.HoloViews)
-    assert str(defined_plots.children[1].object) == str(defined_plots.pane.object)
+    assert isinstance(defined_plots.children[1], pn.Column)
+    assert str(defined_plots.children[1].objects) == str(defined_plots.pane.objects)
     assert defined_plots.panel.objects == defined_plots.children
