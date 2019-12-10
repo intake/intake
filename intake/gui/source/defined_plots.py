@@ -54,7 +54,7 @@ class DefinedPlots(BaseView):
         self.select = pn.widgets.Select(options=self.options, height=30,
                                         align='center', width=200)
         self.desc = pn.pane.Str()
-        self.pane = pn.pane.HoloViews(self._plot_object(self.selected))
+        self.pane = pn.Column(self._plot_object(self.selected))
         self.show_desc = pn.widgets.Checkbox(value=False,
                                              width_policy='min',
                                              align='center')
@@ -122,7 +122,7 @@ class DefinedPlots(BaseView):
             if event.name == 'value':
                 if self.show_desc.value:
                     self.desc.object = self._desc_contents(event.new)
-                self.pane.object = self._plot_object(event.new)
+                self.pane[0] = pn.panel(self._plot_object(event.new))
             if event.name == 'options':
                 self.instructions.object = self.instructions_contents
 
