@@ -39,6 +39,10 @@ def main(argv=None):
                         help='Name of catalog YAML file')
     parser.add_argument('--flatten', dest='flatten', action='store_true')
     parser.add_argument('--no-flatten', dest='flatten', action='store_false')
+    parser.add_argument('-a', '--address', type=str, 
+                        default=conf.get('address', 'localhost'),
+                        help='address to use as a host, defaults to the address '
+                        'in the configuration file, if provided otherwise localhost')
     parser.set_defaults(flatten=True)
     args = parser.parse_args(argv[1:])
 
@@ -60,13 +64,13 @@ def main(argv=None):
         # This is not a good idea if the Catalog is huge.
         logger.info('Entries:' + ','.join(list(catalog)))
 
-    logger.info('Listening on port %d' % args.port)
+    logger.info('Listening on %s:%d' % (args.address, args.port))
 
     server = IntakeServer(catalog)
     app = server.make_app()
     server.start_periodic_functions(close_idle_after=3600.0)
 
-    app.listen(args.port)
+    app.listen(args.port, address=args.address)
     try:
         tornado.ioloop.IOLoop.current().start()
     except KeyboardInterrupt:

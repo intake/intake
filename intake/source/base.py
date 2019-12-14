@@ -279,19 +279,12 @@ class DataSource(DictSerialiseMixin):
         if ttl is not None and not isinstance(ttl, (int, float)):
             raise ValueError('Cannot persist using a time to live that is '
                              f'non-numeric. User-provided ttl was {ttl}')
-        method = container_map[self.container]._persist
         store = PersistStore()
-        out = method(self, path=store.getdir(self), **kwargs)
-        out.description = self.description
-        metadata = {'timestamp': time.time(),
-                    'original_metadata': self.metadata,
-                    'original_source': self.__getstate__(),
-                    'original_name': self.name,
-                    'original_tok': self._tok,
-                    'persist_kwargs': kwargs,
-                    'ttl': ttl,
-                    'cat': {} if self.cat is None else self.cat.__getstate__()}
-        out.metadata = metadata
+        out = self._export(store.getdir(self), **kwargs)
+        out.metadata.update({
+            'ttl': ttl,
+            'cat': {} if self.cat is None else self.cat.__getstate__()
+        })
         out.name = self.name
         store.add(self._tok, out)
         return out
@@ -306,6 +299,9 @@ class DataSource(DictSerialiseMixin):
         add it to a catalog (``catalog.add(source)``) or get its YAML
         representation (``.yaml()``).
         """
+        return self._export(path, **kwargs)
+
+    def _export(self, path, **kwargs):
         from ..container import container_map
         import time
         method = container_map[self.container]._persist
