@@ -22,7 +22,7 @@ class RemoteArray(RemoteSource):
         self.metadata = kwargs['metadata']
         self.dtype = kwargs['dtype']
         self.chunks = tuple(tuple(c)
-                            for c in tuple(kwargs.get('chunks', (-1, ))))
+                            for c in tuple(kwargs.get('chunks', ((-1, ),))))
         self.arr = None
         self._schema = Schema(npartitions=self.npartitions,
                               extra_metadata=self.metadata,
