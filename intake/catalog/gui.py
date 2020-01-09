@@ -6,35 +6,6 @@
 #-----------------------------------------------------------------------------
 from functools import partial
 
-ENTRY_TEMPLATE = """
-{% extends base %}
-{% block contents %}
-<div style="display: inline-flex;">
-  <div>
-    {{ embed(roots.logo) }}
-    {{ embed(roots.controls) }}
-  </div>
-  <div>
-    {{ embed(roots.main) }}
-    {{ embed(roots.plot) }}
-  </div>
-</div>
-{% endblock %}
-"""
-
-CAT_TEMPLATE = """
-{% extends base %}
-{% block contents %}
-<div style="display: inline-flex;">
-  {{ embed(roots.logo) }}
-  <div>
-    {{ embed(roots.main) }}
-    {{ embed(roots.plot) }}
-  </div>
-</div>
-{% endblock %}
-"""
-
 try:
     import panel as pn
     from ..gui.gui import SourceGUI, MAX_WIDTH, ICONS
@@ -50,12 +21,11 @@ try:
         def __init__(self, source=None, **kwargs):
             self.source = source
             super().__init__(sources=[self.source], **kwargs)
-            self.panel = pn.Template(ENTRY_TEMPLATE, {
-                'logo': pn.panel(ICONS['logo']),
-                'controls': pn.Column(*self.controls),
-                'main': self.description.panel,
-                'plot': self.plot.panel,
-            })
+            self.panel = pn.Column(
+                pn.Row(ICONS['logo'], pn.Column(*self.controls)),
+                self.description.panel,
+                self.plot.panel
+            )
 
         def setup(self):
             self._setup_watchers()
@@ -85,19 +55,21 @@ try:
         def __init__(self, cat, **kwargs):
             self.cat = cat
             super().__init__(cats=[self.cat], **kwargs)
-            self.panel = pn.Template(CAT_TEMPLATE, {
-                'logo': pn.panel(ICONS['logo']),
-                'main': pn.Row(
-                    pn.Column(
-                        self.select.panel,
-                        self.control_panel,
+            self.panel = pn.Column(
+                pn.Row(
+                    pn.panel(ICONS['logo']),
+                    pn.Row(
+                        pn.Column(
+                            self.select.panel,
+                            self.control_panel,
+                            margin=0
+                        ),
+                        self.description.panel,
                         margin=0
                     ),
-                    self.description.panel,
-                    margin=0
                 ),
-                'plot': self.plot.panel,
-            })
+                self.plot.panel
+            )
 
         def setup(self):
             self._setup_watchers()

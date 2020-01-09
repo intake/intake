@@ -12,22 +12,6 @@ from .catalog.gui import CatGUI
 from .source.gui import SourceGUI
 
 
-TEMPLATE = """
-{% extends base %}
-{% block contents %}
-<div style="display: inline-flex;">
-  {{ embed(roots.logo) }}
-  <div>
-    {{ embed(roots.control) }}
-    {{ embed(roots.search) }}
-    {{ embed(roots.add) }}
-    {{ embed(roots.plot) }}
-  </div>
-</div>
-{% endblock %}
-"""
-
-
 class GUI(Base):
     """
     Top level GUI panel that contains controls and all visible sub-panels
@@ -54,14 +38,16 @@ class GUI(Base):
     def __init__(self, cats=None):
         self.source = SourceGUI()
         self.cat = CatGUI(cats=cats, done_callback=self.done_callback)
-        self.panel = pn.Template(TEMPLATE, {
-            'logo': pn.panel(ICONS['logo']),
-            'control': pn.Row(
+        self.panel = pn.Column(
+            pn.Row(
+                pn.panel(ICONS['logo']),
                 pn.Column(
                     self.cat.select.panel,
                     self.cat.control_panel,
                     margin=0,
                 ),
+            ),
+            pn.Row(
                 pn.Column(
                     self.source.select.panel,
                     self.source.control_panel,
@@ -70,10 +56,9 @@ class GUI(Base):
                 self.source.description.panel,
                 margin=0,
             ),
-            'search': self.cat.search.panel,
-            'add': self.cat.add.panel,
-            'plot': self.source.plot.panel
-        })
+            pn.Row(self.cat.search.panel, self.cat.add.panel,
+                   self.source.plot.panel)
+        )
         super(GUI, self).__init__()
 
     def done_callback(self, cats):
