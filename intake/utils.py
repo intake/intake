@@ -97,12 +97,12 @@ class DictSerialiseMixin(object):
         args = [arg.__getstate__() if isinstance(arg, DictSerialiseMixin)
                 else arg
                 for arg in self._captured_init_args]
-        kwargs = {k: arg.__getstate__() if isinstance(arg, DictSerialiseMixin)
-                  else arg
-                  for k, arg in self._captured_init_kwargs.items()}
-        return dict(cls=self.classname,
-                    args=args,
-                    kwargs=kwargs)
+        kwargs = collections.OrderedDict({k: arg.__getstate__()
+                  if isinstance(arg, DictSerialiseMixin) else arg
+                  for k, arg in self._captured_init_kwargs.items()})
+        return collections.OrderedDict(cls=self.classname,
+                                       args=args,
+                                       kwargs=kwargs)
 
     def __setstate__(self, state):
         # reconstitute instances here
