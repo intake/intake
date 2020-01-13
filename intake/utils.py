@@ -97,6 +97,11 @@ class DictSerialiseMixin(object):
         args = [arg.__getstate__() if isinstance(arg, DictSerialiseMixin)
                 else arg
                 for arg in self._captured_init_args]
+	    # We employ OrderedDict in several places. The motivation
+        # is to speed up dask tokenization. When dask tokenizes a plain dict,
+        # it sorts the keys, and it turns out that this sort operation
+        # dominates the call time, even for very small dicts. Using an
+        # OrderedDict steers dask toward a different and faster tokenization.
         kwargs = collections.OrderedDict({k: arg.__getstate__()
                   if isinstance(arg, DictSerialiseMixin) else arg
                   for k, arg in self._captured_init_kwargs.items()})
