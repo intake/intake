@@ -31,6 +31,7 @@ def test_local_catalog(catalog1):
     assert_items_equal(list(catalog1),
                        ['use_example1', 'nested', 'entry1', 'entry1_part',
                         'remote_env', 'local_env', 'text', 'arr', 'datetime'])
+    assert len(catalog1) == 9
     assert catalog1['entry1'].describe() == {
         'name': 'entry1',
         'container': 'dataframe',
@@ -708,4 +709,3 @@ def test_cat_add(tmpdir):
     # was added to the file
     cat = open_catalog(fn)
     assert list(cat) == ['cat']
-
