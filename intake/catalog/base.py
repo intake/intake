@@ -306,6 +306,9 @@ class Catalog(DataSource):
         """Return an iterator over catalog entries."""
         return iter(self._get_entries())
 
+    def __len__(self):
+        return len(self._get_entries())
+
     def __contains__(self, key):
         # Avoid iterating through all entries.
         return key in self._get_entries()  # triggers reload_on_change
