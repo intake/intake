@@ -77,7 +77,10 @@ def output_notebook(inline=True, logo=False):
 
 
 make_open_functions()
-cat = MergedCatalog([EntrypointsCatalog(), load_combo_catalog()])
+cat = MergedCatalog(
+    [EntrypointsCatalog(), load_combo_catalog()],
+    name='builtin',
+    description='Generated from data packages found on your intake search path')
 
 
 def open_catalog(uri=None, **kwargs):
