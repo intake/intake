@@ -8,18 +8,11 @@ from ..local import YAMLFilesCatalog, MergedCatalog, EntrypointsCatalog
 
 def test_catalog_discovery():
     basedir = os.path.dirname(__file__)
-    path = os.path.join(basedir, 'catalog_search')
-    collision_path = os.path.join(path, 'yaml')
+    yaml_glob = os.path.join(basedir, 'catalog_search', '*.yml')
+    example_packages = os.path.join(basedir, 'catalog_search', 'example_packages')
 
-    test_catalog = MergedCatalog([EntrypointsCatalog(paths=[path]),
-                                  YAMLFilesCatalog(path=[path])])
+    test_catalog = MergedCatalog([EntrypointsCatalog(paths=[example_packages]),
+                                  YAMLFilesCatalog(path=[yaml_glob])])
 
-    assert 'yaml' in test_catalog
-    assert 'ep1' in test_catalog
-
-    with pytest.warns(UserWarning):
-        test_catalog = MergedCatalog([EntrypointsCatalog(paths=[path]),
-                                      YAMLFilesCatalog(path=[path, collision_path])])
-
-    assert 'yaml' in test_catalog
+    assert 'use_example1' in test_catalog
     assert 'ep1' in test_catalog
