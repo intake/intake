@@ -7,7 +7,7 @@ follow tend to be more specific about particular features and workflows.
 
 Many of the entries here include a link to Binder, which a service that lest you execute
 code live in a notebook environment. This is a great way to experience using Intake.
-It can take a while, sometimes, for Binder to come up, please have patience.
+It can take a while, sometimes, for Binder to come up; please have patience.
 
 See also the `examples`_ repository, containing data-sets which can be built and installed
 as conda packages.
@@ -41,7 +41,7 @@ More specific examples of Intake functionality
 
 - Caching:
 
-    - Using automatically cached of data-files
+    - Using automatically cached data-files
       [`Static <https://github.com/mmccarty/intake-blog/blob/master/examples/caching.ipynb>`__]
       [`Executable <https://mybinder.org/v2/gh/mmccarty/intake-blog/master?filepath=examples%2Fcaching.ipynb>`__]
 
