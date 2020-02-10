@@ -353,8 +353,6 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             msg = dict(format=chunk_encoder.format_name,
                        compression=chunk_encoder.compressor_name,
                        container=source.container, data=data)
-            # Is this double serializing / copying?
-            # We're passing a Buffer object here.
             self.write(msgpack.packb(msg, **pack_kwargs))
             self.flush()
             self._cache.touch(source_id)  # keep source alive

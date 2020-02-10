@@ -63,9 +63,14 @@ class MsgPackSerializer(object):
         if container in ['ndarray', 'xarray'] and msgpack_numpy:
             return msgpack.packb(obj, **np_pack_kwargs)
         elif container == 'dataframe':
+            # Use pyarrow for serializing DataFrames, rather than
+            # msgpack: https://github.com/intake/intake/issues/460
             pa = check_pyarrow()
 
             context = pa.default_serialization_context()
+            # This eventually goes to msgpack.packb, which doesn't
+            # directly accept PyArrow Buffer objects. Need to wrap
+            # it in a memoryview to avoid a TypeError.
             return memoryview(context.serialize(obj).to_buffer())
         else:
             return msgpack.packb(obj, **pack_kwargs)

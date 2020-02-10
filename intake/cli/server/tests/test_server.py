@@ -28,10 +28,6 @@ catalog_file = make_path_posix(
     os.path.join(os.path.dirname(__file__), 'catalog1.yml'))
 
 
-def test_arrow_import():
-    import pyarrow
-
-
 class TestServerV1Base(AsyncHTTPTestCase):
     def get_app(self):
         local_catalog = Catalog(catalog_file)
