@@ -44,6 +44,15 @@ except ImportError:
     msgpack_numpy = None
 
 
+def check_pyarrow():
+    try:
+        import pyarrow
+    except ImportError:
+        raise ImportError("Serializing DataFrames requires pyarrow.")
+    return pyarrow
+
+
+
 class MsgPackSerializer(object):
     # TODO: This is ugly, should maybe transition to
     #  distributed.protocol.serialize
@@ -54,7 +63,10 @@ class MsgPackSerializer(object):
         if container in ['ndarray', 'xarray'] and msgpack_numpy:
             return msgpack.packb(obj, **np_pack_kwargs)
         elif container == 'dataframe':
-            return obj.to_msgpack()
+            pa = check_pyarrow()
+
+            context = pa.default_serialization_context()
+            return memoryview(context.serialize(obj).to_buffer())
         else:
             return msgpack.packb(obj, **pack_kwargs)
 
@@ -64,8 +76,9 @@ class MsgPackSerializer(object):
             from ..compat import np_unpack_kwargs
             return msgpack.unpackb(bytestr, **np_unpack_kwargs)
         elif container == 'dataframe':
-            import pandas as pd
-            return pd.read_msgpack(bytestr)
+            pa = check_pyarrow()
+            context = pa.default_serialization_context()
+            return context.deserialize(bytestr)
         else:
             return msgpack.unpackb(bytestr, **unpack_kwargs)
 
