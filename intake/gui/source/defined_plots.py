@@ -55,7 +55,7 @@ class Plots(BaseView):
     select = None
 
     def __init__(self, source=None, **kwargs):
-        self.custom = pn.widgets.Button(name='Customize...')
+        self.custom = pn.widgets.Button(name='Customize...', width_policy='min', align='center')
         self.source = source
         self.panel = pn.Column(name='Plot', width_policy='max', margin=0)
         super().__init__(**kwargs)

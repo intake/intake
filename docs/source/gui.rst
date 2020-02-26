@@ -4,7 +4,7 @@ GUI
 Using the GUI
 -------------
 
-**Note**: the GUI requires the latest release versions of ``panel`` and ``bokeh`` to
+**Note**: the GUI requires ``panel`` and ``bokeh`` to
 be available in the current environment.
 
 The Intake top-level singleton ``intake.gui`` gives access to a graphical data browser

@@ -7,10 +7,25 @@
 import intake
 import panel as pn
 
-from .base import Base, MAX_WIDTH
+from .base import Base, MAX_WIDTH, ICONS
 from .catalog.gui import CatGUI
 from .source.gui import SourceGUI
 
+
+TEMPLATE = """
+{% extends base %}
+{% block contents %}
+<div style="display: inline-flex;">
+  {{ embed(roots.logo) }}
+  <div>
+    {{ embed(roots.control) }}
+    {{ embed(roots.search) }}
+    {{ embed(roots.add) }}
+    {{ embed(roots.plot) }}
+  </div>
+</div>
+{% endblock %}
+"""
 
 class GUI(Base):
     """
@@ -35,16 +50,12 @@ class GUI(Base):
         watchers that are set on children - cleaned up when visible
         is set to false.
     """
-    def __init__(self, cats=None, logo=True):
+    def __init__(self, cats=None):
         self.source = SourceGUI()
         self.cat = CatGUI(cats=cats, done_callback=self.done_callback)
-        self.panel = pn.Column(name='GUI', width_policy='max', max_width=MAX_WIDTH)
-        self.visible = True
-        self.logo = logo
-
-    def setup(self):
-        self.children = [
-            pn.Row(
+        self.panel = pn.Template(TEMPLATE, {
+            'logo': pn.panel(ICONS['logo']),
+            'control': pn.Row(
                 pn.Column(
                     self.cat.select.panel,
                     self.cat.control_panel,
@@ -58,10 +69,10 @@ class GUI(Base):
                 self.source.description.panel,
                 margin=0,
             ),
-            self.cat.search.panel,
-            self.cat.add.panel,
-            self.source.plot.panel,
-        ]
+            'search': self.cat.search.panel,
+            'add': self.cat.add.panel,
+            'plot': self.source.plot.panel
+        })
 
     def done_callback(self, cats):
         self.source.select.cats = cats
