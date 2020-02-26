@@ -220,15 +220,38 @@ should add the following to the package's ``setup.py``:
        ...
        entry_points={
            'intake.drivers': [
-               'some_format_name = some_package.and_maybe_a_submodule.YourDriverClass',
+               'some_format_name = some_package.and_maybe_a_submodule:YourDriverClass',
                ...
            ]
        },
    )
 
+.. important::
+
+   Some critical details of Python's entrypoints feature:
+
+   * Note the unusual syntax of the entrypoints. Each item is given as one long
+     string, with the ``=`` as part of the string. Modules are separated by
+     ``.``, and the final object name is preceded by ``:``.
+   * The right hand side of the equals sign must point to where the object is
+     *actually defined*. If ``YourDriverClass`` is defined in
+     ``foo/bar.py`` and imported into ``foo/__init__.py`` you might expect
+     ``foo:YourDriverClass`` to work, but it does not. You must spell out
+     ``foo.bar:YourDriverClass``.
+
 Entry points are a way for Python packages to advertise objects with some
 common interface. When Intake is imported, it discovers all packages installed
 in the current environment that advertise ``'intake.drivers'`` in this way.
+
+Most packages that define intake drivers have a dependency on ``intake``
+itself, for example in order to use intake's base classes. This can create a
+ciruclar dependency: importing the package imports intake, which tries
+to discover and import packages that define drivers. To avoid this pitfall,
+just ensure that ``intake`` is imported first thing in your package's
+``__init__.py``. This ensures that the driver-discovery code runs first. Note
+that you are *not* required to make your package depend on intake. The rule is
+that *if* you import ``intake`` you must import it first thing. If you do not
+import intake, there is no circularity.
 
 Configuration
 '''''''''''''
@@ -308,12 +331,12 @@ and use the ``storage_options`` as required (see the Dask documentation on `remo
 .. _remote data: http://dask.pydata.org/en/latest/remote-data-services.html
 
 More advanced usage, where a Dask loader does not already exist, will likely rely on
-`dask.bytes.open_files`_ . Use this function to produce lazy ``OpenFile`` object for local
+`fsspec.open_files`_ . Use this function to produce lazy ``OpenFile`` object for local
 or remote data, based on a URL, which will have a protocol designation and possibly contain
 glob "*" characters. Additional parameters may be passed to ``open_files``, which should,
 by convention, be supplied by a driver argument named ``storage_options`` (a dictionary).
 
-.. _dask.bytes.open_files: http://dask.pydata.org/en/latest/bytes.html#dask.bytes.open_files
+.. _fsspec.open_files: https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.open_files
 
 To use an ``OpenFile`` object, make it concrete by using a context:
 

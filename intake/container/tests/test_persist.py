@@ -44,6 +44,12 @@ def test_backtrack(temp_cache):
     assert s3 == s
 
 
+def test_persist_with_nonnumeric_ttl_raises_error(temp_cache):
+    s = TextFilesSource("*.py")
+    with pytest.raises(ValueError, match="User-provided ttl was a string"):
+        s.persist(ttl='a string')
+
+
 class DummyDataframe(DataSource):
     name = 'dummy'
     container = 'dataframe'

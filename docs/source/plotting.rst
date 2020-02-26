@@ -102,7 +102,7 @@ Predefined Plots
 
 Some catalogs will define plots appropriate to a specific data source. These will be specified
 such that the user gets the right view with the right columns and labels, without having to investigate
-the data in details - this is idea for quick-look plotting when browsing sources.
+the data in detail -- this is ideal for quick-look plotting when browsing sources.
 
 .. code-block:: python
 

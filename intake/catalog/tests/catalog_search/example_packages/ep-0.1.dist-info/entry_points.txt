@@ -1,0 +1,2 @@
+[intake.catalogs]
+ep1 = ep:TestCatalog

@@ -144,7 +144,7 @@ class FileSelector(Base):
                 fn = event.new[0]
                 if fn.endswith('/'):
                     if self.path_text.value:
-                        self.path_text.value = self.path_text.value + '/' + fn
+                        self.path_text.value = os.path.join(self.path_text.value, fn)
                     else:
                         self.path_text.value = fn
                     self.make_options()

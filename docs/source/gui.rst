@@ -21,9 +21,9 @@ The GUI contains three main areas:
 - a **list of catalogs**. The "builtin" catalog, displayed by default, includes data-sets installed
   in the system, the same as ``intake.cat``.
 
-- a **list of sources** within the currently-selected catalog.
+- a **list of sources** within the currently selected catalog.
 
-- a **description** of the currently-selected source.
+- a **description** of the currently selected source.
 
 
 Catalogs
@@ -37,20 +37,20 @@ searching-within catalogs:
 -  **Add**: opens a sub-panel for adding catalogs to the interface, by either browsing for a local
    YAML file or by entering a URL for a catalog, which can be a remote file or Intake server
 
--  **Remove**: deletes the currently-selected catalog from the list
+-  **Remove**: deletes the currently selected catalog from the list
 
--  **Search**: opens a sub-panel for finding entries in the currently-selected catalog (and it's
+-  **Search**: opens a sub-panel for finding entries in the currently selected catalog (and its
    sub-catalogs)
 
 Add Catalogs
 ~~~~~~~~~~~~
 
-The Add button (+) exposes a sub-panel with two main ways to add catalogs to the interface
+The Add button (+) exposes a sub-panel with two main ways to add catalogs to the interface:
 
 .. image:: _static/images/gui_add.png
 
-This panel has a tab to load files from **local** from that you can navigate around the filesystem
-using the arrow or by editting the path directly. Use the home button to get back to the starting
+This panel has a tab to load files from **local**; from that you can navigate around the filesystem
+using the arrow or by editing the path directly. Use the home button to get back to the starting
 place. Select the catalog file you need. Use the "Add Catalog" button to add the catalog to the list
 above.
 
@@ -69,7 +69,7 @@ which can take filenames, remote URLs or existing ``Catalog`` instances.
 Remove Catalogs
 ~~~~~~~~~~~~~~~
 
-The Remove button (-) deletes the currently-selected catalog from the list. It is important to
+The Remove button (-) deletes the currently selected catalog from the list. It is important to
 note that this action does not have any impact on files, it only affects what shows up in the list.
 
 .. image:: _static/images/gui_remove.png
@@ -88,7 +88,7 @@ and therefore allow for infinite recursion.
 
 .. image:: _static/images/gui_search_inputs.png
 
-Upon execution of the search, the currently-selected catalog will be searched. Entries will
+Upon execution of the search, the currently selected catalog will be searched. Entries will
 be considered to match if any of the entered words is found in the description of the entry (this
 is case-insensitive). If any matches are found, a new entry will be made in the catalog list,
 with the suffix "_search".
@@ -116,7 +116,8 @@ checking the box next to "show yaml".
 
 .. image:: _static/images/gui_plot_yaml.png
 
-The holoviews object can be retrieved from the gui using ``intake.gui.source.plot.pane.object``.
+The holoviews object can be retrieved from the gui using ``intake.gui.source.plot.pane.object``,
+and you can then use it in Python or export it to a file.
 
 Using the Selection
 -------------------

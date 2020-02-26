@@ -19,6 +19,10 @@ Glossary
         server or another third-party data service, like a SQL database. Thus, catalogs form a hierarchy: any
         catalog can contain other, nested catalogs.
 
+    Catalog file
+        A :term:`YAML` specification file which contains a list of named entries describing how to load data
+        sources. :doc:`catalog`.
+
     Conda
         A package and environment management package for the python ecosystem, see the `conda website`_. Conda ensures
         dependencies and correct versions are installed for you, provides precompiled, binary-compatible software,
@@ -53,6 +57,12 @@ Glossary
         the data to be available in a standard format as quickly and
         easily as possible. In many organisations, the appropriate job title may be Data Scientist, but
         research scientists and BI/analysts also fit this description.
+
+    Data packages
+        Data packages are standard conda packages that install an Intake catalog file into the user’s conda
+        environment ($CONDA_PREFIX/share/intake). A data package does not necessarily imply there are data files
+        inside the package. A data package could describe remote data sources (such as files in S3) and take up
+        very little space on disk.
 
     Data Provider
         A person whose main objective is to curate data sources, get them into appropriate

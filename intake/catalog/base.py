@@ -18,7 +18,7 @@ import warnings
 
 import msgpack
 
-from ..auth.base import BaseClientAuth
+from ..auth.base import BaseClientAuth, AuthenticationFailure
 from .remote import RemoteCatalogEntry
 from .utils import flatten, reload_on_change, RemoteCatalogError
 from ..source.base import DataSource
@@ -306,6 +306,9 @@ class Catalog(DataSource):
         """Return an iterator over catalog entries."""
         return iter(self._get_entries())
 
+    def __len__(self):
+        return len(self._get_entries())
+
     def __contains__(self, key):
         # Avoid iterating through all entries.
         return key in self._get_entries()  # triggers reload_on_change
@@ -544,7 +547,7 @@ class RemoteCatalog(Catalog):
             http_args = copy.deepcopy(http_args)
         secure = http_args.pop('ssl', False)
         scheme = 'https' if secure else 'http'
-        url = url.replace('intake', scheme)
+        url = url.replace('intake', scheme, 1)
         if not url.endswith('/'):
             url = url + '/'
         self.url = url
@@ -690,9 +693,15 @@ class RemoteCatalog(Catalog):
         response = requests.get(self.info_url, **http_args)
         try:
             response.raise_for_status()
+            error = False
         except requests.HTTPError as err:
-            raise RemoteCatalogError(
-                "Failed to fetch metadata.") from err
+            if '403' in err.args[0]:
+                error = "Your current level of authentication does not have access"
+            else:
+                raise RemoteCatalogError(
+                    "Failed to fetch metadata.") from err
+        if error:
+            raise AuthenticationFailure(error)
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         self.metadata = info['metadata']
         # The intake server now always provides a length, but the server may be

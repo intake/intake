@@ -21,7 +21,7 @@ configuration file, which lists the class name and the keyword arguments it take
 plugin would be configured this way::
 
     auth:
-      class: intake.auth.secret.Secret
+      cls: intake.auth.secret.SecretAuth
       kwargs:
         secret: A_SECRET_HASH
 

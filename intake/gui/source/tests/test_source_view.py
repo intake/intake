@@ -148,6 +148,6 @@ def test_defined_plots_set_source_to_empty_list_and_visible_to_false(defined_plo
 def test_defined_plots_select_a_different_plot(defined_plots):
     defined_plots.selected = 'violin_example'
     assert len(defined_plots.children) == 2
-    assert isinstance(defined_plots.children[1], pn.pane.HoloViews)
-    assert str(defined_plots.children[1].object) == str(defined_plots.pane.object)
+    assert isinstance(defined_plots.children[1], pn.Column)
+    assert str(defined_plots.children[1].objects) == str(defined_plots.pane.objects)
     assert defined_plots.panel.objects == defined_plots.children
