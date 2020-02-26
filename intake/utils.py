@@ -44,6 +44,12 @@ def tuple_constructor(loader, node, deep=False):
     return tuple(loader.construct_object(node, deep=deep)
                  for node in node.value)
 
+from collections import OrderedDict
+
+def represent_dictionary_order(self, dict_data):
+    return self.represent_mapping('tag:yaml.org,2002:map', dict_data.items())
+
+yaml.add_representer(OrderedDict, represent_dictionary_order)
 
 @contextmanager
 def no_duplicate_yaml():
