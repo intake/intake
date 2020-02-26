@@ -27,13 +27,14 @@ matrix:
     # PYTHON
     - language: python
       sudo: required
-      dist: xenial
+      dist: bionic
       python:
         - "3.7"
       install:
         - sudo apt update
         - sudo apt install libsnappy-dev
         - pip install -e .[complete]
+        - pip install panel==0.7.0
         - pip install git+https://github.com/dask/dask --upgrade --no-deps
         - pip install pytest
       script:

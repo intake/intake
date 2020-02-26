@@ -28,7 +28,7 @@ These are the defaults, and any parameters not specified will take the values ab
 
 * the Intake Server will listen on port 5000 (this can be overridden on the command line,
   see below)
-* and the auth system used will be the fully-qualified class given (which, for BaseAuth,
+* and the auth system used will be the fully qualified class given (which, for BaseAuth,
   always allows access). For further information on securing
   the Intake Server, see the :ref:`authplugins`.
 

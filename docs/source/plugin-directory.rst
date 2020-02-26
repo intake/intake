@@ -10,7 +10,7 @@ contains in parentheses:
   ``numpy``, ``textfiles``, ``yaml_file_cat``, ``yaml_files_cat``)
 * `intake-astro <https://github.com/intake/intake-astro>`_ Table and array loading of FITS astronomical data (``fits_array``, ``fits_table``)
 * `intake-accumulo <https://github.com/intake/intake-accumulo>`_ Apache Accumulo clustered data storage (``accumulo``)
-* `intake-avro <https://github.com/intake/intake-avro>`_: Apache Avro data serialization format (``avro_table``, ``avro_sequence``
+* `intake-avro <https://github.com/intake/intake-avro>`_: Apache Avro data serialization format (``avro_table``, ``avro_sequence``)
 * `intake-bluesky <https://nsls-ii.github.io/intake-bluesky/>`_: search and retrieve data in the `bluesky <https://nsls-ii.github.io/bluesky>`_ data model
 * `intake-dcat <https://github.com/CityOfLosAngeles/intake-dcat>`_ Browse and load data from `DCAT <https://www.w3.org/TR/vocab-dcat>`_ catalogs. (``dcat``)
 * `intake-dynamodb <https://github.com/informatics-lab/intake-dynamodb>`_ link to Amazon DynamoDB (``dynamodb``)

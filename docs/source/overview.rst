@@ -18,7 +18,7 @@ Intake solves a related set of problems:
 * Libraries that do load data in bulk tend to each have their own API for doing so, which adds friction when switching
   data formats.
 
-* Loading data into a distributed data structure (like those found in Dask and Spark) often require writing a separate
+* Loading data into a distributed data structure (like those found in Dask and Spark) often requires writing a separate
   loader.
 
 * Abstractions often focus on just one data model (tabular, n-dimensional array, or semi-structured), when many projects
