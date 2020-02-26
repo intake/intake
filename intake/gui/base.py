@@ -111,12 +111,13 @@ class Base(object):
     def visible(self, visible):
         """When visible changed, do setup or unwatch and call visible_callback"""
         self._visible = visible
-        if visible and len(self._panel.objects) == 0:
+        pan = getattr(self._panel, '_layout', self._panel)
+        if visible and len(pan.objects) == 0:
             self.setup()
             self._panel.extend(self.children)
-        elif not visible and len(self._panel.objects) > 0:
+        elif not visible and len(pan.objects) > 0:
             self.unwatch()
-            self._panel.clear()
+            pan.clear()
         if self.visible_callback:
             self.visible_callback(visible)
 

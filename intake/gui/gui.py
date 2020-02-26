@@ -27,6 +27,7 @@ TEMPLATE = """
 {% endblock %}
 """
 
+
 class GUI(Base):
     """
     Top level GUI panel that contains controls and all visible sub-panels
@@ -73,6 +74,7 @@ class GUI(Base):
             'add': self.cat.add.panel,
             'plot': self.source.plot.panel
         })
+        super(GUI, self).__init__()
 
     def done_callback(self, cats):
         self.source.select.cats = cats

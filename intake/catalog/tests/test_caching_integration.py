@@ -35,7 +35,7 @@ def test_load_csv(catalog_cache, tempdir):
 
 def test_list_of_files(catalog_cache):
     pd = pytest.importorskip('pandas')
-    s1 = catalog_cache['test_cache_new']
+    s1 = catalog_cache['test_cache']
     s2 = catalog_cache['test_list_cache']
     assert s2.read().equals(pd.concat([s1.read(), s1.read()]))
 

@@ -260,7 +260,6 @@ def _download(file_in, file_out, blocksize, output=False):
     """Read from input and write to output file in blocks"""
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore')
-
         if output:
             try:
                 from tqdm.autonotebook import tqdm

@@ -65,16 +65,8 @@ class Plots(BaseView):
             self.instructions_contents, align='center', width_policy='max')
         self.select = pn.widgets.Select(options=self.options, height=30,
                                         align='center', width=200)
-<<<<<<< HEAD
         self.pane = pn.pane.HoloViews(self._plot_object(self.selected),
                                       name="Plot")
-=======
-        self.desc = pn.pane.Str()
-        self.pane = pn.Column(self._plot_object(self.selected))
-        self.show_desc = pn.widgets.Checkbox(value=False,
-                                             width_policy='min',
-                                             align='center')
->>>>>>> master
 
         self.watchers = [
             self.select.param.watch(self.callback, ['options', 'value']),

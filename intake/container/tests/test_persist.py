@@ -66,4 +66,4 @@ def test_undask_persist(temp_cache):
     pytest.importorskip('intake_parquet')
     s = DummyDataframe()
     s2 = s.persist()
-    assert s.read().equals(s2.read())
+    assert s.read().to_dict() == s2.read().to_dict()
