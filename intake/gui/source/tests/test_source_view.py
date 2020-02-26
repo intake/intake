@@ -55,26 +55,6 @@ def test_description_clears_if_visible_is_set_to_false(description):
     assert len(description.panel.objects) == 0
 
 
-def test_description_source_with_plots(sources2):
-    from ..description import Description
-    description = Description(source=sources2[0])
-    assert description.source == sources2[0]
-    lines = (
-        'name: us_crime\n'
-        'container: dataframe\n'
-        "plugin: ['csv']\n"
-        'description: US Crime data [UCRDataTool](https://www.ucrdatatool.gov'
-        '/Search/Crime/State/StatebyState.cfm)\n'
-        'direct_access: forbid\n'
-        'metadata: \n'
-        'args:\nurlpath: {{ CATALOG_DIR }}../data/crime{{selector}}.csv'
-        '').split('\n')
-    for line in lines:
-        assert line in description.contents
-    assert 'plots' in description.contents
-    assert_panel_matches_contents(description)
-
-
 def assert_is_empty(plots, visible=True):
     assert plots.source is None
     assert plots.has_plots is False
@@ -83,7 +63,6 @@ def assert_is_empty(plots, visible=True):
     assert plots.selected is None
     if visible:
         assert plots.instructions.object == plots.instructions_contents
-        assert plots.desc.object is None
         assert plots.pane.object is None
         assert len(plots.children) == 2
         assert isinstance(plots.children[-1][0][0], pn.pane.HoloViews)
@@ -103,9 +82,6 @@ def assert_plotting_source2_0_line(plots, visible=True, desc=False):
         assert plots.selected == 'None'
         plots.selected = 'line_example'
         assert plots.instructions.object == plots.instructions_contents
-        assert plots.desc.object == ("kind: line\n"
-                                     "y: ['Robbery', 'Burglary']\n"
-                                     "x: Year")
         assert plots.pane.object is not None
         assert len(plots.children) == 2
         assert isinstance(plots.children[-1][0][0], pn.pane.HoloViews)
@@ -171,7 +147,6 @@ def test_defined_plots_set_source_to_empty_list_and_visible_to_false(defined_plo
 @pytest.mark.skip(reason='This one is failing - but works in widget')
 def test_defined_plots_select_a_different_plot(defined_plots):
     defined_plots.selected = 'violin_example'
-    assert defined_plots.desc.object.startswith("kind: violin")
     assert len(defined_plots.children) == 2
     assert isinstance(defined_plots.children[1], pn.pane.HoloViews)
     assert str(defined_plots.children[1].object) == str(defined_plots.pane.object)

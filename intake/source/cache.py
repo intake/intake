@@ -563,7 +563,11 @@ def make_caches(driver, specs, catdir=None, cache_dir=None, storage_options={}):
     """
     if specs is None:
         return []
-    return [registry.get(spec['type'], FileCache)(
-        driver, spec, catdir=catdir, cache_dir=cache_dir,
-        storage_options=storage_options)
-        for spec in specs]
+    out = []
+    for spec in specs:
+        if 'type' in spec and spec['type'] not in registry:
+            raise IndexError(spec['type'])
+        out.append(registry.get(spec['type'], FileCache)(
+            driver, spec, catdir=catdir, cache_dir=cache_dir,
+            storage_options=storage_options))
+    return out
