@@ -156,11 +156,10 @@ def test_user_parameter_default_value(dtype, expected):
     assert p.validate(None) == expected
 
 
-def test_user_parameter_str_method():
+def test_user_parameter_repr():
     p = local.UserParameter('a', 'a desc', 'str')
-    expected = ("UserParameter(name='a', description='a desc', type='str', "
-                "default='', min=None, max=None, allowed=None)")
-    assert str(p) == expected
+    expected = "<UserParameter 'a'>"
+    assert repr(p) == str(p) == expected
 
 
 @pytest.mark.parametrize("dtype,given,expected", [

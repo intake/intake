@@ -79,14 +79,10 @@ class UserParameter(DictSerialiseMixin):
             self.allowed = [coerce(self.type, item)
                             for item in self.allowed]
 
-    def __str__(self):
-        return ('UserParameter(name={self.name!r}, '
-                'description={self.description!r}, '
-                'type={self.type!r}, '
-                'default={self.default!r}, '
-                'min={self.min!r}, '
-                'max={self.max!r}, '
-                'allowed={self.allowed!r})'.format(self=self))
+    def __repr__(self):
+        return (f'<{self.__class__.__name__} {self.name!r}>')
+
+    __str__ = __repr__
 
     def describe(self):
         """Information about this parameter"""
