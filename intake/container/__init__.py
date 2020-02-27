@@ -16,6 +16,7 @@ container_map = {
     'dataframe': RemoteDataFrame,
     'python': RemoteSequenceSource,
     'ndarray': RemoteArray,
+    'numpy': RemoteArray,
     'catalog': RemoteCatalog
 }
 

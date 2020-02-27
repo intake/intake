@@ -94,7 +94,7 @@ class Plots(BaseView):
             self.select.options = self.options
         if source and dfviz and source.container == 'dataframe':
             self.custom.disabled = False
-        elif source and xrviz and source.container in ['xarray', 'ndarray']:
+        elif source and xrviz and source.container in ['xarray', 'ndarray', 'numpy']:
             self.custom.disabled = False
         else:
             self.custom.disabled = True
@@ -144,9 +144,15 @@ class Plots(BaseView):
             if df.npartitions == 1:
                 df = df.compute()
             viz = dfviz.DFViz(df, **kwargs)
-        elif self.source.container in ['xarray', 'ndarray']:
-            df = self.source.read()
-            viz = XRViz(df, **kwargs)
+        elif self.source.container in ['xarray', 'ndarray', 'numpy']:
+            import xarray
+            try:
+                data = self.source.to_dask()
+            except NotImplemented:
+                data = self.source.read()
+            if not isinstance(data, (xarray.DataArray, xarray.Dataset)):
+                data = xarray.DataArray(data)
+            viz = XRViz(data, **kwargs)
         else:
             return
         self.out[0] = viz.panel
