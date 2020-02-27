@@ -44,6 +44,12 @@ def tuple_constructor(loader, node, deep=False):
     return tuple(loader.construct_object(node, deep=deep)
                  for node in node.value)
 
+from collections import OrderedDict
+
+def represent_dictionary_order(self, dict_data):
+    return self.represent_mapping('tag:yaml.org,2002:map', dict_data.items())
+
+yaml.add_representer(OrderedDict, represent_dictionary_order)
 
 @contextmanager
 def no_duplicate_yaml():
@@ -97,12 +103,17 @@ class DictSerialiseMixin(object):
         args = [arg.__getstate__() if isinstance(arg, DictSerialiseMixin)
                 else arg
                 for arg in self._captured_init_args]
-        kwargs = {k: arg.__getstate__() if isinstance(arg, DictSerialiseMixin)
-                  else arg
-                  for k, arg in self._captured_init_kwargs.items()}
-        return dict(cls=self.classname,
-                    args=args,
-                    kwargs=kwargs)
+        # We employ OrderedDict in several places. The motivation
+        # is to speed up dask tokenization. When dask tokenizes a plain dict,
+        # it sorts the keys, and it turns out that this sort operation
+        # dominates the call time, even for very small dicts. Using an
+        # OrderedDict steers dask toward a different and faster tokenization.
+        kwargs = collections.OrderedDict({k: arg.__getstate__()
+                  if isinstance(arg, DictSerialiseMixin) else arg
+                  for k, arg in self._captured_init_kwargs.items()})
+        return collections.OrderedDict(cls=self.classname,
+                                       args=args,
+                                       kwargs=kwargs)
 
     def __setstate__(self, state):
         # reconstitute instances here
