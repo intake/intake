@@ -122,6 +122,7 @@ are defined in the :doc:`glossary`.
     roadmap.rst
     glossary.rst
     server.rst
+    community.rst
 
 
 Indices and tables
