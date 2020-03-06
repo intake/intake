@@ -512,7 +512,11 @@ def register_plugin_module(mod):
         if k:
             if isinstance(k, (list, tuple)):
                 k = k[0]
-            register_driver(k, v)
+            # load_plugins_from_module can employ imp.load_source in which case
+            # we will re-exec the code and get a different type each time, so
+            # we have to tolerate overwriting here.
+            uses_load_source = mod.endswith('.py')
+            register_driver(k, v, overwrite=uses_load_source)
 
 
 def register_plugin_dir(path):
@@ -521,7 +525,10 @@ def register_plugin_dir(path):
     for f in glob.glob(path + '/*.py'):
         for k, v in load_plugins_from_module(f).items():
             if k:
-                register_driver(k, v)
+                # load_plugins_from_module can employ imp.load_source in which
+                # case we will re-exec the code and get a different type each
+                # time, so we have to tolerate overwriting here.
+                register_driver(k, v, overwrite=True)
 
 
 def get_dir(path):
