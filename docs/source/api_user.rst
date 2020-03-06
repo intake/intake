@@ -6,6 +6,8 @@ These are reference class and function definitions likely to be useful to everyo
 .. autosummary::
    intake.open_catalog
    intake.registry
+   intake.register_driver
+   intake.unregister_driver
    intake.upload
    intake.open_
    intake.source.csv.CSVSource

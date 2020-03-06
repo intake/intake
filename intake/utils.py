@@ -6,8 +6,10 @@
 #-----------------------------------------------------------------------------
 
 import collections
+import collections.abc
 import datetime
 from contextlib import contextmanager
+import warnings
 import yaml
 
 
@@ -170,3 +172,55 @@ def encode_datetime(obj):
     if isinstance(obj, datetime.datetime):
         return {"__datetime__": True, "as_str": obj.strftime("%Y%m%dT%H:%M:%S.%f%z")}
     return obj
+
+
+class RegistryView(collections.abc.Mapping):
+    """
+    Wrap registry dict in a read-only dict view.
+    """
+    def __init__(self, registry):
+        self._registry = registry
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self._registry!r})"
+
+    def __getitem__(self, key):
+        return self._registry[key]
+
+    def __iter__(self):
+        yield from self._registry
+
+    def __len__(self):
+        return len(self._registry)
+
+    # Support the common mutation methods for now, but warn.
+
+    def update(self, *args, **kwargs):
+        warnings.warn(
+            "In a future release of intake, the intake.registry will not be "
+            "directly mutable. Use intake.register_driver.",
+            DeprecationWarning)
+        self._registry.update(*args, **kwargs)
+        # raise TypeError(
+        #     "The registry cannot be edited directly. "
+        #     "Instead, use the intake.register(key, value)")
+
+    def __setitem__(self, key, value):
+        warnings.warn(
+            "In a future release of intake, the intake.registry will not be "
+            "directly mutable. Use intake.register_driver.",
+            DeprecationWarning)
+        self._registry[key] = value
+        # raise TypeError(
+        #     "The registry cannot be edited directly. "
+        #     "Instead, use the intake.register(key, value)")
+
+    def __delitem__(self, key):
+        warnings.warn(
+            "In a future release of intake, the intake.registry will not be "
+            "directly editable. Use intake.unregister_driver.",
+            DeprecationWarning)
+        del self._registry[key]
+        # raise TypeError(
+        #     "The registry cannot be edited directly. "
+        #     "Instead, use the method intake.unregister(key).")

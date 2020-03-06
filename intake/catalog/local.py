@@ -19,7 +19,7 @@ from .. import __version__
 from .base import Catalog, DataSource
 from . import exceptions
 from .entry import CatalogEntry
-from ..source import registry as global_registry
+from ..source import register_driver
 from ..source import get_plugin_class
 from ..source.discovery import load_plugins_from_module
 from .utils import (expand_defaults, coerce, COERCION_RULES, merge_pars,
@@ -512,7 +512,7 @@ def register_plugin_module(mod):
         if k:
             if isinstance(k, (list, tuple)):
                 k = k[0]
-            global_registry[k] = v
+            register_driver(k, v)
 
 
 def register_plugin_dir(path):
@@ -521,7 +521,7 @@ def register_plugin_dir(path):
     for f in glob.glob(path + '/*.py'):
         for k, v in load_plugins_from_module(f).items():
             if k:
-                global_registry[k] = v
+                register_driver(k, v)
 
 
 def get_dir(path):
@@ -844,5 +844,8 @@ class EntrypointsCatalog(Catalog):
                 warings.warn(f"Failed to load {name}, {entrypoint}, {e!r}.")
 
 
-global_registry['yaml_file_cat'] = YAMLFileCatalog
-global_registry['yaml_files_cat'] = YAMLFilesCatalog
+# Register these early in the import process to support the default catalog
+# which is built at import time. (Without this, 'yaml_file_cat' is looked for
+# in intake.registry before the registry has been populated.)
+register_driver('yaml_file_cat', YAMLFileCatalog)
+register_driver('yaml_files_cat', YAMLFilesCatalog)
