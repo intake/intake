@@ -20,7 +20,7 @@ EXPECTED_ERROR_TEXT = "Please install panel to use the GUI"
 
 @pytest.mark.skipif(panel_importable(), reason="panel is importable, so skip")
 def test_cat_no_panel_does_not_raise_errors(catalog1):
-    assert catalog1.name == 'catalog1'
+    assert catalog1.name == 'name_in_cat'
 
 
 @pytest.mark.skipif(panel_importable(), reason="panel is importable, so skip")
