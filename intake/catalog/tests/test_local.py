@@ -259,7 +259,6 @@ def test_user_parameter_validation_allowed():
     "params_value_bad_type",
     "params_value_non_dict",
     "plugins_non_dict",
-    "plugins_source_both",
     "plugins_source_missing",
     "plugins_source_missing_key",
     "plugins_source_non_dict",

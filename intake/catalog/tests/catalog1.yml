@@ -4,7 +4,7 @@ metadata:
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
+    - module: intake.catalog.tests.example_plugin_dir.example2_source
 sources:
   use_example1:
     description: example1 source plugin

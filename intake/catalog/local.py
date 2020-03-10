@@ -350,18 +350,16 @@ class CatalogParser(object):
                            "dictionary", data['plugins'], 'source')
                 continue
 
-            if 'module' in plugin_source and 'dir' in plugin_source:
-                self.error("keys 'module' and 'dir' both exist (select only "
-                           "one)", plugin_source)
-            elif 'module' in plugin_source:
+            if 'module' in plugin_source:
                 register_plugin_module(plugin_source['module'])
             elif 'dir' in plugin_source:
-                path = Template(plugin_source['dir']).render(
-                    {'CATALOG_DIR': self._context['root']})
-                register_plugin_dir(path)
+                self.error(
+                    "The key 'dir', and in general the feature of registering "
+                    "plugins from a directory of Python scripts outside of "
+                    "sys.path, is no longer supported. Use 'module'.",
+                    plugin_source)
             else:
-                self.error("missing one of the available keys ('module' or "
-                           "'dir')", plugin_source)
+                self.error("missing 'module'", plugin_source)
 
     def _getitem(self, obj, key, dtype, required=True, default=None,
                  choices=None):
@@ -512,23 +510,7 @@ def register_plugin_module(mod):
         if k:
             if isinstance(k, (list, tuple)):
                 k = k[0]
-            # load_plugins_from_module can employ imp.load_source in which case
-            # we will re-exec the code and get a different type each time, so
-            # we have to tolerate overwriting here.
-            uses_load_source = mod.endswith('.py')
-            register_driver(k, v, overwrite=uses_load_source)
-
-
-def register_plugin_dir(path):
-    """Find plugins in given directory"""
-    import glob
-    for f in glob.glob(path + '/*.py'):
-        for k, v in load_plugins_from_module(f).items():
-            if k:
-                # load_plugins_from_module can employ imp.load_source in which
-                # case we will re-exec the code and get a different type each
-                # time, so we have to tolerate overwriting here.
-                register_driver(k, v, overwrite=True)
+            register_driver(k, v)
 
 
 def get_dir(path):
