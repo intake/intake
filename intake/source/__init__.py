@@ -8,11 +8,11 @@
 import logging
 logger = logging.getLogger('intake')
 
-from ..utils import RegistryView
+from ..utils import DriverRegistryView
 
 # The registry is the mapping of plugin name (aka driver) to DataSource class
 _registry = {}  # internal mutable registry
-registry = RegistryView(_registry)  # public, read-ony wrapper
+registry = DriverRegistryView(_registry)  # public, read-ony wrapper
 
 
 def register_driver(name, driver, overwrite=False):
