@@ -15,6 +15,8 @@ def panel_importable():
     except:
         return False
 
+EXPECTED_ERROR_TEXT = "Please install panel to use the GUI"
+
 
 @pytest.mark.skipif(panel_importable(), reason="panel is importable, so skip")
 def test_cat_no_panel_does_not_raise_errors(catalog1):
@@ -23,8 +25,7 @@ def test_cat_no_panel_does_not_raise_errors(catalog1):
 
 @pytest.mark.skipif(panel_importable(), reason="panel is importable, so skip")
 def test_cat_no_panel_display_gui(catalog1):
-    with pytest.raises(RuntimeError, match=('Please install panel to use the GUI '
-                                            '`conda install -c conda-forge panel==0.5.1`')):
+    with pytest.raises(RuntimeError, match=EXPECTED_ERROR_TEXT):
         repr(catalog1.gui)
 
 
@@ -40,8 +41,7 @@ def test_entry_no_panel_does_not_raise_errors(catalog1):
 
 @pytest.mark.skipif(panel_importable(), reason="panel is importable, so skip")
 def test_entry_no_panel_display_gui(catalog1):
-    with pytest.raises(RuntimeError, match=('Please install panel to use the GUI '
-                                            '`conda install -c conda-forge panel==0.5.1`')):
+    with pytest.raises(RuntimeError, match=EXPECTED_ERROR_TEXT):
         repr(catalog1.entry1.gui)
 
 
