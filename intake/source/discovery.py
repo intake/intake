@@ -298,11 +298,20 @@ def load_plugins_from_module(module_name):
     plugins = {}
 
     try:
-        if module_name.endswith('.py'):
-            import imp
-            mod = imp.load_source('module.name', module_name)
-        else:
+        try:
             mod = importlib.import_module(module_name)
+        except ImportError as error:
+            if module_name.endswith('.py'):
+                # Provide a specific error regarding the removal of behavior
+                # that intake formerly supported.
+                raise ImportError(
+                    "Intake formerly supported executing arbitrary Python "
+                    "files not on the sys.path. This is no longer supported. "
+                    "Drivers must be specific with a module path like "
+                    "'package_name.module_name, not a Python filename like "
+                    "'module.py'.") from error
+            else:
+                raise
     except Exception as e:
         logger.debug("Import module <{}> failed: {}".format(module_name, e))
         return {}

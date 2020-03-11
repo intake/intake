@@ -6,8 +6,10 @@
 #-----------------------------------------------------------------------------
 
 import collections
+import collections.abc
 import datetime
 from contextlib import contextmanager
+import warnings
 import yaml
 
 
@@ -170,3 +172,77 @@ def encode_datetime(obj):
     if isinstance(obj, datetime.datetime):
         return {"__datetime__": True, "as_str": obj.strftime("%Y%m%dT%H:%M:%S.%f%z")}
     return obj
+
+
+class RegistryView(collections.abc.Mapping):
+    """
+    Wrap registry dict in a read-only dict view.
+
+    Subclasses define attributes filled into warning and error messages:
+    - self._registry_name
+    - self._register_func_name
+    - self._unregister_func_name
+    """
+    def __init__(self, registry):
+        self._registry = registry
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self._registry!r})"
+
+    def __getitem__(self, key):
+        return self._registry[key]
+
+    def __iter__(self):
+        yield from self._registry
+
+    def __len__(self):
+        return len(self._registry)
+
+    # Support the common mutation methods for now, but warn.
+
+    def update(self, *args, **kwargs):
+        warnings.warn(
+            f"In a future release of intake, the {self._registry_name} will "
+            f"not be directly mutable. Use {self._register_func_name}.",
+            DeprecationWarning)
+        self._registry.update(*args, **kwargs)
+        # raise TypeError(
+        #     f"The registry cannot be edited directly. "
+        #     f"Instead, use the {self._register_func_name{")
+
+    def __setitem__(self, key, value):
+        warnings.warn(
+            f"In a future release of intake, the {self._registry_name} will "
+            f"not be directly mutable. Use {self._register_func_name}.",
+            DeprecationWarning)
+        self._registry[key] = value
+        # raise TypeError(
+        #     f"The registry cannot be edited directly. "
+        #     f"Instead, use the {self._register_func_name{")
+
+    def __delitem__(self, key):
+        warnings.warn(
+            f"In a future release of intake, the {self._registry_name} will "
+            f"not be directly mutable. Use {self._unregister_func_name}.",
+            DeprecationWarning)
+        del self._registry[key]
+        self._registry[key] = value
+        # raise TypeError(
+        #     f"The registry cannot be edited directly. "
+        #     f"Instead, use the {self._unregister_func_name{")
+
+
+class DriverRegistryView(RegistryView):
+    # This attributes are used by the base class
+    # to fill in warning and error messages.
+    _registry_name = "intake.registry"
+    _register_func_name  = "intake.register_driver"
+    _unregister_func_name  = "intake.unregister_driver"
+
+
+class ContainerRegistryView(RegistryView):
+    # This attributes are used by the base class
+    # to fill in warning and error messages.
+    _registry_name = "intake.container_map"
+    _register_func_name  = "intake.register_container"
+    _unregister_func_name  = "intake.unregister_container"
