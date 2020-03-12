@@ -4,22 +4,20 @@ channels:
   - conda-forge
 
 dependencies:
-  - appdirs
-  - cloudpickle
-  - python=3.6
-  - dask
-  - numpy
-  - pandas
-  - msgpack-python
-  - msgpack-numpy
-  - requests
-  - tornado
-  - jinja2
-  - dask >=0.17.0
+  - appdirs=1.4.3
+  - python=3.7
+  - dask=2.10.1
+  - numpy=1.18.1
+  - pandas=1.0.1
+  - msgpack-python=0.6.2
+  - msgpack-numpy=0.4.4.3
+  - requests=2.22.0
+  - tornado=6.0.3
+  - jinja2=2.11.1
   - python-snappy
   - pyyaml
-  - holoplot
+  - hvplot
   - sphinx
   - sphinx_rtd_theme
   - numpydoc
-  - panel >=0.5.0
+  - panel=0.8.0
