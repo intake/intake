@@ -8,13 +8,14 @@
 import re
 import logging
 import warnings
+import sys
 
 from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
 from . import source
 from .source.base import Schema, DataSource
-from .catalog.base import Catalog, RemoteCatalog
+from .catalog.base import RemoteCatalog
 from .catalog import local
 from .catalog.default import load_combo_catalog
 from .catalog.local import MergedCatalog, EntrypointsCatalog
@@ -30,6 +31,13 @@ for name, driver in autodiscover().items():
     register_driver(name, driver)
 
 logger = logging.getLogger('intake')
+if sys.version_info >= (3, 7):
+    def __getattr__(attr):
+        if attr == 'Catalog':
+            from .catalog.base import Catalog
+            warnings.warn('deprecation: intake.Catalog now references the base class intake.catalog.base.Catalog\n '
+                          'If you want to open a generic URL, you should use intake.open_catalog')
+            return Catalog
 
 
 def make_open_functions():
@@ -153,5 +161,4 @@ def open_catalog(uri=None, **kwargs):
     return registry[driver](uri, **kwargs)
 
 
-Catalog = open_catalog
 gui = InstanceMaker()

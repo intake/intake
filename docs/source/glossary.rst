@@ -14,8 +14,8 @@ Glossary
         format of the files is unchanged in this case, but may be decompressed.
 
     Catalog
-        A collection of entries, each of which corresponds to a specific :term:`Data-set`. Within Intake, a catalog is
-        most commonly defined in a :term:`YAML` file, but there are other possibilities, such as connecting to an Intake
+        A collection of entries, each of which corresponds to a specific :term:`Data-set`. Within these docs, a catalog is
+        most commonly defined in a :term:`YAML` file, for simplicity, but there are other possibilities, such as connecting to an Intake
         server or another third-party data service, like a SQL database. Thus, catalogs form a hierarchy: any
         catalog can contain other, nested catalogs.
 
