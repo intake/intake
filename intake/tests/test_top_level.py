@@ -109,3 +109,8 @@ def test_bad_open():
 def test_output_notebook():
     pytest.importorskip('hvplot')
     intake.output_notebook()
+
+
+def test_old_usage():
+    with pytest.warns(UserWarning):
+        intake.Catalog()
