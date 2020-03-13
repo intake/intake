@@ -110,12 +110,15 @@ working with Dask collections (Bag, Array or Data-frames).
 Opening a Catalog
 -----------------
 
-It is often useful to move the descriptions of data sources out of your code and into a specification
-file that can be
-reused and shared with other projects and people.  Intake calls this a
-":term:`Catalog file`", which contains
-a list of named
-entries describing how to load data sources.  The ``intake example`` command, above, created a catalog file
+A :term:`Catalog` is a collection of data sources, with the type and arguments prescribed for each, and
+arbitrary metadata about each source.
+In the simplest case, a catalog can be described by a file in YAML format, a
+":term:`Catalog file`". In real usage, catalogues can be defined in a number of ways, such as remote
+ files, by
+connecting to a third-party data service (e.g., SQL server) or through an Intake :term:`Server` protocol, which
+can implement any number of ways to search and deliver data sources.
+
+The ``intake example`` command, above, created a catalog file
 with the following :term:`YAML`-syntax content:
 
 .. code-block:: yaml
@@ -209,6 +212,7 @@ called ``intake.cat``.
 Using the GUI
 -------------
 
-A graphical data browser is available in the Jupyter notebook environment. It will show the
+A graphical data browser is available in the Jupyter notebook environment or standalone web-server.
+It will show the
 contents of any installed catalogs, plus allows for selecting local and remote catalogs,
 to browse and select entries from these. See :doc:`gui`.

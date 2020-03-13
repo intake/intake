@@ -89,11 +89,11 @@ def test_conf_auth():
 
             # with cat
             with pytest.raises(Exception):
-                intake.Catalog('intake://localhost:5556')
+                intake.open_catalog('intake://localhost:5556')
 
-            cat = intake.Catalog('intake://localhost:5556',
-                                 storage_options={'headers':
-                                                  {'intake-secret': 'test'}})
+            cat = intake.open_catalog('intake://localhost:5556',
+                                      storage_options={'headers':
+                                                       {'intake-secret': 'test'}})
             assert 'entry1' in cat
 
 

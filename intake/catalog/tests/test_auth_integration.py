@@ -13,7 +13,7 @@ import time
 
 import pytest
 
-from intake import Catalog
+from intake import open_catalog
 
 from intake.auth.secret import SecretClientAuth
 from intake.auth.base import AuthenticationFailure
@@ -71,7 +71,7 @@ sources:
 
 def test_secret_auth(intake_server_with_auth):
     auth = SecretClientAuth(secret='test_secret')
-    catalog = Catalog(intake_server_with_auth, auth=auth)
+    catalog = open_catalog(intake_server_with_auth, auth=auth)
 
     entries = list(catalog)
     assert entries == ['example']
@@ -82,4 +82,4 @@ def test_secret_auth(intake_server_with_auth):
 def test_secret_auth_fail(intake_server_with_auth):
     auth = SecretClientAuth(secret='test_wrong_secret')
     with pytest.raises(AuthenticationFailure):
-        Catalog(intake_server_with_auth, auth=auth)
+        open_catalog(intake_server_with_auth, auth=auth)

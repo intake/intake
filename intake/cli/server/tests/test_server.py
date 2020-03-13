@@ -18,7 +18,7 @@ from tornado.ioloop import IOLoop
 from tornado.testing import AsyncHTTPTestCase
 import msgpack
 
-from intake import Catalog, open_catalog
+from intake import open_catalog
 from intake.container.serializer import MsgPackSerializer, GzipCompressor
 from intake.cli.server.server import IntakeServer
 from intake.compat import unpack_kwargs, pack_kwargs
@@ -30,7 +30,7 @@ catalog_file = make_path_posix(
 
 class TestServerV1Base(AsyncHTTPTestCase):
     def get_app(self):
-        local_catalog = Catalog(catalog_file)
+        local_catalog = open_catalog(catalog_file)
         self.server = IntakeServer(local_catalog)
         return self.server.make_app()
 
