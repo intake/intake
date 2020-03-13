@@ -14,7 +14,7 @@ import time
 import pytest
 
 from .util import assert_items_equal
-from intake import Catalog
+from intake import open_catalog
 
 TMP_DIR = tempfile.mkdtemp()
 TEST_CATALOG_PATH = [TMP_DIR]
@@ -54,7 +54,7 @@ sources:
 
 
 def test_reload_updated_config(intake_server_with_config):
-    catalog = Catalog(intake_server_with_config)
+    catalog = open_catalog(intake_server_with_config)
 
     entries = list(catalog)
     assert entries == ['use_example1']
@@ -82,7 +82,7 @@ sources:
 
 
 def test_reload_updated_directory(intake_server_with_config):
-    catalog = Catalog(intake_server_with_config)
+    catalog = open_catalog(intake_server_with_config)
 
     orig_entries = list(catalog)
     assert 'example2' not in orig_entries
@@ -110,7 +110,7 @@ def test_reload_missing_remote_directory(intake_server):
         pass
 
     time.sleep(1)
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
     assert_items_equal(list(catalog), [])
 
     os.mkdir(TMP_DIR)
@@ -136,7 +136,7 @@ sources:
 
 
 def test_reload_missing_local_directory(tempdir):
-    catalog = Catalog(tempdir + '/*')
+    catalog = open_catalog(tempdir + '/*')
     assert_items_equal(list(catalog), [])
 
     with open(os.path.join(tempdir, YAML_FILENAME), 'w') as f:

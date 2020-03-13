@@ -13,14 +13,14 @@ import pandas as pd
 
 from intake.source.tests.util import verify_datasource_interface
 from .util import assert_items_equal
-from intake import Catalog, RemoteCatalog
+from intake import open_catalog, RemoteCatalog
 from intake.catalog.remote import RemoteCatalogEntry
 
 TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
 
 def test_info_describe(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
 
     assert_items_equal(list(catalog), ['use_example1', 'nested', 'entry1',
                                        'entry1_part', 'remote_env',
@@ -47,11 +47,11 @@ def test_bad_url(intake_server):
     bad_url = intake_server + '/nonsense_prefix'
 
     with pytest.raises(Exception):
-        Catalog(bad_url)
+        open_catalog(bad_url)
 
 
 def test_metadata(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
     assert hasattr(catalog, 'metadata')
     assert catalog.metadata['test'] is True
     assert catalog.version == 1
@@ -59,7 +59,7 @@ def test_metadata(intake_server):
 
 def test_nested_remote(intake_server):
     from intake.catalog.local import LocalCatalogEntry
-    catalog = Catalog()
+    catalog = open_catalog()
     catalog._entries = {
         'server': LocalCatalogEntry('server', 'remote test', 'intake_remote',
                                     True, {'url': intake_server}, [],
@@ -70,7 +70,7 @@ def test_nested_remote(intake_server):
 
 def test_remote_direct(intake_server):
     from intake.container.dataframe import RemoteDataFrame
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
     s0 = catalog.entry1()
     s0.discover()
     s = RemoteDataFrame(intake_server.replace('intake', 'http'), {},
@@ -83,20 +83,20 @@ def test_remote_direct(intake_server):
 
 
 def test_entry_metadata(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
     entry = catalog['arr']
     assert entry.metadata == entry().metadata
 
 
 def test_unknown_source(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
 
     with pytest.raises(Exception):
         catalog['does_not_exist'].describe()
 
 
 def test_remote_datasource_interface(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
 
     d = catalog['entry1'].get()
 
@@ -104,14 +104,14 @@ def test_remote_datasource_interface(intake_server):
 
 
 def test_environment_evaluation(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
     import os
     os.environ['INTAKE_TEST'] = 'client'
     catalog['remote_env']
 
 
 def test_read(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
 
     d = catalog['entry1'].get()
 
@@ -138,7 +138,7 @@ def test_read(intake_server):
 
 
 def test_read_direct(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
 
     d = catalog['entry1_part'].get(part='2')
     test_dir = os.path.dirname(__file__)
@@ -167,7 +167,7 @@ def test_read_direct(intake_server):
 
 
 def test_read_chunks(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
 
     d = catalog.entry1.get()
 
@@ -183,7 +183,7 @@ def test_read_chunks(intake_server):
 
 
 def test_read_partition(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
 
     d = catalog.entry1.get()
 
@@ -198,21 +198,21 @@ def test_read_partition(intake_server):
 
 
 def test_close(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
 
     d = catalog.entry1.get()
     d.close()
 
 
 def test_with(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
 
     with catalog.entry1.get() as f:
         assert f.discover()
 
 
 def test_pickle(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
 
     d = catalog.entry1.get()
 
@@ -229,7 +229,7 @@ def test_pickle(intake_server):
 
 
 def test_to_dask(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
     d = catalog.entry1.get()
     df = d.to_dask()
 
@@ -239,7 +239,7 @@ def test_to_dask(intake_server):
 def test_remote_env(intake_server):
     import os
     os.environ['INTAKE_TEST'] = 'client'
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
     with pytest.raises(Exception) as e:
         catalog.remote_env.get()
     assert 'path-server' in str(e.value)
@@ -249,7 +249,7 @@ def test_remote_env(intake_server):
     assert 'path-client' in str(e.value)
 
     # prevents *client* from getting env
-    catalog = Catalog(intake_server, getenv=False)
+    catalog = open_catalog(intake_server, getenv=False)
     with pytest.raises(Exception) as e:
         catalog.local_env.get()
     assert 'INTAKE_TEST' in str(e.value)
@@ -258,7 +258,7 @@ def test_remote_env(intake_server):
 def test_remote_sequence(intake_server):
     import glob
     d = os.path.dirname(TEST_CATALOG_PATH)
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
     assert 'text' in catalog
     s = catalog.text()
     s.discover()
@@ -268,7 +268,7 @@ def test_remote_sequence(intake_server):
 
 
 def test_remote_arr(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
     assert 'arr' in catalog
     s = catalog.arr()
     s.discover()
@@ -280,7 +280,7 @@ def test_remote_arr(intake_server):
 
 def test_pagination(intake_server):
     PAGE_SIZE = 2
-    catalog = Catalog(intake_server, page_size=PAGE_SIZE)
+    catalog = open_catalog(intake_server, page_size=PAGE_SIZE)
     assert len(catalog._entries._page_cache) == 0
     assert len(catalog._entries._direct_lookup_cache) == 0
     # Trigger fetching one specific name.
@@ -305,7 +305,7 @@ def test_pagination(intake_server):
 
 def test_dir(intake_server):
     PAGE_SIZE = 2
-    catalog = Catalog(intake_server, page_size=PAGE_SIZE)
+    catalog = open_catalog(intake_server, page_size=PAGE_SIZE)
     assert len(catalog._entries._page_cache) == 0
     assert len(catalog._entries._direct_lookup_cache) == 0
     assert not catalog._entries.complete
@@ -342,7 +342,7 @@ def test_dir(intake_server):
     assert len(record) == 0
 
     # Load without pagination (with also loads everything).
-    catalog = Catalog(intake_server, page_size=None)
+    catalog = open_catalog(intake_server, page_size=None)
     assert catalog._entries.complete
     with pytest.warns(None) as record:
         assert set(catalog) == set(catalog._ipython_key_completions_())
@@ -351,7 +351,7 @@ def test_dir(intake_server):
 
 
 def test_getitem_and_getattr(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
     catalog['arr']
     with pytest.raises(KeyError):
         catalog['doesnotexist']
@@ -372,8 +372,8 @@ def test_getitem_and_getattr(intake_server):
 
 
 def test_search(intake_server):
-    remote_catalog = Catalog(intake_server)
-    local_catalog = Catalog(TEST_CATALOG_PATH)
+    remote_catalog = open_catalog(intake_server)
+    local_catalog = open_catalog(TEST_CATALOG_PATH)
 
     # Basic example
     remote_results = remote_catalog.search('entry1')
@@ -418,18 +418,18 @@ def test_search(intake_server):
 
 
 def test_access_subcatalog(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
     catalog['nested']
 
 
 def test_len(intake_server):
-    remote_catalog = Catalog(intake_server)
-    local_catalog = Catalog(TEST_CATALOG_PATH)
+    remote_catalog = open_catalog(intake_server)
+    local_catalog = open_catalog(TEST_CATALOG_PATH)
     assert sum(1 for entry in local_catalog) == len(remote_catalog)
 
 
 def test_datetime(intake_server):
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server)
     info = catalog["datetime"].describe()
     print(info)
     expected = {

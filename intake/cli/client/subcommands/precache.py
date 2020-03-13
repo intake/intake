@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 # External imports
 
 # Intake imports
-from intake import Catalog
+from intake import open_catalog
 from intake.cli.util import Subcommand
 
 #-----------------------------------------------------------------------------
@@ -38,7 +38,7 @@ class Precache(Subcommand):
         self.parser.add_argument('uri', metavar='URI', type=str, help='Catalog URI')
 
     def invoke(self, args):
-        catalog = Catalog(args.uri)
+        catalog = open_catalog(args.uri)
         for entry in list(catalog):
             s = catalog[entry]()
             if s.cache:

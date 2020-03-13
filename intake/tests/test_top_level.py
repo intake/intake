@@ -15,6 +15,7 @@ import intake
 import appdirs
 import pytest
 from intake.utils import make_path_posix
+import intake.catalog.local
 
 
 def copy_test_file(filename, target_dir):
@@ -39,6 +40,7 @@ def user_catalog():
     # Remove the file, but not the directory (because there might be other
     # files already there)
     os.remove(target_catalog)
+
 
 @pytest.fixture
 def tmp_path_catalog():
@@ -70,7 +72,7 @@ def test_user_catalog(user_catalog):
 
 
 def test_open_styles(tmp_path_catalog):
-    cat = intake.Catalog(tmp_path_catalog)
+    cat = intake.catalog.local.YAMLFileCatalog(tmp_path_catalog)
     cat2 = intake.open_catalog(tmp_path_catalog)
     assert list(cat) == list(cat2)
     cat2 = intake.open_catalog([tmp_path_catalog])
