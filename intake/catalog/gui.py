@@ -108,7 +108,7 @@ except ImportError:
             pass
         def __repr__(self):
             raise RuntimeError("Please install panel to use the GUI (`conda "
-                               "install -c conda-forge panel==0.5.1`)")
+                               "install -c conda-forge panel>0.8.0`)")
 
     EntryGUI = GUI
     CatalogGUI = GUI

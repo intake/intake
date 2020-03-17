@@ -26,7 +26,7 @@ def test_no_panel_does_not_raise_errors(cat1_url):
 def test_no_panel_display_init_gui():
     import intake
     with pytest.raises(RuntimeError, match=('Please install panel to use the GUI '
-                                            '`conda install -c conda-forge panel>=0.8.0`')):
+                                            '`conda install -c conda-forge panel`')):
         repr(intake.gui)
 
 
