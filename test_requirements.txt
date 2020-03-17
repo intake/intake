@@ -1,5 +1,5 @@
 intake-parquet
 zarr
 notebook
-panel==0.7.0
+panel==0.8.0
 hvplot==0.5.2
