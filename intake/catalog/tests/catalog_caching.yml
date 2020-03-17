@@ -3,7 +3,7 @@ metadata:
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
+    - module: intake.catalog.tests.example2_source
 sources:
   test_cache:
     description: cache a csv file from the local filesystem

@@ -30,7 +30,7 @@ optional packages to be installed.
 
 Example::
 
-    cat = intake.load_catalog('mycat.yaml')  # load a remote cat
+    cat = intake.open_catalog('mycat.yaml')  # load a remote cat
     source = cat.csvsource()  # source pointing to remote data
     source.persist()
 
@@ -40,7 +40,7 @@ To control whether a catalog will automatically give you the persisted version o
 source in this way using the argument ``persist_mode``, e.g., to ignore locally
 persisted versions, you could have done::
 
-    cat = intake.load_catalog('mycat.yaml', persist_mode='never')
+    cat = intake.open_catalog('mycat.yaml', persist_mode='never')
     or
     source = cat.csvsource(persist_mode='never')
 

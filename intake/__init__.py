@@ -8,32 +8,36 @@
 import re
 import logging
 import warnings
+import sys
 
 from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
 from . import source
 from .source.base import Schema, DataSource
-from .catalog.base import Catalog, RemoteCatalog
+from .catalog.base import RemoteCatalog
 from .catalog import local
 from .catalog.default import load_combo_catalog
 from .catalog.local import MergedCatalog, EntrypointsCatalog
 from .container import upload
-from .source import registry
+from .source import register_driver, registry
 from .source.discovery import autodiscover
 from .gui import InstanceMaker
 
 # Populate list of autodetected drivers (plugins).
-registry.update(autodiscover())
+# The built-in ones are included here because intake itself declares them via
+# its own entry_points.
+for name, driver in autodiscover().items():
+    register_driver(name, driver)
 
-from .source import csv, textfiles, npy, zarr
-registry['csv'] = csv.CSVSource
-registry['textfiles'] = textfiles.TextFilesSource
-registry['catalog'] = Catalog
-registry['intake_remote'] = RemoteCatalog
-registry['numpy'] = npy.NPySource
-registry['ndzarr'] = zarr.ZarrArraySource
 logger = logging.getLogger('intake')
+if sys.version_info >= (3, 7):
+    def __getattr__(attr):
+        if attr == 'Catalog':
+            from .catalog.base import Catalog
+            warnings.warn('deprecation: intake.Catalog now references the base class intake.catalog.base.Catalog\n '
+                          'If you want to open a generic URL, you should use intake.open_catalog')
+            return Catalog
 
 
 def make_open_functions():
@@ -157,5 +161,4 @@ def open_catalog(uri=None, **kwargs):
     return registry[driver](uri, **kwargs)
 
 
-Catalog = open_catalog
 gui = InstanceMaker()

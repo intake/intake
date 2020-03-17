@@ -16,7 +16,7 @@ import pytest
 import pandas
 
 from .util import assert_items_equal
-from intake import Catalog, open_catalog
+from intake import open_catalog
 from intake.catalog import exceptions, local
 from intake.catalog.local import get_dir, UserParameter, LocalCatalogEntry
 from intake.utils import make_path_posix
@@ -156,11 +156,10 @@ def test_user_parameter_default_value(dtype, expected):
     assert p.validate(None) == expected
 
 
-def test_user_parameter_str_method():
+def test_user_parameter_repr():
     p = local.UserParameter('a', 'a desc', 'str')
-    expected = ("UserParameter(name='a', description='a desc', type='str', "
-                "default='', min=None, max=None, allowed=None)")
-    assert str(p) == expected
+    expected = "<UserParameter 'a'>"
+    assert repr(p) == str(p) == expected
 
 
 @pytest.mark.parametrize("dtype,given,expected", [
@@ -260,7 +259,6 @@ def test_user_parameter_validation_allowed():
     "params_value_bad_type",
     "params_value_non_dict",
     "plugins_non_dict",
-    "plugins_source_both",
     "plugins_source_missing",
     "plugins_source_missing_key",
     "plugins_source_non_dict",
@@ -268,7 +266,7 @@ def test_user_parameter_validation_allowed():
 ])
 def test_parser_validation_error(filename):
     with pytest.raises(exceptions.ValidationError):
-        Catalog(abspath(filename + ".yml"))
+        open_catalog(abspath(filename + ".yml"))
 
 
 @pytest.mark.parametrize("filename", [
@@ -277,7 +275,7 @@ def test_parser_validation_error(filename):
 ])
 def test_parser_obsolete_error(filename):
     with pytest.raises(exceptions.ObsoleteError):
-        Catalog(abspath(filename + ".yml"))
+        open_catalog(abspath(filename + ".yml"))
 
 
 def test_union_catalog():
@@ -285,7 +283,7 @@ def test_union_catalog():
     uri1 = os.path.join(path, 'catalog_union_1.yml')
     uri2 = os.path.join(path, 'catalog_union_2.yml')
 
-    union_cat = Catalog([uri1, uri2])
+    union_cat = open_catalog([uri1, uri2])
 
     assert_items_equal(list(union_cat), ['entry1', 'entry1_part', 'use_example1'])
 
@@ -325,14 +323,14 @@ def test_persist_local_cat(temp_cache):
     uri1 = os.path.join(path, 'catalog_union_1.yml')
     uri2 = os.path.join(path, 'catalog_union_2.yml')
 
-    s = Catalog([uri1, uri2])
+    s = open_catalog([uri1, uri2])
     s2 = s.persist()
     assert isinstance(s2, YAMLFileCatalog)
     assert set(s) == set(s2)
 
 
 def test_empty_catalog():
-    cat = Catalog()
+    cat = open_catalog()
     assert list(cat) == []
 
 
@@ -346,7 +344,7 @@ def test_duplicate_data_sources():
     uri = os.path.join(path, 'catalog_dup_sources.yml')
 
     with pytest.raises(exceptions.DuplicateKeyError):
-        Catalog(uri)
+        open_catalog(uri)
 
 
 def test_duplicate_parameters():
@@ -354,7 +352,7 @@ def test_duplicate_parameters():
     uri = os.path.join(path, 'catalog_dup_parameters.yml')
 
     with pytest.raises(exceptions.DuplicateKeyError):
-        Catalog(uri)
+        open_catalog(uri)
 
 
 @pytest.fixture
@@ -381,7 +379,7 @@ sources:
 
 def test_catalog_file_removal(temp_catalog_file):
     cat_dir = os.path.dirname(temp_catalog_file)
-    cat = Catalog(cat_dir + '/*')
+    cat = open_catalog(cat_dir + '/*')
     assert set(cat) == {'a', 'b'}
 
     os.remove(temp_catalog_file)
@@ -492,7 +490,7 @@ def test_default_expansions():
 
 def test_remote_cat(http_server):
     url = http_server + 'catalog1.yml'
-    cat = Catalog(url)
+    cat = open_catalog(url)
     assert 'entry1' in cat
     assert cat.entry1.describe()
 

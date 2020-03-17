@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 # External imports
 
 # Intake imports
-from intake import Catalog
+from intake import open_catalog
 from intake.cli.util import Subcommand
 
 #-----------------------------------------------------------------------------
@@ -39,5 +39,5 @@ class Exists(Subcommand):
         self.parser.add_argument('name', metavar='NAME', type=str, help='Catalog name')
 
     def invoke(self, args):
-        catalog = Catalog(args.uri)
+        catalog = open_catalog(args.uri)
         print(args.name in catalog)

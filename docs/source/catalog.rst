@@ -70,38 +70,15 @@ Extra drivers
 The ``driver:`` entry of a data source specification can be a driver name, as has been shown in the examples so far.
 It can also be an absolute class path to use for the data source, in which case there will be no ambiguity about how
 to load the data. That is the the preferred way to be explicit, when the driver name alone is not enough
-(see `Driver Selection`_, below). However,
-it is also possible to specify extra modules and directories to scan for plugins, as an alternative method for
-finding driver classes.
-
-In addition to using drivers already installed in the Python environment with conda or pip
-(see :ref:`driver-discovery`), a catalog can also use additional drivers from arbitrary locations listed in the YAML
-file:
+(see `Driver Selection`_, below).
 
 .. code-block:: yaml
 
     plugins:
       source:
         - module: intake.catalog.tests.example1_source
-        - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
     sources:
       ...
-
-
-The following import methods are allow:
-
-- ``- module: my.module.path``: The Python module to import and search for driver classes.  This uses the standard
-  notation of the Python ``import`` command and will search the PYTHONPATH in the same way.
-- ``- dir: /my/module/directory``: All of the ``*.py`` files in this directory will be executed, and any driver
-  classes found will be added to the catalog's plugin registry.  It is common for the directory of Python files to be
-  stored relative to the catalog file itself, so using the ``CATALOG_DIR`` variable will allow that relative path to be
-  specified.
-
-Each of the above methods can be used multiple times, and in combination, to load as many extra drivers as are needed.
-Most drivers should be installed as Python packages (enabling autodiscovery), but sometimes catalog-specific drivers may
-be needed to perform specific data transformations that are not broadly applicable enough to warrant creating a
-dedicated package.  In those cases, the above options allow the drivers to be bundled with the catalog instead.
-
 
 Sources
 '''''''

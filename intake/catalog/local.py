@@ -19,7 +19,7 @@ from .. import __version__
 from .base import Catalog, DataSource
 from . import exceptions
 from .entry import CatalogEntry
-from ..source import registry as global_registry
+from ..source import register_driver
 from ..source import get_plugin_class
 from ..source.discovery import load_plugins_from_module
 from .utils import (expand_defaults, coerce, COERCION_RULES, merge_pars,
@@ -79,14 +79,10 @@ class UserParameter(DictSerialiseMixin):
             self.allowed = [coerce(self.type, item)
                             for item in self.allowed]
 
-    def __str__(self):
-        return ('UserParameter(name={self.name!r}, '
-                'description={self.description!r}, '
-                'type={self.type!r}, '
-                'default={self.default!r}, '
-                'min={self.min!r}, '
-                'max={self.max!r}, '
-                'allowed={self.allowed!r})'.format(self=self))
+    def __repr__(self):
+        return (f'<{self.__class__.__name__} {self.name!r}>')
+
+    __str__ = __repr__
 
     def describe(self):
         """Information about this parameter"""
@@ -354,18 +350,16 @@ class CatalogParser(object):
                            "dictionary", data['plugins'], 'source')
                 continue
 
-            if 'module' in plugin_source and 'dir' in plugin_source:
-                self.error("keys 'module' and 'dir' both exist (select only "
-                           "one)", plugin_source)
-            elif 'module' in plugin_source:
+            if 'module' in plugin_source:
                 register_plugin_module(plugin_source['module'])
             elif 'dir' in plugin_source:
-                path = Template(plugin_source['dir']).render(
-                    {'CATALOG_DIR': self._context['root']})
-                register_plugin_dir(path)
+                self.error(
+                    "The key 'dir', and in general the feature of registering "
+                    "plugins from a directory of Python scripts outside of "
+                    "sys.path, is no longer supported. Use 'module'.",
+                    plugin_source)
             else:
-                self.error("missing one of the available keys ('module' or "
-                           "'dir')", plugin_source)
+                self.error("missing 'module'", plugin_source)
 
     def _getitem(self, obj, key, dtype, required=True, default=None,
                  choices=None):
@@ -516,16 +510,7 @@ def register_plugin_module(mod):
         if k:
             if isinstance(k, (list, tuple)):
                 k = k[0]
-            global_registry[k] = v
-
-
-def register_plugin_dir(path):
-    """Find plugins in given directory"""
-    import glob
-    for f in glob.glob(path + '/*.py'):
-        for k, v in load_plugins_from_module(f).items():
-            if k:
-                global_registry[k] = v
+            register_driver(k, v)
 
 
 def get_dir(path):
@@ -848,5 +833,8 @@ class EntrypointsCatalog(Catalog):
                 warings.warn(f"Failed to load {name}, {entrypoint}, {e!r}.")
 
 
-global_registry['yaml_file_cat'] = YAMLFileCatalog
-global_registry['yaml_files_cat'] = YAMLFilesCatalog
+# Register these early in the import process to support the default catalog
+# which is built at import time. (Without this, 'yaml_file_cat' is looked for
+# in intake.registry before the registry has been populated.)
+register_driver('yaml_file_cat', YAMLFileCatalog)
+register_driver('yaml_files_cat', YAMLFilesCatalog)
