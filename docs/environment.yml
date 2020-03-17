@@ -16,7 +16,8 @@ dependencies:
   - python-snappy
   - pyyaml
   - hvplot >=0.5.2
-  - panel >= 0.8.0
+  - panel >=0.8.0
+  - bokeh <2.0.0
   - sphinx
   - sphinx_rtd_theme
   - numpydoc

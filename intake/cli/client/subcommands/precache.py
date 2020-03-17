@@ -44,5 +44,5 @@ class Precache(Subcommand):
                 s.read()
                 if s.cache:
                     print("Caching for entry %s" % entry)
-            except:
+            except Exception as e:
                 print("Skipping {} due to {}".format(entry, e))
