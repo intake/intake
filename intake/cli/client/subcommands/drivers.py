@@ -4,22 +4,17 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-'''
+"""
 CLI for listing, enabling, disabling intake drivers
-'''
+"""
 
-import logging
-log = logging.getLogger(__name__)
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Imports
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 # Standard library imports
-import errno
-from importlib import import_module
 import inspect
-import os
 import sys
 
 # External imports
@@ -31,9 +26,12 @@ from intake.source.discovery import autodiscover, autodiscover_all, enable, disa
 from intake.config import confdir
 import intake
 
-#-----------------------------------------------------------------------------
+import logging
+log = logging.getLogger(__name__)
+
+# -----------------------------------------------------------------------------
 # API
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 class Drivers(Subcommand):

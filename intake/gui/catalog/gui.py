@@ -62,7 +62,7 @@ class CatGUI(Base):
             disabled=True,
             width=50)
 
-        self.controls  = [
+        self.controls = [
             self.add_widget,
             self.remove_widget,
             self.search_widget,

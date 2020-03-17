@@ -7,7 +7,7 @@
 import intake
 import panel as pn
 
-from .base import Base, MAX_WIDTH
+from .base import Base, MAX_WIDTH, ICONS
 from .catalog.gui import CatGUI
 from .source.gui import SourceGUI
 
@@ -35,21 +35,19 @@ class GUI(Base):
         watchers that are set on children - cleaned up when visible
         is set to false.
     """
-    def __init__(self, cats=None, logo=True):
+    def __init__(self, cats=None):
         self.source = SourceGUI()
         self.cat = CatGUI(cats=cats, done_callback=self.done_callback)
-        self.panel = pn.Column(name='GUI', width_policy='max', max_width=MAX_WIDTH)
-        self.visible = True
-        self.logo = logo
-
-    def setup(self):
-        self.children = [
+        self.panel = pn.Column(
             pn.Row(
+                pn.panel(ICONS['logo']),
                 pn.Column(
                     self.cat.select.panel,
                     self.cat.control_panel,
                     margin=0,
                 ),
+            ),
+            pn.Row(
                 pn.Column(
                     self.source.select.panel,
                     self.source.control_panel,
@@ -58,10 +56,10 @@ class GUI(Base):
                 self.source.description.panel,
                 margin=0,
             ),
-            self.cat.search.panel,
-            self.cat.add.panel,
-            self.source.plot.panel,
-        ]
+            pn.Row(self.cat.search.panel, self.cat.add.panel,
+                   self.source.plot.panel)
+        )
+        super(GUI, self).__init__()
 
     def done_callback(self, cats):
         self.source.select.cats = cats

@@ -15,8 +15,9 @@ dependencies:
   - jinja2
   - python-snappy
   - pyyaml
-  - hvplot
+  - hvplot >=0.5.2
+  - panel >=0.8.0
+  - bokeh <2.0.0
   - sphinx
   - sphinx_rtd_theme
   - numpydoc
-  - panel => 0.8.0

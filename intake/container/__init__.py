@@ -17,6 +17,7 @@ _container_map = {
     'dataframe': RemoteDataFrame,
     'python': RemoteSequenceSource,
     'ndarray': RemoteArray,
+    'numpy': RemoteArray,
     'catalog': RemoteCatalog
 }
 container_map = ContainerRegistryView(_container_map)  # public, read-only view
