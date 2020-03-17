@@ -19,12 +19,13 @@ def do_import():
         pn.extension()
 
     except ImportError as e:
-
+        error = e
+        
         class GUI(object):
             def __repr__(self):
                 raise RuntimeError("Please install panel to use the GUI `conda "
                                    "install -c conda-forge panel>=0.7.0`. Import "
-                                   "failed with error: %s" % e)
+                                   "failed with error: %s" % error)
 
     except Exception as e:
 
