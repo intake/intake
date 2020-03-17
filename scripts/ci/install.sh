@@ -9,7 +9,7 @@ conda config --set auto_update_conda off
 
 echo "Installing test dependencies."
 conda install --yes appdirs dask==2 nodejs jinja2 numpy pyyaml requests msgpack-numpy pytest-cov coveralls \
-    pytest fsspec intake-parquet zarr notebook panel==0.7.0 hvplot==0.5.2 -c conda-forge -c defaults
+    pytest fsspec intake-parquet zarr notebook panel==0.8.1 hvplot==0.5.2 bokeh==1.4.0 -c conda-forge -c defaults
 pip install git+https://github.com/dask/dask --upgrade --no-deps
 npm install -g dat
 pip install -e . --no-deps
