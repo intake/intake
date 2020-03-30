@@ -25,11 +25,12 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
     """Discover intake drivers.
 
     In order of decreasing precedence:
+
     - Respect the 'drivers' section of the intake configuration file.
     - Find 'intake.drivers' entrypoints provided by any Python packages in the
       environment.
     - Search all packages in the environment for names that begin with
-      ``intake_``. Import them and scan them for subclasses of
+      ``intake\_``. Import them and scan them for subclasses of
       ``intake.source.base.Plugin``. This was previously the *only* mechanism
       for auto-discoverying intake drivers, and it is maintained for backward
       compatibility. In a future release, intake will issue a warning if any
@@ -40,7 +41,7 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
     path : str or None
         Default is ``sys.path``.
     plugin_prefix : str
-        DEPRECATED. Default is 'intake_'.
+        DEPRECATED. Default is 'intake\_'.
     do_package_scan : boolean
         Default is True. In the future, the default will be changed to False,
         and the option may eventually be removed entirely.

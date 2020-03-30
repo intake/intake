@@ -114,7 +114,7 @@ A :term:`Catalog` is a collection of data sources, with the type and arguments p
 arbitrary metadata about each source.
 In the simplest case, a catalog can be described by a file in YAML format, a
 ":term:`Catalog file`". In real usage, catalogues can be defined in a number of ways, such as remote
- files, by
+files, by
 connecting to a third-party data service (e.g., SQL server) or through an Intake :term:`Server` protocol, which
 can implement any number of ways to search and deliver data sources.
 

@@ -451,9 +451,11 @@ class DATCache(BaseCache):
     directly, this cache mechanism takes no parameters. The expectation
     is that the url passed by the driver is of the form:
 
+    ::
+
         dat://<dat hash>/file_pattern
 
-    where the file pattern will typically be a glob string like "*.json".
+    where the file pattern will typically be a glob string like "\*.json".
     """
 
     def _make_files(self, urlpath, **kwargs):

@@ -12,6 +12,27 @@ groups for some of the reasons below, but is useful for all and acts as a common
 smooth the progression of data from developers and providers to users.
 
 
+
+Intake contains the following main components. You *do not* need to use them all! The
+library is modular, only use the parts you need:
+
+* A set of **data loaders** (:term:`Driver`s) with a common interface, so that you can
+  investigate or load anything, from local or remote, with the exact same call, and turning into data structures
+  that you already know how to manipulate, such as arrays and data-frames.
+* A **:term:`Catalog`ing system** for listing data sources, their metadata and parameters,
+  and referencing which of the Drivers should load each. The catalogs for a hierarchical,
+  searchable structure, which can be backed by files, Intake servers or third-party
+  data services
+* Sets of **convenience functions** to apply to various data sources, such as data-set
+  persistence, automatic concatenation and metadata inference and the ability to
+  distribute catalogs and data sources using simple packaging abstractions.
+* A **GUI layer** accessible in the Jupyter notebook or as a standalone webserver, which
+  allows you to find and navigate catalogs, investigate data sources, and plot either
+  predefined visualisations or interactively find the right view yourself
+* A **client-server protocol** to allow for arbitrary data cataloging services or to
+  serve the data itself, with a pluggable auth model.
+
+
 :term:`Data User`
 -----------------
 
