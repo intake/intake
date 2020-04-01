@@ -785,9 +785,13 @@ class MergedCatalog(Catalog):
 class EntrypointEntry(CatalogEntry):
     """
     A catalog entry for an entrypoint.
+
     """
+    _container = 'catalog'
+
     def __init__(self, entrypoint):
         self._entrypoint = entrypoint
+        super().__init__()
 
     def __repr__(self):
         return f"<Entry containing Catalog named {self.name}>"
@@ -830,7 +834,7 @@ class EntrypointsCatalog(Catalog):
             try:
                 self._entries[name] = EntrypointEntry(entrypoint)
             except Exception as e:
-                warings.warn(f"Failed to load {name}, {entrypoint}, {e!r}.")
+                warnings.warn(f"Failed to load {name}, {entrypoint}, {e!r}.")
 
 
 # Register these early in the import process to support the default catalog
