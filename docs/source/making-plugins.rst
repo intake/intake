@@ -297,13 +297,13 @@ Deprecated: Package Scan
 ''''''''''''''''''''''''
 
 When Intake is imported, it will search the Python module path (by default includes ``site-packages`` and other
-directories in your ``$PYTHONPATH``) for packages starting with ``intake_`` and discover DataSource subclasses inside
+directories in your ``$PYTHONPATH``) for packages starting with ``intake\_`` and discover DataSource subclasses inside
 those packages to register.  drivers will be registered based on the``name`` attribute of the object.
 By convention, drivers should have names that are lowercase, valid Python identifiers that do not contain the word
 ``intake``.
 
 This approach is deprecated because it is limiting (requires the package to
-begin with "intake_") and because the package scan can be slow. Using
+begin with "intake\_") and because the package scan can be slow. Using
 entrypoints is strongly encouraged. The package scan *may* be disabled by
 default in some future release of intake. During the transition period, if a
 package named ``intake_*`` provides an entrypoint for a given name, that will
