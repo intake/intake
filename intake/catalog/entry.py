@@ -79,7 +79,7 @@ class CatalogEntry(DictSerialiseMixin):
         if s.has_been_persisted and persist is not 'never':
             s2 = s.get_persisted()
             met = s2.metadata
-            if persist is 'always' or not met['ttl']:
+            if persist == 'always' or not met['ttl']:
                 return s2
             if met['ttl'] < time.time() - met['timestamp']:
                 return s2
