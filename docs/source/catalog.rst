@@ -370,8 +370,6 @@ same global arguments will be passed to all of the drivers listed.
             class: another_package.PluginClass2
         args: {}
 
-.. _caching:
-
 Remote Access
 -------------
 
@@ -411,6 +409,8 @@ authentication (anonymous access), respectively
          urlpath: gcs://bucket/path/*.csv
          storage_options:
            token: "anon"
+
+.. _caching:
 
 Caching
 '''''''

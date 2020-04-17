@@ -41,6 +41,8 @@ More specific examples of Intake functionality
 
 - Caching:
 
+    - New-style data package creation [`Static <https://github.com/intake/intake-examples/tree/master/data_package>`__]
+
     - Using automatically cached data-files
       [`Static <https://github.com/mmccarty/intake-blog/blob/master/examples/caching.ipynb>`__]
       [`Executable <https://mybinder.org/v2/gh/mmccarty/intake-blog/master?filepath=examples%2Fcaching.ipynb>`__]

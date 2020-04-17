@@ -106,8 +106,7 @@ for example, set some persisted source not to expire. This is only recommended f
 Future Enhancements
 -------------------
 
-- CLI functionality to investigate and alter the state of the persist store, similar to the
-  cache commands.
+- CLI functionality to investigate and alter the state of the persist store.
 
 - Time check-pointing of persisted data, such that you can not only get the "most recent" but
   any version in the time-series.

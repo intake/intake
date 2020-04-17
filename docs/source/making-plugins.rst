@@ -157,12 +157,9 @@ Most of the work typically happens in the following methods:
 - ``_get_schema()``: May open files and network resources and return as much of the schema as possible in small
   amount of *approximately* constant  time.  The ``npartitions`` and ``extra_metadata`` attributes must be correct
   when ``_get_schema`` returns.  Further keys such as ``dtype``, ``shape``, etc., should reflect the container type of
-  the data-source, and can be ``None`` if not easily knowable, or include ``None`` for some elements. This method should
-  call the ``_get_cache`` method, if caching on first time read is supported by the driver. For example::
-
-    urlpath, *_ = self._get_cache(self._urlpath)
-
-  Will return the location of the cached urlpath for the first matching cache specified in the catalog source.
+  the data-source, and can be ``None`` if not easily knowable, or include ``None`` for some elements. File-based
+  sources should use fsspec to open a local or remote URL, and pass ``storage_options`` to it. This ensures
+  compatibility and extra features such as caching.
 
 - ``_get_partition(self, i)``: Should return all of the data from partition id ``i``, where ``i`` is typically an
   integer, but may be something more complex.
