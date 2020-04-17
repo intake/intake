@@ -22,6 +22,7 @@ contains in parentheses:
 * `intake-mongo <https://github.com/intake/intake-mongo>`_: MongoDB noSQL query (``mongo``)
 * `intake-nested-yaml-catalog <https://github.com/zillow/intake-nested-yaml-catalog/>`_: Plugin supporting a single YAML hierarchical catalog to organize datasets and avoid a data swamp. (``yaml``, ``catalog``, ``nested``)
 * `intake-netflow <https://github.com/intake/intake-netflow>`_: Netflow packet format (``netflow``)
+* `intake-notebook <https://github.com/informatics-lab/intake-notebook>`_: Experimental plugin to access parameterised notebooks through intake and executed via papermill (``ipynb``)
 * `intake-odbc <https://github.com/intake/intake-odbc>`_: ODBC database (``odbc``)
 * `intake-parquet <https://github.com/intake/intake-parquet>`_: Apache Parquet file format (``parquet``)
 * `intake-pcap <https://github.com/intake/intake-pcap>`_: PCAP network packet format (``pcap``)
