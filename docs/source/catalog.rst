@@ -16,11 +16,47 @@ indicate to the user what they are for. This kind of structure can be used to, f
 choose between two parts of a given data source, like "latest" and "stable", see the `entry1_part` entry in
 the example below.
 
+The user of the catalog can always override any template or argument value at the time
+that they access a give source.
+
+The Catalog class
+-----------------
+
+In Intake, a ``Catalog`` instance is an object with one or more named entries.
+The entries might be read from a static file (e.g., YAML, see the next section), from
+an Intake server or from any other data service that has a driver. Drivers which
+create catalogs are ordinary DataSource classes, except that they have the container
+type "catalog", and do not return data products via the ``read()`` method.
+
+For example, you might choose to instantiate the base class and fill in some entries
+explicitly in your code
+
+.. code-block:: python
+
+    from intake.catalog import Catalog
+    from intake.catalog.local import LocalCatalogEntry
+    mycat = Catalog.from_dict({
+        'source1': LocalCatalogEntry(name, description, driver, args=...),
+        ...
+        })
+
+Alternatively, subclasses of ``Catalog`` can define how entries are created from
+whichever file format or service they interact with, examples including ``RemoteCatalog``
+and `SQLCatalog`_. These generate entries based on their respective targets; some
+provide advanced search capabilities executed on the server.
+
+.. _SQLCatalog: https://intake-sql.readthedocs.io/en/latest/api.html#intake_sql.SQLCatalog
+
 
 YAML Format
 -----------
 
-Intake catalogs are typically described with YAML files.  Here is an example:
+Intake catalogs can most simply be described with YAML files. This is very common
+in the tutorials and this documentation, because it simple to understand, but demonstrate
+the many features of Intake. Note that YAML files are also the easiest way to share
+a catalog, simply by copying to a publicly-available location such as a cloud storage
+bucket.
+Here is an example:
 
 .. code-block:: yaml
 
@@ -80,6 +116,9 @@ to load the data. That is the the preferred way to be explicit, when the driver 
     sources:
       ...
 
+However, you do not, in general, need to do this, since the ``driver:`` field of
+each source can also explicitly refer to the plugin class.
+
 Sources
 '''''''
 
@@ -95,7 +134,8 @@ returned data.  Each data source has several attributes:
   Markdown.
 
 - ``driver``: Name of the Intake :term:`Driver` to use with this source.  Must either already be installed in the current
-  Python environment (i.e. with conda or pip) or loaded in the ``plugin`` section of the file.
+  Python environment (i.e. with conda or pip) or loaded in the ``plugin`` section of the file. Can be a dimple
+  driver name like "csv" or the full path to the implementation class like "package.module.Class".
 
 - ``args``: Keyword arguments to the init method of the driver.  Arguments may use template expansion.
 
@@ -108,9 +148,87 @@ returned data.  Each data source has several attributes:
 
 - ``parameters``: A dictionary of data source parameters.  See below for more details.
 
+Caching Source Files Locally
+''''''''''''''''''''''''''''
+
+*This method of defining the cache  with a dedicated block is deprecated, see the Remote Access
+section, below*
+
+To enable caching on the first read of remote data source files, add the ``cache`` section with the
+following attributes:
+
+- ``argkey``: The args section key which contains the URL(s) of the data to be cached.
+- ``type``: One of the keys in the cache registry [`intake.source.cache.registry`], referring to an implementation of caching behaviour. The default is "file" for the caching of one or more files.
+
+Example:
+
+.. code-block:: yaml
+
+  test_cache:
+    description: cache a csv file from the local filesystem
+    driver: csv
+    cache:
+      - argkey: urlpath
+        type: file
+    args:
+      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
+
+The ``cache_dir`` defaults to ``~/.intake/cache``, and can be specified in the intake configuration
+file or ``INTAKE_CACHE_DIR``
+environment variable, or at runtime using the ``"cache_dir"`` key of the configuration.
+The special value ``"catdir"`` implies that cached files will appear in the same directory as the
+catalog file in which the data source is defined, within a directory named "intake_cache". These will
+not appear in the cache usage reported by the CLI.
+
+Optionally, the cache section can have a ``regex`` attribute, that modifies the path of the cache on
+the disk. By default, the cache path is made by concatenating ``cache_dir``, dataset name, hash of
+the url, and the url itself (without the protocol). ``regex`` attribute allows to remove part of the
+url (the matching part).
+
+Caching can be disabled at runtime for all sources regardless of the catalog specificiation::
+
+    from intake.config import conf
+
+    conf['cache_disabled'] = True
+
+By default, progress bars are shown during downloads if the package ``tqdm`` is
+available, but this can be disabled (e.g., for
+consoles that don't support complex text) with
+
+    conf['cache_download_progress'] = False
+
+or, equivalently, the environment parameter ``INTAKE_CACHE_PROGRESS``.
+
+
+The "types" of caching are that supported are listed in ``intake.source.cache.registry``, see
+the docstrings of each for specific parameters that should appear in the cache block.
+
+
+It is possible to work with compressed source files by setting ``type: compression`` in the cache specification.
+By default the compression type is inferred from the file extension, otherwise it can be set by assigning the ``decomp``
+variable to any of the options listed in ``intake.source.decompress.decomp``.
+This will extract all the file(s) in the compressed file referenced by urlpath and store them in the cache directory.
+
+In cases where miscellaneous files are present in the compressed file, a ``regex_filter`` parameter can be used. Only
+the extracted filenames that match the pattern will be loaded. The cache path is appended to the filename so it is
+necessary to include a wildcard to the beginning of the pattern.
+
+Example:
+
+.. code-block:: yaml
+
+  test_compressed:
+    driver: csv
+    args:
+      urlpath: 'compressed_file.tar.gz'
+    cache:
+      - type: compressed
+        decomp: tgz
+        argkey: urlpath
+        regex_filter: '.*data.csv'
 
 Templating
-''''''''''
+----------
 
 Intake catalog files support Jinja2 templating for driver arguments. Any occurrence of
 a substring like ``{{field}}`` will be replaced by the value of the user parameters with
@@ -155,10 +273,10 @@ resolve to ``"http://server:port/user/"``
 .. _paramdefs:
 
 Parameter Definition
-''''''''''''''''''''
+--------------------
 
 A source definition can contain a "parameters" block.
-A parameter may look as follows:
+Exprssed in YAML, a parameter may look as follows:
 
 .. code-block:: yaml
 
@@ -190,7 +308,7 @@ Note: the ``datetime`` type accepts multiple values:
 Python datetime, ISO8601 string,  Unix timestamp int, "now" and  "today".
 
 Driver Selection
-''''''''''''''''
+----------------
 
 In some cases, it may be possible that multiple backends are capable of loading from the same data
 format or service. Sometimes, this may mean two drivers with unique names, or a single driver
@@ -254,86 +372,6 @@ same global arguments will be passed to all of the drivers listed.
 
 .. _caching:
 
-Caching Source Files Locally
-''''''''''''''''''''''''''''
-
-To enable caching on the first read of remote data source files, add the ``cache`` section with the
-following attributes:
-
-- ``argkey``: The args section key which contains the URL(s) of the data to be cached.
-- ``type``: One of the keys in the cache registry [`intake.source.cache.registry`], referring to an implementation of caching behaviour. The default is "file" for the caching of one or more files.
-
-Example:
-
-.. code-block:: yaml
-
-  test_cache:
-    description: cache a csv file from the local filesystem
-    driver: csv
-    cache:
-      - argkey: urlpath
-        type: file
-    args:
-      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
-
-The ``cache_dir`` defaults to ``~/.intake/cache``, and can be specified in the intake configuration
-file or ``INTAKE_CACHE_DIR``
-environment variable, or at runtime using the ``"cache_dir"`` key of the configuration.
-The special value ``"catdir"`` implies that cached files will appear in the same directory as the
-catalog file in which the data source is defined, within a directory named "intake_cache". These will
-not appear in the cache usage reported by the CLI.
-
-Optionally, the cache section can have a ``regex`` attribute, that modifies the path of the cache on
-the disk. By default, the cache path is made by concatenating ``cache_dir``, dataset name, hash of
-the url, and the url itself (without the protocol). ``regex`` attribute allows to remove part of the
-url (the matching part).
-
-Caching can be disabled at runtime for all sources regardless of the catalog specificiation::
-
-    from intake.config import conf
-
-    conf['cache_disabled'] = True
-
-By default, progress bars are shown during downloads if the package ``tqdm`` is
-available, but this can be disabled (e.g., for
-consoles that don't support complex text) with
-
-    conf['cache_download_progress'] = False
-
-or, equivalently, the environment parameter ``INTAKE_CACHE_PROGRESS``.
-
-
-The "types" of caching are that supported are listed in ``intake.source.cache.registry``, see
-the docstrings of each for specific parameters that should appear in the cache block.
-
-
-Compressed Files
-''''''''''''''''
-
-It is possible to work with compressed source files by setting ``type: compression`` in the cache specification.
-By default the compression type is inferred from the file extension, otherwise it can be set by assigning the ``decomp``
-variable to any of the options listed in ``intake.source.decompress.decomp``.
-This will extract all the file(s) in the compressed file referenced by urlpath and store them in the cache directory.
-
-In cases where miscellaneous files are present in the compressed file, a ``regex_filter`` parameter can be used. Only
-the extracted filenames that match the pattern will be loaded. The cache path is appended to the filename so it is
-necessary to include a wildcard to the beginning of the pattern.
-
-Example:
-
-.. code-block:: yaml
-
-  test_compressed:
-    driver: csv
-    args:
-      urlpath: 'compressed_file.tar.gz'
-    cache:
-      - type: compressed
-        decomp: tgz
-        argkey: urlpath
-        regex_filter: '.*data.csv'
-
-
 Remote Access
 -------------
 
@@ -373,6 +411,42 @@ authentication (anonymous access), respectively
          urlpath: gcs://bucket/path/*.csv
          storage_options:
            token: "anon"
+
+Caching
+'''''''
+
+URLs interpreted by ``fsspec`` offer `automatic caching`_. For example, to enable
+file-based caching for the first source above, you can do:
+
+.. code-block:: yaml
+
+   sources:
+     s3_csv:
+       driver: csv
+       description: "Publicly accessible CSV data on S3; requires s3fs"
+       args:
+         urlpath: simplecache::s3://bucket/path/*.csv
+         storage_options:
+           s3:
+             anon: true
+
+Here we have added the "simplecache" to the URL (which does not store any
+metadata about the cached file) and specified that the "anon" parameter is
+meant as an argument to s3, not to the caching mechanism. As each file in
+s3 is accessed, it will first be downloaded and then the local version
+used instead.
+
+.. _automatic caching: https://filesystem-spec.readthedocs.io/en/latest/features.html#caching-files-locally
+
+You can tailor how the caching works. In particular the location of the local
+storage can be set with the ``cache_storage`` parameter (under the "simplecache"
+group of storage_options, of course) - otherwise they are stored in a temporary
+location only for the duration of the current python session. The cache location
+is particularly useful in conjunction with an environment variable, or
+relative to "{{CATALOG_DIR}}", wherever the catalog was loaded from.
+
+Please see the ``fsspec`` documentation for the full set of cache types and their
+various options.
 
 Local Catalogs
 --------------
@@ -439,7 +513,7 @@ choice of multiple catalogs to pick between, or have this decision depend on an 
 variable.
 
 
-Remote Catalogs
+Server Catalogs
 ---------------
 
 Intake also includes a server which can share an Intake catalog over HTTP
