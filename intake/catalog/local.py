@@ -806,7 +806,9 @@ class EntrypointEntry(CatalogEntry):
                 'module_name': self._entrypoint.module_name,
                 'object_name': self._entrypoint.object_name,
                 'distro': self._entrypoint.distro,
-                'extras': self._entrypoint.extras}
+                'extras': self._entrypoint.extras,
+                'container': ""
+                }
 
     def get(self):
         """Instantiate the DataSource for the given parameters"""

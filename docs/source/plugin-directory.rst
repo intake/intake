@@ -20,7 +20,7 @@ contains in parentheses:
 * `intake-hbase <https://github.com/intake/intake-hbase>`_: Apache HBase database (``hbase``)
 * `intake-iris <https://github.com/informatics-lab/intake-iris>`_ load netCDF and GRIB files with IRIS (``grib``, ``netcdf``)
 * `intake-mongo <https://github.com/intake/intake-mongo>`_: MongoDB noSQL query (``mongo``)
-* `intake-nested-yaml-catalog <https://github.com/zillow/intake-nested-yaml-catalog/>`_: Plugin supporting a single YAML hierarchical catalog to organize datasets and avoid a data swamp. (``yaml``, ``catalog``, ``nested``)
+* `intake-nested-yaml-catalog <https://github.com/zillow/intake-nested-yaml-catalog>`__: Plugin supporting a single YAML hierarchical catalog to organize datasets and avoid a data swamp. (``nested_yaml_cat``)
 * `intake-netflow <https://github.com/intake/intake-netflow>`_: Netflow packet format (``netflow``)
 * `intake-notebook <https://github.com/informatics-lab/intake-notebook>`_: Experimental plugin to access parameterised notebooks through intake and executed via papermill (``ipynb``)
 * `intake-odbc <https://github.com/intake/intake-odbc>`_: ODBC database (``odbc``)
