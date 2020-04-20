@@ -44,20 +44,18 @@ class GUI(Base):
                 pn.Column(
                     self.cat.select.panel,
                     self.cat.control_panel,
-                    margin=0,
-                ),
-            ),
-            pn.Row(
+                    margin=0, width_policy='max'),
                 pn.Column(
                     self.source.select.panel,
                     self.source.control_panel,
-                    margin=0
+                    margin=0, width_policy='max'
                 ),
                 self.source.description.panel,
-                margin=0,
+                margin=0, width_policy='max'
             ),
             pn.Row(self.cat.search.panel, self.cat.add.panel,
-                   self.source.plot.panel)
+                   self.source.plot.panel, width_policy='max'),
+            width_policy='max'
         )
         super(GUI, self).__init__()
 

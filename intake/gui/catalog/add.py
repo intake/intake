@@ -187,7 +187,7 @@ class URLSelector(Base):
         is set to false.
     """
     def __init__(self, **kwargs):
-        self.panel = pn.Row(name='Remote',
+        self.panel = pn.Row(name='URL',
                             width_policy='max', margin=0)
         super().__init__(**kwargs)
 

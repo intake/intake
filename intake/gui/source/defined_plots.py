@@ -64,7 +64,7 @@ class Plots(BaseView):
         self.instructions = pn.pane.Markdown(
             self.instructions_contents, align='center', width_policy='max')
         self.select = pn.widgets.Select(options=self.options, height=30,
-                                        align='center', width=200)
+                                        align='center', min_width=200)
         self.pane = pn.pane.HoloViews(self._plot_object(self.selected),
                                       name="Plot")
 
