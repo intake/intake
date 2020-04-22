@@ -67,6 +67,7 @@ All you need to do to register an entry in ``intake.cat`` is:
   package, the rest is required boilerplate. Each of those two lines defines a name
   for the data entry (before the "=" sign) and the location to load from, in
   module:object format.
+
 - install the package using ``pip``, ``python setup.py``, or package it for ``conda``
 
 .. _separate package: https://github.com/takluyver/entrypoints

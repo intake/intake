@@ -119,6 +119,33 @@ checking the box next to "show yaml".
 The holoviews object can be retrieved from the gui using ``intake.gui.source.plot.pane.object``,
 and you can then use it in Python or export it to a file.
 
+Interactive Visualization
+'''''''''''''''''''''''''
+
+If you have installed the optional extra packages `dfviz`_ and `xrviz`_, you can
+interactively plot your dataframe or array data, respectively.
+
+.. image:: _static/images/custom_button.png
+
+.. _dfviz: https://dfviz.readthedocs.io/
+.. _xrviz: https://xrviz.readthedocs.io/
+
+The button "customize" will be available for data sources of the appropriate type.
+Click this to open the interactive interface. If you have not selected a predefined
+plot (or there are none), then the interface will start without any prefilled
+values, but if you do first select a plot, then the interface will have its options
+pre-filled from the options
+
+For specific instructions on how to use the interfaces (which can also be used
+independently of the Intake GUI), please navigate to the linked documentation.
+
+Note that the final parameters that are sent to ``hvPlot`` to produce the output
+each time a plot if updated, are explicitly available in YAML format, so that
+you can save the state as a "predefined plot" in the catalog. The same set of
+parameters can also be used in code, with ``datasource.plot(...)``.
+
+.. image:: _static/images/YAMLtab.png
+
 Using the Selection
 -------------------
 
@@ -148,7 +175,4 @@ as with any catalog entry:
 
    In [ ]: source_entry.plot()  # or skip data source step
    Out   : < graphics>
-
-Interactive Visualization
--------------------------
 
