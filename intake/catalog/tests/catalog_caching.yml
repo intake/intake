@@ -18,7 +18,7 @@ sources:
     description: cache a csv file from the local filesystem
     driver: csv
     args:
-      urlpath: 'cached://{{ CATALOG_DIR }}/cache_data/states.csv'
+      urlpath: 'filecache://{{ CATALOG_DIR }}/cache_data/states.csv'
       storage_options:
         target_protocol: 'file'
         cache_storage: "{{env(TEST_CACHE_DIR)}}"
