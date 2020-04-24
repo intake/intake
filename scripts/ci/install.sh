@@ -8,7 +8,6 @@ echo "Configuring conda."
 conda config --set auto_update_conda off
 
 echo "Installing test dependencies."
-conda install --yes appdirs dask nodejs jinja2 numpy pyyaml requests msgpack-numpy pytest-cov coveralls \
+conda install --yes appdirs dask jinja2 numpy pyyaml requests msgpack-numpy pytest-cov coveralls \
     pytest fsspec intake-parquet zarr notebook panel hvplot bokeh dask -c conda-forge -c defaults
-npm install -g dat
 pip install -e . --no-deps
