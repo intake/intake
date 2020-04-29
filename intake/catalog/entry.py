@@ -117,18 +117,6 @@ class CatalogEntry(DictSerialiseMixin):
             'application/json': {'root': contents["name"]}
         }, raw=True)
 
-    def __getattr__(self, attr):
-        if attr in self.__dict__:
-            return self.__dict__[attr]
-        else:
-            return getattr(self._get_default_source(), attr)
-
-    def __dir__(self):
-        selflist = {'describe', 'describe_open', 'get', 'gui',
-                    'has_been_persisted', 'plots'}
-        selflist.update(set(dir(self._get_default_source())))
-        return list(sorted(selflist))
-
     def __iter__(self):
         # If the entry is a catalog, this allows list(cat.entry)
         if self._container == 'catalog':

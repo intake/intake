@@ -222,15 +222,26 @@ class DataSource(DictSerialiseMixin):
         """
         raise NotImplementedError
 
-    def clone(self, **kwargs):
+    @property
+    def entry(self):
         if self._entry is None:
             raise ValueError("Source was not made by a catalog")
         if self._entry() is None:
-            raise RuntimeError("Treid to recover entry, but it was gone")
-        return self._entry()(**kwargs)
+            raise RuntimeError("Tried to recover entry, but it was gone")
+        return self._entry()
+
+    def clone(self, **kwargs):
+        return self.entry(**kwargs)
 
     def __call__(self, *args, **kwargs):
         return self.clone(**args)
+
+    def describe(self):
+        return self.entry.describe()
+
+    @property
+    def gui(self):
+        return self.entry.gui
 
     def close(self):
         """Close open resources corresponding to this data source."""
