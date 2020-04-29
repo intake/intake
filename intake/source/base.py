@@ -234,7 +234,7 @@ class DataSource(DictSerialiseMixin):
         return self.entry(**kwargs)
 
     def __call__(self, *args, **kwargs):
-        return self.clone(**args)
+        return self.clone(**kwargs)
 
     def describe(self):
         return self.entry.describe()
