@@ -297,7 +297,7 @@ class Catalog(DataSource):
         entry = self._entries[name]
         entry._catalog = self
         entry._pmode = self.pmode
-        return entry
+        return entry()
 
     @reload_on_change
     def _get_entries(self):
@@ -380,7 +380,7 @@ class Catalog(DataSource):
             e = self._entries[key]
             e._catalog = self
             e._pmode = self.pmode
-            return e
+            return e()
         if isinstance(key, str) and '.' in key:
             key = key.split('.')
         if isinstance(key, list):
@@ -393,7 +393,7 @@ class Catalog(DataSource):
                     rest = '.'.join(parts)
                     try:
                         out = self._entries[prefix][rest]
-                        return out
+                        return out()
                     except KeyError:
                         # name conflict like "thing" and "think.oi", where it's
                         # the latter we are after
@@ -402,7 +402,7 @@ class Catalog(DataSource):
             out = self
             for part in key:
                 out = self[part]
-            return out
+            return out()
         raise KeyError(key)
 
     def discover(self):

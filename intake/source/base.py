@@ -9,9 +9,8 @@
 '''
 
 from .cache import make_caches
-from ..utils import make_path_posix, DictSerialiseMixin
+from ..utils import make_path_posix, DictSerialiseMixin, pretty_describe
 import sys
-PY2 = sys.version_info[0] == 2
 
 
 class Schema(dict):
@@ -87,6 +86,7 @@ class DataSource(DictSerialiseMixin):
         self.catalog_object = None
         self.on_server = False
         self.cat = None  # the cat from which this source was made
+        self._entry = None
 
     def _get_cache(self, urlpath):
         if len(self.cache) == 0:
@@ -125,21 +125,14 @@ class DataSource(DictSerialiseMixin):
         import inspect
         kwargs = self._captured_init_kwargs.copy()
         meta = kwargs.pop('metadata', self.metadata) or {}
-        if PY2:
-            kwargs.update(dict(zip(inspect.getargspec(self.__init__).args,
-                          self._captured_init_args)))
-        else:
-            kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
-                                   self._captured_init_args)))
-        data = {'sources': {self.name: {
+        kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
+                           self._captured_init_args)))
+        data = {self.name: {
             'driver': self.classname,
             'description': self.description or "",
             'metadata': meta,
             'args': kwargs
-        }}}
-        if with_plugin:
-            data['plugins'] = {
-                'source': [{'module': self.__module__}]}
+        }}
         return data
 
     def yaml(self, with_plugin=False):
@@ -158,6 +151,20 @@ class DataSource(DictSerialiseMixin):
         from yaml import dump
         data = self._yaml(with_plugin=with_plugin)
         return dump(data, default_flow_style=False)
+
+    def _ipython_display_(self):
+        """Display the entry as a rich object in an IPython session."""
+        from IPython.display import display
+        contents = self.yaml()
+        display({
+            'application/json': contents,
+            'text/plain': pretty_describe(contents)
+        }, metadata={
+            'application/json': {'root': self.name}
+        }, raw=True)
+
+    def __repr__(self):
+        return self.yaml()
 
     @property
     def plots(self):
@@ -214,6 +221,16 @@ class DataSource(DictSerialiseMixin):
         This method requires the package intake-spark
         """
         raise NotImplementedError
+
+    def clone(self, **kwargs):
+        if self._entry is None:
+            raise ValueError("Source was not made by a catalog")
+        if self._entry() is None:
+            raise RuntimeError("Treid to recover entry, but it was gone")
+        return self._entry()(**kwargs)
+
+    def __call__(self, *args, **kwargs):
+        return self.clone(**args)
 
     def close(self):
         """Close open resources corresponding to this data source."""

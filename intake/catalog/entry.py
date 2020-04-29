@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 import time
+import weakref
 from ..utils import DictSerialiseMixin, pretty_describe
 
 
@@ -81,11 +82,12 @@ class CatalogEntry(DictSerialiseMixin):
             s2 = s.get_persisted()
             met = s2.metadata
             if persist == 'always' or not met['ttl']:
-                return s2
-            if met['ttl'] < time.time() - met['timestamp']:
-                return s2
+                s = s2
+            elif met['ttl'] < time.time() - met['timestamp']:
+                s = s2
             else:
-                return store.refresh(s2)
+                s = store.refresh(s2)
+        s._entry = weakref.ref(self)
         return s
 
     def _get_default_source(self):
