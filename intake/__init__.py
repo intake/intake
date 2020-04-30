@@ -19,6 +19,7 @@ from .catalog.base import RemoteCatalog
 from .catalog import local
 from .catalog.default import load_combo_catalog
 from .catalog.local import MergedCatalog, EntrypointsCatalog
+from .catalog.zarr import ZarrCatalog
 from .container import upload
 from .source import register_driver, registry
 from .source.discovery import autodiscover
