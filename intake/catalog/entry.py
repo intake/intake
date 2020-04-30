@@ -6,7 +6,6 @@
 #-----------------------------------------------------------------------------
 
 import time
-import weakref
 from ..utils import DictSerialiseMixin, pretty_describe
 
 
@@ -87,7 +86,7 @@ class CatalogEntry(DictSerialiseMixin):
                 s = s2
             else:
                 s = store.refresh(s2)
-        s._entry = weakref.ref(self)
+        s._entry = self
         return s
 
     def _get_default_source(self):
@@ -95,6 +94,15 @@ class CatalogEntry(DictSerialiseMixin):
         if self._default_source is None:
             self._default_source = self()
         return self._default_source
+
+    @property
+    def container(self):
+        return getattr(self, '_container', None)
+
+    @container.setter
+    def container(self, cont):
+        # for compat with magis source attr
+        self._container = cont
 
     @property
     def has_been_persisted(self, **kwargs):

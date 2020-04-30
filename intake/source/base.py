@@ -7,10 +7,10 @@
 ''' Base classes for Data Loader interface
 
 '''
+from yaml import dump
 
 from .cache import make_caches
 from ..utils import make_path_posix, DictSerialiseMixin, pretty_describe
-import sys
 
 
 class Schema(dict):
@@ -127,12 +127,13 @@ class DataSource(DictSerialiseMixin):
         meta = kwargs.pop('metadata', self.metadata) or {}
         kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
                            self._captured_init_args)))
-        data = {self.name: {
+        data = {'sources':
+                {self.name: {
             'driver': self.classname,
             'description': self.description or "",
             'metadata': meta,
             'args': kwargs
-        }}
+        }}}
         return data
 
     def yaml(self, with_plugin=False):
@@ -148,14 +149,14 @@ class DataSource(DictSerialiseMixin):
             is created with a plugin not expected to be in the global Intake
             registry.
         """
-        from yaml import dump
         data = self._yaml(with_plugin=with_plugin)
         return dump(data, default_flow_style=False)
 
     def _ipython_display_(self):
         """Display the entry as a rich object in an IPython session."""
         from IPython.display import display
-        contents = self.yaml()
+        data = self._yaml()['sources']
+        contents = dump(data, default_flow_style=False)
         display({
             'application/json': contents,
             'text/plain': pretty_describe(contents)
@@ -226,14 +227,21 @@ class DataSource(DictSerialiseMixin):
     def entry(self):
         if self._entry is None:
             raise ValueError("Source was not made by a catalog")
-        if self._entry() is None:
-            raise RuntimeError("Tried to recover entry, but it was gone")
-        return self._entry()
+        return self._entry
 
     def clone(self, **kwargs):
-        return self.entry(**kwargs)
+        # TODO: best name and description of what happens here
+        try:
+            obj = self.entry(**kwargs)
+            obj._entry = self.entry
+            return obj
+        except ValueError:  # no entry
+            kw = self._captured_init_kwargs.copy()
+            kw.update(kwargs)
+            return type(self)(*self._captured_init_args, **kw)
 
     def __call__(self, *args, **kwargs):
+        # TODO: this is for compatibility: deprecation warning?
         return self.clone(**kwargs)
 
     def describe(self):
