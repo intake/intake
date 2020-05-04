@@ -52,6 +52,10 @@ setup(
             'intake_remote = intake.catalog.base:RemoteCatalog',
             'numpy = intake.source.npy:NPySource',
             'ndzarr = intake.source.zarr:ZarrArraySource'
+        ],
+        'intake.mime': [
+            "text/csv = intake.source.csv:CSVSource",
+            "text/plain = intake.source.textfiles:TextFilesSource",
         ]
     },
     classifiers=[

@@ -10,6 +10,7 @@ import warnings
 import importlib
 import inspect
 import itertools
+import mimetypes
 import time
 import logging
 

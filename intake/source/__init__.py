@@ -5,6 +5,8 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import entrypoints
+import mimetypes
 import logging
 logger = logging.getLogger('intake')
 
@@ -86,3 +88,17 @@ def get_plugin_class(name):
         except (KeyError, NameError, ImportError):
             logger.debug('Failed to import "%s"' % name)
     return classes.get(name, None)
+
+
+def open_data(url, mime=None, storage_options=None):
+    storage_options = storage_options or {}
+    if mime is None:
+        mime, compression = mimetypes.guess_type(url)
+        if compression:
+            storage_options['compression'] = compression
+    group = entrypoints.get_group_named('intake.mime')
+    for name, entrypoint in group.items():
+        if name == mime:
+            driver = '.'.join([entrypoint.module_name, entrypoint.object_name])
+    cls = get_plugin_class(driver)
+    return cls(url, storage_options=storage_options)

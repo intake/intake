@@ -11,6 +11,7 @@ from .utils import expand_defaults, coerce
 from ..compat import unpack_kwargs, pack_kwargs
 from ..utils import remake_instance
 
+
 class RemoteCatalogEntry(CatalogEntry):
     """An entry referring to a remote data definition"""
     def __init__(self, url, auth, name=None, user_parameters=None,
