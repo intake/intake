@@ -273,7 +273,10 @@ class Catalog(DataSource):
         output = {"metadata": self.metadata, "sources": {},
                   "name": self.name}
         for key, entry in self.items():
-            output["sources"][key] = entry._captured_init_kwargs
+            kw = entry._captured_init_kwargs.copy()
+            kw.pop('catalog')
+            kw['parameters'] = {k.name: k.__getstate__()['kwargs'] for k in kw['parameters']}
+            output["sources"][key] = kw
         return yaml.dump(output)
 
     def save(self, url, storage_options=None):
