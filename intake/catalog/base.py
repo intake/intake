@@ -274,8 +274,8 @@ class Catalog(DataSource):
                   "name": self.name}
         for key, entry in self.items():
             kw = entry._captured_init_kwargs.copy()
-            kw.pop('catalog')
-            kw['parameters'] = {k.name: k.__getstate__()['kwargs'] for k in kw['parameters']}
+            kw.pop('catalog', None)
+            kw['parameters'] = {k.name: k.__getstate__()['kwargs'] for k in kw.get('parameters', [])}
             output["sources"][key] = kw
         return yaml.dump(output)
 
