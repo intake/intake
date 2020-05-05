@@ -94,6 +94,3 @@ class ZarrGroupCatalog(Catalog):
 
     def to_zarr(self):
         return self._grp
-
-
-register_driver('zarr_cat', ZarrGroupCatalog)

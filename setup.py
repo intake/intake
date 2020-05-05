@@ -51,7 +51,8 @@ setup(
             'catalog = intake.catalog.base:Catalog',
             'intake_remote = intake.catalog.base:RemoteCatalog',
             'numpy = intake.source.npy:NPySource',
-            'ndzarr = intake.source.zarr:ZarrArraySource'
+            'ndzarr = intake.source.zarr:ZarrArraySource',
+            'zarr_cat = intake.catalog.zarr:ZarrGroupCatalog',
         ]
     },
     classifiers=[
