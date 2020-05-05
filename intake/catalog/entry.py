@@ -76,7 +76,7 @@ class CatalogEntry(DictSerialiseMixin):
             raise ValueError('Persist value (%s) not understood' % persist)
         persist = persist or self._pmode
         s = self.get(**kwargs)
-        if s.has_been_persisted and persist is not 'never':
+        if s.has_been_persisted and persist != 'never':
             s2 = s.get_persisted()
             met = s2.metadata
             if persist == 'always' or not met['ttl']:
