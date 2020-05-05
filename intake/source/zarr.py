@@ -29,15 +29,15 @@ class ZarrArraySource(DataSource):
         Parameters
         ----------
         url : str
-            Location of data file(s), possibly including and protocol
+            Location of data file(s), possibly including protocol
             information
         storage_options : dict
             Passed on to storage backend for remote files
         component : str or None
-            If None, assume the URL points to an array store. If given, assume
-            it is a group, and descend the group to find the array at this
-            location in the data-set.
-        kwargs : passed on to zarr
+            If None, assume the URL points to an array. If given, assume
+            the URL points to a group, and descend the group to find the
+            array at this location in the hierarchy.
+        kwargs : passed on to dask.array.from_zarr
         """
         self.url = url
         self.storage_options = storage_options or {}
