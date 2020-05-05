@@ -46,7 +46,7 @@ class ZarrGroupCatalog(Catalog):
             if isinstance(self._url, zarr.hierarchy.Group):
                 # use already-opened group, allows support for nested groups
                 # as catalogs
-                self._grp = self._url
+                root = self._url
 
             else:
 
@@ -66,15 +66,14 @@ class ZarrGroupCatalog(Catalog):
                 else:
                     root = zarr.open_group(store=store, mode='r')
 
-                # deal with component path
-                if self._component is None:
-                    self._grp = root
-                else:
-                    self._grp = root[self._component]
+            # deal with component path
+            if self._component is None:
+                self._grp = root
+            else:
+                self._grp = root[self._component]
 
             # use zarr attributes as metadata
-            if not self.metadata:
-                self.metadata = self._grp.attrs.asdict()
+            self.metadata.update(self._grp.attrs.asdict())
 
         # build catalog entries
         entries = {}
@@ -95,3 +94,6 @@ class ZarrGroupCatalog(Catalog):
 
     def to_zarr(self):
         return self._grp
+
+
+register_driver('zarr_cat', ZarrGroupCatalog)
