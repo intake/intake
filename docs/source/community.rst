@@ -23,9 +23,9 @@ Conversation happens in the following places:
     questions and bug reports on gitter and instead ask people to use Stack
     Overflow or GitHub.
 4.  **Monthly developer meeting** happens the first Thursday of the month at
-    9:30 US Central Time in `this video meeting <https://zoom.us/j/9925959983>`_.
+    9:00 US Central Time in `this video meeting <https://zoom.us/j/9925959983>`_.
     Meeting notes are available at
-    https://docs.google.com/document/d/1GVcqubeTGICQzPGq_BZxn2Bdtf31lnvcrRxMY3GPCPsF/edit
+    https://docs.google.com/document/d/1GVcqubeTGICQzPGq_BZxn2Bdtf31lnvcrRxMY3GPCPs/edit
 
     .. raw:: html
 
