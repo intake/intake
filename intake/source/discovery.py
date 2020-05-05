@@ -22,7 +22,7 @@ logger = logging.getLogger('intake')
 
 
 def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
-    """Discover intake drivers.
+    r"""Discover intake drivers.
 
     In order of decreasing precedence:
 
