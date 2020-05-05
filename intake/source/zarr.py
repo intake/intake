@@ -20,7 +20,7 @@ class ZarrArraySource(DataSource):
     version = '0.0.1'
     partition_access = True
 
-    def __init__(self, url, storage_options=None, component=None,
+    def __init__(self, urlpath, storage_options=None, component=None,
                  metadata=None, **kwargs):
         """
         The parameters dtype and shape will be determined from the first
@@ -28,7 +28,7 @@ class ZarrArraySource(DataSource):
 
         Parameters
         ----------
-        url : str
+        urlpath : str
             Location of data file(s), possibly including protocol
             information
         storage_options : dict
@@ -39,7 +39,7 @@ class ZarrArraySource(DataSource):
             array at this location in the hierarchy.
         kwargs : passed on to dask.array.from_zarr
         """
-        self.url = url
+        self.urlpath = urlpath
         self.storage_options = storage_options or {}
         self.component = component
         self.kwargs = kwargs
@@ -49,7 +49,7 @@ class ZarrArraySource(DataSource):
     def _get_schema(self):
         import dask.array as da
         if self._arr is None:
-            self._arr = da.from_zarr(self.url, component=self.component,
+            self._arr = da.from_zarr(self.urlpath, component=self.component,
                                      storage_options=self.storage_options,
                                      **self.kwargs)
             self.chunks = self._arr.chunks

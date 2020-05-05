@@ -11,13 +11,13 @@ class ZarrGroupCatalog(Catalog):
     partition_access = None
     name = 'zarr_cat'
 
-    def __init__(self, url, storage_options=None, component=None, metadata=None,
+    def __init__(self, urlpath, storage_options=None, component=None, metadata=None,
                  consolidated=False):
         """
 
         Parameters
         ----------
-        url : str
+        urlpath : str
             Location of data file(s), possibly including protocol information
         storage_options : dict, optional
             Passed on to storage backend for remote files
@@ -30,7 +30,7 @@ class ZarrGroupCatalog(Catalog):
         consolidated : bool, optional
             If True, assume Zarr metadata has been consolidated.
         """
-        self._url = url
+        self._urlpath = urlpath
         self._storage_options = storage_options or {}
         self._component = component
         self._consolidated = consolidated
@@ -43,21 +43,21 @@ class ZarrGroupCatalog(Catalog):
         if self._grp is None:
 
             # obtain the zarr root group
-            if isinstance(self._url, zarr.hierarchy.Group):
+            if isinstance(self._urlpath, zarr.hierarchy.Group):
                 # use already-opened group, allows support for nested groups
                 # as catalogs
-                root = self._url
+                root = self._urlpath
 
             else:
 
                 # obtain store
-                if isinstance(self._url, str):
+                if isinstance(self._urlpath, str):
                     # open store from url
                     from fsspec import get_mapper
-                    store = get_mapper(self._url, **self._storage_options)
+                    store = get_mapper(self._urlpath, **self._storage_options)
                 else:
                     # assume store passed directly
-                    store = self._url
+                    store = self._urlpath
 
                 # open root group
                 if self._consolidated:
@@ -82,13 +82,13 @@ class ZarrGroupCatalog(Catalog):
                 entry = LocalCatalogEntry(name=k,
                                           description='',
                                           driver='ndzarr',
-                                          args=dict(url=v),
+                                          args=dict(urlpath=v),
                                           catalog=self)
             else:
                 entry = LocalCatalogEntry(name=k,
                                           description='',
                                           driver='zarr_cat',
-                                          args=dict(url=v))
+                                          args=dict(urlpath=v))
             entries[k] = entry
         self._entries = entries
 

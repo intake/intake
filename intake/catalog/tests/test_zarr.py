@@ -39,17 +39,17 @@ sources:
   root:
     driver: zarr_cat
     args:
-      url: {zarr_path}
+      urlpath: {zarr_path}
       consolidated: True
   bar:
     driver: zarr_cat
     args:
-      url: {zarr_path}
+      urlpath: {zarr_path}
       component: bar
   eggs:
     driver: ndzarr
     args:
-      url: {zarr_path}
+      urlpath: {zarr_path}
       component: bar/eggs
         """.format(zarr_path=zarr_path))
 
@@ -66,11 +66,11 @@ def test_zarr_catalog(temp_zarr, consolidated):
 
     path, store, root, _ = temp_zarr
 
-    # test zarr catalog opened directly, with different url argument types
-    for url in path, store, root:
+    # test zarr catalog opened directly, with different urlpath argument types
+    for urlpath in path, store, root:
 
         # open catalog
-        cat = ZarrGroupCatalog(url=url, consolidated=consolidated)
+        cat = ZarrGroupCatalog(urlpath=urlpath, consolidated=consolidated)
         assert isinstance(cat, ZarrGroupCatalog)
         assert 'catalog' == cat.container
 
@@ -111,7 +111,7 @@ def test_zarr_catalog(temp_zarr, consolidated):
         assert isinstance(cat['bar']['eggs'].to_dask(), da.Array)
 
         # open catalog directly from subgroup via `component` arg
-        cat = ZarrGroupCatalog(url, component='bar')
+        cat = ZarrGroupCatalog(urlpath, component='bar')
         assert_items_equal(['spam', 'eggs'], list(cat))
         assert isinstance(cat['spam'], LocalCatalogEntry)
         assert 'catalog' == cat['spam'].describe()['container']

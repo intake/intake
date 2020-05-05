@@ -2,7 +2,7 @@ sources:
   zarr1:
     driver: ndzarr
     args:
-      url: "{{CATALOG_DIR}}/data.zarr"
+      urlpath: "{{CATALOG_DIR}}/data.zarr"
   sometext:
     driver: textfiles
     args:
