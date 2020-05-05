@@ -7,7 +7,7 @@ This is a list of known projects which install driver plugins for Intake, and th
 contains in parentheses:
 
 * builtin to Intake (``catalog``, ``csv``, ``intake_remote``, ``ndzarr``,
-  ``numpy``, ``textfiles``, ``yaml_file_cat``, ``yaml_files_cat``)
+  ``numpy``, ``textfiles``, ``yaml_file_cat``, ``yaml_files_cat``, ``zarr_cat``)
 * `intake-astro <https://github.com/intake/intake-astro>`_ Table and array loading of FITS astronomical data (``fits_array``, ``fits_table``)
 * `intake-accumulo <https://github.com/intake/intake-accumulo>`_ Apache Accumulo clustered data storage (``accumulo``)
 * `intake-avro <https://github.com/intake/intake-avro>`_: Apache Avro data serialization format (``avro_table``, ``avro_sequence``)
