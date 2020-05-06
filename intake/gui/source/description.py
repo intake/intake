@@ -57,6 +57,6 @@ class Description(BaseView):
     def contents(self):
         """String representation of the source's description"""
         if not self._source:
-            return "```yaml\n{}\n```".format(' ' * 100)  # HACK - make sure that area is big
+            return 'name: ' + "⠀" * 30
         contents = self.source.describe()
         return pretty_describe(contents)
