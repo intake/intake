@@ -34,37 +34,29 @@ class Description(BaseView):
         is set to false.
     """
     main_pane = None
-    label_pane = None
 
     def __init__(self, source=None, **kwargs):
         self.source = source
         self.panel = pn.Column(name='Description', width_policy='max',
-                               margin=0, height=240)
+                               margin=0, height=240, sizing_mode='stretch_width',
+                               scroll=True)
         super().__init__(**kwargs)
 
     def setup(self):
-        self.main_pane = pn.pane.Str(self.contents, sizing_mode='stretch_width',
-                                     css_classes=['scrolling'], height=200)
-        self.label_pane = pn.pane.Markdown(self.label, max_height=40)
-        self.children = [self.label_pane, self.main_pane]
+        self.main_pane = pn.pane.Markdown(self.contents)
+        self.children = [self.main_pane]
 
     @BaseView.source.setter
     def source(self, source):
         """When the source gets updated, update the pane object"""
         BaseView.source.fset(self, source)
         if self.main_pane:
-            self.main_pane.object = self.contents
-            self.label_pane.object = self.label
+            self.main_pane.object = """```yaml\n{}\n```""".format(self.contents)
 
     @property
     def contents(self):
         """String representation of the source's description"""
         if not self._source:
-            return ' ' * 100  # HACK - make sure that area is big
+            return 'name: ' + "⠀" * 30
         contents = self.source.describe()
         return pretty_describe(contents)
-
-    @property
-    def label(self):
-        """Label to display at top of panel"""
-        return f'#### Source: {self.source.describe()["name"]}' if self.source else None
