@@ -96,11 +96,14 @@ class TestServerV1Source(TestServerV1Base):
         self.assertEqual(response.code, expected_status)
 
         responses = []
-        unpacker = msgpack.Unpacker(**unpack_kwargs)
-        unpacker.feed(response.body)
+        if expected_status < 400:
+            unpacker = msgpack.Unpacker(**unpack_kwargs)
+            unpacker.feed(response.body)
 
-        for msg in unpacker:
-            responses.append(msg)
+            for msg in unpacker:
+                responses.append(msg)
+        else:
+            responses = [{'error': str(response.error)}]
 
         return responses
 

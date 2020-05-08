@@ -38,9 +38,8 @@ class Precache(Subcommand):
     def invoke(self, args):
         catalog = open_catalog(args.uri)
         for entry in list(catalog):
-            s = catalog[entry]
             try:
-                s = s()
+                s = catalog[entry]
                 s.read()
                 if s.cache:
                     print("Caching for entry %s" % entry)

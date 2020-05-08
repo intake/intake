@@ -128,8 +128,8 @@ def test_read(intake_server):
     assert info['shape'] == (None, 3)  # Do not know CSV size ahead of time
 
     md = d.metadata.copy()
-    md.pop('catalog_dir', None)
-    assert md == dict(foo='bar', bar=[1, 2, 3])
+    assert md['foo'] == 'bar'
+    assert md['bar'] == [1, 2, 3]
 
     df = d.read()
 
@@ -431,9 +431,6 @@ def test_len(intake_server):
 def test_datetime(intake_server):
     catalog = open_catalog(intake_server)
     info = catalog["datetime"].describe()
-    print(info)
-    expected = {'name': 'datetime', 'container': 'python', 'plugin': 'remote', 'description': 'datetime parameters', 'direct_access': 'forbid', 'metadata': {}, 'user_parameters': [{'name': 'time', 'description': 'some time', 'type': 'datetime', 'default': pd.Timestamp('1970-01-01 00:00:00')}], 'args': ('http://localhost:7480/',)}
-    for k in expected:
-        assert info[k] == expected[k]
+    catalog['datetime'].parameters['time'] == pd.Timestamp("1970")
 
 

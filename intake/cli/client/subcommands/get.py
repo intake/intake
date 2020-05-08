@@ -40,5 +40,5 @@ class Get(Subcommand):
 
     def invoke(self, args):
         catalog = open_catalog(args.uri)
-        with catalog[args.name].get() as f:
+        with catalog[args.name] as f:
             print(f.read())
