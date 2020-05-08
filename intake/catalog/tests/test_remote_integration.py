@@ -14,7 +14,6 @@ import pandas as pd
 from intake.source.tests.util import verify_datasource_interface
 from .util import assert_items_equal
 from intake import open_catalog, RemoteCatalog
-from intake.catalog.remote import RemoteCatalogEntry
 
 TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
@@ -98,7 +97,7 @@ def test_unknown_source(intake_server):
 def test_remote_datasource_interface(intake_server):
     catalog = open_catalog(intake_server)
 
-    d = catalog['entry1'].get()
+    d = catalog['entry1']
 
     verify_datasource_interface(d)
 
@@ -113,7 +112,7 @@ def test_environment_evaluation(intake_server):
 def test_read(intake_server):
     catalog = open_catalog(intake_server)
 
-    d = catalog['entry1'].get()
+    d = catalog['entry1']
 
     test_dir = os.path.dirname(__file__)
     file1 = os.path.join(test_dir, 'entry1_1.csv')
@@ -140,7 +139,7 @@ def test_read(intake_server):
 def test_read_direct(intake_server):
     catalog = open_catalog(intake_server)
 
-    d = catalog['entry1_part'].get(part='2')
+    d = catalog['entry1_part'].configure(part='2')
     test_dir = os.path.dirname(__file__)
     file2 = os.path.join(test_dir, 'entry1_2.csv')
     expected_df = pd.read_csv(file2)
@@ -169,7 +168,7 @@ def test_read_direct(intake_server):
 def test_read_chunks(intake_server):
     catalog = open_catalog(intake_server)
 
-    d = catalog.entry1.get()
+    d = catalog.entry1
 
     chunks = list(d.read_chunked())
     assert len(chunks) == 2
@@ -185,7 +184,7 @@ def test_read_chunks(intake_server):
 def test_read_partition(intake_server):
     catalog = open_catalog(intake_server)
 
-    d = catalog.entry1.get()
+    d = catalog.entry1
 
     p2 = d.read_partition(1)
     p1 = d.read_partition(0)
@@ -200,21 +199,21 @@ def test_read_partition(intake_server):
 def test_close(intake_server):
     catalog = open_catalog(intake_server)
 
-    d = catalog.entry1.get()
+    d = catalog.entry1
     d.close()
 
 
 def test_with(intake_server):
     catalog = open_catalog(intake_server)
 
-    with catalog.entry1.get() as f:
+    with catalog.entry1 as f:
         assert f.discover()
 
 
 def test_pickle(intake_server):
     catalog = open_catalog(intake_server)
 
-    d = catalog.entry1.get()
+    d = catalog.entry1
 
     new_d = pickle.loads(pickle.dumps(d, pickle.HIGHEST_PROTOCOL))
 
@@ -230,7 +229,7 @@ def test_pickle(intake_server):
 
 def test_to_dask(intake_server):
     catalog = open_catalog(intake_server)
-    d = catalog.entry1.get()
+    d = catalog.entry1
     df = d.to_dask()
 
     assert df.npartitions == 2
@@ -240,18 +239,18 @@ def test_remote_env(intake_server):
     import os
     os.environ['INTAKE_TEST'] = 'client'
     catalog = open_catalog(intake_server)
+    catalog.remote_env
     with pytest.raises(Exception) as e:
-        catalog.remote_env.get()
-    assert 'path-server' in str(e.value)
+        catalog.remote_env.read()
 
     with pytest.raises(Exception) as e:
-        catalog.local_env.get()
+        catalog.local_env
     assert 'path-client' in str(e.value)
 
     # prevents *client* from getting env
     catalog = open_catalog(intake_server, getenv=False)
     with pytest.raises(Exception) as e:
-        catalog.local_env.get()
+        catalog.local_env
     assert 'INTAKE_TEST' in str(e.value)
 
 
@@ -302,6 +301,7 @@ def test_pagination(intake_server):
     # Now direct lookup by name should be free because everything is cached.
     catalog['text']
     assert len(catalog._entries._direct_lookup_cache) == 1
+
 
 def test_dir(intake_server):
     PAGE_SIZE = 2
@@ -366,8 +366,8 @@ def test_getitem_and_getattr(intake_server):
         catalog.doesnotexit
     with pytest.raises(AttributeError):
         catalog._doesnotexit
-    assert catalog.arr is catalog['arr']
-    assert isinstance(catalog.arr, RemoteCatalogEntry)
+    assert catalog.arr.describe() == catalog['arr'].describe()
+    assert "RemoteArray" in catalog.arr.classname
     assert isinstance(catalog.metadata, (dict, type(None)))
 
 
@@ -432,19 +432,7 @@ def test_datetime(intake_server):
     catalog = open_catalog(intake_server)
     info = catalog["datetime"].describe()
     print(info)
-    expected = {
-        'name': 'datetime',
-        'container': 'dataframe',
-        'description': 'datetime parameters',
-        'direct_access': 'forbid',
-        'user_parameters': [
-            {'name': 'time',
-             'description': 'some time',
-             'type': 'datetime',
-             'default': pd.Timestamp('1970-01-01 00:00:00')}
-        ],
-        'metadata': {},
-    }
+    expected = {'name': 'datetime', 'container': 'python', 'plugin': 'remote', 'description': 'datetime parameters', 'direct_access': 'forbid', 'metadata': {}, 'user_parameters': [{'name': 'time', 'description': 'some time', 'type': 'datetime', 'default': pd.Timestamp('1970-01-01 00:00:00')}], 'args': ('http://localhost:7480/',)}
     for k in expected:
         assert info[k] == expected[k]
 

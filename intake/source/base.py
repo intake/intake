@@ -28,10 +28,14 @@ class Schema(dict):
         kwargs: typically include datashape, dtype, shape
         """
         super(Schema, self).__init__(**kwargs)
-        for field in ['datashape', 'dtype', 'extra_metadata', 'shape']:
+        for field in ['datashape', 'dtype', 'shape']:
             # maybe a default-dict
             if field not in self:
                 self[field] = None
+        if 'npartitions' not in self:
+            self['npartitions'] = 1
+        if 'extra_metadata' not in self:
+            self['extra_metadata'] = {}
 
     def __repr__(self):
         return ("<Schema instance>\n"
@@ -42,6 +46,10 @@ class Schema(dict):
 
     def __getattr__(self, item):
         return self[item]
+
+
+class NoEntry(AttributeError):
+    pass
 
 
 class DataSource(DictSerialiseMixin):
@@ -226,23 +234,31 @@ class DataSource(DictSerialiseMixin):
     @property
     def entry(self):
         if self._entry is None:
-            raise ValueError("Source was not made by a catalog")
+            raise NoEntry("Source was not made from a catalog entry")
         return self._entry
 
-    def clone(self, **kwargs):
-        # TODO: best name and description of what happens here
+    def configure(self, **kwargs):
+        """Create a new instance of this source with altered arguments
+
+        Enables the picking of options from the user-parameters associated with
+        this source, or overriding any of the init arguments.
+
+        Returns a new data source instance. The instance will be recreated from
+        the original entry definition in a catalog **if** this source was originally
+        created from a catalog.
+        """
         try:
             obj = self.entry(**kwargs)
             obj._entry = self.entry
             return obj
-        except ValueError:  # no entry
+        except NoEntry:  # no entry
             kw = self._captured_init_kwargs.copy()
             kw.update(kwargs)
             return type(self)(*self._captured_init_args, **kw)
 
     def __call__(self, *args, **kwargs):
-        # TODO: this is for compatibility: deprecation warning?
-        return self.clone(**kwargs)
+        """alias for ``self.configure()``. May be removed in the future."""
+        return self.configure(**kwargs)
 
     def describe(self):
         return self.entry.describe()

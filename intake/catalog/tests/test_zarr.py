@@ -5,6 +5,7 @@ import pytest
 from intake.catalog.zarr import ZarrGroupCatalog
 from intake.catalog.local import LocalCatalogEntry
 from intake import open_catalog
+from intake.source.zarr import ZarrArraySource
 from .util import assert_items_equal
 
 zarr = pytest.importorskip('zarr')
@@ -76,11 +77,11 @@ def test_zarr_catalog(temp_zarr, consolidated):
 
         # check entries
         assert_items_equal(['foo', 'bar', 'baz'], list(cat))
-        assert isinstance(cat['foo'], LocalCatalogEntry)
+        assert isinstance(cat['foo'], ZarrGroupCatalog)
         assert 'catalog' == cat['foo'].describe()['container']
-        assert isinstance(cat['bar'], LocalCatalogEntry)
+        assert isinstance(cat['bar'], ZarrGroupCatalog)
         assert 'catalog' == cat['bar'].describe()['container']
-        assert isinstance(cat['baz'], LocalCatalogEntry)
+        assert isinstance(cat['baz'], ZarrArraySource)
         assert 'ndarray' == cat['baz'].describe()['container']
 
         # check metadata from attributes
@@ -94,9 +95,9 @@ def test_zarr_catalog(temp_zarr, consolidated):
 
         # check nested catalogs
         assert_items_equal(['spam', 'eggs'], list(cat['bar']))
-        assert isinstance(cat['bar']['spam'], LocalCatalogEntry)
+        assert isinstance(cat['bar']['spam'], ZarrGroupCatalog)
         assert 'catalog' == cat['bar']['spam'].describe()['container']
-        assert isinstance(cat['bar']['eggs'], LocalCatalogEntry)
+        assert isinstance(cat['bar']['eggs'], ZarrArraySource)
         assert 'ndarray' == cat['bar']['eggs'].describe()['container']
 
         # check obtain zarr groups
@@ -113,9 +114,9 @@ def test_zarr_catalog(temp_zarr, consolidated):
         # open catalog directly from subgroup via `component` arg
         cat = ZarrGroupCatalog(urlpath, component='bar')
         assert_items_equal(['spam', 'eggs'], list(cat))
-        assert isinstance(cat['spam'], LocalCatalogEntry)
+        assert isinstance(cat['spam'], ZarrGroupCatalog)
         assert 'catalog' == cat['spam'].describe()['container']
-        assert isinstance(cat['eggs'], LocalCatalogEntry)
+        assert isinstance(cat['eggs'], ZarrArraySource)
         assert 'ndarray' == cat['eggs'].describe()['container']
 
 
@@ -130,18 +131,18 @@ def test_zarr_entries_in_yaml_catalog(temp_zarr):
     assert_items_equal(['root', 'bar', 'eggs'], list(cat))
 
     # entry pointing to zarr root group
-    assert isinstance(cat['root'], LocalCatalogEntry)
+    assert isinstance(cat['root'], ZarrGroupCatalog)
     assert_items_equal(['foo', 'bar', 'baz'], list(cat['root']))
     assert 'catalog' == cat['root'].describe()['container']
     assert isinstance(cat['root'].to_zarr(), zarr.hierarchy.Group)
 
     # entry pointing to zarr sub-group
-    assert isinstance(cat['bar'], LocalCatalogEntry)
+    assert isinstance(cat['bar'], ZarrGroupCatalog)
     assert_items_equal(['spam', 'eggs'], list(cat['bar']))
     assert 'catalog' == cat['bar'].describe()['container']
     assert isinstance(cat['bar'].to_zarr(), zarr.hierarchy.Group)
 
     # entry pointing to zarr array
-    assert isinstance(cat['eggs'], LocalCatalogEntry)
+    assert isinstance(cat['eggs'], ZarrArraySource)
     assert 'ndarray' == cat['eggs'].describe()['container']
     assert isinstance(cat['eggs'].to_dask(), da.Array)

@@ -15,6 +15,8 @@ import requests
 from intake import config
 from intake.util_tests import ex, PY2
 from intake.utils import make_path_posix
+from intake.source.base import DataSource, Schema
+from intake import register_driver
 
 here = os.path.dirname(__file__)
 
@@ -22,6 +24,21 @@ here = os.path.dirname(__file__)
 MIN_PORT = 7480
 MAX_PORT = 7489
 PORT = MIN_PORT
+
+
+class TestSource(DataSource):
+    name = 'test'
+    container = 'python'
+
+    def __init__(self, **kwargs):
+        self.test_kwargs = kwargs
+        super().__init__()
+
+    def _get_schema(self):
+        return Schema()
+
+
+register_driver("test", TestSource)
 
 
 @pytest.fixture

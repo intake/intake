@@ -300,11 +300,13 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             if direct_access == 'forbid' or \
                     (direct_access == 'allow' and not client_has_plugin):
                 logger.debug("Opening entry %s" % entry)
-                source = entry.get(**user_parameters)
+                source = entry.configure(**user_parameters)
                 try:
                     source.on_server = True
                     source.discover()
                 except Exception as e:
+                    import traceback
+                    traceback.print_exc()
                     raise tornado.web.HTTPError(status_code=400,
                                                 log_message="Discover failed",
                                                 reason=str(e))
@@ -327,7 +329,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 # some server-side args need to be parsed
                 response = open_desc
                 user_parameters['plugin'] = plugin_name
-                response['args'] = (entry._create_open_args(user_parameters)[1])
+                response['args'] = (entry._entry._create_open_args(user_parameters)[1])
                 self.write(msgpack.packb(response, **pack_kwargs))
                 self.finish()
 
@@ -382,11 +384,3 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 compressor = serializer.compression_registry[f]
 
         return serializer.ComboSerializer(format_encoder, compressor)
-
-    def write_error(self, status_code, **kwargs):
-        error_exception = kwargs.get('exc_info', None)
-        if error_exception is not None:
-            msg = dict(error=str(error_exception[1]))
-        else:
-            msg = dict(error='unknown error')
-        self.write(msgpack.packb(msg, **pack_kwargs))

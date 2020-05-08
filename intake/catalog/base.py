@@ -768,8 +768,7 @@ class RemoteCatalog(Catalog):
         if not isinstance(cat, Catalog):
             raise NotImplementedError
         out = {}
-        for name in cat:
-            entry = cat[name]
+        for name, entry in cat.items():
             out[name] = entry.__getstate__()
             out[name]['parameters'] = [up._captured_init_kwargs for up
                                        in entry._user_parameters]
