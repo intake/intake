@@ -617,7 +617,25 @@ def test_dict_save():
     cat2 = open_catalog(fn)
     assert 'trial' in cat2
     assert cat2.name == 'mycat'
-    assert cat2.trial._driver =='csv'
+    assert cat2.trial._driver == 'csv'
+
+
+def test_dict_save_complex():
+    from intake.catalog.base import Catalog
+    fn = os.path.join(tempfile.mkdtemp(), 'mycat.yaml')
+    cat = Catalog()
+    entry = LocalCatalogEntry(name='trial', description='get this back',
+                              driver='csv', cache=[], catalog=cat,
+                              parameters=[UserParameter(name='par1', description='desc', type='int')],
+                              args={'urlpath': 'none'})
+
+    cat._entries = {'trial': entry}
+    cat.save(fn)
+
+    cat2 = open_catalog(fn)
+    assert 'trial' in cat2
+    assert cat2.name == 'mycat'
+    assert cat2.trial.describe()['plugin'][0] == 'csv'
 
 
 def test_dict_adddel():
