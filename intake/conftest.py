@@ -13,6 +13,7 @@ import pytest
 import requests
 
 from intake import config
+from intake.container import persist
 from intake.util_tests import ex, PY2
 from intake.utils import make_path_posix
 from intake.source.base import DataSource, Schema
@@ -57,7 +58,6 @@ def tmp_config_path(tmp_path):
     assert config.cfile() != temp_config_path
 
 
-
 def ping_server(url, swallow_exception, head=None):
     try:
         r = requests.get(url)
@@ -83,6 +83,7 @@ def pick_port():
 
 @pytest.fixture(scope="module")
 def intake_server(request):
+    persist.PersistStore().clear()
     os.environ['INTAKE_DEBUG'] = 'true'
     # Catalog path comes from the test module
     path = request.module.TEST_CATALOG_PATH
