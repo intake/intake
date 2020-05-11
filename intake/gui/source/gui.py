@@ -69,7 +69,7 @@ class SourceGUI(Base):
         self.description = Description()
         self.description.source = self.sources
 
-        self.plot = Plots(source=self.sources,
+        self.plot = Plots(source=self.source_instance,
                           visible=self.plot_widget.value,
                           visible_callback=partial(
                           setattr, self.plot_widget, 'value'))
@@ -144,7 +144,7 @@ class SourceGUI(Base):
 
     def on_click_plot_widget(self, event):
         """ When the plot control is toggled, set visibility and hand down source"""
-        self.plot.source = self.sources
+        self.plot.source = self.source_instance
         self.plot.visible = event.new
 
     def on_click_pars_widget(self, event):

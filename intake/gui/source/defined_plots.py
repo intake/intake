@@ -21,7 +21,7 @@ except ImportError:
 
 import panel as pn
 from ..base import BaseView
-from ...utils import pretty_describe
+from ...catalog.local import LocalCatalogEntry
 
 
 class Plots(BaseView):
@@ -87,9 +87,11 @@ class Plots(BaseView):
     def source(self, source):
         """When the source gets updated, update the the options in
         the selector"""
-        BaseView.source.fset(self, source)
         if source and isinstance(source, list):
             source = source[0]
+        if isinstance(source, LocalCatalogEntry):
+            source = source()
+        BaseView.source.fset(self, source)
         if self.select:
             self.select.options = self.options
         if source and dfviz and source.container == 'dataframe':
