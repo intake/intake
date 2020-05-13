@@ -116,7 +116,7 @@ class BaseCache(object):
 
         dirname = os.path.dirname(cache_path)
         if not os.path.exists(dirname):
-            if not (dirname.startswith('https://') or 
+            if not (dirname.startswith('https://') or
                     dirname.startswith('http://')):
                 os.makedirs(dirname)
 
@@ -442,7 +442,7 @@ class CompressedCache(BaseCache):
 
 
 class DATCache(BaseCache):
-    """Use the DAT protocol to replicate data
+    r"""Use the DAT protocol to replicate data
 
     For details of the protocol, see https://docs.datproject.org/
     The executable ``dat`` must be available.
@@ -488,7 +488,7 @@ class CacheMetadata(collections.abc.MutableMapping):
     def __init__(self, *args, **kwargs):
         from intake import config
 
-        self._path = posixpath.join(make_path_posix(config.confdir), 
+        self._path = posixpath.join(make_path_posix(config.confdir),
                                     'cache_metadata.json')
         d = os.path.dirname(self._path)
         if not os.path.exists(d):

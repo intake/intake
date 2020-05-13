@@ -13,7 +13,7 @@ env:
     # ANACONDA_TOKEN
     secure: XJ+hvBFtSNUy6xYQmpEFVoR1MTYdTtLIN9R46qfW5XhAOEzuA0mDBd4FL9mgaw4+hoB4+3B8ItHquGxRN/ugw8O/VRA5CuGBbmfbJfG2vLKAbe3RruTueijbxIpiPAhgEp11HtLWGYiaXR47Hug/hO5nFnHAqF9DpQfvsO5ntlFcMnNRVFp7uHbkdz651yQ3en4frSLP/07sK7zGMculb5VKeFH7RdD7Imyqi/BqXX3Mq4ymcgJ/lSEbgO46hP1wX6q4/SSFEQyb4tUUgM6yK6nZEjs6R6DLXpW9PFncTHsjBu39+aZR5tFQqRFOMoaVY2WVxDFSC4Hx8kUXuDQMfuR4JgVOEDSDLr8iws7Fr7svWEpz0TfasbN2/j4LSL+4bjtpZE/Baz3TrUf1LsmbjIgGIDiruLcVpQLrD3msHjjHiyldUs3gDCjndPuaxg0f3AKz/04xNXTNxg+RyVIGjP/6dHDRNIyHfToBhkt42wjt4bDiyxK78ty5Qn+EnDPJn1R22dULFXTwMnEO9QbzJCKZz2xwClp8toxHYRTUsjD68IDxipqd4gn6R16OgMcA9wtzomoz5UmFbo3ambUluzMVv3v9KS4spqykPWF8wTuGfJy2pEJAm6E9bwa4Jw1RZx9GWSYp/Zm8QR0Vx10dTTy/X7/wX44f/P9pv/dQUiw=
 
-matrix:
+jobs:
   include:
     # ANACONDA
     - language: generic
@@ -26,10 +26,18 @@ matrix:
         - coveralls
     # PYTHON
     - language: python
-      sudo: required
       dist: bionic
-      python:
-        - "3.7"
+      python: "3.7"
+      install:
+        - sudo apt update
+        - sudo apt install libsnappy-dev
+        - pip install panel bokeh dask pytest zarr
+        - pip install -e .[complete]
+      script:
+        - pytest
+    - language: python
+      dist: bionic
+      python: "3.8"
       install:
         - sudo apt update
         - sudo apt install libsnappy-dev

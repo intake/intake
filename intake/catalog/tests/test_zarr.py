@@ -7,10 +7,11 @@ from intake.catalog.local import LocalCatalogEntry
 from intake import open_catalog
 from .util import assert_items_equal
 
+zarr = pytest.importorskip('zarr')
+
 
 @pytest.fixture
 def temp_zarr():
-    import zarr
     zarr_path = tempfile.mkdtemp()
 
     # setup a zarr hierarchy stored on local file system
@@ -61,7 +62,6 @@ sources:
 
 @pytest.mark.parametrize('consolidated', [False, True])
 def test_zarr_catalog(temp_zarr, consolidated):
-    import zarr
     import dask.array as da
 
     path, store, root, _ = temp_zarr
@@ -120,7 +120,6 @@ def test_zarr_catalog(temp_zarr, consolidated):
 
 
 def test_zarr_entries_in_yaml_catalog(temp_zarr):
-    import zarr
     import dask.array as da
 
     # open YAML catalog file
