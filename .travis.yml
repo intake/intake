@@ -31,7 +31,7 @@ jobs:
       install:
         - sudo apt update
         - sudo apt install libsnappy-dev
-        - pip install panel bokeh dask pytest
+        - pip install panel bokeh dask pytest zarr
         - pip install -e .[complete]
       script:
         - pytest
