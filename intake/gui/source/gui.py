@@ -66,7 +66,8 @@ class SourceGUI(Base):
         self.select = SourceSelector(cats=self._cats,
                                      sources=self._sources,
                                      done_callback=self.callback)
-        self.description = Description(source=self.sources)
+        self.description = Description()
+        self.description.source = self.sources
 
         self.plot = Plots(source=self.sources,
                           visible=self.plot_widget.value,
@@ -85,16 +86,20 @@ class SourceGUI(Base):
     def setup(self):
         self._setup_watchers()
         self.children = [
-            pn.Row(
-                pn.Column(
-                    self.select.panel,
-                    self.control_panel,
-                    margin=0
+            pn.Column(
+                pn.Row(
+                    pn.Column(
+                        self.select.panel,
+                        self.control_panel,
+                        margin=0,
+                    ),
+                    self.description.panel,
+                    margin=0,
                 ),
-                self.description.panel,
-                margin=0
-            ),
-            self.plot.panel,
+                self.plot.panel,
+                margin=0,
+                width_policy='max'
+            )
         ]
 
     @Base.visible.setter
