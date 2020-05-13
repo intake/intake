@@ -53,10 +53,11 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
     """
     # Discover drivers via package scan.
     if do_package_scan:
-        warnings.warn(
-            "The option `do_package_scan` may be removed in a future release.",
-            PendingDeprecationWarning)
         package_scan_results = _package_scan(path, plugin_prefix)
+        if package_scan_results:
+            warnings.warn(
+                "The option `do_package_scan` may be removed in a future release.",
+                PendingDeprecationWarning)
     else:
         package_scan_results = {}
 

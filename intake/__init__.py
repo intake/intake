@@ -27,10 +27,8 @@ from .gui import InstanceMaker
 # Populate list of autodetected drivers (plugins).
 # The built-in ones are included here because intake itself declares them via
 # its own entry_points.
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    for name, driver in autodiscover().items():
-        register_driver(name, driver)
+for name, driver in autodiscover().items():
+    register_driver(name, driver)
 
 logger = logging.getLogger('intake')
 if sys.version_info >= (3, 7):
