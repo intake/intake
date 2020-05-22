@@ -300,7 +300,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             if direct_access == 'forbid' or \
                     (direct_access == 'allow' and not client_has_plugin):
                 logger.debug("Opening entry %s" % entry)
-                source = entry.configure(**user_parameters)
+                source = entry.configure_new(**user_parameters)
                 try:
                     source.on_server = True
                     source.discover()

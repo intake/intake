@@ -69,7 +69,7 @@ def test_local_catalog(catalog1):
     # Use default parameters
     assert catalog1['entry1_part'].container == 'dataframe'
     # Specify parameters
-    assert catalog1['entry1_part'].configure(part='2').container == 'dataframe'
+    assert catalog1['entry1_part'].configure_new(part='2').container == 'dataframe'
 
 
 def test_get_items(catalog1):

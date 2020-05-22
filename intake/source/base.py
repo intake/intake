@@ -237,10 +237,11 @@ class DataSource(DictSerialiseMixin):
             raise NoEntry("Source was not made from a catalog entry")
         return self._entry
 
-    def configure(self, **kwargs):
+    def configure_new(self, **kwargs):
         """Create a new instance of this source with altered arguments
 
-        Enables the picking of options from the user-parameters associated with
+        Enables the picking of options and re-evaluating templates from any
+        user-parameters associated with
         this source, or overriding any of the init arguments.
 
         Returns a new data source instance. The instance will be recreated from
@@ -256,15 +257,14 @@ class DataSource(DictSerialiseMixin):
             kw.update(kwargs)
             return type(self)(*self._captured_init_args, **kw)
 
-    def __call__(self, *args, **kwargs):
-        """alias for ``self.configure()``. May be removed in the future."""
-        return self.configure(**kwargs)
+    __call__ = get = configure_new  # compatibility aliases
 
     def describe(self):
         return self.entry.describe()
 
     @property
     def gui(self):
+        """Source GUI, with parameter selection and plotting"""
         return self.entry.gui
 
     def close(self):

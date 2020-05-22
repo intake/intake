@@ -139,7 +139,7 @@ def test_read(intake_server):
 def test_read_direct(intake_server):
     catalog = open_catalog(intake_server)
 
-    d = catalog['entry1_part'].configure(part='2')
+    d = catalog['entry1_part'].configure_new(part='2')
     test_dir = os.path.dirname(__file__)
     file2 = os.path.join(test_dir, 'entry1_2.csv')
     expected_df = pd.read_csv(file2)

@@ -123,9 +123,11 @@ class DictSerialiseMixin(object):
         # it sorts the keys, and it turns out that this sort operation
         # dominates the call time, even for very small dicts. Using an
         # OrderedDict steers dask toward a different and faster tokenization.
-        kwargs = collections.OrderedDict({k: arg.__getstate__()
-                  if isinstance(arg, DictSerialiseMixin) else arg
-                  for k, arg in sorted(self._captured_init_kwargs.items(), key=lambda x: x[0])})
+        kwargs = collections.OrderedDict({
+            k: arg.__getstate__()
+            if isinstance(arg, DictSerialiseMixin) else arg
+            for k, arg in self._captured_init_kwargs.items()
+        })
         return collections.OrderedDict(cls=self.classname,
                                        args=args,
                                        kwargs=kwargs)

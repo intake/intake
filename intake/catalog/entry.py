@@ -101,7 +101,8 @@ class CatalogEntry(DictSerialiseMixin):
 
     @container.setter
     def container(self, cont):
-        # for compat with magis source attr
+        # so that .container (which sources always have)  always reflects ._container,
+        # which is the variable name for entries.
         self._container = cont
 
     @property
