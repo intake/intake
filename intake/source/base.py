@@ -270,9 +270,8 @@ class DataSource(DictSerialiseMixin):
             version was written.
         kargs: passed to the _persist method on the base container.
         """
-        from ..container import container_map
         from ..container.persist import PersistStore
-        import time
+        from dask.base import tokenize
         if 'original_tok' in self.metadata:
             raise ValueError('Cannot persist a source taken from the persist '
                              'store')
@@ -286,7 +285,7 @@ class DataSource(DictSerialiseMixin):
             'cat': {} if self.cat is None else self.cat.__getstate__()
         })
         out.name = self.name
-        store.add(self._tok, out)
+        store.add(tokenize(self), out)
         return out
 
     def export(self, path, **kwargs):
@@ -304,6 +303,7 @@ class DataSource(DictSerialiseMixin):
     def _export(self, path, **kwargs):
         from ..container import container_map
         import time
+        from dask.base import tokenize
         method = container_map[self.container]._persist
         # may need to create path - access file-system method
         out = method(self, path=path, **kwargs)
@@ -312,7 +312,7 @@ class DataSource(DictSerialiseMixin):
                     'original_metadata': self.metadata,
                     'original_source': self.__getstate__(),
                     'original_name': self.name,
-                    'original_tok': self._tok,
+                    'original_tok': tokenize(self),
                     'persist_kwargs': kwargs}
         out.metadata = metadata
         out.name = self.name
@@ -320,7 +320,8 @@ class DataSource(DictSerialiseMixin):
 
     def get_persisted(self):
         from ..container.persist import store
-        return store[self._tok]()
+        from dask.base import tokenize
+        return store[tokenize(self)]()
 
     @staticmethod
     def _persist(source, path, **kwargs):
@@ -330,7 +331,8 @@ class DataSource(DictSerialiseMixin):
     @property
     def has_been_persisted(self):
         from ..container.persist import store
-        return self._tok in store
+        from dask.base import tokenize
+        return tokenize(self) in store
 
     @property
     def is_persisted(self):

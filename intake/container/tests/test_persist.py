@@ -15,14 +15,16 @@ from intake.source.base import DataSource
 
 
 def test_store(temp_cache):
+    from dask.base import tokenize
     assert list(store) == []
     s = DataSource(metadata={'original_name': 'blah'})
-    store.add(s._tok, s)
+    token = tokenize(s)
+    store.add(token, s)
     time.sleep(0.2)
 
     store.ttl = 0
-    assert list(store) == [s._tok]
-    assert store.get_tok(s) == s._tok
+    assert list(store) == [token]
+    assert store.get_tok(s) == token
     assert store.needs_refresh(s) is False  # because it has no TTL
 
     store.remove(s)
