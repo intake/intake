@@ -135,6 +135,9 @@ class TestServerV1Source(TestServerV1Base):
         self.assertEqual(resp_msg['description'], 'entry1 part')
 
     def test_read_part_compressed(self):
+        # because the msgpack format actually depends on pyarrow
+        pytest.importorskip('pyarrow')
+
         msg = dict(action='open', name='entry1', parameters={})
         resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
@@ -158,6 +161,8 @@ class TestServerV1Source(TestServerV1Base):
             self.assertEqual(len(data), 4)
 
     def test_read_partition(self):
+        # because the msgpack format actually depends on pyarrow
+        pytest.importorskip('pyarrow')
         msg = dict(action='open', name='entry1', parameters={})
         resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
@@ -242,7 +247,7 @@ def multi_server(tmpdir):
             break
         except:
             time.sleep(0.2)
-            if time.time() - t > 10: 
+            if time.time() - t > 10:
                 break
     P.terminate()
     P.wait()
@@ -268,7 +273,7 @@ def port_server(tmpdir):
             break
         except:
             time.sleep(0.2)
-            if time.time() - t > 10: 
+            if time.time() - t > 10:
                 break
     P.terminate()
     P.wait()
@@ -293,7 +298,7 @@ def address_server(tmpdir):
             break
         except:
             time.sleep(0.2)
-            if time.time() - t > 10: 
+            if time.time() - t > 10:
                 break
     P.terminate()
     P.wait()
