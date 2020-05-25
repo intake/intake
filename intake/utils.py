@@ -94,7 +94,6 @@ class DictSerialiseMixin(object):
         from dask.base import tokenize
         warnings.warn("the _tok attribute is deprecated, please use "
                       "`dask.base.tokenize(obj)` instead")
-        raise Exception
         return tokenize(self)
 
     def __new__(cls, *args, **kwargs):
