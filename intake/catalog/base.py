@@ -129,10 +129,8 @@ class Catalog(DataSource):
         -------
         Catalog instance
         """
-        from dask.base import tokenize
         cat = cls(**kwargs)
         cat._entries = entries
-        cat._tok = tokenize(kwargs, entries)
         return cat
 
     @property

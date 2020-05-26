@@ -69,14 +69,15 @@ class CatalogEntry(DictSerialiseMixin):
             None, must be one of ['always', 'never', 'default']. Has no
             effect if the source has never been persisted, use source.persist()
         """
-        from ..container.persist import store
 
         if persist is not None and persist not in [
                 'always', 'never', 'default']:
             raise ValueError('Persist value (%s) not understood' % persist)
         persist = persist or self._pmode
         s = self.get(**kwargs)
-        if s.has_been_persisted and persist != 'never':
+        if persist != 'never' and s.has_been_persisted:
+            from ..container.persist import store
+
             s2 = s.get_persisted()
             met = s2.metadata
             if persist == 'always' or not met['ttl']:

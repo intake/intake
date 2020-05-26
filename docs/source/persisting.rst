@@ -95,7 +95,7 @@ For details on the methods of the persist store, see the API documentation:
 information about the sources they were made from, so that they can be remade
 successfully. This all appears in the source metadata.
 The sources use the "token" of the original
-data source as their key in the store, a value which can be found by ``source._tok``
+data source as their key in the store, a value which can be found by ``dask.base.tokenize(source)``
 for the original source, or can be taken from the metadata of a persisted source.
 
 Note that all of the information about persisted sources is held in a single YAML file in

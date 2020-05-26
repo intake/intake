@@ -22,6 +22,7 @@ all_compressors = pytest.mark.parametrize(
 @all_serializers
 def test_dataframe(ser):
     pd = pytest.importorskip('pandas')
+    pytest.importorskip('pyarrow')
     csv_filename = os.path.join(os.path.dirname(__file__), 'entry1_1.csv')
     expected_df = pd.read_csv(csv_filename)
 

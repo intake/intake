@@ -85,13 +85,23 @@ def classname(ob):
 
 
 class DictSerialiseMixin(object):
+
+    __tok_cache = None
+
+    @property
+    def _tok(self):
+        import warnings
+        from dask.base import tokenize
+        warnings.warn("the _tok attribute is deprecated, please use "
+                      "`dask.base.tokenize(obj)` instead")
+        return tokenize(self)
+
     def __new__(cls, *args, **kwargs):
         """Capture creation args when instantiating"""
-        from dask.base import tokenize
         o = object.__new__(cls)
         o._captured_init_args = args
         o._captured_init_kwargs = kwargs
-        o.__dict__['_tok'] = tokenize(o.__getstate__())
+
         return o
 
     @property
@@ -99,7 +109,10 @@ class DictSerialiseMixin(object):
         return classname(self)
 
     def __dask_tokenize__(self):
-        return hash(self)
+        if self.__tok_cache is None:
+            from dask.base import tokenize
+            self.__tok_cache = tokenize(self.__getstate__())
+        return self.__tok_cache
 
     def __getstate__(self):
         args = [arg.__getstate__() if isinstance(arg, DictSerialiseMixin)
@@ -125,7 +138,8 @@ class DictSerialiseMixin(object):
         self.__init__(*state['args'], **state['kwargs'])
 
     def __hash__(self):
-        return int(self._tok, 16)
+        from dask.base import tokenize
+        return int(tokenize(self), 16)
 
     def __eq__(self, other):
         return hash(self) == hash(other)
