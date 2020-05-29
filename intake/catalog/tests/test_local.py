@@ -60,15 +60,16 @@ def test_local_catalog(catalog1):
         'metadata': {'foo': 'baz', 'bar': [2, 4, 6]},
         'plugin': ['csv']
     }
-    assert catalog1['entry1'].get().container == 'dataframe'
-    md = catalog1['entry1'].get().metadata
+    assert catalog1['entry1'].container == 'dataframe'
+    md = catalog1['entry1'].metadata
     md.pop('catalog_dir')
-    assert md == dict(foo='bar', bar=[1, 2, 3])
+    assert md['foo'] == 'bar'
+    assert md['bar'] == [1, 2, 3]
 
     # Use default parameters
-    assert catalog1['entry1_part'].get().container == 'dataframe'
+    assert catalog1['entry1_part'].container == 'dataframe'
     # Specify parameters
-    assert catalog1['entry1_part'].get(part='2').container == 'dataframe'
+    assert catalog1['entry1_part'].configure_new(part='2').container == 'dataframe'
 
 
 def test_get_items(catalog1):
@@ -82,9 +83,8 @@ def test_nested(catalog1):
     assert catalog1.entry1.read().equals(catalog1.nested.nested.entry1.read())
     assert 'nested.nested' not in catalog1.walk(depth=1)
     assert 'nested.nested' in catalog1.walk(depth=2)
-    assert catalog1.nested._catalog == catalog1
-    assert catalog1.nested().cat == catalog1
-    assert catalog1.nested.nested.nested().cat.cat.cat is catalog1
+    assert catalog1.nested.cat == catalog1
+    assert catalog1.nested.nested.nested.cat.cat.cat is catalog1
 
 
 def test_nested_gets_name_from_super(catalog1):
@@ -117,7 +117,7 @@ def test_metadata(catalog1):
 
 
 def test_use_source_plugin_from_config(catalog1):
-    catalog1['use_example1'].get()
+    catalog1['use_example1']
 
 
 def test_get_dir():
@@ -307,7 +307,7 @@ def test_union_catalog():
 
     # Implied creation of data source
     assert union_cat.entry1.container == 'dataframe'
-    md = union_cat.entry1._metadata
+    md = union_cat.entry1.describe()['metadata']
     assert md == dict(foo='bar', bar=[1, 2, 3])
 
     # Use default parameters in explict creation of data source
@@ -541,14 +541,12 @@ def test_multi_plugins():
 def test_no_plugins():
     fn = abspath('multi_plugins.yaml')
     cat = open_catalog(fn)
-    s = cat.tables6
     with pytest.raises(ValueError) as e:
-        s()
+        cat.tables6
     assert 'doesnotexist' in str(e.value)
     assert 'plugin-directory' in str(e.value)
-    s = cat.tables7
     with pytest.raises(ValueError) as e:
-        s()
+        cat.tables7
     assert 'doesnotexist' in str(e.value)
 
 
@@ -580,29 +578,28 @@ def test_getitem_and_getattr():
         catalog.doesnotexit
     with pytest.raises(AttributeError):
         catalog._doesnotexit
-    assert catalog.tables0 is catalog['tables0']
-    assert isinstance(catalog.tables0, LocalCatalogEntry)
+    assert catalog.tables0 == catalog['tables0']
     assert isinstance(catalog.metadata, (dict, type(None)))
 
 
 def test_dot_names():
     fn = abspath('dot-nest.yaml')
     cat = open_catalog(fn)
-    assert cat.self.leaf._description == 'leaf'
-    assert cat.self['leafdot.dot']._description == 'leaf-dot'
-    assert cat['selfdot.dot', 'leafdot.dot']._description == 'leaf-dot'
+    assert cat.self.leaf.description == 'leaf'
+    assert cat.self['leafdot.dot'].description == 'leaf-dot'
+    assert cat['selfdot.dot', 'leafdot.dot'].description == 'leaf-dot'
 
-    assert cat['self.selfdot.dot', 'leafdot.dot']._description == 'leaf-dot'
-    assert cat['self.self.dot', 'leafdot.dot']._description == 'leaf-dot'
-    assert cat['self.self.dot', 'leaf']._description == 'leaf'
-    assert cat['self.self.dot', 'leaf.dot']._description == 'leaf-dot'
+    assert cat['self.selfdot.dot', 'leafdot.dot'].description == 'leaf-dot'
+    assert cat['self.self.dot', 'leafdot.dot'].description == 'leaf-dot'
+    assert cat['self.self.dot', 'leaf'].description == 'leaf'
+    assert cat['self.self.dot', 'leaf.dot'].description == 'leaf-dot'
 
-    assert cat['self.self.dot.leaf.dot']._description == 'leaf-dot'
+    assert cat['self.self.dot.leaf.dot'].description == 'leaf-dot'
 
 
 def test_listing(catalog1):
     assert list(catalog1) == list(catalog1.nested)
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         list(catalog1.arr)
 
 
@@ -610,14 +607,14 @@ def test_dict_save():
     from intake.catalog.base import Catalog
     fn = os.path.join(tempfile.mkdtemp(), 'mycat.yaml')
     entry = LocalCatalogEntry(name='trial', description='get this back',
-                              driver='csv')
+                              driver='csv', args=dict(urlpath=""))
     cat = Catalog.from_dict({'trial': entry}, name='mycat')
     cat.save(fn)
 
     cat2 = open_catalog(fn)
     assert 'trial' in cat2
     assert cat2.name == 'mycat'
-    assert cat2.trial._driver == 'csv'
+    assert "CSV" in cat2.trial.classname
 
 
 def test_dict_save_complex():
@@ -641,27 +638,27 @@ def test_dict_save_complex():
 def test_dict_adddel():
     from intake.catalog.base import Catalog
     entry = LocalCatalogEntry(name='trial', description='get this back',
-                              driver='csv')
+                              driver='csv', args=dict(urlpath=""))
     cat = Catalog.from_dict({'trial': entry}, name='mycat')
     assert 'trial' in cat
     cat['trial2'] = entry
     assert list(cat) == ['trial', 'trial2']
     cat.pop('trial')
     assert list(cat) == ['trial2']
-    assert cat['trial2'] is entry
+    assert cat['trial2'].describe() == entry.describe()
 
 
 def test_filter():
     from intake.catalog.base import Catalog
     entry1 = LocalCatalogEntry(name='trial', description='get this back',
-                              driver='csv')
+                               driver='csv', args=dict(urlpath=""))
     entry2 = LocalCatalogEntry(name='trial', description='pass this through',
-                              driver='csv')
+                               driver='csv', args=dict(urlpath=""))
     cat = Catalog.from_dict({'trial1': entry1,
                              'trial2': entry2}, name='mycat')
     cat2 = cat.filter(lambda e: 'pass' in e._description)
     assert list(cat2) == ['trial2']
-    assert cat2.trial2 is entry2
+    assert cat2.trial2 == entry2()
 
 
 def test_no_instance():

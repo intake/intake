@@ -104,7 +104,7 @@ def test_defined_plots_init_empty_and_not_visible_set_source(sources2):
     from ..defined_plots import Plots
     defined_plots = Plots(source=[], visible=False)
     defined_plots.source = sources2
-    assert defined_plots.source == sources2[0]
+    assert defined_plots.source == sources2[0]()
     assert_plotting_source2_0_line(defined_plots, visible=False)
 
 
@@ -113,7 +113,7 @@ def test_defined_plots_init_with_source_not_visible_make_visible(sources2):
     from ..defined_plots import Plots
     defined_plots = Plots(source=sources2, visible=False)
     defined_plots.source = sources2
-    assert defined_plots.source == sources2[0]
+    assert defined_plots.source == sources2[0]()
     assert_plotting_source2_0_line(defined_plots, visible=False)
 
     defined_plots.visible = True

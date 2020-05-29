@@ -81,11 +81,12 @@ class CatalogEntry(DictSerialiseMixin):
             s2 = s.get_persisted()
             met = s2.metadata
             if persist == 'always' or not met['ttl']:
-                return s2
-            if met['ttl'] < time.time() - met['timestamp']:
-                return s2
+                s = s2
+            elif met['ttl'] < time.time() - met['timestamp']:
+                s = s2
             else:
-                return store.refresh(s2)
+                s = store.refresh(s2)
+        s._entry = self
         return s
 
     def _get_default_source(self):
@@ -93,6 +94,16 @@ class CatalogEntry(DictSerialiseMixin):
         if self._default_source is None:
             self._default_source = self()
         return self._default_source
+
+    @property
+    def container(self):
+        return getattr(self, '_container', None)
+
+    @container.setter
+    def container(self, cont):
+        # so that .container (which sources always have)  always reflects ._container,
+        # which is the variable name for entries.
+        self._container = cont
 
     @property
     def has_been_persisted(self, **kwargs):
@@ -114,18 +125,6 @@ class CatalogEntry(DictSerialiseMixin):
         }, metadata={
             'application/json': {'root': contents["name"]}
         }, raw=True)
-
-    def __getattr__(self, attr):
-        if attr in self.__dict__:
-            return self.__dict__[attr]
-        else:
-            return getattr(self._get_default_source(), attr)
-
-    def __dir__(self):
-        selflist = {'describe', 'describe_open', 'get', 'gui',
-                    'has_been_persisted', 'plots'}
-        selflist.update(set(dir(self._get_default_source())))
-        return list(sorted(selflist))
 
     def __iter__(self):
         # If the entry is a catalog, this allows list(cat.entry)

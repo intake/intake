@@ -7,11 +7,10 @@
 ''' Base classes for Data Loader interface
 
 '''
+from yaml import dump
 
 from .cache import make_caches
-from ..utils import make_path_posix, DictSerialiseMixin
-import sys
-PY2 = sys.version_info[0] == 2
+from ..utils import make_path_posix, DictSerialiseMixin, pretty_describe
 
 
 class Schema(dict):
@@ -29,10 +28,14 @@ class Schema(dict):
         kwargs: typically include datashape, dtype, shape
         """
         super(Schema, self).__init__(**kwargs)
-        for field in ['datashape', 'dtype', 'extra_metadata', 'shape']:
+        for field in ['datashape', 'dtype', 'shape']:
             # maybe a default-dict
             if field not in self:
                 self[field] = None
+        if 'npartitions' not in self:
+            self['npartitions'] = 1
+        if 'extra_metadata' not in self:
+            self['extra_metadata'] = {}
 
     def __repr__(self):
         return ("<Schema instance>\n"
@@ -43,6 +46,10 @@ class Schema(dict):
 
     def __getattr__(self, item):
         return self[item]
+
+
+class NoEntry(AttributeError):
+    pass
 
 
 class DataSource(DictSerialiseMixin):
@@ -87,6 +94,7 @@ class DataSource(DictSerialiseMixin):
         self.catalog_object = None
         self.on_server = False
         self.cat = None  # the cat from which this source was made
+        self._entry = None
 
     def _get_cache(self, urlpath):
         if len(self.cache) == 0:
@@ -125,21 +133,15 @@ class DataSource(DictSerialiseMixin):
         import inspect
         kwargs = self._captured_init_kwargs.copy()
         meta = kwargs.pop('metadata', self.metadata) or {}
-        if PY2:
-            kwargs.update(dict(zip(inspect.getargspec(self.__init__).args,
-                          self._captured_init_args)))
-        else:
-            kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
-                                   self._captured_init_args)))
-        data = {'sources': {self.name: {
+        kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
+                           self._captured_init_args)))
+        data = {'sources':
+                {self.name: {
             'driver': self.classname,
             'description': self.description or "",
             'metadata': meta,
             'args': kwargs
         }}}
-        if with_plugin:
-            data['plugins'] = {
-                'source': [{'module': self.__module__}]}
         return data
 
     def yaml(self, with_plugin=False):
@@ -155,9 +157,23 @@ class DataSource(DictSerialiseMixin):
             is created with a plugin not expected to be in the global Intake
             registry.
         """
-        from yaml import dump
         data = self._yaml(with_plugin=with_plugin)
         return dump(data, default_flow_style=False)
+
+    def _ipython_display_(self):
+        """Display the entry as a rich object in an IPython session."""
+        from IPython.display import display
+        data = self._yaml()['sources']
+        contents = dump(data, default_flow_style=False)
+        display({
+            'application/json': contents,
+            'text/plain': pretty_describe(contents)
+        }, metadata={
+            'application/json': {'root': self.name}
+        }, raw=True)
+
+    def __repr__(self):
+        return self.yaml()
 
     @property
     def plots(self):
@@ -214,6 +230,42 @@ class DataSource(DictSerialiseMixin):
         This method requires the package intake-spark
         """
         raise NotImplementedError
+
+    @property
+    def entry(self):
+        if self._entry is None:
+            raise NoEntry("Source was not made from a catalog entry")
+        return self._entry
+
+    def configure_new(self, **kwargs):
+        """Create a new instance of this source with altered arguments
+
+        Enables the picking of options and re-evaluating templates from any
+        user-parameters associated with
+        this source, or overriding any of the init arguments.
+
+        Returns a new data source instance. The instance will be recreated from
+        the original entry definition in a catalog **if** this source was originally
+        created from a catalog.
+        """
+        try:
+            obj = self.entry(**kwargs)
+            obj._entry = self.entry
+            return obj
+        except NoEntry:  # no entry
+            kw = self._captured_init_kwargs.copy()
+            kw.update(kwargs)
+            return type(self)(*self._captured_init_args, **kw)
+
+    __call__ = get = configure_new  # compatibility aliases
+
+    def describe(self):
+        return self.entry.describe()
+
+    @property
+    def gui(self):
+        """Source GUI, with parameter selection and plotting"""
+        return self.entry.gui
 
     def close(self):
         """Close open resources corresponding to this data source."""

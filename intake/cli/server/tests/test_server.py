@@ -96,11 +96,14 @@ class TestServerV1Source(TestServerV1Base):
         self.assertEqual(response.code, expected_status)
 
         responses = []
-        unpacker = msgpack.Unpacker(**unpack_kwargs)
-        unpacker.feed(response.body)
+        if expected_status < 400:
+            unpacker = msgpack.Unpacker(**unpack_kwargs)
+            unpacker.feed(response.body)
 
-        for msg in unpacker:
-            responses.append(msg)
+            for msg in unpacker:
+                responses.append(msg)
+        else:
+            responses = [{'error': str(response.error)}]
 
         return responses
 
@@ -260,24 +263,38 @@ def test_flatten_flag(multi_server):
     assert 'use_example1' in cat.cat1()
 
 
-@pytest.fixture()
+def free_port():
+    import socket
+
+    s = socket.socket()
+    s.bind(('', 0))  # Bind to a free port provided by the host.
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+
+@pytest.fixture(scope='function')
 def port_server(tmpdir):
     fn1 = make_path_posix(os.path.join(tmpdir, 'cat1.yaml'))
     shutil.copyfile(catalog_file, fn1)
-    P = subprocess.Popen(['intake-server','--port', '5001', fn1])
+    port = free_port()
+
+    P = subprocess.Popen(['intake-server', '--port', str(port), fn1])
     t = time.time()
-    while True:
-        try:
-            requests.get('http://localhost:5001')
-            yield 'intake://localhost:5001'
-            break
-        except:
-            time.sleep(0.2)
-            if time.time() - t > 10:
+    try:
+        while True:
+            try:
+                requests.get('http://localhost:%s' % port)
+                yield 'intake://localhost:%s' % port
                 break
-    P.terminate()
-    P.wait()
-    shutil.rmtree(tmpdir)
+            except:
+                time.sleep(0.2)
+                if time.time() - t > 10:
+                    break
+    finally:
+        P.terminate()
+        P.wait()
+        shutil.rmtree(tmpdir)
 
 
 def test_port_flag(port_server):
@@ -289,12 +306,13 @@ def test_port_flag(port_server):
 def address_server(tmpdir):
     fn1 = make_path_posix(os.path.join(tmpdir, 'cat1.yaml'))
     shutil.copyfile(catalog_file, fn1)
-    P = subprocess.Popen(['intake-server','--port', '5001', '--address', '0.0.0.0', fn1])
+    port = free_port()
+    P = subprocess.Popen(['intake-server', '--port', str(port), '--address', '0.0.0.0', fn1])
     t = time.time()
     while True:
         try:
-            requests.get('http://0.0.0.0:5001')
-            yield 'intake://0.0.0.0:5001'
+            requests.get('http://0.0.0.0:%s' % port)
+            yield 'intake://0.0.0.0:%s' % port
             break
         except:
             time.sleep(0.2)

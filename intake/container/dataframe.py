@@ -107,8 +107,7 @@ def is_dataframe_like(df):
     return (all(hasattr(typ, name)
                 for name in ('groupby', 'head', 'merge', 'mean')) and
             all(hasattr(df, name) for name in ('dtypes',)) and not
-            any(hasattr(typ, name)
-                for name in ('value_counts', 'dtype')))
+            hasattr(typ, 'dtype'))
 
 
 class GenericDataFrame(DataSource):

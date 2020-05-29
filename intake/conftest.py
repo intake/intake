@@ -13,8 +13,11 @@ import pytest
 import requests
 
 from intake import config
+from intake.container import persist
 from intake.util_tests import ex, PY2
 from intake.utils import make_path_posix
+from intake.source.base import DataSource, Schema
+from intake import register_driver
 
 here = os.path.dirname(__file__)
 
@@ -22,6 +25,21 @@ here = os.path.dirname(__file__)
 MIN_PORT = 7480
 MAX_PORT = 7489
 PORT = MIN_PORT
+
+
+class TestSource(DataSource):
+    name = 'test'
+    container = 'python'
+
+    def __init__(self, **kwargs):
+        self.test_kwargs = kwargs
+        super().__init__()
+
+    def _get_schema(self):
+        return Schema()
+
+
+register_driver("test", TestSource)
 
 
 @pytest.fixture
@@ -38,7 +56,6 @@ def tmp_config_path(tmp_path):
     else:
         del os.environ[key]
     assert config.cfile() != temp_config_path
-
 
 
 def ping_server(url, swallow_exception, head=None):
@@ -66,6 +83,7 @@ def pick_port():
 
 @pytest.fixture(scope="module")
 def intake_server(request):
+    persist.PersistStore().clear()
     os.environ['INTAKE_DEBUG'] = 'true'
     # Catalog path comes from the test module
     path = request.module.TEST_CATALOG_PATH
