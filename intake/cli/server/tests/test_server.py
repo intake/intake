@@ -281,14 +281,11 @@ def port_server(tmpdir):
 
     P = subprocess.Popen(['intake-server', '--port', str(port), fn1])
     t = time.time()
-    while True:
-        try:
-            requests.get('http://localhost:%s' % port)
-            yield 'intake://localhost:%s' % port
-            break
-        except:
-            time.sleep(0.2)
-            if time.time() - t > 10:
+    try:
+        while True:
+            try:
+                requests.get('http://localhost:%s' % port)
+                yield 'intake://localhost:%s' % port
                 break
             except:
                 time.sleep(0.2)
