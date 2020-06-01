@@ -14,6 +14,10 @@ def gui(sources1):
     return SourceGUI(sources=sources1)
 
 
+def test_gui_attribute(sources1):
+    assert sources1[0].gui
+
+
 def test_gui(gui, sources1):
     assert gui.select.items == sources1
     assert gui.sources == [sources1[0]]

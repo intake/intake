@@ -11,6 +11,7 @@ from yaml import dump
 
 from .cache import make_caches
 from ..utils import make_path_posix, DictSerialiseMixin, pretty_describe
+import warnings
 
 
 class Schema(dict):
@@ -233,6 +234,7 @@ class DataSource(DictSerialiseMixin):
 
     @property
     def entry(self):
+        warnings.warn("direct access to the entry is deprecated", stacklevel=2)
         if self._entry is None:
             raise NoEntry("Source was not made from a catalog entry")
         return self._entry
@@ -248,11 +250,11 @@ class DataSource(DictSerialiseMixin):
         the original entry definition in a catalog **if** this source was originally
         created from a catalog.
         """
-        try:
-            obj = self.entry(**kwargs)
-            obj._entry = self.entry
+        if self._entry is not None:
+            obj = self._entry(**kwargs)
+            obj._entry = self._entry
             return obj
-        except NoEntry:  # no entry
+        else:
             kw = self._captured_init_kwargs.copy()
             kw.update(kwargs)
             return type(self)(*self._captured_init_args, **kw)
@@ -260,12 +262,18 @@ class DataSource(DictSerialiseMixin):
     __call__ = get = configure_new  # compatibility aliases
 
     def describe(self):
-        return self.entry.describe()
+        if self._entry is None:
+            raise NoEntry("Source was not made from a catalog entry")
+
+        return self._entry.describe()
 
     @property
     def gui(self):
         """Source GUI, with parameter selection and plotting"""
-        return self.entry.gui
+        if self._entry is None:
+            raise NoEntry("Source was not made from a catalog entry")
+
+        return self._entry.gui
 
     def close(self):
         """Close open resources corresponding to this data source."""

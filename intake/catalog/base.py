@@ -21,7 +21,7 @@ import msgpack
 from ..auth.base import BaseClientAuth, AuthenticationFailure
 from .remote import RemoteCatalogEntry
 from .utils import flatten, reload_on_change, RemoteCatalogError
-from ..source.base import DataSource
+from ..source.base import DataSource, NoEntry
 from ..compat import unpack_kwargs, pack_kwargs
 logger = logging.getLogger('intake')
 
@@ -329,6 +329,10 @@ class Catalog(DataSource):
         return "<Intake catalog: %s>" % self.name
 
     def __getattr__(self, item):
+        # we need this special case here because the (deprecated) entry
+        # property on the base class
+        if item == 'entry':
+            raise NoEntry("Source was not made from a catalog entry")
         if not item.startswith('_'):
             # Fall back to __getitem__.
             try:
