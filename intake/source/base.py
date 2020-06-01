@@ -270,7 +270,10 @@ class DataSource(DictSerialiseMixin):
     @property
     def gui(self):
         """Source GUI, with parameter selection and plotting"""
-        return self.entry.gui
+        if self._entry is None:
+            raise NoEntry("Source was not made from a catalog entry")
+
+        return self._entry.gui
 
     def close(self):
         """Close open resources corresponding to this data source."""
