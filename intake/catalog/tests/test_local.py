@@ -722,3 +722,26 @@ def test_cat_add(tmpdir):
     # was added to the file
     cat = open_catalog(fn)
     assert list(cat) == ['cat']
+
+
+def test_no_enttries_items(catalog1):
+    from intake.catalog.entry import CatalogEntry
+    from intake.source.base import DataSource
+
+    for k, v in catalog1.items():
+        assert not isinstance(v, CatalogEntry)
+        assert isinstance(v, DataSource)
+
+    for k in catalog1:
+        v = catalog1[k]
+        assert not isinstance(v, CatalogEntry)
+        assert isinstance(v, DataSource)
+
+    for k in catalog1:
+        # we can't do attribute access on "text" because it
+        # collides with a property
+        if k == 'text':
+            continue
+        v = getattr(catalog1, k)
+        assert not isinstance(v, CatalogEntry)
+        assert isinstance(v, DataSource)
