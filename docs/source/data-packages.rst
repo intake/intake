@@ -23,7 +23,7 @@ will automatically know of the registered items, and they will appear within the
 "builtin" catalog ``intake.cat``.
 
 Here we assume that you understand what is meant by a python package (i.e., a
-folder containing ``__init__.py`` and other code, config and daa files).
+folder containing ``__init__.py`` and other code, config and data files).
 Furthermore, you should familiarise yourself with what is required for
 bundling such a package into a *distributable* package (one with a ``setup.py``)
 by reading the `official packaging documentation`_
