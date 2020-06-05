@@ -66,14 +66,16 @@ Intake is built out of four core concepts:
 * Data Source classes: the "driver" plugins that each implement loading of some specific type of data into python, with
   plugin-specific arguments.
 
-* Data Source: An object that represents a reference to a data source.  Data source objects have methods for loading the
+* Data Source: An object that represents a reference to a data source.  Data source instances have methods for loading the
   data into standard containers, like Pandas DataFrames, but do not load any data until specifically requested.
 
 * Catalog: A collection of catalog entries, each of which defines a Data Source. Catalog objects can be created from
   local YAML definitions, by connecting
   to remote servers, or by some driver that knows how to query an external data service.
 
-* Catalog Entry: A named data source. The catalog entry includes metadata about the source, as well as the name of the
+* Catalog Entry: A named data source held internally by catalog objects, which generate
+  data source instances when accessed.
+  The catalog entry includes metadata about the source, as well as the name of the
   driver and arguments. Arguments can be parameterized, allowing one entry to return
   different subsets of data depending on the user request.
 

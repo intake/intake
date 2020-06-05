@@ -73,8 +73,8 @@ POST /source, action="search"
 Searching a Catalog returns search results in the form of a new Catalog. This
 "results" Catalog is cached on the server the same as any other Catalog.
 
-Paramters
-~~~~~~~~~
+Parameters
+~~~~~~~~~~
 
 - ``source_id``, uuid string (optional): When the catalog being searched is not
   the root catalog, but a subcatalog on the server, this is its unique

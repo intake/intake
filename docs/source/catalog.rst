@@ -9,8 +9,9 @@ datasets, called *catalog entries*.  A catalog entry for a dataset includes info
 * Metadata provided by the catalog author (such as field descriptions and types, or data provenance)
 
 In addition, Intake allows the arguments to data sources to be templated, with the variables explicitly
-expressed as "user parameters". The given arguments are rendered using ``jinja2`` and the named user
-parameters. Those parameters are also offer validation of the allowed types and values, for both the template
+expressed as "user parameters". The given arguments are rendered using ``jinja2``, the
+values of named user parameterss, and any overrides.
+The parameters are also offer validation of the allowed types and values, for both the template
 values and the final arguments passed to the data source. The parameters are named and described, to
 indicate to the user what they are for. This kind of structure can be used to, for example,
 choose between two parts of a given data source, like "latest" and "stable", see the `entry1_part` entry in
@@ -185,7 +186,7 @@ the disk. By default, the cache path is made by concatenating ``cache_dir``, dat
 the url, and the url itself (without the protocol). ``regex`` attribute allows to remove part of the
 url (the matching part).
 
-Caching can be disabled at runtime for all sources regardless of the catalog specificiation::
+Caching can be disabled at runtime for all sources regardless of the catalog specification::
 
     from intake.config import conf
 
@@ -276,7 +277,7 @@ Parameter Definition
 --------------------
 
 A source definition can contain a "parameters" block.
-Exprssed in YAML, a parameter may look as follows:
+Expressed in YAML, a parameter may look as follows:
 
 .. code-block:: yaml
 
@@ -338,7 +339,7 @@ Specifying a single driver explicitly, rather than using a generic name, would l
 
 It is also possible to describe a list of drivers with the same syntax. The first one
 found will be the one used. Note that the class imports will only happen at data source
-instantiation.
+instantiation, i.e., when the entry is selected from the catalog.
 
 .. code-block:: yaml
 
@@ -377,10 +378,12 @@ Remote Access
 
 Many drivers support reading directly from remote data sources such as HTTP, S3 or GCS. In these cases,
 the path to read from is usually given with a protocol prefix such as ``gcs://``. Additional dependencies
-will typically be required (``requests``, ``s3fs``, ``gcsfs``, etc.), any data conda package
-should specify this.  Further parameters
+will typically be required (``requests``, ``s3fs``, ``gcsfs``, etc.), any data package
+should specify these.  Further parameters
 may be necessary for communicating with the storage backend and, by convention, the driver should take
-a parameter ``storage_options`` containing arguments to pass to the backend.
+a parameter ``storage_options`` containing arguments to pass to the backend. Some
+remote backends may also make use of environment variables or config files to
+determine thier default behaviour.
 
 The special template variable "CATALOG_DIR" may be used to construct relative URLs in the arguments to
 a source. In such cases, if the filesystem used to load that catalog contained arguments, then
@@ -430,7 +433,7 @@ file-based caching for the first source above, you can do:
            s3:
              anon: true
 
-Here we have added the "simplecache" to the URL (which does not store any
+Here we have added the "simplecache" to the URL (this caching backend does not store any
 metadata about the cached file) and specified that the "anon" parameter is
 meant as an argument to s3, not to the caching mechanism. As each file in
 s3 is accessed, it will first be downloaded and then the local version
@@ -451,27 +454,42 @@ various options.
 Local Catalogs
 --------------
 
-A Catalog can be loaded from a YAML file on the local filesystem by creating a Catalog object::
+A Catalog can be loaded from a YAML file on the local filesystem by creating a Catalog object:
+
+.. code-block:: python
 
     from intake import open_catalog
-
     cat = open_catalog('catalog.yaml')
 
-Then sources can be listed::
+Then sources can be listed:
+
+.. code-block:: python
 
     list(cat)
 
 and data sources are loaded via their name:
 
-    data = cat.entry_part1(part='1')
+.. code-block:: python
 
-Intake also supports loading all of the files ending in ``.yml`` and ``.yaml`` in a directory, or by using an
+    data = cat.entry_part1
+
+and you can optionally configure new instances of the source to define user parameters
+or override arguments by calling either of:
+
+.. code-block:: python
+
+    data = cat.entry_part1.configure_new(part='1')
+    data = cat.entry_part1(part='1')  # this is a convenience shorthand
+
+Intake also supports loading a catalog from all of the files ending in ``.yml`` and ``.yaml`` in a directory, or by using an
 explicit glob-string. Note that the URL provided may refer to a remote storage systems by passing a protocol
-specifier such as ``s3://``, ``gcs://``.::
+specifier such as ``s3://``, ``gcs://``.:
+
+.. code-block:: python
 
     cat = open_catalog('/research/my_project/catalog.d/')
 
-Intake Catalog objects will automatically detect changes or new additions to catalog files and directories on disk.
+Intake Catalog objects will automatically reload changes or new additions to catalog files and directories on disk.
 These changes will not affect already-opened data sources.
 
 .. _remote-catalogs:
@@ -480,12 +498,16 @@ Catalog Nesting
 ---------------
 
 A catalog is just another type of data source for Intake. For example, you can print a YAML
-specification corresponding to a catalog as follows::
+specification corresponding to a catalog as follows:
+
+.. code-block:: python
 
     cat = intake.open_catalog('cat.yaml')
     print(cat.yaml())
 
-results in::
+results in:
+
+.. code-block:: yaml
 
     sources:
       cat:
@@ -496,17 +518,20 @@ results in::
         metadata: {}
 
 The `point` here, is that this can be included in another catalog.
-For example, if the entry above were saved to another file, "root.yaml", and the
-original catalog contained an entry data, you could access it as::
+(It would, of course, be better to include a description and the full path of the catalog
+file here.)
+If the entry above were saved to another file, "root.yaml", and the
+original catalog contained an entry, ``data``, you could access it as:
+
+.. code-block:: python
 
     root = intake.open_catalog('root.yaml')
     root.cat.data
 
-It would, of course, be better to include a description and the full path of the catalog
-file here.
 
-It is, therefore, possible to build up a hierarchy of catalogs referencing each other. Since
-these can include remote URLs and indeed catalog sources other than simple files (all the
+
+It is, therefore, possible to build up a hierarchy of catalogs referencing each other.
+These can, of course, include remote URLs and indeed catalog sources other than simple files (all the
 tables on a SQL server, for instance). Plus, since the argument and parameter system also
 applies to entries such as the example above, it would be possible to give the user a runtime
 choice of multiple catalogs to pick between, or have this decision depend on an environment
@@ -518,7 +543,9 @@ Server Catalogs
 
 Intake also includes a server which can share an Intake catalog over HTTP
 (or HTTPS with the help of a TLS-enabled reverse proxy).  From the user perspective, remote catalogs function
-identically to local catalogs::
+identically to local catalogs:
+
+.. code-block:: python
 
     cat = open_catalog('intake://catalog1:5000')
     list(cat)
