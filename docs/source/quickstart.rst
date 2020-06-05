@@ -18,7 +18,7 @@ If you are using virtualenv/pip, run the following command::
 
     pip install intake
 
-Note that this will install with the mininum of optional requirements. If you want a more complete
+Note that this will install with the minimum of optional requirements. If you want a more complete
 install, use `intake[complete]` instead.
 
 .. _Anaconda: https://www.anaconda.com/download/
@@ -151,7 +151,8 @@ This catalog contains one data source, called ``states``.  It can be accessed by
 Placing data source specifications into a catalog like this enables declaring data sets in a single canonical place,
 and not having to use boilerplate code in each notebook/script that makes use of the data. The catalogs can also
 reference one-another, be stored remotely, and include extra metadata such as a set of named quick-look plots that
-are appropriate for the particular data source.
+are appropriate for the particular data source. Note that catalogs are **not** restricted
+to being stored in YAML files, that just happens to be the simplest way to display them.
 
 Many catalog entries will also contain "user_parameter" blocks, which are indications of options explicitly
 allowed by the catalog author, or for validation or the values passed. The user can customise how a data
@@ -173,10 +174,11 @@ Note that, if you are *creating* such catalogs, you may well start by trying the
 above, and then use ``print(ds.yaml())``. If you do this now, you will see that the output is very
 similar to the catalog file we have provided.
 
-Installing Data Source Packages with Conda
-------------------------------------------
+Installing Data Source Packages
+-------------------------------
 
-Intake makes it possible to create :term:`conda packages<Conda package>` that install data sources into a
+Intake makes it possible to create :term:`Data packages` (``pip`` or ``conda``)
+that install data sources into a
 global catalog.  For example, we can
 install a data package containing the same data we have been working with::
 
