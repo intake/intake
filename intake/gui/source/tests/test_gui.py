@@ -4,10 +4,13 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
+from distutils.version import LooseVersion
 import pytest
 pn = pytest.importorskip('panel')
+too_old = LooseVersion(pn.__version__) < LooseVersion("0.9.5")
 
 
+@pytest.mark.skipif(too_old, reason="Use with latest panel")
 @pytest.fixture
 def gui(sources1):
     from ..gui import SourceGUI

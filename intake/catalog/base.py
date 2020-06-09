@@ -202,12 +202,20 @@ class Catalog(DataSource):
         return cat
 
     def filter(self, func):
-        """Create a Catalog of a subset of entries based on a condition
+        """
+        Create a Catalog of a subset of entries based on a condition
 
-        Note that, whatever specific class this is performed on, the return
-        instance is a Catalog. The entries are passed unmodified, so they
-        will still reference the original catalog instance and include its
-        details such as directory,.
+        .. warning ::
+
+           This function operates on CatalogEntry objects not DataSource
+           objects.
+
+        .. note ::
+
+            Note that, whatever specific class this is performed on,
+            the return instance is a Catalog. The entries are passed
+            unmodified, so they will still reference the original catalog
+            instance and include its details such as directory,.
 
         Parameters
         ----------
@@ -218,9 +226,10 @@ class Catalog(DataSource):
 
         Returns
         -------
-        New Catalog
+        Catalog
+           New catalog with Entries that still refer to their parents
         """
-        return Catalog.from_dict({key: entry for key, entry in self.items()
+        return Catalog.from_dict({key: entry for key, entry in self._entries.items()
                                   if func(entry)})
 
     @reload_on_change
@@ -257,8 +266,14 @@ class Catalog(DataSource):
         return out
 
     def items(self):
-        """Get an iterator over (key, value) tuples for the catalog entries."""
-        return self._get_entries().items()
+        """Get an iterator over (key, source) tuples for the catalog entries."""
+        for name, entry in self._get_entries().items():
+            yield name, entry()
+
+    def values(self):
+        """Get an iterator over the sources for catalog entries."""
+        for entry in self._get_entries().values():
+            yield entry()
 
     def serialize(self):
         """
@@ -270,7 +285,7 @@ class Catalog(DataSource):
         import yaml
         output = {"metadata": self.metadata, "sources": {},
                   "name": self.name}
-        for key, entry in self.items():
+        for key, entry in self._entries.items():
             kw = entry._captured_init_kwargs.copy()
             kw.pop('catalog', None)
             kw['parameters'] = {k.name: k.__getstate__()['kwargs'] for k in kw.get('parameters', [])}
@@ -304,8 +319,12 @@ class Catalog(DataSource):
         return self._entries
 
     def __iter__(self):
-        """Return an iterator over catalog entries."""
+        """Return an iterator over catalog entry names."""
         return iter(self._get_entries())
+
+    def keys(self):
+        """Entry names in this catalog as an iterator (alias for __iter__)"""
+        return iter(self)
 
     def __len__(self):
         return len(self._get_entries())
@@ -431,7 +450,7 @@ class Entries(collections.abc.Mapping):
     """Fetches entries from server on item lookup and iteration.
 
     This fetches pages of entries from the server during iteration and
-    caches them. On __getitem__ it fetches the sepcific entry from the
+    caches them. On __getitem__ it fetches the specific entry from the
     server.
     """
     # This has PY3-style lazy methods (keys, values, items). Since it's
@@ -772,7 +791,9 @@ class RemoteCatalog(Catalog):
         if not isinstance(cat, Catalog):
             raise NotImplementedError
         out = {}
-        for name, entry in cat.items():
+        # reach down into the private state because we apparently need the
+        # Entry here rather than the public facing DataSource objects.
+        for name, entry in cat._entries.items():
             out[name] = entry.__getstate__()
             out[name]['parameters'] = [up._captured_init_kwargs for up
                                        in entry._user_parameters]

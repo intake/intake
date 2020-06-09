@@ -17,6 +17,7 @@ ICONS = {
     'error': os.path.join(here, 'icons', 'baseline-error-24px.svg'),
 }
 
+
 def enable_widget(widget, enable=True):
     """Set disabled on widget"""
     widget.disabled = not enable
