@@ -8,7 +8,7 @@ from distutils.version import LooseVersion
 
 
 def do_import():
-    error = False
+    error = too_old = False
     try:
         import panel as pn
         too_old = LooseVersion(pn.__version__) < LooseVersion("0.9.5")
