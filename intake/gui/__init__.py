@@ -4,11 +4,26 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
+from distutils.version import LooseVersion
 
 
 def do_import():
+    error = False
     try:
         import panel as pn
+        too_old = LooseVersion(pn.__version__) < LooseVersion("0.9.5")
+    except ImportError as e:
+        error = e
+
+    if too_old or error:
+        class GUI(object):
+            def __repr__(self):
+                raise RuntimeError("Please install panel to use the GUI `conda "
+                                   "install -c conda-forge panel>=0.8.0`. Import "
+                                   "failed with error: %s" % error)
+        return GUI
+
+    try:
         from .gui import GUI
         css = """
         .scrolling {
@@ -18,15 +33,6 @@ def do_import():
         pn.config.raw_css.append(css)  # add scrolling class from css (panel GH#383, GH#384)
         pn.extension()
 
-    except ImportError as e:
-        error = e
-        
-        class GUI(object):
-            def __repr__(self):
-                raise RuntimeError("Please install panel to use the GUI `conda "
-                                   "install -c conda-forge panel>=0.8.0`. Import "
-                                   "failed with error: %s" % error)
-
     except Exception as e:
 
         class GUI(object):
@@ -34,7 +40,7 @@ def do_import():
                 raise RuntimeError("Initialisation of GUI failed, even though "
                                    "panel is installed. Please update it "
                                    "to a more recent version (`conda install -c"
-                                   " conda-forge panel>=0.7.0`).")
+                                   " conda-forge panel>=0.9.5`).")
     return GUI
 
 

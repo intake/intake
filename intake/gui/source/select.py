@@ -89,7 +89,7 @@ class SourceSelector(BaseSelector):
         """Set sources from a list of cats"""
         sources = []
         for cat in coerce_to_list(cats):
-            sources.extend([entry for k, entry in cat.items()
+            sources.extend([entry for k, entry in cat._entries.items()
                             if entry.describe()['container'] != 'catalog'])
         self.items = sources
 

@@ -266,9 +266,14 @@ class Catalog(DataSource):
         return out
 
     def items(self):
-        """Get an iterator over (key, value) tuples for the catalog entries."""
+        """Get an iterator over (key, source) tuples for the catalog entries."""
         for name, entry in self._get_entries().items():
             yield name, entry()
+
+    def values(self):
+        """Get an iterator over the sources for catalog entries."""
+        for entry in self._get_entries().values():
+            yield entry()
 
     def serialize(self):
         """
@@ -314,8 +319,12 @@ class Catalog(DataSource):
         return self._entries
 
     def __iter__(self):
-        """Return an iterator over catalog entries."""
+        """Return an iterator over catalog entry names."""
         return iter(self._get_entries())
+
+    def keys(self):
+        """Entry names in this catalog as an iterator (alias for __iter__)"""
+        return iter(self)
 
     def __len__(self):
         return len(self._get_entries())
@@ -441,7 +450,7 @@ class Entries(collections.abc.Mapping):
     """Fetches entries from server on item lookup and iteration.
 
     This fetches pages of entries from the server during iteration and
-    caches them. On __getitem__ it fetches the sepcific entry from the
+    caches them. On __getitem__ it fetches the specific entry from the
     server.
     """
     # This has PY3-style lazy methods (keys, values, items). Since it's

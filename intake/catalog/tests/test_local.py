@@ -724,7 +724,7 @@ def test_cat_add(tmpdir):
     assert list(cat) == ['cat']
 
 
-def test_no_enttries_items(catalog1):
+def test_no_entries_items(catalog1):
     from intake.catalog.entry import CatalogEntry
     from intake.source.base import DataSource
 
@@ -745,3 +745,9 @@ def test_no_enttries_items(catalog1):
         v = getattr(catalog1, k)
         assert not isinstance(v, CatalogEntry)
         assert isinstance(v, DataSource)
+
+
+def test_cat_dictlike(catalog1):
+    assert list(catalog1) == list(catalog1.keys())
+    assert len(list(catalog1)) == len(catalog1)
+    assert list(catalog1.items()) == list(zip(catalog1.keys(), catalog1.values()))
