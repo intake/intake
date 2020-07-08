@@ -166,6 +166,7 @@ class LocalCatalogEntry(CatalogEntry):
             Catalog object in which this entry belongs
         """
         self._name = name
+        self._default_source = None
         self._description = description
         self._driver = driver
         self._direct_access = direct_access
@@ -277,12 +278,20 @@ class LocalCatalogEntry(CatalogEntry):
 
     def get(self, **user_parameters):
         """Instantiate the DataSource for the given parameters"""
+        if not self.getenv and not user_parameters and self._default_source is not None:
+            return self._default_source
+
         plugin, open_args = self._create_open_args(user_parameters)
         data_source = plugin(**open_args)
         data_source.catalog_object = self._catalog
         data_source.name = self.name
         data_source.description = self._description
         data_source.cat = self._catalog
+
+        # Cache the default source if there are no user parameters and if there is no
+        # possibiltiy for templating environment variables which might change.
+        if not self.getenv and not user_parameters:
+            self._default_source = data_source
 
         return data_source
 
