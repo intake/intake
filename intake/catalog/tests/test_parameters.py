@@ -7,6 +7,7 @@ from intake.source.base import DataSource
 class NoSource(DataSource):
 
     def __init__(self, **kwargs):
+        self.metadata = kwargs.pop('metadata', {})
         self.kwargs = kwargs
 
 
@@ -23,6 +24,28 @@ def test_is_cached():
     e = LocalCatalogEntry('', '', driver, args={'arg1': 1})
     s1 = e._get_default_source()
     s2 = e._get_default_source()
+    assert s1 is s2
+
+
+def test_cache_default_source():
+    # If there might be environment templating, don't allow default caching
+    e = LocalCatalogEntry('', '', driver, getenv=True)
+    s1 = e()
+    s2 = e()
+    assert s1 is not s2
+    # If the user provides parameters, don't allow default caching
+    up = UserParameter('name', default='oi')
+    e = LocalCatalogEntry('', '', driver, getenv=False, parameters=[up])
+    s1 = e(name="oioi")
+    s2 = e()
+    assert s1 is not s2
+    s1 = e()
+    s2 = e(name="oioi")
+    assert s1 is not s2
+    # Otherwise, we can cache the default source
+    e = LocalCatalogEntry('', '', driver, getenv=False)
+    s1 = e()
+    s2 = e()
     assert s1 is s2
 
 
