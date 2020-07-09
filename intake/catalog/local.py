@@ -278,7 +278,7 @@ class LocalCatalogEntry(CatalogEntry):
 
     def get(self, **user_parameters):
         """Instantiate the DataSource for the given parameters"""
-        if not self.getenv and not user_parameters and self._default_source is not None:
+        if not user_parameters and self._default_source is not None:
             return self._default_source
 
         plugin, open_args = self._create_open_args(user_parameters)
@@ -288,12 +288,18 @@ class LocalCatalogEntry(CatalogEntry):
         data_source.description = self._description
         data_source.cat = self._catalog
 
-        # Cache the default source if there are no user parameters and if there is no
-        # possibiltiy for templating environment variables which might change.
-        if not self.getenv and not user_parameters:
+        # Cache the default source if there are no user parameters.
+        if not user_parameters:
             self._default_source = data_source
 
         return data_source
+
+    def clear_cached_default_source(self):
+        """
+        Clear a cached default source so it can be created anew (if, for instance,
+        it depends on changing environment variables or execution context)
+        """
+        self._default_source = None
 
 
 class CatalogParser(object):
