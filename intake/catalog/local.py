@@ -737,6 +737,7 @@ class YAMLFilesCatalog(Catalog):
                 '.yaml', '').replace('.yml', '')
             kwargs = self.kwargs.copy()
             kwargs['path'] = f.path
+            kwargs['fs'] = f.fs
             d = make_path_posix(os.path.dirname(f.path))
             if f.path not in self._cats:
                 entry = LocalCatalogEntry(name, "YAML file: %s" % name,
