@@ -89,12 +89,6 @@ class CatalogEntry(DictSerialiseMixin):
         s._entry = self
         return s
 
-    def _get_default_source(self):
-        """Instantiate DataSource with default agruments"""
-        if self._default_source is None:
-            self._default_source = self()
-        return self._default_source
-
     @property
     def container(self):
         return getattr(self, '_container', None)
@@ -129,7 +123,7 @@ class CatalogEntry(DictSerialiseMixin):
     def __iter__(self):
         # If the entry is a catalog, this allows list(cat.entry)
         if self._container == 'catalog':
-            return iter(self._get_default_source())
+            return iter(self())
         else:
             raise ValueError('Cannot iterate a catalog entry')
 
@@ -141,10 +135,10 @@ class CatalogEntry(DictSerialiseMixin):
         """
         if isinstance(item, tuple):
             if len(item) > 1:
-                return self._get_default_source()[item[0]].__getitem__(item[1:])
+                return self()[item[0]].__getitem__(item[1:])
             else:
                 item = item[0]
-        return self._get_default_source()[item]
+        return self()[item]
 
     def __repr__(self):
         return pretty_describe(self.describe())

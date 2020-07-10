@@ -7,6 +7,7 @@ from intake.source.base import DataSource
 class NoSource(DataSource):
 
     def __init__(self, **kwargs):
+        self.metadata = kwargs.pop('metadata', {})
         self.kwargs = kwargs
 
 
@@ -19,10 +20,20 @@ def test_simplest():
     assert s.kwargs['arg1'] == 1
 
 
-def test_is_cached():
-    e = LocalCatalogEntry('', '', driver, args={'arg1': 1})
-    s1 = e._get_default_source()
-    s2 = e._get_default_source()
+def test_cache_default_source():
+    # If the user provides parameters, don't allow default caching
+    up = UserParameter('name', default='oi')
+    e = LocalCatalogEntry('', '', driver, getenv=False, parameters=[up])
+    s1 = e(name="oioi")
+    s2 = e()
+    assert s1 is not s2
+    s1 = e()
+    s2 = e(name="oioi")
+    assert s1 is not s2
+    # Otherwise, we can cache the default source
+    e = LocalCatalogEntry('', '', driver, getenv=False)
+    s1 = e()
+    s2 = e()
     assert s1 is s2
 
 
@@ -43,6 +54,9 @@ def test_maybe_default_from_env():
     assert s.kwargs['arg1'] == 'env(INTAKE_TEST_VAR)'
 
     os.environ['INTAKE_TEST_VAR'] = 'oi'
+    # Clear the cached source so we can (not) pick up the changed environment variable.
+    e.clear_cached_default_source()
+
     s = e()
     assert s.kwargs['arg1'] == 'env(INTAKE_TEST_VAR)'
 
@@ -53,6 +67,8 @@ def test_maybe_default_from_env():
     assert s.kwargs['arg1'] == 'oi'
 
     del os.environ['INTAKE_TEST_VAR']
+    # Clear the cached source so we can pick up the changed environment variable.
+    e.clear_cached_default_source()
 
     s = e()
     assert s.kwargs['arg1'] == ''
@@ -99,6 +115,8 @@ def test_auto_env_expansion():
     assert s.kwargs['arg1'] == 'oi'
 
     del os.environ['INTAKE_TEST_VAR']
+    # Clear the cached source so we can pick up the changed environment variable.
+    e.clear_cached_default_source()
 
     s = e()
     assert s.kwargs['arg1'] == ''
