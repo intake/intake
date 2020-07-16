@@ -679,7 +679,7 @@ class RemoteCatalog(Catalog):
         """
         Return a copy of the http_args
 
-        Adds auth headers and 'source_id', merges in params.
+        Adds auth headers and 'source-id', merges in params.
         """
         # Add the auth headers to any other headers
         headers = self.http_args.get('headers', {})
@@ -690,7 +690,7 @@ class RemoteCatalog(Catalog):
         # build new http args with these headers
         http_args = self.http_args.copy()
         if self._source_id is not None:
-            headers['source_id'] = self._source_id
+            headers['source-id'] = self._source_id
         http_args['headers'] = headers
 
         # Merge in any params specified by the caller.
