@@ -91,8 +91,8 @@ class ServerInfoHandler(tornado.web.RequestHandler):
         page_size = self.get_argument('page_size', None)
         page_offset = self.get_argument('page_offset', 0)
         if self.auth.allow_connect(head):
-            if 'source_id' in head:
-                cat = self.cache.get(head['source_id'])
+            if 'source-id' in head:
+                cat = self.cache.get(head['source-id'])
             else:
                 cat = self.catalog
             sources = []
@@ -199,8 +199,8 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         head = self.request.headers
         name = self.get_argument('name')
         if self.auth.allow_connect(head):
-            if 'source_id' in head:
-                cat = self._cache.get(head['source_id'])
+            if 'source-id' in head:
+                cat = self._cache.get(head['source-id'])
             else:
                 cat = self._catalog
             try:
@@ -239,16 +239,16 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         action = request['action']
         head = self.request.headers
         logger.debug('Source POST: %s' % request)
-
+        
         if action == 'search':
-            if 'source_id' in head:
-                cat = self._cache.get(head['source_id'])
+            if 'source-id' in head:
+                cat = self._cache.get(head['source-id'])
             else:
                 cat = self._catalog
             query = request['query']
             # Construct a cache key from the source_id of the Catalog being
             # searched and the query itself.
-            query_source_id = '-'.join((head.get('source_id', 'root'),
+            query_source_id = '-'.join((head.get('source-id', 'root'),
                                         str(query)))
             try:
                 cat = self._cache.get(query_source_id)
@@ -268,8 +268,8 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             self.write(msgpack.packb(response, **pack_kwargs))
             self.finish()
         elif action == 'open':
-            if 'source_id' in head:
-                cat = self._cache.get(head['source_id'])
+            if 'source-id' in head:
+                cat = self._cache.get(head['source-id'])
             else:
                 cat = self._catalog
             entry_name = request['name']
