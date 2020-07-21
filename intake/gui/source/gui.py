@@ -6,7 +6,6 @@
 #-----------------------------------------------------------------------------
 from functools import partial
 import panel as pn
-from intake.utils import remake_instance
 
 from ..base import Base, enable_widget, MAX_WIDTH
 from .select import SourceSelector

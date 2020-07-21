@@ -802,14 +802,15 @@ class EntrypointEntry(CatalogEntry):
     A catalog entry for an entrypoint.
 
     """
-    _container = 'catalog'
 
     def __init__(self, entrypoint):
         self._entrypoint = entrypoint
+        self._container = None
+        self._user_parameters = []
         super().__init__()
 
     def __repr__(self):
-        return f"<Entry containing Catalog named {self.name}>"
+        return f"<Entry '{self.name}'>"
 
     @property
     def name(self):
@@ -817,12 +818,14 @@ class EntrypointEntry(CatalogEntry):
 
     def describe(self):
         """Basic information about this entry"""
+        if self._container is None:
+            self._container = self().container
         return {'name': self.name,
                 'module_name': self._entrypoint.module_name,
                 'object_name': self._entrypoint.object_name,
                 'distro': self._entrypoint.distro,
                 'extras': self._entrypoint.extras,
-                'container': ""
+                'container': self._container
                 }
 
     def get(self):
