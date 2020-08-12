@@ -381,11 +381,11 @@ sources:
 
 def test_catalog_file_removal(temp_catalog_file):
     cat_dir = os.path.dirname(temp_catalog_file)
-    cat = open_catalog(cat_dir + '/*')
+    cat = open_catalog(cat_dir + '/*', ttl=0.1)
     assert set(cat) == {'a', 'b'}
 
     os.remove(temp_catalog_file)
-    time.sleep(1.5)  # wait for catalog refresh
+    time.sleep(0.5)  # wait for catalog refresh
     assert set(cat) == set()
 
 
@@ -437,6 +437,7 @@ def test_cat_with_declared_name():
     cat = open_catalog(fn, name='name_in_func', description=description)
     assert cat.name == 'name_in_func'
     assert cat.description == description
+    cat._load()  # we don't get metadata until load/list/getitem
     assert cat.metadata.get('some') == 'thing'
 
     cat = open_catalog(fn)

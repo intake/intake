@@ -104,7 +104,7 @@ def intake_server(request):
         env['INTAKE_CONF_FILE'] = server_conf
     port = pick_port()
     cmd = [ex, '-m', 'intake.cli.server', '--sys-exit-on-sigterm',
-           '--port', str(port)]
+           '--port', str(port), '--ttl', '1']
     if isinstance(catalog_path, list):
         cmd.extend(catalog_path)
     else:

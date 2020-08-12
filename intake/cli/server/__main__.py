@@ -39,7 +39,8 @@ def main(argv=None):
                         help='Name of catalog YAML file')
     parser.add_argument('--flatten', dest='flatten', action='store_true')
     parser.add_argument('--no-flatten', dest='flatten', action='store_false')
-    parser.add_argument('-a', '--address', type=str, 
+    parser.add_argument('--ttl', dest='ttl',type=int, default=60)
+    parser.add_argument('-a', '--address', type=str,
                         default=conf.get('address', 'localhost'),
                         help='address to use as a host, defaults to the address '
                         'in the configuration file, if provided otherwise localhost')
@@ -54,11 +55,13 @@ def main(argv=None):
         logger.info('  - %s' % arg)
 
     catargs = args.catalog_args
+    ttl = args.ttl
+
     if len(catargs) == 1:
-        catalog = open_catalog(catargs[0])
+        catalog = open_catalog(catargs[0], ttl=ttl)
         logger.info("catalog_args: %s" % catargs[0])
     else:
-        catalog = open_catalog(catargs, flatten=args.flatten)
+        catalog = open_catalog(catargs, flatten=args.flatten, ttl=ttl)
         logger.info("catalog_args: %s" % catargs)
     if args.list_entries:
         # This is not a good idea if the Catalog is huge.

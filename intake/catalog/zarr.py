@@ -12,7 +12,7 @@ class ZarrGroupCatalog(Catalog):
     name = 'zarr_cat'
 
     def __init__(self, urlpath, storage_options=None, component=None, metadata=None,
-                 consolidated=False):
+                 consolidated=False, name=None):
         """
 
         Parameters
@@ -35,6 +35,7 @@ class ZarrGroupCatalog(Catalog):
         self._component = component
         self._consolidated = consolidated
         self._grp = None
+        self.name = name
         super().__init__(metadata=metadata)
 
     def _load(self):

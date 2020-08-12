@@ -167,8 +167,8 @@ class Catalog(DataSource):
 
     def force_reload(self):
         """Imperative reload data now"""
-        self._load()
         self.updated = time.time()
+        self._load()
 
     def reload(self):
         """Reload catalog if sufficient time has passed"""
@@ -403,7 +403,9 @@ class Catalog(DataSource):
             e = self._entries[key]
             e._catalog = self
             e._pmode = self.pmode
-            return e(name=key)
+            if e._container == 'catalog':
+                return e(name=key)
+            return e()
         if isinstance(key, str) and '.' in key:
             key = key.split('.')
         if isinstance(key, list):
