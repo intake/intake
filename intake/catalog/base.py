@@ -50,7 +50,7 @@ class Catalog(DataSource):
     name = 'catalog'
 
     def __init__(self, *args, name=None, description=None, metadata=None,
-                 auth=None, ttl=1, getenv=True, getshell=True,
+                 auth=None, ttl=60, getenv=True, getshell=True,
                  persist_mode='default', storage_options=None):
         """
         Parameters
@@ -403,7 +403,7 @@ class Catalog(DataSource):
             e = self._entries[key]
             e._catalog = self
             e._pmode = self.pmode
-            return e()
+            return e(name=key)
         if isinstance(key, str) and '.' in key:
             key = key.split('.')
         if isinstance(key, list):

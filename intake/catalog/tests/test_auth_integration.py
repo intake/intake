@@ -82,4 +82,4 @@ def test_secret_auth(intake_server_with_auth):
 def test_secret_auth_fail(intake_server_with_auth):
     auth = SecretClientAuth(secret='test_wrong_secret')
     with pytest.raises(AuthenticationFailure):
-        open_catalog(intake_server_with_auth, auth=auth)
+        list(open_catalog(intake_server_with_auth, auth=auth))

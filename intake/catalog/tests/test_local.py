@@ -40,7 +40,8 @@ def test_local_catalog(catalog1):
         'description': 'entry1 full',
         'args': {'urlpath': '{{ CATALOG_DIR }}/entry1_*.csv'},
         'metadata': {'bar': [1, 2, 3], 'foo': 'bar'},
-        'plugin': ['csv']
+        'plugin': ['csv'],
+        'driver': ['csv']
     }
     assert catalog1['entry1_part'].describe() == {
         'name': 'entry1_part',
@@ -58,7 +59,8 @@ def test_local_catalog(catalog1):
         'direct_access': 'allow',
         'args': {'urlpath': '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'},
         'metadata': {'foo': 'baz', 'bar': [2, 4, 6]},
-        'plugin': ['csv']
+        'plugin': ['csv'],
+        'driver': ['csv']
     }
     assert catalog1['entry1'].container == 'dataframe'
     md = catalog1['entry1'].metadata
@@ -266,7 +268,7 @@ def test_user_parameter_validation_allowed():
 ])
 def test_parser_validation_error(filename):
     with pytest.raises(exceptions.ValidationError):
-        open_catalog(abspath(filename + ".yml"))
+        list(open_catalog(abspath(filename + ".yml")))
 
 
 @pytest.mark.parametrize("filename", [

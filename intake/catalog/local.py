@@ -80,7 +80,7 @@ class UserParameter(DictSerialiseMixin):
                             for item in self.allowed]
 
     def __repr__(self):
-        return (f'<{self.__class__.__name__} {self.name!r}>')
+        return f'<{self.__class__.__name__} {self.name!r}>'
 
     __str__ = __repr__
 
@@ -226,7 +226,8 @@ class LocalCatalogEntry(CatalogEntry):
         return {
             'name': self._name,
             'container': self._container,
-            'plugin': pl,
+            'plugin': pl,   # deprecated
+            'driver': pl,
             'description': self._description,
             'direct_access': self._direct_access,
             'user_parameters': [u.describe() for u in self._user_parameters],
@@ -564,6 +565,7 @@ class YAMLFileCatalog(Catalog):
         self.text = None
         self.autoreload = autoreload  # set this to False if don't want reloads
         self.filesystem = kwargs.pop('fs', None)
+        self.access = "name" not in kwargs
         super(YAMLFileCatalog, self).__init__(**kwargs)
 
     def _load(self, reload=False):
@@ -572,6 +574,11 @@ class YAMLFileCatalog(Catalog):
         Will do nothing if auto-reload is off and reload is not explicitly
         requested
         """
+        if self.access is False:
+            # skip first load, if cat has given name (i.e., is subcat)
+            self.updated = 0
+            self.access = True
+            return
         if self.autoreload or reload:
             # First, we load from YAML, failing if syntax errors are found
             options = self.storage_options or {}
@@ -722,11 +729,17 @@ class YAMLFilesCatalog(Catalog):
         self._kwargs = kwargs.copy()
         self._cat_files = []
         self._cats = {}
+        self.access = "name" not in kwargs
         super(YAMLFilesCatalog, self).__init__(**kwargs)
 
     def _load(self):
         # initial: find cat files
         # if flattening, need to get all entries from each.
+        if self.access is False:
+            # skip first load, if cat has given name (i.e., is subcat)
+            self.updated = 0
+            self.access = True
+            return
         self._entries.clear()
         options = self.storage_options or {}
         if isinstance(self.path, (list, tuple)):
