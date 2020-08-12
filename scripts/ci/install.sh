@@ -9,5 +9,5 @@ conda config --set auto_update_conda off
 
 echo "Installing test dependencies."
 conda install --yes appdirs dask jinja2 numpy pyyaml requests msgpack-numpy pytest-cov coveralls \
-    pytest fsspec intake-parquet zarr notebook panel hvplot bokeh dask -c conda-forge -c defaults
+    pytest fsspec intake-parquet zarr aiohttp notebook panel hvplot bokeh dask -c conda-forge -c defaults
 pip install -e . --no-deps
