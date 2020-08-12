@@ -8,3 +8,4 @@ pyyaml
 requests
 msgpack
 fsspec >=0.7.4
+aiohttp

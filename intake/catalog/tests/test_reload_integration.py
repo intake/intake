@@ -54,7 +54,7 @@ sources:
 
 
 def test_reload_updated_config(intake_server_with_config):
-    catalog = open_catalog(intake_server_with_config)
+    catalog = open_catalog(intake_server_with_config, ttl=0.1)
 
     entries = list(catalog)
     assert entries == ['use_example1']
@@ -76,13 +76,13 @@ sources:
     args: {}
         ''')
 
-    time.sleep(2)
+    time.sleep(1.2)
 
     assert_items_equal(list(catalog), ['use_example1', 'use_example1_1'])
 
 
 def test_reload_updated_directory(intake_server_with_config):
-    catalog = open_catalog(intake_server_with_config)
+    catalog = open_catalog(intake_server_with_config, ttl=0.1)
 
     orig_entries = list(catalog)
     assert 'example2' not in orig_entries
@@ -98,7 +98,7 @@ sources:
         urlpath: none
         ''')
 
-    time.sleep(2)
+    time.sleep(1.2)
 
     assert_items_equal(list(catalog), ['example2'] + orig_entries)
 
@@ -110,7 +110,7 @@ def test_reload_missing_remote_directory(intake_server):
         pass
 
     time.sleep(1)
-    catalog = open_catalog(intake_server)
+    catalog = open_catalog(intake_server, ttl=0.1)
     assert_items_equal(list(catalog), [])
 
     os.mkdir(TMP_DIR)
@@ -126,7 +126,7 @@ sources:
     driver: example1
     args: {}
         ''')
-    time.sleep(2)
+    time.sleep(1.2)
 
     assert_items_equal(list(catalog), ['use_example1'])
     try:
@@ -136,7 +136,7 @@ sources:
 
 
 def test_reload_missing_local_directory(tempdir):
-    catalog = open_catalog(tempdir + '/*')
+    catalog = open_catalog(tempdir + '/*', ttl=0.1)
     assert_items_equal(list(catalog), [])
 
     with open(os.path.join(tempdir, YAML_FILENAME), 'w') as f:
@@ -152,5 +152,5 @@ sources:
     args: {}
         ''')
 
-    time.sleep(1)
+    time.sleep(1.2)
     assert 'use_example1' in catalog

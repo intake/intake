@@ -120,6 +120,9 @@ class CatalogEntry(DictSerialiseMixin):
             'application/json': {'root': contents["name"]}
         }, raw=True)
 
+    def _yaml(self):
+        return {"sources": {self.name: self.describe()}}
+
     def __iter__(self):
         # If the entry is a catalog, this allows list(cat.entry)
         if self._container == 'catalog':

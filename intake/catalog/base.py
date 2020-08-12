@@ -50,7 +50,7 @@ class Catalog(DataSource):
     name = 'catalog'
 
     def __init__(self, *args, name=None, description=None, metadata=None,
-                 auth=None, ttl=1, getenv=True, getshell=True,
+                 auth=None, ttl=60, getenv=True, getshell=True,
                  persist_mode='default', storage_options=None):
         """
         Parameters
@@ -167,8 +167,8 @@ class Catalog(DataSource):
 
     def force_reload(self):
         """Imperative reload data now"""
-        self._load()
         self.updated = time.time()
+        self._load()
 
     def reload(self):
         """Reload catalog if sufficient time has passed"""
@@ -403,6 +403,8 @@ class Catalog(DataSource):
             e = self._entries[key]
             e._catalog = self
             e._pmode = self.pmode
+            if e._container == 'catalog':
+                return e(name=key)
             return e()
         if isinstance(key, str) and '.' in key:
             key = key.split('.')

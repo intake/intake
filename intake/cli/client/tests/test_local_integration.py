@@ -51,6 +51,7 @@ def test_describe():
 [entry1] container=dataframe
 [entry1] description=entry1 full
 [entry1] direct_access=forbid
+[entry1] driver=['csv']
 [entry1] metadata={'foo': 'bar', 'bar': [1, 2, 3]}
 [entry1] name=entry1
 [entry1] plugin=['csv']

@@ -40,7 +40,8 @@ def test_local_catalog(catalog1):
         'description': 'entry1 full',
         'args': {'urlpath': '{{ CATALOG_DIR }}/entry1_*.csv'},
         'metadata': {'bar': [1, 2, 3], 'foo': 'bar'},
-        'plugin': ['csv']
+        'plugin': ['csv'],
+        'driver': ['csv']
     }
     assert catalog1['entry1_part'].describe() == {
         'name': 'entry1_part',
@@ -58,7 +59,8 @@ def test_local_catalog(catalog1):
         'direct_access': 'allow',
         'args': {'urlpath': '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'},
         'metadata': {'foo': 'baz', 'bar': [2, 4, 6]},
-        'plugin': ['csv']
+        'plugin': ['csv'],
+        'driver': ['csv']
     }
     assert catalog1['entry1'].container == 'dataframe'
     md = catalog1['entry1'].metadata
@@ -266,7 +268,7 @@ def test_user_parameter_validation_allowed():
 ])
 def test_parser_validation_error(filename):
     with pytest.raises(exceptions.ValidationError):
-        open_catalog(abspath(filename + ".yml"))
+        list(open_catalog(abspath(filename + ".yml")))
 
 
 @pytest.mark.parametrize("filename", [
@@ -379,11 +381,11 @@ sources:
 
 def test_catalog_file_removal(temp_catalog_file):
     cat_dir = os.path.dirname(temp_catalog_file)
-    cat = open_catalog(cat_dir + '/*')
+    cat = open_catalog(cat_dir + '/*', ttl=0.1)
     assert set(cat) == {'a', 'b'}
 
     os.remove(temp_catalog_file)
-    time.sleep(1.5)  # wait for catalog refresh
+    time.sleep(0.5)  # wait for catalog refresh
     assert set(cat) == set()
 
 
@@ -435,6 +437,7 @@ def test_cat_with_declared_name():
     cat = open_catalog(fn, name='name_in_func', description=description)
     assert cat.name == 'name_in_func'
     assert cat.description == description
+    cat._load()  # we don't get metadata until load/list/getitem
     assert cat.metadata.get('some') == 'thing'
 
     cat = open_catalog(fn)
