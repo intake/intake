@@ -492,7 +492,6 @@ specifier such as ``s3://``, ``gcs://``.:
 Intake Catalog objects will automatically reload changes or new additions to catalog files and directories on disk.
 These changes will not affect already-opened data sources.
 
-.. _remote-catalogs:
 
 Catalog Nesting
 ---------------
@@ -537,6 +536,7 @@ applies to entries such as the example above, it would be possible to give the u
 choice of multiple catalogs to pick between, or have this decision depend on an environment
 variable.
 
+.. _remote-catalogs:
 
 Server Catalogs
 ---------------
