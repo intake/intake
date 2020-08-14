@@ -14,6 +14,8 @@ import msgpack
 import tornado.gen
 import tornado.ioloop
 import tornado.web
+from fsspec import get_fs_token_paths
+
 from fsspec.utils import infer_storage_options
 
 from intake.config import conf
@@ -241,7 +243,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         action = request['action']
         head = self.request.headers
         logger.debug('Source POST: %s' % request)
-        
+
         if action == 'search':
             if 'source-id' in head:
                 cat = self._cache.get(head['source-id'])
@@ -324,17 +326,24 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             elif direct_access == 'signed' and client_has_plugin:
                 response = open_desc
                 user_parameters['plugin'] = plugin_name
-                response['args'] = (entry._entry._create_open_args(user_parameters)[1])
-                signed_url = sign_url(response['args']['urlpath'])
-                if signed_url:
-                    response['args']['urlpath'] = signed_url
-                else:
+                response['args'] = entry._entry._create_open_args(user_parameters)[1]
+                response_args = response['args']
+                fs, *_ = get_fs_token_paths(response_args['urlpath'],
+                                            storage_options=response_args.get('storage_options', {}))
+                try:
+                    response_args['urlpath'] = fs.sign(response_args['urlpath'],
+                                                       expiration=response_args.get('expiration', 100))
+                except NotImplementedError:
+                    msg = 'signed urls not supported for the filesystem associated with "%s"' % entry_name
+                    raise tornado.web.HTTPError(status_code=400, log_message=msg,
+                                                reason=msg)
+                except Exception as e:
                     msg = 'server could not create signed url for "%s"' % entry_name
                     raise tornado.web.HTTPError(status_code=400, log_message=msg,
                                                 reason=msg)
                 self.write(msgpack.packb(response, **pack_kwargs))
                 self.finish()
-            elif (direct_access in ['signed', 'force']) and not client_has_plugin:
+            elif (direct_access in {'signed', 'force'}) and not client_has_plugin:
                 msg = 'client must have plugin "%s" to access source "%s"' \
                       '' % (plugin_name, entry_name)
                 raise tornado.web.HTTPError(status_code=400, log_message=msg,
