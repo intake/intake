@@ -4,7 +4,6 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-import datetime
 import time
 from uuid import uuid4
 
@@ -15,8 +14,6 @@ import tornado.gen
 import tornado.ioloop
 import tornado.web
 from fsspec import get_fs_token_paths
-
-from fsspec.utils import infer_storage_options
 
 from intake.config import conf
 from intake.container import serializer
@@ -408,32 +405,3 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 compressor = serializer.compression_registry[f]
 
         return serializer.ComboSerializer(format_encoder, compressor)
-
-
-# Note that these functions assume that all the credentials are loaded properly
-def gcs_signer(path: str, host: str):
-    from google.cloud import storage
-    client = storage.Client()
-    bucket = client.bucket(host)
-    blob = bucket.blob(path.partition(host)[-1])
-    return blob.generate_signed_url(expiration=datetime.timedelta(minutes=5), method='GET')
-
-
-def s3_signer(path, host):
-    import boto3
-    client = boto3.client('s3')
-    return client.generate_presigned_url('s3',
-                                         Params={'Bucket': host,
-                                                 'Key': path.partition(host)[-1]},
-                                         ExpiresIn=datetime.timedelta(minutes=5).seconds)
-
-
-SIGNING_REGISTRY = {'s3': s3_signer,
-                    'gcs': gcs_signer,
-                    'gs': gcs_signer}
-
-
-def sign_url(url):
-    storage_md = infer_storage_options(url)
-    signing_function = SIGNING_REGISTRY[storage_md['protocol']]
-    return signing_function(storage_md['path'], storage_md['host'])
