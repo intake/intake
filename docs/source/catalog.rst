@@ -572,6 +572,10 @@ Whether a particular catalog entry supports direct or proxied access is determin
 - ``force``: Force all clients to access the data directly.  If they do not have the required driver, an exception will
   be raised.
 
+- ``signed``: Clients access the data directly, but are provided with a temporary URLs. This enables authentication
+  systems to still be effective without requiring the server to load all the data itself. Similar to ``force`` this
+  will raise an error if the client doesn't have the needed driver.
+
 Note that when the client is loading a data source via direct access, the catalog server will need to send the driver
 arguments to the client.  Do not include sensitive credentials in a data source that allows direct access.
 
