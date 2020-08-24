@@ -8,7 +8,7 @@
 from .dataframe import RemoteDataFrame
 from .ndarray import RemoteArray
 from .semistructured import RemoteSequenceSource
-from ..catalog.base import RemoteCatalog
+from ..catalog.remote import RemoteCatalog
 from ..utils import ContainerRegistryView
 
 # each container type is represented in the remote by one of the classes in

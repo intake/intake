@@ -91,7 +91,7 @@ def intake_path_dirs(path):
 
 
 def load_env():
-    """Analyse enviroment variables and update conf accordingly"""
+    """Analyse environment variables and update conf accordingly"""
     # environment variables take precedence over conf file
     for key, envvar in [['cache_dir', 'INTAKE_CACHE_DIR'],
                         ['catalog_path', 'INTAKE_PATH'],

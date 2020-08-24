@@ -6,3 +6,10 @@
 #-----------------------------------------------------------------------------
 
 from .base import Catalog
+from .local import MergedCatalog, EntrypointsCatalog
+from .default import load_combo_catalog
+
+builtin = MergedCatalog(
+    [EntrypointsCatalog(), load_combo_catalog()],
+    name='builtin',
+    description='Generated from data packages found on your intake search path')

@@ -15,13 +15,11 @@ import logging
 
 import entrypoints
 
-from .base import DataSource
-from ..catalog.base import Catalog
 from ..config import save_conf, conf, cfile
 logger = logging.getLogger('intake')
 
 
-def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
+def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=False):
     r"""Discover intake drivers.
 
     In order of decreasing precedence:
@@ -33,8 +31,7 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
       ``intake\_``. Import them and scan them for subclasses of
       ``intake.source.base.Plugin``. This was previously the *only* mechanism
       for auto-discoverying intake drivers, and it is maintained for backward
-      compatibility. In a future release, intake will issue a warning if any
-      packages are located by the method that do not also have entrypoints.
+      compatibility.
 
     Parameters
     ----------
@@ -43,8 +40,8 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
     plugin_prefix : str
         DEPRECATED. Default is 'intake\_'.
     do_package_scan : boolean
-        Default is True. In the future, the default will be changed to False,
-        and the option may eventually be removed entirely.
+        Whether to look for intake source classes in packages named
+        "intake_*". This has been superceded by entrypoints declarations.
 
     Returns
     -------
@@ -297,6 +294,8 @@ def load_plugins_from_module(module_name):
     Plugin classes are instantiated and added to the dictionary, keyed by the
     name attribute of the plugin object.
     """
+    from intake.source import DataSource
+    from intake.catalog import Catalog
     plugins = {}
 
     try:
@@ -358,3 +357,9 @@ def disable(name):
         conf['drivers'] = {}
     conf['drivers'][name] = False
     save_conf()
+
+
+def register_all():
+    from intake.source import register_driver
+    for name, driver in autodiscover().items():
+        register_driver(name, driver)
