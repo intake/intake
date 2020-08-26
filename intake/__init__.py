@@ -20,18 +20,23 @@ imports = {
     "DataSource": "intake.source.base:DataSoruce",
     'Schema': "intake.source.base:Schema",
     "cat": "intake.catalog:builtin",
+    "load_combo_catalog": "intake.catalog.default:load_combo_catalog",
     "upload": "intake.container:upload",
-    "gui": "intake.gui:instance",
-    "output_notebook": "intake.gui:output_notebook",
+    "gui": "intake.interface:instance",
+    "output_notebook": "intake.interface:output_notebook",
     "register_driver": "intake.source:register_driver",
     "unregister_driver": "intake.source:unregister_driver",
 }
 openers = {}
-
 logger = logging.getLogger('intake')
 
 
 def __getattr__(attr):
+    """Lazy attribute propagator
+
+    Defers inputs of functions until they are needed, according to the
+    contents of the ``imports`` and ``openers`` dicts
+    """
     gl = globals()
     if attr == 'Catalog':
         from .catalog.base import Catalog
@@ -53,10 +58,15 @@ def __getattr__(attr):
                 gl[attr] = getattr(mod, dest.split(":")[1])
             else:
                 gl[attr] = mod
-    return gl[attr]
+    if attr == "__all__":
+        return __dir__()
+    try:
+        return gl[attr]
+    except KeyError:
+        raise AttributeError(attr)
 
 
-def __dir__():
+def __dir__(*_, **__):
     return sorted(list(globals()) + list(openers) + list(imports))
 
 

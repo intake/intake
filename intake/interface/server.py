@@ -13,4 +13,4 @@ panel serve intake/gui/server.py
 """
 
 import intake
-intake.gui.servable()
+intake.interface.servable()
