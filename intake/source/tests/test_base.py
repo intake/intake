@@ -23,9 +23,8 @@ def test_datasource_base_method_exceptions():
                                 ('_get_partition', [1]),
                                 ('_close', [])]:
         method = getattr(d, method_name)
-        with pytest.raises(Exception) as except_info:
+        with pytest.raises(NotImplementedError):
             method(*args)
-        assert method_name in str(except_info.value)
 
 
 def test_name():
@@ -38,10 +37,9 @@ def test_datasource_base_context_manager():
     # Base data source should raise a "need to implement" exception when it
     # enters the context manager (which loads the schema)
 
-    with pytest.raises(Exception) as except_info:
+    with pytest.raises(NotImplementedError):
         with base.DataSource():
             pass
-    assert '_get_schema' in str(except_info.value)
 
 
 class MockDataSourceDataFrame(base.DataSource):
