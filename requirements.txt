@@ -1,11 +1,6 @@
-# This file is also processed by conda-build, so keep spaces as "pkg >=1.2"
 appdirs
 entrypoints
-dask[bag] >=1.0
-jinja2
-numpy
 pyyaml
 requests
 msgpack
 fsspec >=0.7.4
-aiohttp

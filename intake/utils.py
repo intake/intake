@@ -91,14 +91,6 @@ class DictSerialiseMixin(object):
 
     __tok_cache = None
 
-    @property
-    def _tok(self):
-        import warnings
-        from dask.base import tokenize
-        warnings.warn("the _tok attribute is deprecated, please use "
-                      "`dask.base.tokenize(obj)` instead")
-        return tokenize(self)
-
     def __new__(cls, *args, **kwargs):
         """Capture creation args when instantiating"""
         o = object.__new__(cls)

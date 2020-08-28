@@ -11,7 +11,6 @@ from yaml import dump
 
 from .cache import make_caches
 from ..utils import make_path_posix, DictSerialiseMixin, pretty_describe
-import warnings
 
 
 class Schema(dict):
@@ -115,10 +114,7 @@ class GraphicsMixin:
     @property
     def gui(self):
         """Source GUI, with parameter selection and plotting"""
-        if self._entry is None:
-            raise NoEntry("Source was not made from a catalog entry")
-
-        return self._entry.gui
+        return self.entry.gui
 
     @property
     def plot(self):
@@ -331,7 +327,6 @@ class DataSource(DataSourceBase, CacheMixin, GraphicsMixin, PersistMixin):
 
     @property
     def entry(self):
-        warnings.warn("direct access to the entry is deprecated", stacklevel=2)
         if self._entry is None:
             raise NoEntry("Source was not made from a catalog entry")
         return self._entry
@@ -359,10 +354,8 @@ class DataSource(DataSourceBase, CacheMixin, GraphicsMixin, PersistMixin):
     __call__ = get = configure_new  # compatibility aliases
 
     def describe(self):
-        if self._entry is None:
-            raise NoEntry("Source was not made from a catalog entry")
-
-        return self._entry.describe()
+        """Description from the entry spec"""
+        return self.entry.describe()
 
     def close(self):
         """Close open resources corresponding to this data source."""
