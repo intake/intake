@@ -26,7 +26,7 @@ jobs:
       install:
         - sudo apt update
         - sudo apt install libsnappy-dev
-        - pip install panel bokeh dask pytest zarr aiohttp requests
+        - pip install panel bokeh dask[complete] pytest zarr aiohttp requests
         - pip install -e .[complete]
       script:
         - pytest
@@ -36,7 +36,7 @@ jobs:
       install:
         - sudo apt update
         - sudo apt install libsnappy-dev
-        - pip install panel bokeh dask pytest zarr aiohttp requests
+        - pip install panel bokeh dask[complete] pytest zarr aiohttp requests
         - pip install -e .[complete]
       script:
         - pytest
