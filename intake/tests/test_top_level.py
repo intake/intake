@@ -10,6 +10,7 @@ import posixpath
 import shutil
 import time
 import tempfile
+import sys
 
 import intake
 import appdirs
@@ -114,3 +115,16 @@ def test_output_notebook():
 def test_old_usage():
     with pytest.warns(UserWarning):
         intake.Catalog()
+
+
+def test_no_imports():
+    mods = [mod for mod in sys.modules if mod.startswith('intake')]
+    [sys.modules.pop(mod) for mod in mods]
+
+    import intake
+
+    assert 'intake' in sys.modules
+
+    for mod in ['intake.tests', 'intake.interface', 'intake.source.csv',
+                'intake.cli', 'intake.auth']:
+        assert mod not in sys.modules
