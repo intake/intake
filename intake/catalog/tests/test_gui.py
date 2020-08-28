@@ -15,6 +15,7 @@ def panel_importable():
     except:
         return False
 
+
 EXPECTED_ERROR_TEXT = "Please install panel to use the GUI"
 
 

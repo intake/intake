@@ -13,7 +13,8 @@ import pandas as pd
 
 from intake.source.tests.util import verify_datasource_interface
 from .util import assert_items_equal
-from intake import open_catalog, RemoteCatalog
+from intake import open_catalog
+from intake.catalog.remote import RemoteCatalog
 
 TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 

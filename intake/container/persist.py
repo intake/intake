@@ -9,7 +9,7 @@ import posixpath
 import time
 import yaml
 from ..catalog.local import YAMLFileCatalog, CatalogEntry
-from .. import DataSource
+from ..source import DataSource
 from ..config import conf, logger
 from ..source import import_name
 from ..utils import make_path_posix

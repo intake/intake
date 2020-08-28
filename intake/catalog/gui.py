@@ -8,7 +8,7 @@ from functools import partial
 
 try:
     import panel as pn
-    from ..gui.gui import SourceGUI, MAX_WIDTH, ICONS
+    from ..interface.gui import SourceGUI, MAX_WIDTH, ICONS
     css = """
     .scrolling {
         overflow: scroll;

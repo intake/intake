@@ -49,7 +49,7 @@ setup(
             'csv = intake.source.csv:CSVSource',
             'textfiles = intake.source.textfiles:TextFilesSource',
             'catalog = intake.catalog.base:Catalog',
-            'intake_remote = intake.catalog.base:RemoteCatalog',
+            'intake_remote = intake.catalog.remote:RemoteCatalog',
             'numpy = intake.source.npy:NPySource',
             'ndzarr = intake.source.zarr:ZarrArraySource',
             'zarr_cat = intake.catalog.zarr:ZarrGroupCatalog',

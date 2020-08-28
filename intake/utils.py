@@ -11,6 +11,7 @@ import datetime
 from contextlib import contextmanager
 import warnings
 import yaml
+import sys
 
 
 def make_path_posix(path):
@@ -242,7 +243,6 @@ class RegistryView(collections.abc.Mapping):
             f"not be directly mutable. Use {self._unregister_func_name}.",
             DeprecationWarning)
         del self._registry[key]
-        self._registry[key] = value
         # raise TypeError(
         #     f"The registry cannot be edited directly. "
         #     f"Instead, use the {self._unregister_func_name{")
@@ -262,3 +262,21 @@ class ContainerRegistryView(RegistryView):
     _registry_name = "intake.container_map"
     _register_func_name  = "intake.register_container"
     _unregister_func_name  = "intake.unregister_container"
+
+
+class ModuleImporter:
+    def __init__(self, destination):
+        self.destination = destination
+        self.module = None
+
+    def __getattribute__(self, item):
+        d = object.__getattribute__(self, "__dict__")
+        if item in d:
+            return d[item]
+        if self.module is None:
+            print("Importing module: ", self.destination)
+            self.module = __import__(self.destination)
+        else:
+            print("Referencing module: ", self.destination)
+        sys.modules[self.destination] = self.module
+        return getattr(self.module, item)

@@ -11,7 +11,6 @@ import logging
 import os
 import warnings
 
-from jinja2 import Template
 from fsspec import open_files, get_filesystem_class
 from fsspec.core import split_protocol
 
