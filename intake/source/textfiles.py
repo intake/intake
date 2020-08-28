@@ -81,8 +81,7 @@ class TextFilesSource(base.DataSource):
                 compression=self.compression,
                 **self._storage_options)
             self.npartitions = len(self._files)
-        return base.Schema(datashape=None,
-                           dtype=None,
+        return base.Schema(dtype=None,
                            shape=(None, ),
                            npartitions=self.npartitions,
                            extra_metadata=self.metadata)

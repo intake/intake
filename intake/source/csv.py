@@ -128,8 +128,7 @@ class CSVSource(base.DataSource, base.PatternMixin):
 
         dtypes = self._dataframe._meta.dtypes.to_dict()
         dtypes = {n: str(t) for (n, t) in dtypes.items()}
-        return base.Schema(datashape=None,
-                           dtype=dtypes,
+        return base.Schema(dtype=dtypes,
                            shape=(None, len(dtypes)),
                            npartitions=self._dataframe.npartitions,
                            extra_metadata={})

@@ -28,8 +28,7 @@ class RemoteArray(RemoteSource):
                               extra_metadata=self.metadata,
                               dtype=self.dtype,
                               shape=self.shape,
-                              chunks=self.chunks,
-                              datashape=None)
+                              chunks=self.chunks)
 
     def _load_metadata(self):
         import dask.array as da

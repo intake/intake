@@ -414,7 +414,7 @@ class Catalog(DataSource):
 
     def discover(self):
         return {"container": 'catalog', 'shape': None,
-                'dtype': None, 'datashape': None, 'metadata': self.metadata}
+                'dtype': None, 'metadata': self.metadata}
 
     def _close(self):
         # TODO: maybe close all entries?

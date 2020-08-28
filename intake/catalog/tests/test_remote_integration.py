@@ -122,7 +122,6 @@ def test_read(intake_server):
     meta = expected_df[:0]
 
     info = d.discover()
-    assert info['datashape'] is None
     assert info['dtype'] == {k: str(v) for k, v
                              in meta.dtypes.to_dict().items()}
     assert info['npartitions'] == 2
@@ -148,7 +147,6 @@ def test_read_direct(intake_server):
 
     info = d.discover()
 
-    assert info['datashape'] is None
     assert info['dtype'] == {k: str(v) for k, v
                              in meta.dtypes.to_dict().items()}
     assert info['npartitions'] == 1

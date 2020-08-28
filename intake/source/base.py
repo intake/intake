@@ -26,10 +26,10 @@ class Schema(dict):
         """
         Parameters
         ----------
-        kwargs: typically include datashape, dtype, shape
+        kwargs: typically include dtype, shape
         """
         super(Schema, self).__init__(**kwargs)
-        for field in ['datashape', 'dtype', 'shape']:
+        for field in ['dtype', 'shape']:
             # maybe a default-dict
             if field not in self:
                 self[field] = None
@@ -53,21 +53,31 @@ class NoEntry(AttributeError):
     pass
 
 
-class DataSource(DictSerialiseMixin):
-    """An object which can produce data
-
-    This is the base class for all Intake plugins, including catalogs and
-    remote (server) data objects. To produce a new plugin commonly involves
-    subclassing this definition and overriding some or all of the methods.
-
-    This class is not useful in itself, most methods raise NotImplemented.
-    """
+class DataSourceBase(DictSerialiseMixin):
     name = None
     version = None
     container = None
     partition_access = False
-    datashape = None
     description = None
+    dtype = None
+    shape = None
+    npartitions = 0
+    _schema = None
+    on_server = False
+    cat = None  # the cat from which this source was made
+    _entry = None
+
+    def __init__(self, storage_options=None, metadata=None):
+        # default data
+        self.metadata = metadata or {}
+        if isinstance(self.metadata, dict):
+            storage_options = self._captured_init_kwargs.get('storage_options',
+                                                             {})
+        self.storage_options = storage_options
+
+
+class CacheMixin:
+    _cache = None
 
     @property
     def cache_dirs(self):
@@ -77,30 +87,35 @@ class DataSource(DictSerialiseMixin):
         for c in self.cache:
             c._cache_dir = make_path_posix(cache_dir)
 
-    def __init__(self, storage_options=None, metadata=None):
-        # default data
-        self.metadata = metadata or {}
-        if isinstance(self.metadata, dict):
-            storage_options = self._captured_init_kwargs.get('storage_options',
-                                                             {})
-            self.cache = make_caches(self.name, self.metadata.get('cache'),
-                                     catdir=self.metadata.get('catalog_dir',
-                                                              None),
-                                     storage_options=storage_options)
-        self.datashape = None
-        self.dtype = None
-        self.shape = None
-        self.npartitions = 0
-        self._schema = None
-        self.catalog_object = None
-        self.on_server = False
-        self.cat = None  # the cat from which this source was made
-        self._entry = None
+    @property
+    def cache(self):
+        if self._cache is None:
+            self._cache = make_caches(self.name, self.metadata.get('cache'),
+                                      catdir=self.metadata.get('catalog_dir',
+                                                             None),
+                                      storage_options=self.storage_options)
+        return self._cache
+
+    @cache.setter
+    def cache(self, csh):
+        self._cache = csh
 
     def _get_cache(self, urlpath):
         if len(self.cache) == 0:
             return [urlpath]
         return [c.load(urlpath) for c in self.cache]
+
+
+class DataSource(DataSourceBase, CacheMixin):
+    """An object which can produce data
+
+    This is the base class for all Intake plugins, including catalogs and
+    remote (server) data objects. To produce a new plugin commonly involves
+    subclassing this definition and overriding some or all of the methods.
+
+    This class is not useful in itself, most methods raise NotImplemented.
+    """
+
 
     def _get_schema(self):
         """Subclasses should return an instance of base.Schema"""
@@ -124,7 +139,6 @@ class DataSource(DictSerialiseMixin):
         """load metadata only if needed"""
         if self._schema is None:
             self._schema = self._get_schema()
-            self.datashape = self._schema.datashape
             self.dtype = self._schema.dtype
             self.shape = self._schema.shape
             self.npartitions = self._schema.npartitions
@@ -185,8 +199,7 @@ class DataSource(DictSerialiseMixin):
         """Open resource and populate the source attributes."""
         self._load_metadata()
 
-        return dict(datashape=self.datashape,
-                    dtype=self.dtype,
+        return dict(dtype=self.dtype,
                     shape=self.shape,
                     npartitions=self.npartitions,
                     metadata=self.metadata)
@@ -488,16 +501,15 @@ class AliasSource(DataSource):
         self.source = None
 
     def _get_source(self):
-        if self.catalog_object is None:
+        if self.cat is None:
             raise ValueError('AliasSource cannot be used outside a catalog')
         if self.source is None:
-            self.source = self.catalog_object[self.mapping[self.target]](
+            self.source = self.cat[self.mapping[self.target]](
                 metadata=self.metadata, **self.kwargs)
             self.metadata = self.source.metadata.copy()
             self.container = self.source.container
             self.partition_access = self.source.partition_access
             self.description = self.source.description
-            self.datashape = self.source.datashape
 
     def discover(self):
         self._get_source()
