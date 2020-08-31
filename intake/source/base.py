@@ -52,29 +52,6 @@ class NoEntry(AttributeError):
     pass
 
 
-class DataSourceBase(DictSerialiseMixin):
-    name = None
-    version = None
-    container = None
-    partition_access = False
-    description = None
-    dtype = None
-    shape = None
-    npartitions = 0
-    _schema = None
-    on_server = False
-    cat = None  # the cat from which this source was made
-    _entry = None
-
-    def __init__(self, storage_options=None, metadata=None):
-        # default data
-        self.metadata = metadata or {}
-        if isinstance(self.metadata, dict):
-            storage_options = self._captured_init_kwargs.get('storage_options',
-                                                             {})
-        self.storage_options = storage_options
-
-
 class CacheMixin:
     _cache = None
 
@@ -201,7 +178,7 @@ class PersistMixin:
         return out
 
 
-class DataSource(DataSourceBase, CacheMixin, GraphicsMixin, PersistMixin):
+class DataSourceBase(DictSerialiseMixin):
     """An object which can produce data
 
     This is the base class for all Intake plugins, including catalogs and
@@ -210,6 +187,27 @@ class DataSource(DataSourceBase, CacheMixin, GraphicsMixin, PersistMixin):
 
     This class is not useful in itself, most methods raise NotImplemented.
     """
+
+    name = None
+    version = None
+    container = None
+    partition_access = False
+    description = None
+    dtype = None
+    shape = None
+    npartitions = 0
+    _schema = None
+    on_server = False
+    cat = None  # the cat from which this source was made
+    _entry = None
+
+    def __init__(self, storage_options=None, metadata=None):
+        # default data
+        self.metadata = metadata or {}
+        if isinstance(self.metadata, dict):
+            storage_options = self._captured_init_kwargs.get('storage_options',
+                                                             {})
+        self.storage_options = storage_options
 
     def _get_schema(self):
         """Subclasses should return an instance of base.Schema"""
@@ -398,6 +396,10 @@ class DataSource(DataSourceBase, CacheMixin, GraphicsMixin, PersistMixin):
         out.metadata = metadata
         out.name = self.name
         return out
+
+
+class DataSource(DataSourceBase, CacheMixin, GraphicsMixin, PersistMixin):
+    pass
 
 
 class PatternMixin(object):
