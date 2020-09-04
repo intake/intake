@@ -282,7 +282,7 @@ class DataSourceBase(DictSerialiseMixin):
         """The base class does not interact with persistence"""
         return False
 
-    def has_been_ersisted(self):
+    def has_been_persisted(self):
         """The base class does not interact with persistence"""
         return False
 
