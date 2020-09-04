@@ -17,7 +17,7 @@ del get_versions
 from .source import register_driver, registry
 
 imports = {
-    "DataSource": "intake.source.base:DataSoruce",
+    "DataSource": "intake.source.base:DataSource",
     'Schema': "intake.source.base:Schema",
     "cat": "intake.catalog:builtin",
     "load_combo_catalog": "intake.catalog.default:load_combo_catalog",

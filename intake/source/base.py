@@ -53,6 +53,7 @@ class NoEntry(AttributeError):
 
 
 class CacheMixin:
+    """Allows "old style" caching for Data Source"""
     _cache = None
 
     @property
@@ -82,7 +83,9 @@ class CacheMixin:
         return [c.load(urlpath) for c in self.cache]
 
 
-class GraphicsMixin:
+class HoloviewsMixin:
+    """Adds plotting and GUI to DataSource"""
+
     @property
     def plots(self):
         """List custom associated quick-plots """
@@ -126,6 +129,8 @@ class GraphicsMixin:
 
 
 class PersistMixin:
+    """Adds interaction with PersistStore to DataSource"""
+
     def get_persisted(self):
         from ..container.persist import store
         from dask.base import tokenize
@@ -273,6 +278,18 @@ class DataSourceBase(DictSerialiseMixin):
     def __repr__(self):
         return self.yaml()
 
+    def is_persisted(self):
+        """The base class does not interact with persistence"""
+        return False
+
+    def has_been_ersisted(self):
+        """The base class does not interact with persistence"""
+        return False
+
+    def _get_cache(self, urlpath):
+        """The base class does not interact with caches"""
+        return urlpath
+
     def discover(self):
         """Open resource and populate the source attributes."""
         self._load_metadata()
@@ -398,7 +415,12 @@ class DataSourceBase(DictSerialiseMixin):
         return out
 
 
-class DataSource(DataSourceBase, CacheMixin, GraphicsMixin, PersistMixin):
+class DataSource(CacheMixin, HoloviewsMixin, PersistMixin, DataSourceBase):
+    """A Data Source will all optional functionality
+
+    When subclassed, child classes will have the base data source functionality,
+    plus caching, plotting and persistence abilities.
+    """
     pass
 
 
