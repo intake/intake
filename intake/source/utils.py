@@ -246,15 +246,15 @@ def path_to_glob(path):
         return path
 
     # calculate glob expression
-    glob=''
-    prev_literal=None
-    prev_field_name=None
+    glob = ''
+    prev_literal = None
+    prev_field_name = None
     for literal_text, field_name, format_spec, conversion in fmt.parse(path):
-        glob+=literal_text
-        if field_name and not(''==literal_text and prev_field_name): # condition to avoid repeated * on adjacent fields
-                glob+='*'
-        prev_literal=literal_text
-        prev_field_name=field_name
+        glob += literal_text
+        if field_name and not('' == literal_text and prev_field_name):  # condition to avoid repeated * on adjacent fields
+            glob += '*'
+        prev_literal = literal_text
+        prev_field_name = field_name
     return glob
 
 def path_to_pattern(path, metadata=None):
