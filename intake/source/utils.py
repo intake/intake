@@ -249,10 +249,10 @@ def path_to_glob(path):
     glob = ''
     prev_literal = None
     prev_field_name = None
-    for literal_text, field_name, format_spec, conversion in fmt.parse(path):
+    for literal_text, field_name, _, _ in fmt.parse(path):
         glob += literal_text
         # condition to avoid repeated * on adjacent fields
-        if field_name and not('' == literal_text and prev_field_name):
+        if field_name and (literal_text or prev_field_name is None):
             glob += '*'
         prev_literal = literal_text
         prev_field_name = field_name
