@@ -19,6 +19,7 @@ from intake.source.utils import (
     ('{year}/{month}/{day}.csv', '*/*/*.csv'),
     ('data/**/*.csv', 'data/**/*.csv'),
     ('data/{year:4}{month:02}{day:02}.csv', 'data/*.csv'),
+    ('{lone_param}','*')
 ])
 def test_path_to_glob(pattern, expected):
     assert path_to_glob(pattern) == expected
