@@ -27,8 +27,7 @@ class RemoteDataFrame(RemoteSource):
         self._schema = Schema(npartitions=self.npartitions,
                               extra_metadata=self.metadata,
                               dtype=self.dtype,
-                              shape=self.shape,
-                              datashape=None)
+                              shape=self.shape)
         self.dataframe = None
 
     def _load_metadata(self):
@@ -167,8 +166,7 @@ class GenericDataFrame(DataSource):
             self._schema = Schema(npartitions=self.npartitions,
                                   extra_metadata=self.metadata,
                                   dtype=self.dtype,
-                                  shape=self.shape,
-                                  datashape=None)
+                                  shape=self.shape)
         return self._schema
 
     def _get_partition(self, i):

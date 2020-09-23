@@ -17,7 +17,6 @@ import re
 import shutil
 import warnings
 
-from fsspec.utils import infer_storage_options
 from intake.config import conf
 from intake.utils import make_path_posix
 
@@ -26,6 +25,7 @@ logger = logging.getLogger('intake')
 
 def sanitize_path(path):
     """Utility for cleaning up paths."""
+    from fsspec.utils import infer_storage_options
 
     storage_option = infer_storage_options(path)
 

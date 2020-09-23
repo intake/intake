@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 import collections
+from collections import OrderedDict
 import collections.abc
 import datetime
 from contextlib import contextmanager
@@ -47,12 +48,13 @@ def tuple_constructor(loader, node, deep=False):
     return tuple(loader.construct_object(node, deep=deep)
                  for node in node.value)
 
-from collections import OrderedDict
 
 def represent_dictionary_order(self, dict_data):
     return self.represent_mapping('tag:yaml.org,2002:map', dict_data.items())
 
+
 yaml.add_representer(OrderedDict, represent_dictionary_order)
+
 
 @contextmanager
 def no_duplicate_yaml():
@@ -88,14 +90,6 @@ def classname(ob):
 class DictSerialiseMixin(object):
 
     __tok_cache = None
-
-    @property
-    def _tok(self):
-        import warnings
-        from dask.base import tokenize
-        warnings.warn("the _tok attribute is deprecated, please use "
-                      "`dask.base.tokenize(obj)` instead")
-        return tokenize(self)
 
     def __new__(cls, *args, **kwargs):
         """Capture creation args when instantiating"""
@@ -170,6 +164,7 @@ def pretty_describe(object, nestedness=0, indent=2):
         return f'{sep}{out}'
     return out
 
+
 def decode_datetime(obj):
     import numpy
     if not isinstance(obj, numpy.ndarray) and "__datetime__" in obj:
@@ -184,6 +179,7 @@ def decode_datetime(obj):
                     "%Y%m%dT%H:%M:%S.%f",
             )
     return obj
+
 
 def encode_datetime(obj):
     if isinstance(obj, datetime.datetime):
@@ -252,16 +248,16 @@ class DriverRegistryView(RegistryView):
     # This attributes are used by the base class
     # to fill in warning and error messages.
     _registry_name = "intake.registry"
-    _register_func_name  = "intake.register_driver"
-    _unregister_func_name  = "intake.unregister_driver"
+    _register_func_name = "intake.register_driver"
+    _unregister_func_name = "intake.unregister_driver"
 
 
 class ContainerRegistryView(RegistryView):
     # This attributes are used by the base class
     # to fill in warning and error messages.
     _registry_name = "intake.container_map"
-    _register_func_name  = "intake.register_container"
-    _unregister_func_name  = "intake.unregister_container"
+    _register_func_name = "intake.register_container"
+    _unregister_func_name = "intake.unregister_container"
 
 
 class ModuleImporter:

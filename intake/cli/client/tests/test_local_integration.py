@@ -86,7 +86,6 @@ def test_discover():
                                universal_newlines=True)
     out, _ = process.communicate()
 
-    assert "'datashape':" in out
     assert "'dtype':" in out
     assert "'metadata':" in out
     assert "'npartitions':" in out

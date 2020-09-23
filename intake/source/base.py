@@ -11,7 +11,6 @@ from yaml import dump
 
 from .cache import make_caches
 from ..utils import make_path_posix, DictSerialiseMixin, pretty_describe
-import warnings
 
 
 class Schema(dict):
@@ -26,10 +25,10 @@ class Schema(dict):
         """
         Parameters
         ----------
-        kwargs: typically include datashape, dtype, shape
+        kwargs: typically include dtype, shape
         """
         super(Schema, self).__init__(**kwargs)
-        for field in ['datashape', 'dtype', 'shape']:
+        for field in ['dtype', 'shape']:
             # maybe a default-dict
             if field not in self:
                 self[field] = None
@@ -53,21 +52,9 @@ class NoEntry(AttributeError):
     pass
 
 
-class DataSource(DictSerialiseMixin):
-    """An object which can produce data
-
-    This is the base class for all Intake plugins, including catalogs and
-    remote (server) data objects. To produce a new plugin commonly involves
-    subclassing this definition and overriding some or all of the methods.
-
-    This class is not useful in itself, most methods raise NotImplemented.
-    """
-    name = None
-    version = None
-    container = None
-    partition_access = False
-    datashape = None
-    description = None
+class CacheMixin:
+    """Allows "old style" caching for Data Source"""
+    _cache = None
 
     @property
     def cache_dirs(self):
@@ -77,88 +64,203 @@ class DataSource(DictSerialiseMixin):
         for c in self.cache:
             c._cache_dir = make_path_posix(cache_dir)
 
-    def __init__(self, storage_options=None, metadata=None):
-        # default data
-        self.metadata = metadata or {}
-        if isinstance(self.metadata, dict):
-            storage_options = self._captured_init_kwargs.get('storage_options',
-                                                             {})
-            self.cache = make_caches(self.name, self.metadata.get('cache'),
-                                     catdir=self.metadata.get('catalog_dir',
-                                                              None),
-                                     storage_options=storage_options)
-        self.datashape = None
-        self.dtype = None
-        self.shape = None
-        self.npartitions = 0
-        self._schema = None
-        self.catalog_object = None
-        self.on_server = False
-        self.cat = None  # the cat from which this source was made
-        self._entry = None
+    @property
+    def cache(self):
+        if self._cache is None:
+            self._cache = make_caches(self.name, self.metadata.get('cache'),
+                                      catdir=self.metadata.get('catalog_dir',
+                                                             None),
+                                      storage_options=self.storage_options)
+        return self._cache
+
+    @cache.setter
+    def cache(self, csh):
+        self._cache = csh
 
     def _get_cache(self, urlpath):
         if len(self.cache) == 0:
             return [urlpath]
         return [c.load(urlpath) for c in self.cache]
 
+
+class HoloviewsMixin:
+    """Adds plotting and GUI to DataSource"""
+
+    @property
+    def plots(self):
+        """List custom associated quick-plots """
+        return list(self.metadata.get('plots', {}))
+
+    @property
+    def gui(self):
+        """Source GUI, with parameter selection and plotting"""
+        return self.entry.gui
+
+    @property
+    def plot(self):
+        """
+        Returns a hvPlot object to provide a high-level plotting API.
+
+        To display in a notebook, be sure to run ``intake.output_notebook()``
+        first.
+        """
+        try:
+            from hvplot import hvPlot
+        except ImportError:
+            raise ImportError("The intake plotting API requires hvplot."
+                              "hvplot may be installed with:\n\n"
+                              "`conda install -c pyviz hvplot` or "
+                              "`pip install hvplot`.")
+        metadata = self.metadata.get('plot', {})
+        fields = self.metadata.get('fields', {})
+        for attrs in fields.values():
+            if 'range' in attrs:
+                attrs['range'] = tuple(attrs['range'])
+        metadata['fields'] = fields
+        plots = self.metadata.get('plots', {})
+        return hvPlot(self, custom_plots=plots, **metadata)
+
+    @property
+    def hvplot(self):
+        """
+        Returns a hvPlot object to provide a high-level plotting API.
+        """
+        return self.plot
+
+
+class PersistMixin:
+    """Adds interaction with PersistStore to DataSource"""
+
+    def get_persisted(self):
+        from ..container.persist import store
+        from dask.base import tokenize
+        return store[tokenize(self)]()
+
+    @staticmethod
+    def _persist(source, path, **kwargs):
+        """To be implemented by 'container' sources for locally persisting"""
+        raise NotImplementedError
+
+    @property
+    def has_been_persisted(self):
+        from ..container.persist import store
+        from dask.base import tokenize
+        return tokenize(self) in store
+
+    @property
+    def is_persisted(self):
+        from ..container.persist import store
+        return self.metadata.get('original_tok', None) in store
+
+    def persist(self, ttl=None, **kwargs):
+        """Save data from this source to local persistent storage
+
+        Parameters
+        ----------
+        ttl: numeric, optional
+            Time to live in seconds. If provided, the original source will
+            be accessed and a new persisted version written transparently
+            when more than ``ttl`` seconds have passed since the old persisted
+            version was written.
+        kargs: passed to the _persist method on the base container.
+        """
+        from ..container.persist import PersistStore
+        from dask.base import tokenize
+        if 'original_tok' in self.metadata:
+            raise ValueError('Cannot persist a source taken from the persist '
+                             'store')
+        if ttl is not None and not isinstance(ttl, (int, float)):
+            raise ValueError('Cannot persist using a time to live that is '
+                             f'non-numeric. User-provided ttl was {ttl}')
+        store = PersistStore()
+        out = self._export(store.getdir(self), **kwargs)
+        out.metadata.update({
+            'ttl': ttl,
+            'cat': {} if self.cat is None else self.cat.__getstate__()
+        })
+        out.name = self.name
+        store.add(tokenize(self), out)
+        return out
+
+
+class DataSourceBase(DictSerialiseMixin):
+    """An object which can produce data
+
+    This is the base class for all Intake plugins, including catalogs and
+    remote (server) data objects. To produce a new plugin commonly involves
+    subclassing this definition and overriding some or all of the methods.
+
+    This class is not useful in itself, most methods raise NotImplemented.
+    """
+
+    name = None
+    version = None
+    container = None
+    partition_access = False
+    description = None
+    dtype = None
+    shape = None
+    npartitions = 0
+    _schema = None
+    on_server = False
+    cat = None  # the cat from which this source was made
+    _entry = None
+
+    def __init__(self, storage_options=None, metadata=None):
+        # default data
+        self.metadata = metadata or {}
+        if isinstance(self.metadata, dict):
+            storage_options = self._captured_init_kwargs.get('storage_options',
+                                                             {})
+        self.storage_options = storage_options
+
     def _get_schema(self):
         """Subclasses should return an instance of base.Schema"""
-        raise Exception('Subclass should implement _get_schema()')
+        raise NotImplementedError
 
     def _get_partition(self, i):
         """Subclasses should return a container object for this partition
 
         This function will never be called with an out-of-range value for i.
         """
-        raise Exception('Subclass should implement _get_partition()')
+        raise NotImplementedError
 
     def _close(self):
         """Subclasses should close all open resources"""
-        raise Exception('Subclass should implement _close()')
-
-    # These methods are implemented from the above two methods and do not need
-    # to be overridden unless custom behavior is required
+        raise NotImplementedError
 
     def _load_metadata(self):
         """load metadata only if needed"""
         if self._schema is None:
             self._schema = self._get_schema()
-            self.datashape = self._schema.datashape
             self.dtype = self._schema.dtype
             self.shape = self._schema.shape
             self.npartitions = self._schema.npartitions
             self.metadata.update(self._schema.extra_metadata)
 
-    def _yaml(self, with_plugin=False):
+    def _yaml(self):
         import inspect
         kwargs = self._captured_init_kwargs.copy()
         meta = kwargs.pop('metadata', self.metadata) or {}
         kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
                            self._captured_init_args)))
-        data = {'sources':
+        data = {
+            'sources':
                 {self.name: {
-            'driver': self.classname,
-            'description': self.description or "",
-            'metadata': meta,
-            'args': kwargs
-        }}}
+                   'driver': self.classname,
+                   'description': self.description or "",
+                   'metadata': meta,
+                   'args': kwargs
+                }}}
         return data
 
-    def yaml(self, with_plugin=False):
+    def yaml(self):
         """Return YAML representation of this data-source
 
         The output may be roughly appropriate for inclusion in a YAML
         catalog. This is a best-effort implementation
-
-        Parameters
-        ----------
-        with_plugin: bool
-            If True, create a "plugins" section, for cases where this source
-            is created with a plugin not expected to be in the global Intake
-            registry.
         """
-        data = self._yaml(with_plugin=with_plugin)
+        data = self._yaml()
         return dump(data, default_flow_style=False)
 
     def _ipython_display_(self):
@@ -177,16 +279,24 @@ class DataSource(DictSerialiseMixin):
         return self.yaml()
 
     @property
-    def plots(self):
-        """List custom associated quick-plots """
-        return list(self.metadata.get('plots', {}))
+    def is_persisted(self):
+        """The base class does not interact with persistence"""
+        return False
+
+    @property
+    def has_been_persisted(self):
+        """The base class does not interact with persistence"""
+        return False
+
+    def _get_cache(self, urlpath):
+        """The base class does not interact with caches"""
+        return urlpath
 
     def discover(self):
         """Open resource and populate the source attributes."""
         self._load_metadata()
 
-        return dict(datashape=self.datashape,
-                    dtype=self.dtype,
+        return dict(dtype=self.dtype,
                     shape=self.shape,
                     npartitions=self.npartitions,
                     metadata=self.metadata)
@@ -234,7 +344,6 @@ class DataSource(DictSerialiseMixin):
 
     @property
     def entry(self):
-        warnings.warn("direct access to the entry is deprecated", stacklevel=2)
         if self._entry is None:
             raise NoEntry("Source was not made from a catalog entry")
         return self._entry
@@ -262,18 +371,8 @@ class DataSource(DictSerialiseMixin):
     __call__ = get = configure_new  # compatibility aliases
 
     def describe(self):
-        if self._entry is None:
-            raise NoEntry("Source was not made from a catalog entry")
-
-        return self._entry.describe()
-
-    @property
-    def gui(self):
-        """Source GUI, with parameter selection and plotting"""
-        if self._entry is None:
-            raise NoEntry("Source was not made from a catalog entry")
-
-        return self._entry.gui
+        """Description from the entry spec"""
+        return self.entry.describe()
 
     def close(self):
         """Close open resources corresponding to this data source."""
@@ -286,67 +385,6 @@ class DataSource(DictSerialiseMixin):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
-
-    @property
-    def plot(self):
-        """
-        Returns a hvPlot object to provide a high-level plotting API.
-
-        To display in a notebook, be sure to run ``intake.output_notebook()``
-        first.
-        """
-        try:
-            from hvplot import hvPlot
-        except ImportError:
-            raise ImportError("The intake plotting API requires hvplot."
-                              "hvplot may be installed with:\n\n"
-                              "`conda install -c pyviz hvplot` or "
-                              "`pip install hvplot`.")
-        metadata = self.metadata.get('plot', {})
-        fields = self.metadata.get('fields', {})
-        for attrs in fields.values():
-            if 'range' in attrs:
-                attrs['range'] = tuple(attrs['range'])
-        metadata['fields'] = fields
-        plots = self.metadata.get('plots', {})
-        return hvPlot(self, custom_plots=plots, **metadata)
-
-    @property
-    def hvplot(self):
-        """
-        Returns a hvPlot object to provide a high-level plotting API.
-        """
-        return self.plot
-
-    def persist(self, ttl=None, **kwargs):
-        """Save data from this source to local persistent storage
-
-        Parameters
-        ----------
-        ttl: numeric, optional
-            Time to live in seconds. If provided, the original source will
-            be accessed and a new persisted version written transparently
-            when more than ``ttl`` seconds have passed since the old persisted
-            version was written.
-        kargs: passed to the _persist method on the base container.
-        """
-        from ..container.persist import PersistStore
-        from dask.base import tokenize
-        if 'original_tok' in self.metadata:
-            raise ValueError('Cannot persist a source taken from the persist '
-                             'store')
-        if ttl is not None and not isinstance(ttl, (int, float)):
-            raise ValueError('Cannot persist using a time to live that is '
-                             f'non-numeric. User-provided ttl was {ttl}')
-        store = PersistStore()
-        out = self._export(store.getdir(self), **kwargs)
-        out.metadata.update({
-            'ttl': ttl,
-            'cat': {} if self.cat is None else self.cat.__getstate__()
-        })
-        out.name = self.name
-        store.add(tokenize(self), out)
-        return out
 
     def export(self, path, **kwargs):
         """Save this data for sharing with other people
@@ -378,26 +416,14 @@ class DataSource(DictSerialiseMixin):
         out.name = self.name
         return out
 
-    def get_persisted(self):
-        from ..container.persist import store
-        from dask.base import tokenize
-        return store[tokenize(self)]()
 
-    @staticmethod
-    def _persist(source, path, **kwargs):
-        """To be implemented by 'container' sources for locally persisting"""
-        raise NotImplementedError
+class DataSource(CacheMixin, HoloviewsMixin, PersistMixin, DataSourceBase):
+    """A Data Source will all optional functionality
 
-    @property
-    def has_been_persisted(self):
-        from ..container.persist import store
-        from dask.base import tokenize
-        return tokenize(self) in store
-
-    @property
-    def is_persisted(self):
-        from ..container.persist import store
-        return self.metadata.get('original_tok', None) in store
+    When subclassed, child classes will have the base data source functionality,
+    plus caching, plotting and persistence abilities.
+    """
+    pass
 
 
 class PatternMixin(object):
@@ -488,16 +514,15 @@ class AliasSource(DataSource):
         self.source = None
 
     def _get_source(self):
-        if self.catalog_object is None:
+        if self.cat is None:
             raise ValueError('AliasSource cannot be used outside a catalog')
         if self.source is None:
-            self.source = self.catalog_object[self.mapping[self.target]](
+            self.source = self.cat[self.mapping[self.target]](
                 metadata=self.metadata, **self.kwargs)
             self.metadata = self.source.metadata.copy()
             self.container = self.source.container
             self.partition_access = self.source.partition_access
             self.description = self.source.description
-            self.datashape = self.source.datashape
 
     def discover(self):
         self._get_source()

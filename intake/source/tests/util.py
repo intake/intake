@@ -13,7 +13,7 @@ def verify_plugin_interface(plugin):
 
 
 def verify_datasource_interface(source):
-    for attr in ['container', 'description', 'datashape', 'dtype', 'shape',
+    for attr in ['container', 'description', 'dtype', 'shape',
                  'npartitions', 'metadata']:
         assert hasattr(source, attr)
 
