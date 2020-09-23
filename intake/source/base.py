@@ -278,10 +278,12 @@ class DataSourceBase(DictSerialiseMixin):
     def __repr__(self):
         return self.yaml()
 
+    @property
     def is_persisted(self):
         """The base class does not interact with persistence"""
         return False
 
+    @property
     def has_been_persisted(self):
         """The base class does not interact with persistence"""
         return False

@@ -86,32 +86,42 @@ From the user perspective, all of the metadata should be loaded once the data so
 schema (after ``discover()``, ``read()``, ``to_dask()``, etc have been called).
 
 
-Subclassing ``intake.source.base.DataSource``
----------------------------------------------
+Subclassing ``intake.source.base.DataSourceBase``
+-------------------------------------------------
 
 Every Intake driver class should be a subclass of ``intake.source.base.DataSource``.
 The class should have the following attributes to identify itself:
 
-- ``name``: The short name of the driver.  This should be a valid python identifier.  You should not include the
+- ``name``: The short name of the driver.  This should be a valid python identifier.
+  You should not include the
   word ``intake`` in the driver name.
 
-- ``version``: A version string for the driver.  This may be reported to the user by tools based on Intake, but has
+- ``version``: A version string for the driver.  This may be reported to the user by tools
+  based on Intake, but has
   no semantic importance.
 
-- ``container``: The container type of data sources created by this object, e.g., ``dataframe``, ``ndarray``, or
+- ``container``: The container type of data sources created by this object, e.g.,
+  ``dataframe``, ``ndarray``, or
   ``python``, one of the keys of ``intake.container.container_map``.
-  For simplicity, a driver many only return one typed of container.  If a particular source of data could
-  be used in multiple ways (such as HDF5 files interpreted as dataframes or as ndarrays), two drivers must be created.
+  For simplicity, a driver many only return one typed of container.  If a particular
+  source of data could
+  be used in multiple ways (such as HDF5 files interpreted as dataframes or as ndarrays),
+  two drivers must be created.
   These two drivers can be part of the same Python package.
 
-- ``partition_access``: Do the data sources returned by this driver have multiple partitions?  This may help tools in
-  the future make more optimal decisions about how to present data.  If in doubt (or the answer depends on init
-  arguments), ``True`` will always result in correct behavior, even if the data source has only one partition.
+- ``partition_access``: Do the data sources returned by this driver have multiple
+  partitions?  This may help tools in
+  the future make more optimal decisions about how to present data.  If in doubt
+  (or the answer depends on init
+  arguments), ``True`` will always result in correct behavior, even if the data
+  source has only one partition.
 
-The ``__init()__`` method should always accept a keyword argument ``metadata``, a dictionary of metadata from the
+The ``__init()__`` method should always accept a keyword argument ``metadata``, a
+dictionary of metadata from the
 catalog to associate with the source.  This dictionary must be serializable as JSON.
 
-The base `DataSource` class has a small number of methods which should be overridden. Here is an example producing a
+The `DataSourceBase` class has a small number of methods which should be overridden.
+Here is an example producing a
 data-frame::
 
     class FooSource(intake.source.base.DataSource):
@@ -150,16 +160,18 @@ data-frame::
 Most of the work typically happens in the following methods:
 
 - ``__init__()``: Should be very lightweight and fast.  No files or network resources should be opened, and no
-  significant memory should be allocated yet.  Data sources are often serialized immediately.  The default implementation
+  significant memory should be allocated yet.  Data sources might be serialized immediately.  The default implementation
   of the pickle protocol in the base class will record all the arguments to ``__init__()`` and recreate the object with
   those arguments when unpickled, assuming the class has no side effects.
 
 - ``_get_schema()``: May open files and network resources and return as much of the schema as possible in small
-  amount of *approximately* constant  time.  The ``npartitions`` and ``extra_metadata`` attributes must be correct
+  amount of *approximately* constant  time. Typically, imports of packages needed by the source only happen here.
+  The ``npartitions`` and ``extra_metadata`` attributes must be correct
   when ``_get_schema`` returns.  Further keys such as ``dtype``, ``shape``, etc., should reflect the container type of
   the data-source, and can be ``None`` if not easily knowable, or include ``None`` for some elements. File-based
   sources should use fsspec to open a local or remote URL, and pass ``storage_options`` to it. This ensures
-  compatibility and extra features such as caching.
+  compatibility and extra features such as caching. If the backend can only deal with local files, you may
+  still want to use ``fsspec.open_local`` to allow for caching.
 
 - ``_get_partition(self, i)``: Should return all of the data from partition id ``i``, where ``i`` is typically an
   integer, but may be something more complex.
@@ -191,8 +203,28 @@ The full set of user methods of interest are as follows:
 - ``close(self)``: Close network or file handles and deallocate memory.  If other methods are called after ``close()``,
   the source is automatically reopened.
 
-It is also important to note that source attributes should be set after ``read()``, ``read_chunked()``,
-``read_partition()`` and ``to_dask()``, even if ``discover()`` was not called by the user.
+- ``to_*``: for some sources, it makes sense to provide alternative outputs aside from the base container
+  (dataframe, array, ...) and Dask variants.
+
+Note that all of these methods typically call ``_get_schema``, to make sure that the source has been
+initialised.
+
+Subclassing ``intake.source.base.DataSource``
+---------------------------------------------
+
+``DataSource`` provides the same functionality as ``DataSourceBase``, but has some additional mixin
+classes to provide some extras. A developer may choose to derive from ``DataSource`` to get all of
+these, or from ``DataSourceBase`` and make their own choice of mixins to support.
+
+- ``HoloviewsMixin``: provides plotting and GUI capabilities via the `holoviz`_ stack
+
+- ``PersistMixin``: allows for storing a local copy in a default format for the given
+  container type
+
+- ``CacheMixin``: allows for local storage of data files for a source. Deprecated,
+  you should use one of the caching mechanisms in ``fsspec``.
+
+.. _holoviz: https://holoviz.org/index.html
 
 .. _driver-discovery:
 
@@ -341,7 +373,7 @@ To use an ``OpenFile`` object, make it concrete by using a context:
 .. code-block:: python
 
     # at setup, to discover the number of files/partitions
-    set_of_open_files = dask.bytes.open_files(urlpath, mode='rb', **storage_options)
+    set_of_open_files = fsspec.open_files(urlpath, mode='rb', **storage_options)
 
     # when actually loading data; here we loop over all files, but maybe we just do one partition
     for an_open_file in set_of_open_files:
