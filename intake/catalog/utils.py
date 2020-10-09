@@ -12,6 +12,7 @@ import os
 import re
 import shlex
 import subprocess
+import datetime
 import sys
 
 
@@ -70,6 +71,8 @@ def _j_passthrough(x, funcname):
         x = x._undefined_name
     return "{{%s(%s)}}" % (funcname, x)
 
+def _offset_datetime(x, *args, **kwargs):
+    return x + datetime.timedelta(*args, **kwargs)
 
 def _expand(p, context, all_vars, client, getenv, getshell):
     if isinstance(p, dict):
@@ -96,6 +99,7 @@ def _expand(p, context, all_vars, client, getenv, getshell):
             jinja.globals['client_shell'] = _j_getshell
         else:
             jinja.globals['client_shell'] = lambda x: _j_passthrough(x, funcname='client_shell')
+        jinja.globals['offset_datetime'] = _offset_datetime
         ast = jinja.parse(p)
         all_vars -= meta.find_undeclared_variables(ast)
         return jinja.from_string(p).render(context)
