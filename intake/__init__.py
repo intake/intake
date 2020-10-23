@@ -19,7 +19,6 @@ from .source import register_driver, registry
 imports = {
     "DataSource": "intake.source.base:DataSource",
     'Schema': "intake.source.base:Schema",
-    "cat": "intake.catalog:builtin",
     "load_combo_catalog": "intake.catalog.default:load_combo_catalog",
     "upload": "intake.container:upload",
     "gui": "intake.interface:instance",
@@ -58,6 +57,11 @@ def __getattr__(attr):
                 gl[attr] = getattr(mod, dest.split(":")[1])
             else:
                 gl[attr] = mod
+        if attr == 'cat':
+            mod = importlib.import_module('intake.catalog')
+            if mod.builtin is None:
+                mod.builtin = mod._make_builtin()
+            gl['cat'] = mod.builtin
     if attr == "__all__":
         return __dir__()
     try:
