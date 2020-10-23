@@ -50,10 +50,10 @@ def clamp(value, lower=0, upper=sys.maxsize):
     return max(lower, min(upper, value))
 
 
-def _j_getenv(x):
+def _j_getenv(x, default=""):
     if isinstance(x, Undefined):
         x = x._undefined_name
-    return os.getenv(x, '')
+    return os.getenv(x, default or "")
 
 
 def _j_getshell(x):
@@ -147,9 +147,11 @@ def expand_defaults(default, client=False, getenv=True, getshell=True):
     If the environment variable is missing or the shell command fails, the
     output is an empty string.
     """
-    r = re.match(r'env\((.*)\)', default)
+    import pdb
+    pdb.set_trace()
+    r = re.match(r'env\((.*),?(.*)\)', default)
     if r and not client and getenv:
-        default = os.environ.get(r.groups()[0], '')
+        default = os.environ.get(r.groups()[0], r.groups[1])
     r = re.match(r'client_env\((.*)\)', default)
     if r and client and getenv:
         default = os.environ.get(r.groups()[0], '')
