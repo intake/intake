@@ -149,11 +149,10 @@ def expand_defaults(default, client=False, getenv=True, getshell=True):
     If the environment variable is missing or the shell command fails, the
     output is an empty string.
     """
-    import pdb
-    pdb.set_trace()
     r = re.match(r'env\((.*),?(.*)\)', default)
     if r and not client and getenv:
-        default = os.environ.get(r.groups()[0], r.groups[1])
+        gs = r.groups()
+        default = os.environ.get(gs[0], gs[1] if len(gs) > 1 else "")
     r = re.match(r'client_env\((.*)\)', default)
     if r and client and getenv:
         default = os.environ.get(r.groups()[0], '')
