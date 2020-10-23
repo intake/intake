@@ -150,7 +150,7 @@ class Plots(BaseView):
             import xarray
             try:
                 data = self.source.to_dask()
-            except NotImplemented:
+            except NotImplementedError:
                 data = self.source.read()
             if not isinstance(data, (xarray.DataArray, xarray.Dataset)):
                 data = xarray.DataArray(data)

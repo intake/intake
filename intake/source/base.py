@@ -269,7 +269,7 @@ class DataSourceBase(DictSerialiseMixin):
         data = self._yaml()['sources']
         contents = dump(data, default_flow_style=False)
         display({
-            'application/json': contents,
+            'application/yaml': contents,
             'text/plain': pretty_describe(contents)
         }, metadata={
             'application/json': {'root': self.name}

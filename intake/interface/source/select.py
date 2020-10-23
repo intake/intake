@@ -89,8 +89,13 @@ class SourceSelector(BaseSelector):
         """Set sources from a list of cats"""
         sources = []
         for cat in coerce_to_list(cats):
-            sources.extend([entry for k, entry in cat._entries.items()
-                            if entry.describe()['container'] != 'catalog'])
+            for k, entry in cat._entries.items():
+                try:
+                    if entry.describe()['container'] != 'catalog':
+                        sources.append(entry)
+                except IOError:
+                    # loading cat might fail here
+                    pass
         self.items = sources
 
     def callback(self, event):
