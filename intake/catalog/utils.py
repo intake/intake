@@ -53,7 +53,9 @@ def clamp(value, lower=0, upper=sys.maxsize):
 def _j_getenv(x, default=""):
     if isinstance(x, Undefined):
         x = x._undefined_name
-    return os.getenv(x, default or "")
+    if isinstance(default, Undefined):
+        default = default._undefined_name
+    return os.getenv(x, default)
 
 
 def _j_getshell(x):
