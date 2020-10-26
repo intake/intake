@@ -23,13 +23,14 @@ def test_deferred_import():
     "See https://github.com/intake/intake/pull/541"
     # We are going to mess with sys.modules here, so to be safe let's put it
     # back the way it was at the end.
-    modules = sys.modules.copy()
-    del sys.modules["intake"]
+    import intake.catalog
+    intake.catalog.builtin = None
+    mods = sys.modules.copy()
     try:
-        import intake
-        assert intake.catalog is None
+        sys.modules.pop("intake")
+        sys.modules.pop("intake.catalog")
+        intake.catalog.__dict__.pop('builtin')
+        assert 'builtin' not in intake.catalog.__dict__
         assert intake.cat is not None
-        assert intake.catalog is not None  # implementation detail
     finally:
-        # Put sys.modules back as it was before we messed with it.
-        sys.modules = modules
+        sys.modules.update(mods)

@@ -22,6 +22,7 @@ imports = {
     "load_combo_catalog": "intake.catalog.default:load_combo_catalog",
     "upload": "intake.container:upload",
     "gui": "intake.interface:instance",
+    "cat": "intake.catalog:builtin",
     "output_notebook": "intake.interface:output_notebook",
     "register_driver": "intake.source:register_driver",
     "unregister_driver": "intake.source:unregister_driver",
@@ -57,11 +58,6 @@ def __getattr__(attr):
                 gl[attr] = getattr(mod, dest.split(":")[1])
             else:
                 gl[attr] = mod
-        if attr == 'cat':
-            mod = importlib.import_module('intake.catalog')
-            if mod.builtin is None:
-                mod.builtin = mod._make_builtin()
-            gl['cat'] = mod.builtin
     if attr == "__all__":
         return __dir__()
     try:
