@@ -40,7 +40,8 @@ class Catalog(DataSource):
 
     def __init__(self, *args, name=None, description=None, metadata=None,
                  ttl=60, getenv=True, getshell=True,
-                 persist_mode='default', storage_options=None):
+                 persist_mode='default', storage_options=None,
+                 entry_type=object):
         """
         Parameters
         ----------
@@ -72,6 +73,14 @@ class Catalog(DataSource):
             parameters to pass to requests when issuing http commands; otherwise
             parameters to pass to remote backend file-system. Ignored for
             normal local files.
+        entry_type : type, optional
+            The type of object that this Catalog returns. This should be as
+            specific as possible. For example, if a Catalog always returns
+            CSVDataSource type, it should specify that, because it will allow
+            consumers to make simplifying assumptions. However, Catalogs that
+            contain a mixture of types can provide a more general class like
+            DataSource or, for maximum flexibility, object, which is the
+            default.
         """
         super(Catalog, self).__init__()
         self.name = name
@@ -93,7 +102,13 @@ class Catalog(DataSource):
         self.args = args
         self.updated = time.time()
         self._entries = self._make_entries_container()
+        self._entry_type = entry_type
         self.force_reload()
+
+    @property
+    def entry_type(self):
+        "All entries are instances of this type."
+        return self._entry_type
 
     @classmethod
     def from_dict(cls, entries, **kwargs):
@@ -250,12 +265,12 @@ class Catalog(DataSource):
     def items(self):
         """Get an iterator over (key, source) tuples for the catalog entries."""
         for name, entry in self._get_entries().items():
-            yield name, entry()
+            yield name, self._validate_type(entry())
 
     def values(self):
         """Get an iterator over the sources for catalog entries."""
         for entry in self._get_entries().values():
-            yield entry()
+            yield self._validate_type(entry())
 
     def serialize(self):
         """
@@ -294,11 +309,26 @@ class Catalog(DataSource):
         entry = self._entries[name]
         entry._catalog = self
         entry._pmode = self.pmode
-        return entry()
+        return self._validate_entry_type(entry())
 
     @reload_on_change
     def _get_entries(self):
         return self._entries
+
+    def _validate_type(self, value):
+        "Ensure that the entry_type specified in __init__ is respected."
+        # It would probably be better to validate data on the way _in_
+        # rather than on the way out, but I see no way to do that reliably
+        # within intake's architecture.
+        if not isinstance(value, self.entry_type):
+            raise TypeError(
+                "Catalog has tried to return an Entry of type "
+                f"{type(value)} which conflicts with its declared entry_type, "
+                "{self._entry_type}."
+                "To resolve this, either avoid mixing the types within "
+                "Catalogs or provide a more general type, such as DataSource "
+                "or, for maximum flexibility, object.")
+        return value
 
     def __iter__(self):
         """Return an iterator over catalog entry names."""
@@ -387,7 +417,7 @@ class Catalog(DataSource):
             e._pmode = self.pmode
             if e._container == 'catalog':
                 return e(name=key)
-            return e()
+            return self._validate_type(e())
         if isinstance(key, str) and '.' in key:
             key = key.split('.')
         if isinstance(key, list):
