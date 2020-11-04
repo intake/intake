@@ -13,7 +13,7 @@ automatically display the last object in a code cell).
 
 .. image:: _static/images/gui_builtin.png
 
-New instances of the GUI are also available by instantiating ``intake.GUI``,
+New instances of the GUI are also available by instantiating ``intake.interface.gui.GUI``,
 where you can specify a list of catalogs to initially include.
 
 The GUI contains three main areas:
@@ -116,7 +116,7 @@ checking the box next to "show yaml".
 
 .. image:: _static/images/gui_plot_yaml.png
 
-The holoviews object can be retrieved from the gui using ``intake.gui.source.plot.pane.object``,
+The holoviews object can be retrieved from the gui using ``intake.interface.source.plot.pane.object``,
 and you can then use it in Python or export it to a file.
 
 Interactive Visualization

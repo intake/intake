@@ -86,60 +86,60 @@ GUI
 
 .. autosummary::
 
-   intake.gui.base.Base
-   intake.gui.base.BaseSelector
-   intake.gui.base.BaseView
-   intake.gui.catalog.add.FileSelector
-   intake.gui.catalog.add.URLSelector
-   intake.gui.catalog.add.CatAdder
-   intake.gui.catalog.gui.CatGUI
-   intake.gui.catalog.search.Search
-   intake.gui.catalog.search.SearchInputs
-   intake.gui.catalog.select.CatSelector
-   intake.gui.source.defined_plots.Plots
-   intake.gui.source.gui.SourceGUI
-   intake.gui.source.description.Description
-   intake.gui.source.select.SourceSelector
+   intake.interface.base.Base
+   intake.interface.base.BaseSelector
+   intake.interface.base.BaseView
+   intake.interface.catalog.add.FileSelector
+   intake.interface.catalog.add.URLSelector
+   intake.interface.catalog.add.CatAdder
+   intake.interface.catalog.gui.CatGUI
+   intake.interface.catalog.search.Search
+   intake.interface.catalog.search.SearchInputs
+   intake.interface.catalog.select.CatSelector
+   intake.interface.source.defined_plots.Plots
+   intake.interface.source.gui.SourceGUI
+   intake.interface.source.description.Description
+   intake.interface.source.select.SourceSelector
 
-.. autoclass:: intake.gui.base.Base
+.. autoclass:: intake.interface.base.Base
    :members:
 
-.. autoclass:: intake.gui.base.BaseSelector
+.. autoclass:: intake.interface.base.BaseSelector
    :members:
 
-.. autoclass:: intake.gui.base.BaseView
+.. autoclass:: intake.interface.base.BaseView
    :members:
 
-.. autoclass:: intake.gui.catalog.add.FileSelector
+.. autoclass:: intake.interface.catalog.add.FileSelector
    :members:
 
-.. autoclass:: intake.gui.catalog.add.URLSelector
+.. autoclass:: intake.interface.catalog.add.URLSelector
    :members:
 
-.. autoclass:: intake.gui.catalog.add.CatAdder
+.. autoclass:: intake.interface.catalog.add.CatAdder
    :members:
 
-.. autoclass:: intake.gui.catalog.gui.CatGUI
+.. autoclass:: intake.interface.catalog.gui.CatGUI
    :members:
 
-.. autoclass:: intake.gui.catalog.search.Search
+.. autoclass:: intake.interface.catalog.search.Search
    :members:
 
-.. autoclass:: intake.gui.catalog.search.SearchInputs
+.. autoclass:: intake.interface.catalog.search.SearchInputs
    :members:
 
-.. autoclass:: intake.gui.catalog.select.CatSelector
+.. autoclass:: intake.interface.catalog.select.CatSelector
    :members:
 
-.. autoclass:: intake.gui.source.defined_plots.Plots
+.. autoclass:: intake.interface.source.defined_plots.Plots
    :members:
 
-.. autoclass:: intake.gui.source.gui.SourceGUI
+.. autoclass:: intake.interface.source.gui.SourceGUI
    :members:
 
-.. autoclass:: intake.gui.source.description.Description
+.. autoclass:: intake.interface.source.description.Description
    :members:
 
-.. autoclass:: intake.gui.source.select.SourceSelector
+.. autoclass:: intake.interface.source.select.SourceSelector
    :members:
 
