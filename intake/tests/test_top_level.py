@@ -113,8 +113,8 @@ def test_output_notebook():
 
 
 def test_old_usage():
-    with pytest.warns(UserWarning):
-        intake.Catalog()
+    assert isinstance(intake.Catalog(), intake.Catalog)
+    assert intake.Catalog is intake.catalog.base.Catalog
 
 
 def test_no_imports():

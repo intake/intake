@@ -37,6 +37,7 @@ class Catalog(DataSource):
     # emulate a DataSource
     container = 'catalog'
     name = 'catalog'
+    auth = None
 
     def __init__(self, *args, name=None, description=None, metadata=None,
                  ttl=60, getenv=True, getshell=True,
@@ -90,7 +91,9 @@ class Catalog(DataSource):
             args = list(flatten(args))
         if len(args) == 1:
             args = args[0]
-        self.args = args
+        if args:
+            raise ValueError("The base Catalog class takes no positional arguments.\n"
+                             "Did you mean to use ``intake.open_catalog``?")
         self.updated = time.time()
         self._entries = self._make_entries_container()
         self.force_reload()
