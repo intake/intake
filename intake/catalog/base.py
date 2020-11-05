@@ -90,7 +90,7 @@ class Catalog(DataSource):
         if entries and isinstance(entries, str):
             raise ValueError(
                 "The class intake.Catalog does not accept a string for "
-                "`entries`\n".
+                "`entries`\n"
                 "Did you mean to use `intake.open_catalog`? Note that in "
                 "versions of intake <=0.5.4 `intake.Catalog` was an "
                 "alias for `intake.open_catalog`. It is now the intake base "
