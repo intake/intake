@@ -37,15 +37,16 @@ class Catalog(DataSource):
     # emulate a DataSource
     container = 'catalog'
     name = 'catalog'
+    auth = None
 
-    def __init__(self, *args, name=None, description=None, metadata=None,
+    def __init__(self, entries=None, name=None, description=None, metadata=None,
                  ttl=60, getenv=True, getshell=True,
                  persist_mode='default', storage_options=None):
         """
         Parameters
         ----------
-        args : str or list(str)
-            A single URI or list of URIs.
+        entries : dict, optional
+            Mapping of {name: entry}
         name : str, optional
             Unique identifier for catalog. This takes precedence over whatever
             is stated in the cat file itself. Defaults to None.
@@ -86,13 +87,16 @@ class Catalog(DataSource):
             raise ValueError('Persist mode (%s) not understood' % persist_mode)
         self.pmode = persist_mode
 
-        if all(isinstance(a, (tuple, list)) for a in args):
-            args = list(flatten(args))
-        if len(args) == 1:
-            args = args[0]
-        self.args = args
+        if entries and isinstance(entries, str):
+            raise ValueError(
+                "The class intake.Catalog does not accept a string for "
+                "`entries`\n"
+                "Did you mean to use `intake.open_catalog`? Note that in "
+                "versions of intake <=0.5.4 `intake.Catalog` was an "
+                "alias for `intake.open_catalog`. It is now the intake base "
+                "Catalog class.")
         self.updated = time.time()
-        self._entries = self._make_entries_container()
+        self._entries = entries if entries is not None else self._make_entries_container()
         self.force_reload()
 
     @classmethod

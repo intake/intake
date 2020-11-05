@@ -15,6 +15,7 @@ __version__ = get_versions()['version']
 del get_versions
 
 from .source import register_driver, registry
+from .catalog.base import Catalog
 
 imports = {
     "DataSource": "intake.source.base:DataSource",
@@ -38,12 +39,7 @@ def __getattr__(attr):
     contents of the ``imports`` and ``openers`` dicts
     """
     gl = globals()
-    if attr == 'Catalog':
-        from .catalog.base import Catalog
-        warnings.warn('deprecation: intake.Catalog now references the base class intake.catalog.base.Catalog\n '
-                      'If you want to open a generic URL, you should use intake.open_catalog')
-        return Catalog
-    elif attr in openers:
+    if attr in openers:
         driver = openers[attr].load()
         gl[attr] = driver
     else:

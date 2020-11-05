@@ -17,7 +17,7 @@ These are reference class and function definitions likely to be useful to everyo
    intake.catalog.local.YAMLFileCatalog
    intake.catalog.local.YAMLFilesCatalog
    intake.catalog.zarr.ZarrGroupCatalog
-   intake.gui.gui.GUI
+   intake.interface.gui.GUI
 
 .. autofunction::
    intake.open_catalog
@@ -36,7 +36,7 @@ These are reference class and function definitions likely to be useful to everyo
 .. autofunction::
    intake.upload
 
-.. autoclass:: intake.gui.gui.GUI
+.. autoclass:: intake.interface.gui.GUI
    :members:
 
 Source classes
