@@ -88,8 +88,13 @@ class Catalog(DataSource):
         self.pmode = persist_mode
 
         if entries and isinstance(entries, str):
-            raise ValueError("The base Catalog class takes no positional arguments.\n"
-                             "Did you mean to use ``intake.open_catalog``?")
+            raise ValueError(
+                "The class intake.Catalog does not accept a string for "
+                "`entries`\n".
+                "Did you mean to use `intake.open_catalog`? Note that in "
+                "versions of intake <=0.5.4 `intake.Catalog` was an "
+                "alias for `intake.open_catalog`. It is now the intake base "
+                "Catalog class.")
         self.updated = time.time()
         self._entries = entries if entries is not None else self._make_entries_container()
         self.force_reload()
