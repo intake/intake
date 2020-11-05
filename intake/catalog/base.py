@@ -385,7 +385,7 @@ class Catalog(DataSource):
             e = self._entries[key]
             e._catalog = self
             e._pmode = self.pmode
-            if e._container == 'catalog':
+            if e.container == 'catalog':
                 return e(name=key)
             return e()
         if isinstance(key, str) and '.' in key:
