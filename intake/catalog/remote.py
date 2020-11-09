@@ -446,7 +446,8 @@ class RemoteCatalogEntry(CatalogEntry):
 
         http_args = self.http_args.copy()
         http_args['headers'] = self.http_args['headers'].copy()
-        http_args['headers'].update(self.auth.get_headers())
+        if self.auth is not None:
+            http_args['headers'].update(self.auth.get_headers())
         return open_remote(
             self.url, self.name, container=self.container,
             user_parameters=user_parameters, description=self.description,

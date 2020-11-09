@@ -37,10 +37,9 @@ class Catalog(DataSource):
     # emulate a DataSource
     container = 'catalog'
     name = 'catalog'
-    auth = None
 
     def __init__(self, entries=None, name=None, description=None, metadata=None,
-                 ttl=60, getenv=True, getshell=True,
+                 auth=None, ttl=60, getenv=True, getshell=True,
                  persist_mode='default', storage_options=None):
         """
         Parameters
@@ -58,6 +57,8 @@ class Catalog(DataSource):
         ttl : float, optional
             Lifespan (time to live) of cached modification time. Units are in
             seconds. Defaults to 1.
+        auth : BaseClientAuth or None
+            Default is None.
         getenv: bool
             Can parameter default fields take values from the environment
         getshell: bool
@@ -78,6 +79,7 @@ class Catalog(DataSource):
         self.name = name
         self.description = description
         self.metadata = metadata or {}
+        self.auth = auth
         self.ttl = ttl
         self.getenv = getenv
         self.getshell = getshell
