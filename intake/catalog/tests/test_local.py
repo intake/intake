@@ -664,6 +664,16 @@ def test_filter():
     assert cat2.trial2 == entry2()
 
 
+def test_from_dict_with_data_source():
+    "Check that Catalog.from_dict accepts DataSources not wrapped in Entry."
+    from intake.catalog.base import Catalog
+    fn = os.path.join(tempfile.mkdtemp(), 'mycat.yaml')
+    entry = LocalCatalogEntry(name='trial', description='get this back',
+                              driver='csv', args=dict(urlpath=""))
+    ds = entry()
+    cat = Catalog.from_dict({'trial': ds}, name='mycat')
+
+
 def test_no_instance():
     from intake.catalog.local import LocalCatalogEntry
 
