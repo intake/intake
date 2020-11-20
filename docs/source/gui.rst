@@ -4,7 +4,7 @@ GUI
 Using the GUI
 -------------
 
-**Note**: the GUI requires the latest release versions of ``panel`` and ``bokeh`` to
+**Note**: the GUI requires ``panel`` and ``bokeh`` to
 be available in the current environment.
 
 The Intake top-level singleton ``intake.gui`` gives access to a graphical data browser
@@ -13,7 +13,7 @@ automatically display the last object in a code cell).
 
 .. image:: _static/images/gui_builtin.png
 
-New instances of the GUI are also available by instantiating ``intake.GUI``,
+New instances of the GUI are also available by instantiating ``intake.interface.gui.GUI``,
 where you can specify a list of catalogs to initially include.
 
 The GUI contains three main areas:
@@ -21,9 +21,9 @@ The GUI contains three main areas:
 - a **list of catalogs**. The "builtin" catalog, displayed by default, includes data-sets installed
   in the system, the same as ``intake.cat``.
 
-- a **list of sources** within the currently-selected catalog.
+- a **list of sources** within the currently selected catalog.
 
-- a **description** of the currently-selected source.
+- a **description** of the currently selected source.
 
 
 Catalogs
@@ -37,20 +37,20 @@ searching-within catalogs:
 -  **Add**: opens a sub-panel for adding catalogs to the interface, by either browsing for a local
    YAML file or by entering a URL for a catalog, which can be a remote file or Intake server
 
--  **Remove**: deletes the currently-selected catalog from the list
+-  **Remove**: deletes the currently selected catalog from the list
 
--  **Search**: opens a sub-panel for finding entries in the currently-selected catalog (and it's
+-  **Search**: opens a sub-panel for finding entries in the currently selected catalog (and its
    sub-catalogs)
 
 Add Catalogs
 ~~~~~~~~~~~~
 
-The Add button (+) exposes a sub-panel with two main ways to add catalogs to the interface
+The Add button (+) exposes a sub-panel with two main ways to add catalogs to the interface:
 
 .. image:: _static/images/gui_add.png
 
-This panel has a tab to load files from **local** from that you can navigate around the filesystem
-using the arrow or by editting the path directly. Use the home button to get back to the starting
+This panel has a tab to load files from **local**; from that you can navigate around the filesystem
+using the arrow or by editing the path directly. Use the home button to get back to the starting
 place. Select the catalog file you need. Use the "Add Catalog" button to add the catalog to the list
 above.
 
@@ -69,7 +69,7 @@ which can take filenames, remote URLs or existing ``Catalog`` instances.
 Remove Catalogs
 ~~~~~~~~~~~~~~~
 
-The Remove button (-) deletes the currently-selected catalog from the list. It is important to
+The Remove button (-) deletes the currently selected catalog from the list. It is important to
 note that this action does not have any impact on files, it only affects what shows up in the list.
 
 .. image:: _static/images/gui_remove.png
@@ -88,7 +88,7 @@ and therefore allow for infinite recursion.
 
 .. image:: _static/images/gui_search_inputs.png
 
-Upon execution of the search, the currently-selected catalog will be searched. Entries will
+Upon execution of the search, the currently selected catalog will be searched. Entries will
 be considered to match if any of the entered words is found in the description of the entry (this
 is case-insensitive). If any matches are found, a new entry will be made in the catalog list,
 with the suffix "_search".
@@ -116,7 +116,35 @@ checking the box next to "show yaml".
 
 .. image:: _static/images/gui_plot_yaml.png
 
-The holoviews object can be retrieved from the gui using ``intake.gui.source.plot.pane.object``.
+The holoviews object can be retrieved from the gui using ``intake.interface.source.plot.pane.object``,
+and you can then use it in Python or export it to a file.
+
+Interactive Visualization
+'''''''''''''''''''''''''
+
+If you have installed the optional extra packages `dfviz`_ and `xrviz`_, you can
+interactively plot your dataframe or array data, respectively.
+
+.. image:: _static/images/custom_button.png
+
+.. _dfviz: https://dfviz.readthedocs.io/
+.. _xrviz: https://xrviz.readthedocs.io/
+
+The button "customize" will be available for data sources of the appropriate type.
+Click this to open the interactive interface. If you have not selected a predefined
+plot (or there are none), then the interface will start without any prefilled
+values, but if you do first select a plot, then the interface will have its options
+pre-filled from the options
+
+For specific instructions on how to use the interfaces (which can also be used
+independently of the Intake GUI), please navigate to the linked documentation.
+
+Note that the final parameters that are sent to ``hvPlot`` to produce the output
+each time a plot if updated, are explicitly available in YAML format, so that
+you can save the state as a "predefined plot" in the catalog. The same set of
+parameters can also be used in code, with ``datasource.plot(...)``.
+
+.. image:: _static/images/YAMLtab.png
 
 Using the Selection
 -------------------
@@ -147,3 +175,4 @@ as with any catalog entry:
 
    In [ ]: source_entry.plot()  # or skip data source step
    Out   : < graphics>
+

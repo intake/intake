@@ -10,11 +10,13 @@ import posixpath
 import shutil
 import time
 import tempfile
+import sys
 
 import intake
 import appdirs
 import pytest
 from intake.utils import make_path_posix
+import intake.catalog.local
 
 
 def copy_test_file(filename, target_dir):
@@ -39,6 +41,7 @@ def user_catalog():
     # Remove the file, but not the directory (because there might be other
     # files already there)
     os.remove(target_catalog)
+
 
 @pytest.fixture
 def tmp_path_catalog():
@@ -70,7 +73,7 @@ def test_user_catalog(user_catalog):
 
 
 def test_open_styles(tmp_path_catalog):
-    cat = intake.Catalog(tmp_path_catalog)
+    cat = intake.catalog.local.YAMLFileCatalog(tmp_path_catalog)
     cat2 = intake.open_catalog(tmp_path_catalog)
     assert list(cat) == list(cat2)
     cat2 = intake.open_catalog([tmp_path_catalog])
@@ -107,3 +110,21 @@ def test_bad_open():
 def test_output_notebook():
     pytest.importorskip('hvplot')
     intake.output_notebook()
+
+
+def test_old_usage():
+    assert isinstance(intake.Catalog(), intake.Catalog)
+    assert intake.Catalog is intake.catalog.base.Catalog
+
+
+def test_no_imports():
+    mods = [mod for mod in sys.modules if mod.startswith('intake')]
+    [sys.modules.pop(mod) for mod in mods]
+
+    import intake
+
+    assert 'intake' in sys.modules
+
+    for mod in ['intake.tests', 'intake.interface', 'intake.source.csv',
+                'intake.cli', 'intake.auth']:
+        assert mod not in sys.modules

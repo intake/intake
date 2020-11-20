@@ -4,6 +4,7 @@ Base Classes
 This is a reference API class listing, useful mainly for developers.
 
 .. autosummary::
+   intake.source.base.DataSourceBase
    intake.source.base.DataSource
    intake.source.base.PatternMixin
    intake.source.base.AliasSource

@@ -5,31 +5,14 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-import os
 import posixpath
-import shutil
 import time
 import yaml
 from ..catalog.local import YAMLFileCatalog, CatalogEntry
-from .. import DataSource
+from ..source import DataSource
 from ..config import conf, logger
 from ..source import import_name
 from ..utils import make_path_posix
-
-
-def _maybe_add_rm(fs):
-    # monkey-path local filesystem
-    # this goes away if we can use fsspec's local file-system
-    from fsspec.implementations.local import LocalFileSystem
-    if isinstance(fs, LocalFileSystem):
-        def rm(path, recursive=False):
-            if recursive:
-                import shutil
-                shutil.rmtree(path)
-            else:
-                import os
-                os.remove(path)
-        fs.rm = rm
 
 
 class PersistStore(YAMLFileCatalog):
@@ -47,15 +30,13 @@ class PersistStore(YAMLFileCatalog):
             cls._singleton[0] = o
         return cls._singleton[0]
 
-    def __init__(self, path=None):
-        # from fsspec.registry import filesystem
+    def __init__(self, path=None, **storage_options):
         from fsspec import filesystem
+        from fsspec.core import split_protocol
         self.pdir = make_path_posix(path or conf.get('persist_path'))
+        protocol, _ = split_protocol(self.pdir)
         path = posixpath.join(self.pdir, 'cat.yaml')
-        protocol = (self.pdir.split('://', 1)[0]
-                    if "://" in self.pdir else 'file')
-        self.fs = filesystem(protocol)
-        _maybe_add_rm(self.fs)
+        self.fs = filesystem(protocol, **storage_options)
         super(PersistStore, self).__init__(path)
 
     def _load(self):
@@ -73,7 +54,8 @@ class PersistStore(YAMLFileCatalog):
 
     def getdir(self, source):
         """Clear/create a directory to store a persisted dataset into"""
-        subdir = posixpath.join(self.pdir, source._tok)
+        from dask.base import tokenize
+        subdir = posixpath.join(self.pdir, tokenize(source))
         try:
             self.fs.rm(subdir, True)
         except Exception as e:
@@ -115,14 +97,16 @@ class PersistStore(YAMLFileCatalog):
         if it is a persisted thing ("original_tok" is in its metadata), else
         generate its own token.
         """
+        from dask.base import tokenize
+
         if isinstance(source, str):
             return source
 
         if isinstance(source, CatalogEntry):
-            return source._metadata.get('original_tok', source._tok)
+            return source._metadata.get('original_tok', tokenize(source))
 
         if isinstance(source, DataSource):
-            return source.metadata.get('original_tok', source._tok)
+            return source.metadata.get('original_tok', tokenize(source))
         raise IndexError
 
     def remove(self, source, delfiles=True):
@@ -145,7 +129,7 @@ class PersistStore(YAMLFileCatalog):
             path = posixpath.join(self.pdir, source)
             try:
                 self.fs.rm(path, True)
-            except Exception as e:
+            except Exception:
                 logger.debug("Failed to delete persisted data dir %s" % path)
         self._entries.pop(source, None)
 
@@ -179,10 +163,12 @@ class PersistStore(YAMLFileCatalog):
         Will return True if the source is not in the store at all, if it's
         TTL is set to None, or if more seconds have passed than the TTL.
         """
+        from dask.base import tokenize
         now = time.time()
-        if source._tok in self:
-            s0 = self[source._tok]
-            if self[source._tok].metadata.get('ttl', None):
+        token = tokenize(source)
+        if token in self:
+            s0 = self[token]
+            if self[token].metadata.get('ttl', None):
                 then = s0.metadata['timestamp']
                 if s0.metadata['ttl'] < then - now:
                     return True

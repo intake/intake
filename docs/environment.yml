@@ -1,13 +1,11 @@
 name: intake
 channels:
   - defaults
-  - conda-forge
 
 dependencies:
   - appdirs
-  - cloudpickle
-  - python=3.6
-  - dask
+  - python=3.7
+  - dask=2.10.1
   - numpy
   - pandas
   - msgpack-python
@@ -15,11 +13,11 @@ dependencies:
   - requests
   - tornado
   - jinja2
-  - dask >=0.17.0
   - python-snappy
   - pyyaml
-  - holoplot
+  - hvplot >=0.5.2
+  - panel >=0.8.0
+  - bokeh <2.0.0
   - sphinx
   - sphinx_rtd_theme
   - numpydoc
-  - panel >=0.5.0

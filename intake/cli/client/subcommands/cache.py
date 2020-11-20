@@ -4,35 +4,18 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-'''
 
-'''
-
+import os
+import yaml
+from intake.cli.util import Subcommand
 import logging
 log = logging.getLogger(__name__)
 
-#-----------------------------------------------------------------------------
-# Imports
-#-----------------------------------------------------------------------------
-
-# Standard library imports
-import os
-
-# External imports
-import yaml
-
-# Intake imports
-from intake.cli.util import Subcommand
-from intake.utils import make_path_posix
-
-#-----------------------------------------------------------------------------
-# API
-#-----------------------------------------------------------------------------
 
 class Cache(Subcommand):
-    ''' Locally cached files
+    """ Locally cached files
 
-    '''
+    """
 
     name = "cache"
 

@@ -18,7 +18,7 @@ If you are using virtualenv/pip, run the following command::
 
     pip install intake
 
-Note that this will install with the mininum of optional requirements. If you want a more complete
+Note that this will install with the minimum of optional requirements. If you want a more complete
 install, use `intake[complete]` instead.
 
 .. _Anaconda: https://www.anaconda.com/download/
@@ -110,11 +110,15 @@ working with Dask collections (Bag, Array or Data-frames).
 Opening a Catalog
 -----------------
 
-It is often useful to move the descriptions of data sources out of your code and into a specification
-file that can be
-reused and shared with other projects and people.  Intake calls this a ":term:`Catalog`", which contains
-a list of named
-entries describing how to load data sources.  The ``intake example`` command, above, created a catalog file
+A :term:`Catalog` is a collection of data sources, with the type and arguments prescribed for each, and
+arbitrary metadata about each source.
+In the simplest case, a catalog can be described by a file in YAML format, a
+":term:`Catalog file`". In real usage, catalogues can be defined in a number of ways, such as remote
+files, by
+connecting to a third-party data service (e.g., SQL server) or through an Intake :term:`Server` protocol, which
+can implement any number of ways to search and deliver data sources.
+
+The ``intake example`` command, above, created a catalog file
 with the following :term:`YAML`-syntax content:
 
 .. code-block:: yaml
@@ -128,7 +132,7 @@ with the following :term:`YAML`-syntax content:
         metadata:
           origin_url: 'https://github.com/CivilServiceUSA/us-states/blob/v1.0.0/data/states.csv'
 
-To load a catalog from a catalog file::
+To load a :term:`Catalog` from a :term:`Catalog file`::
 
     >>> cat = intake.open_catalog('us_states.yml')
     >>> list(cat)
@@ -147,7 +151,8 @@ This catalog contains one data source, called ``states``.  It can be accessed by
 Placing data source specifications into a catalog like this enables declaring data sets in a single canonical place,
 and not having to use boilerplate code in each notebook/script that makes use of the data. The catalogs can also
 reference one-another, be stored remotely, and include extra metadata such as a set of named quick-look plots that
-are appropriate for the particular data source.
+are appropriate for the particular data source. Note that catalogs are **not** restricted
+to being stored in YAML files, that just happens to be the simplest way to display them.
 
 Many catalog entries will also contain "user_parameter" blocks, which are indications of options explicitly
 allowed by the catalog author, or for validation or the values passed. The user can customise how a data
@@ -156,7 +161,7 @@ the entry, or passing extra keyword arguments to be passed to the driver. The ke
 be passed are limited to the user_parameters defined and the inputs expected by the specific
 driver - such usage is expected only from those already familiar with the specifics of the given
 format. In the following example, the user overrides the "csv_kwargs" keyword, which is described
-in the documentation for :func:`CSVSource`_ and gets passed down to the CSV reader::
+in the documentation for :func:`CSVSource <intake.source.csv.CSVSource>` and gets passed down to the CSV reader::
 
     # pass extra kwargs understood by the csv driver
     >>> intake.cat.states(csv_kwargs={'header': None, 'skiprows': 1}).read().head()
@@ -169,10 +174,11 @@ Note that, if you are *creating* such catalogs, you may well start by trying the
 above, and then use ``print(ds.yaml())``. If you do this now, you will see that the output is very
 similar to the catalog file we have provided.
 
-Installing Data Source Packages with Conda
-------------------------------------------
+Installing Data Source Packages
+-------------------------------
 
-Intake makes it possible to create :term:`conda packages<Conda package>` that install data sources into a
+Intake makes it possible to create :term:`Data packages` (``pip`` or ``conda``)
+that install data sources into a
 global catalog.  For example, we can
 install a data package containing the same data we have been working with::
 
@@ -208,6 +214,7 @@ called ``intake.cat``.
 Using the GUI
 -------------
 
-A graphical data browser is available in the Jupyter notebook environment. It will show the
+A graphical data browser is available in the Jupyter notebook environment or standalone web-server.
+It will show the
 contents of any installed catalogs, plus allows for selecting local and remote catalogs,
 to browse and select entries from these. See :doc:`gui`.

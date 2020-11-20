@@ -59,8 +59,8 @@ def test_gui_open_plot_panel(gui, cat1, cat2, sources1, sources2):
     gui.source.plot_widget.value = True
     assert gui.source.plot.visible is True
     assert len(gui.source.plot.watchers) == 2
-    assert len(gui.source.plot.panel.objects) == 3
-    assert gui.source.plot.source == sources1[0]
+    assert len(gui.source.plot.panel.objects) == 2
+    assert gui.source.plot.source.entry == sources1[0]
 
     gui.source.select.cats = [cat2]
     assert gui.source.plot_widget.value is False  # hide on select change
@@ -69,7 +69,7 @@ def test_gui_open_plot_panel(gui, cat1, cat2, sources1, sources2):
 
     gui.source.plot_widget.value = True
     assert len(gui.source.plot.watchers) == 2
-    assert len(gui.source.plot.panel.objects) == 3
+    assert len(gui.source.plot.panel.objects) == 2
 
 
 def test_gui_open_search_panel(gui, cat1, cat2, sources1, sources2):

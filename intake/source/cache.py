@@ -17,7 +17,6 @@ import re
 import shutil
 import warnings
 
-from fsspec.utils import infer_storage_options
 from intake.config import conf
 from intake.utils import make_path_posix
 
@@ -26,6 +25,7 @@ logger = logging.getLogger('intake')
 
 def sanitize_path(path):
     """Utility for cleaning up paths."""
+    from fsspec.utils import infer_storage_options
 
     storage_option = infer_storage_options(path)
 
@@ -116,7 +116,7 @@ class BaseCache(object):
 
         dirname = os.path.dirname(cache_path)
         if not os.path.exists(dirname):
-            if not (dirname.startswith('https://') or 
+            if not (dirname.startswith('https://') or
                     dirname.startswith('http://')):
                 os.makedirs(dirname)
 
@@ -260,7 +260,6 @@ def _download(file_in, file_out, blocksize, output=False):
     """Read from input and write to output file in blocks"""
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore')
-
         if output:
             try:
                 from tqdm.autonotebook import tqdm
@@ -268,31 +267,34 @@ def _download(file_in, file_out, blocksize, output=False):
                 logger.warn("Cache progress bar requires tqdm to be installed:"
                             " conda/pip install tqdm")
                 output = False
+        try:
+            file_size = file_in.fs.size(file_in.path)
+            pbar_disabled = not file_size
+        except ValueError as err:
+            logger.debug("File system error requesting size: {}".format(err))
+            file_size = 0
+            pbar_disabled = True
         if output:
-            try:
-                file_size = file_in.fs.size(file_in.path)
-                pbar_disabled = False
-            except ValueError as err:
-                logger.debug("File system error requesting size: {}".format(err))
-                file_size = 0
-                pbar_disabled = True
-            for i in range(100):
-                if i not in display:
-                    display.add(i)
-                    out = i
-                    break
-            pbar = tqdm(total=file_size // 2 ** 20, leave=False,
-                        disable=pbar_disabled,
-                        position=out, desc=os.path.basename(file_out.path),
-                        mininterval=0.1,
-                        bar_format=r'{n}/|/{l_bar}')
+            if not pbar_disabled:
+                for i in range(100):
+                    if i not in display:
+                        display.add(i)
+                        out = i
+                        break
+                pbar = tqdm(total=file_size // 2 ** 20, leave=False,
+                            disable=pbar_disabled,
+                            position=out, desc=os.path.basename(file_out.path),
+                            mininterval=0.1,
+                            bar_format=r'{n}/|/{l_bar}')
+            else:
+                output = False
 
         logger.debug("Caching {}".format(file_in.path))
         with file_in as f1:
             with file_out as f2:
                 data = True
                 while data:
-                    data = f1.read(blocksize)
+                    data = f1.read(blocksize if file_size else -1)
                     f2.write(data)
                     if output:
                         pbar.update(len(data) // 2**20)
@@ -317,12 +319,18 @@ class FileCache(BaseCache):
         from fsspec import open_files
 
         self._ensure_cache_dir()
-        subdir = self._hash(urlpath)
+        if isinstance(urlpath, (list, tuple)):
+            subdir = self._hash(":".join(urlpath))
+        else:
+            subdir = self._hash(urlpath)
         files_in = open_files(urlpath, 'rb', **self._storage_options)
         files_out = [open_files([self._path(f.path, subdir)], 'wb',
                                 **self._storage_options)[0]
                      for f in files_in]
         return files_in, files_out
+
+    def _from_metadata(self, urlpath):
+        return super()._from_metadata(urlpath)
 
 
 class DirCache(BaseCache):
@@ -434,7 +442,7 @@ class CompressedCache(BaseCache):
 
 
 class DATCache(BaseCache):
-    """Use the DAT protocol to replicate data
+    r"""Use the DAT protocol to replicate data
 
     For details of the protocol, see https://docs.datproject.org/
     The executable ``dat`` must be available.
@@ -443,9 +451,11 @@ class DATCache(BaseCache):
     directly, this cache mechanism takes no parameters. The expectation
     is that the url passed by the driver is of the form:
 
+    ::
+
         dat://<dat hash>/file_pattern
 
-    where the file pattern will typically be a glob string like "*.json".
+    where the file pattern will typically be a glob string like "\*.json".
     """
 
     def _make_files(self, urlpath, **kwargs):
@@ -478,7 +488,7 @@ class CacheMetadata(collections.abc.MutableMapping):
     def __init__(self, *args, **kwargs):
         from intake import config
 
-        self._path = posixpath.join(make_path_posix(config.confdir), 
+        self._path = posixpath.join(make_path_posix(config.confdir),
                                     'cache_metadata.json')
         d = os.path.dirname(self._path)
         if not os.path.exists(d):
@@ -508,9 +518,12 @@ class CacheMetadata(collections.abc.MutableMapping):
         return len(self._metadata)
 
     def __keytransform__(self, key):
+        if isinstance(key, (list, tuple)):
+            key = ":".join(key)
         return key
 
     def update(self, key, cache_entry):
+        key = self.__keytransform__(key)
         entries = self._metadata.get(key, [])
         entries.append(cache_entry)
         self._metadata[key] = entries
@@ -551,7 +564,11 @@ def make_caches(driver, specs, catdir=None, cache_dir=None, storage_options={}):
     """
     if specs is None:
         return []
-    return [registry.get(spec['type'], FileCache)(
-        driver, spec, catdir=catdir, cache_dir=cache_dir,
-        storage_options=storage_options)
-        for spec in specs]
+    out = []
+    for spec in specs:
+        if 'type' in spec and spec['type'] not in registry:
+            raise IndexError(spec['type'])
+        out.append(registry.get(spec['type'], FileCache)(
+            driver, spec, catdir=catdir, cache_dir=cache_dir,
+            storage_options=storage_options))
+    return out

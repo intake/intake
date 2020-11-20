@@ -4,6 +4,8 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
+from distutils.version import LooseVersion
+
 
 from intake.source.base import Schema, DataSource
 from .base import RemoteSource, get_partition
@@ -21,11 +23,11 @@ class RemoteDataFrame(RemoteSource):
         self.shape = tuple(kwargs['shape'])
         self.metadata = kwargs['metadata']
         self.dtype = kwargs['dtype']
+        self.verify = kwargs.get('verify', False)
         self._schema = Schema(npartitions=self.npartitions,
                               extra_metadata=self.metadata,
                               dtype=self.dtype,
-                              shape=self.shape,
-                              datashape=None)
+                              shape=self.shape)
         self.dataframe = None
 
     def _load_metadata(self):
@@ -36,7 +38,10 @@ class RemoteDataFrame(RemoteSource):
                 self.url, self.headers, self._source_id, self.container, i
             )
                           for i in range(self.npartitions)]
-            self.dataframe = dd.from_delayed(self.parts)
+            if LooseVersion(dask.__version__) < LooseVersion("2.5.0"):
+                self.dataframe = dd.from_delayed(self.parts)
+            else:
+                self.dataframe = dd.from_delayed(self.parts, verify_meta=self.verify)
         return self._schema
 
     def _get_partition(self, i):
@@ -101,8 +106,7 @@ def is_dataframe_like(df):
     return (all(hasattr(typ, name)
                 for name in ('groupby', 'head', 'merge', 'mean')) and
             all(hasattr(df, name) for name in ('dtypes',)) and not
-            any(hasattr(typ, name)
-                for name in ('value_counts', 'dtype')))
+            hasattr(typ, 'dtype'))
 
 
 class GenericDataFrame(DataSource):
@@ -162,8 +166,7 @@ class GenericDataFrame(DataSource):
             self._schema = Schema(npartitions=self.npartitions,
                                   extra_metadata=self.metadata,
                                   dtype=self.dtype,
-                                  shape=self.shape,
-                                  datashape=None)
+                                  shape=self.shape)
         return self._schema
 
     def _get_partition(self, i):

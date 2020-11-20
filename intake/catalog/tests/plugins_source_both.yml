@@ -1,5 +1,0 @@
-plugins:
-  source:
-    - module: a.b.c
-      dir: abc
-sources: {}

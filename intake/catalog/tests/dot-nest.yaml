@@ -17,9 +17,15 @@ sources:
   leaf:
     description: leaf
     driver: csv
+    args:
+      urlpath: ""
   leafdot.dot:
     description: leaf-dot
     driver: csv
+    args:
+      urlpath: ""
   leaf.dot:
     description: leaf-dot
     driver: csv
+    args:
+      urlpath: ""

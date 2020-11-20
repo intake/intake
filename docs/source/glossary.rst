@@ -14,10 +14,14 @@ Glossary
         format of the files is unchanged in this case, but may be decompressed.
 
     Catalog
-        A collection of entries, each of which corresponds to a specific :term:`Data-set`. Within Intake, a catalog is
-        most commonly defined in a :term:`YAML` file, but there are other possibilities, such as connecting to an Intake
+        A collection of entries, each of which corresponds to a specific :term:`Data-set`. Within these docs, a catalog is
+        most commonly defined in a :term:`YAML` file, for simplicity, but there are other possibilities, such as connecting to an Intake
         server or another third-party data service, like a SQL database. Thus, catalogs form a hierarchy: any
         catalog can contain other, nested catalogs.
+
+    Catalog file
+        A :term:`YAML` specification file which contains a list of named entries describing how to load data
+        sources. :doc:`catalog`.
 
     Conda
         A package and environment management package for the python ecosystem, see the `conda website`_. Conda ensures
@@ -53,6 +57,12 @@ Glossary
         the data to be available in a standard format as quickly and
         easily as possible. In many organisations, the appropriate job title may be Data Scientist, but
         research scientists and BI/analysts also fit this description.
+
+    Data packages
+        Data packages are standard conda packages that install an Intake catalog file into the user’s conda
+        environment ($CONDA_PREFIX/share/intake). A data package does not necessarily imply there are data files
+        inside the package. A data package could describe remote data sources (such as files in S3) and take up
+        very little space on disk.
 
     Data Provider
         A person whose main objective is to curate data sources, get them into appropriate

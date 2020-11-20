@@ -91,8 +91,8 @@ class ServerInfoHandler(tornado.web.RequestHandler):
         page_size = self.get_argument('page_size', None)
         page_offset = self.get_argument('page_offset', 0)
         if self.auth.allow_connect(head):
-            if 'source_id' in head:
-                cat = self.cache.get(head['source_id'])
+            if 'source-id' in head:
+                cat = self.cache.get(head['source-id'])
             else:
                 cat = self.catalog
             sources = []
@@ -105,7 +105,7 @@ class ServerInfoHandler(tornado.web.RequestHandler):
             else:
                 start = int(page_offset)
                 stop = int(page_offset) + int(page_size)
-            page = itertools.islice(cat.walk(depth=1).items(), start, stop)
+            page = itertools.islice(cat.items(), start, stop)
             for name, source in page:
                 if self.auth.allow_access(head, source, self.catalog):
                     info = source.describe().copy()
@@ -199,8 +199,8 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         head = self.request.headers
         name = self.get_argument('name')
         if self.auth.allow_connect(head):
-            if 'source_id' in head:
-                cat = self._cache.get(head['source_id'])
+            if 'source-id' in head:
+                cat = self._cache.get(head['source-id'])
             else:
                 cat = self._catalog
             try:
@@ -239,16 +239,16 @@ class ServerSourceHandler(tornado.web.RequestHandler):
         action = request['action']
         head = self.request.headers
         logger.debug('Source POST: %s' % request)
-
+        
         if action == 'search':
-            if 'source_id' in head:
-                cat = self._cache.get(head['source_id'])
+            if 'source-id' in head:
+                cat = self._cache.get(head['source-id'])
             else:
                 cat = self._catalog
             query = request['query']
             # Construct a cache key from the source_id of the Catalog being
             # searched and the query itself.
-            query_source_id = '-'.join((head.get('source_id', 'root'),
+            query_source_id = '-'.join((head.get('source-id', 'root'),
                                         str(query)))
             try:
                 cat = self._cache.get(query_source_id)
@@ -268,8 +268,8 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             self.write(msgpack.packb(response, **pack_kwargs))
             self.finish()
         elif action == 'open':
-            if 'source_id' in head:
-                cat = self._cache.get(head['source_id'])
+            if 'source-id' in head:
+                cat = self._cache.get(head['source-id'])
             else:
                 cat = self._catalog
             entry_name = request['name']
@@ -300,11 +300,13 @@ class ServerSourceHandler(tornado.web.RequestHandler):
             if direct_access == 'forbid' or \
                     (direct_access == 'allow' and not client_has_plugin):
                 logger.debug("Opening entry %s" % entry)
-                source = entry.get(**user_parameters)
+                source = entry.configure_new(**user_parameters)
                 try:
                     source.on_server = True
                     source.discover()
                 except Exception as e:
+                    import traceback
+                    traceback.print_exc()
                     raise tornado.web.HTTPError(status_code=400,
                                                 log_message="Discover failed",
                                                 reason=str(e))
@@ -327,7 +329,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 # some server-side args need to be parsed
                 response = open_desc
                 user_parameters['plugin'] = plugin_name
-                response['args'] = (entry._create_open_args(user_parameters)[1])
+                response['args'] = (entry._entry._create_open_args(user_parameters)[1])
                 self.write(msgpack.packb(response, **pack_kwargs))
                 self.finish()
 
@@ -382,11 +384,3 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                 compressor = serializer.compression_registry[f]
 
         return serializer.ComboSerializer(format_encoder, compressor)
-
-    def write_error(self, status_code, **kwargs):
-        error_exception = kwargs.get('exc_info', None)
-        if error_exception is not None:
-            msg = dict(error=str(error_exception[1]))
-        else:
-            msg = dict(error='unknown error')
-        self.write(msgpack.packb(msg, **pack_kwargs))

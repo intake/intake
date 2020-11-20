@@ -15,14 +15,16 @@ from intake.source.base import DataSource
 
 
 def test_store(temp_cache):
+    from dask.base import tokenize
     assert list(store) == []
     s = DataSource(metadata={'original_name': 'blah'})
-    store.add(s._tok, s)
+    token = tokenize(s)
+    store.add(token, s)
     time.sleep(0.2)
 
     store.ttl = 0
-    assert list(store) == [s._tok]
-    assert store.get_tok(s) == s._tok
+    assert list(store) == [token]
+    assert store.get_tok(s) == token
     assert store.needs_refresh(s) is False  # because it has no TTL
 
     store.remove(s)
@@ -44,6 +46,12 @@ def test_backtrack(temp_cache):
     assert s3 == s
 
 
+def test_persist_with_nonnumeric_ttl_raises_error(temp_cache):
+    s = TextFilesSource("*.py")
+    with pytest.raises(ValueError, match="User-provided ttl was a string"):
+        s.persist(ttl='a string')
+
+
 class DummyDataframe(DataSource):
     name = 'dummy'
     container = 'dataframe'
@@ -60,4 +68,4 @@ def test_undask_persist(temp_cache):
     pytest.importorskip('intake_parquet')
     s = DummyDataframe()
     s2 = s.persist()
-    assert s.read().equals(s2.read())
+    assert s.read().to_dict() == s2.read().to_dict()

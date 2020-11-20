@@ -6,11 +6,10 @@
 #-----------------------------------------------------------------------------
 from functools import partial
 import panel as pn
-from intake.utils import remake_instance
 
 from ..base import Base, enable_widget, MAX_WIDTH
 from .select import SourceSelector
-from .defined_plots import DefinedPlots
+from .defined_plots import Plots
 from .description import Description
 
 
@@ -66,33 +65,40 @@ class SourceGUI(Base):
         self.select = SourceSelector(cats=self._cats,
                                      sources=self._sources,
                                      done_callback=self.callback)
-        self.description = Description(source=self.sources)
+        self.description = Description()
+        self.description.source = self.sources
 
-        self.plot = DefinedPlots(source=self.sources,
-                                 visible=self.plot_widget.value,
-                                 visible_callback=partial(
-                                     setattr, self.plot_widget, 'value'))
+        self.plot = Plots(source=self.source_instance,
+                          visible=self.plot_widget.value,
+                          visible_callback=partial(
+                          setattr, self.plot_widget, 'value'))
 
         super().__init__(**kwargs)
 
-    def setup(self):
+    def _setup_watchers(self):
         self.watchers = [
             self.plot_widget.param.watch(self.on_click_plot_widget, 'value'),
             self.pars_widget.param.watch(self.on_click_pars_widget, 'value'),
             self.select.widget.link(self.description, value='source'),
         ]
 
+    def setup(self):
+        self._setup_watchers()
         self.children = [
-            pn.Row(
-                pn.Column(
-                    self.select.panel,
-                    self.control_panel,
-                    margin=0
+            pn.Column(
+                pn.Row(
+                    pn.Column(
+                        self.select.panel,
+                        self.control_panel,
+                        margin=0,
+                    ),
+                    self.description.panel,
+                    margin=0,
                 ),
-                self.description.panel,
-                margin=0
-            ),
-            self.plot.panel,
+                self.plot.panel,
+                margin=0,
+                width_policy='max'
+            )
         ]
 
     @Base.visible.setter
@@ -137,7 +143,7 @@ class SourceGUI(Base):
 
     def on_click_plot_widget(self, event):
         """ When the plot control is toggled, set visibility and hand down source"""
-        self.plot.source = self.sources
+        self.plot.source = self.source_instance
         self.plot.visible = event.new
 
     def on_click_pars_widget(self, event):

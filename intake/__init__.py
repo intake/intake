@@ -5,6 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import importlib
 import re
 import logging
 import warnings
@@ -12,71 +13,79 @@ import warnings
 from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
-from . import source
-from .source.base import Schema, DataSource
-from .catalog.base import Catalog, RemoteCatalog
-from .catalog import local
-from .catalog.default import load_combo_catalog
-from .container import upload
-from .source import registry
-from .source.discovery import autodiscover
-from .gui import InstanceMaker
 
-# Populate list of autodetected drivers (plugins).
-registry.update(autodiscover())
+from .source import register_driver, registry
+from .catalog.base import Catalog
 
-from .source import csv, textfiles, npy, zarr
-registry['csv'] = csv.CSVSource
-registry['textfiles'] = textfiles.TextFilesSource
-registry['catalog'] = Catalog
-registry['intake_remote'] = RemoteCatalog
-registry['numpy'] = npy.NPySource
-registry['ndzarr'] = zarr.ZarrArraySource
+imports = {
+    "DataSource": "intake.source.base:DataSource",
+    'Schema': "intake.source.base:Schema",
+    "load_combo_catalog": "intake.catalog.default:load_combo_catalog",
+    "upload": "intake.container:upload",
+    "gui": "intake.interface:instance",
+    "cat": "intake.catalog:builtin",
+    "output_notebook": "intake.interface:output_notebook",
+    "register_driver": "intake.source:register_driver",
+    "unregister_driver": "intake.source:unregister_driver",
+}
+openers = {}
 logger = logging.getLogger('intake')
+
+
+def __getattr__(attr):
+    """Lazy attribute propagator
+
+    Defers inputs of functions until they are needed, according to the
+    contents of the ``imports`` and ``openers`` dicts
+    """
+    gl = globals()
+    if attr in openers:
+        driver = openers[attr].load()
+        gl[attr] = driver
+    else:
+        if attr in gl:
+            return gl[attr]
+        elif attr in imports:
+            dest = imports[attr]
+            modname = dest.split(":", 1)[0]
+            logger.debug("Importing: %s" % modname)
+            mod = importlib.import_module(modname)
+            if ":" in dest:
+                gl[attr] = getattr(mod, dest.split(":")[1])
+            else:
+                gl[attr] = mod
+    if attr == "__all__":
+        return __dir__()
+    try:
+        return gl[attr]
+    except KeyError:
+        raise AttributeError(attr)
+
+
+def __dir__(*_, **__):
+    return sorted(list(globals()) + list(openers) + list(imports))
 
 
 def make_open_functions():
     """From the current state of ``registry``, create open_* functions"""
-    for plugin_name, plugin in registry.items():
-        try:
-            func_name = 'open_' + plugin_name
-            if not func_name.isidentifier():
-                # primitive name normalization
-                func_name = re.sub('[-=~^&|@+]', '_', func_name)
-            if func_name.isidentifier():
-                globals()[func_name] = plugin
-            else:
-                warnings.warn('Invalid Intake plugin name "%s" found.' %
-                              plugin_name)
-        except:
-            logger.warning("Creation of open function failed for %s"
-                           "" % plugin_name)
+    import entrypoints
 
+    for plugin in entrypoints.get_group_all('intake.drivers'):
 
-def output_notebook(inline=True, logo=False):
-    """
-    Load the notebook extension
-
-    Parameters
-    ----------
-    inline : boolean (optional)
-        Whether to inline JS code or load it from a CDN
-    logo : boolean (optional)
-        Whether to show the logo(s)
-    """
-    try:
-        import hvplot
-    except ImportError:
-        raise ImportError("The intake plotting API requires hvplot."
-                          "hvplot may be installed with:\n\n"
-                          "`conda install -c pyviz hvplot` or "
-                          "`pip install hvplot`.")
-    import holoviews as hv
-    return hv.extension('bokeh', inline=inline, logo=logo)
+        register_driver(plugin.name, plugin, True)
+        func_name = 'open_' + plugin.name
+        if not func_name.isidentifier():
+            # primitive name normalization
+            func_name = re.sub('[-=~^&|@+]', '_', func_name)
+        if func_name.isidentifier():
+            # stash name for dir() and later fetch
+            openers[func_name] = plugin
+        else:
+            warnings.warn('Invalid Intake plugin name "%s" found.' %
+                          plugin.name)
 
 
 make_open_functions()
-cat = load_combo_catalog()
 
 
 def open_catalog(uri=None, **kwargs):
@@ -151,7 +160,3 @@ def open_catalog(uri=None, **kwargs):
         raise ValueError('Unknown catalog driver (%s), supply one of: %s'
                          % (driver, list(sorted(registry))))
     return registry[driver](uri, **kwargs)
-
-
-Catalog = open_catalog
-gui = InstanceMaker()

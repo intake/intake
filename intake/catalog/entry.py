@@ -69,29 +69,35 @@ class CatalogEntry(DictSerialiseMixin):
             None, must be one of ['always', 'never', 'default']. Has no
             effect if the source has never been persisted, use source.persist()
         """
-        from ..container.persist import store
-
+        from ..source.base import PersistMixin
         if persist is not None and persist not in [
                 'always', 'never', 'default']:
             raise ValueError('Persist value (%s) not understood' % persist)
         persist = persist or self._pmode
         s = self.get(**kwargs)
-        if s.has_been_persisted and persist is not 'never':
+        if persist != 'never' and isinstance(s, PersistMixin) and s.has_been_persisted:
+            from ..container.persist import store
+
             s2 = s.get_persisted()
             met = s2.metadata
-            if persist is 'always' or not met['ttl']:
-                return s2
-            if met['ttl'] < time.time() - met['timestamp']:
-                return s2
+            if persist == 'always' or not met['ttl']:
+                s = s2
+            elif met['ttl'] < time.time() - met['timestamp']:
+                s = s2
             else:
-                return store.refresh(s2)
+                s = store.refresh(s2)
+        s._entry = self
         return s
 
-    def _get_default_source(self):
-        """Instantiate DataSource with default agruments"""
-        if self._default_source is None:
-            self._default_source = self()
-        return self._default_source
+    @property
+    def container(self):
+        return getattr(self, '_container', None)
+
+    @container.setter
+    def container(self, cont):
+        # so that .container (which sources always have)  always reflects ._container,
+        # which is the variable name for entries.
+        self._container = cont
 
     @property
     def has_been_persisted(self, **kwargs):
@@ -106,30 +112,22 @@ class CatalogEntry(DictSerialiseMixin):
     def _ipython_display_(self):
         """Display the entry as a rich object in an IPython session."""
         from IPython.display import display
+        import json
         contents = self.describe()
         display({
-            'application/json': contents,
+            'application/json': json.dumps(contents),
             'text/plain': pretty_describe(contents)
         }, metadata={
             'application/json': {'root': contents["name"]}
         }, raw=True)
 
-    def __getattr__(self, attr):
-        if attr in self.__dict__:
-            return self.__dict__[attr]
-        else:
-            return getattr(self._get_default_source(), attr)
-
-    def __dir__(self):
-        selflist = {'describe', 'describe_open', 'get', 'gui',
-                    'has_been_persisted', 'plots'}
-        selflist.update(set(dir(self._get_default_source())))
-        return list(sorted(selflist))
+    def _yaml(self):
+        return {"sources": {self.name: self.describe()}}
 
     def __iter__(self):
         # If the entry is a catalog, this allows list(cat.entry)
         if self._container == 'catalog':
-            return iter(self._get_default_source())
+            return iter(self())
         else:
             raise ValueError('Cannot iterate a catalog entry')
 
@@ -141,10 +139,10 @@ class CatalogEntry(DictSerialiseMixin):
         """
         if isinstance(item, tuple):
             if len(item) > 1:
-                return self._get_default_source()[item[0]].__getitem__(item[1:])
+                return self()[item[0]].__getitem__(item[1:])
             else:
                 item = item[0]
-        return self._get_default_source()[item]
+        return self()[item]
 
     def __repr__(self):
         return pretty_describe(self.describe())

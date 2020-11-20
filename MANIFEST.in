@@ -6,6 +6,7 @@ recursive-include intake *.yaml
 recursive-include intake *.zip
 recursive-include intake *.png
 recursive-include intake/source/tests/plugin_searchpath *.py
+recursive-include intake/catalog/tests/catalog_search *
 recursive-include docs/source *
 include docs/Makefile docs/make.bat
 

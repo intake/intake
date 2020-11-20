@@ -15,14 +15,12 @@ import logging
 
 import entrypoints
 
-from .base import DataSource
-from ..catalog.base import Catalog
 from ..config import save_conf, conf, cfile
 logger = logging.getLogger('intake')
 
 
-def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
-    """Discover intake drivers.
+def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=False):
+    r"""Discover intake drivers.
 
     In order of decreasing precedence:
 
@@ -30,21 +28,20 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
     - Find 'intake.drivers' entrypoints provided by any Python packages in the
       environment.
     - Search all packages in the environment for names that begin with
-      ``intake_*``. Import them and scan them for subclasses of
-      ``intake.source.base.Plugin``. This was previously the *only* mechanism
-      for auto-discovering intake drivers, and it is maintained for backward
-      compatibility. In a future release, intake will issue a warning if any
-      packages are located by the method that do not also have entrypoints.
+      ``intake\_``. Import them and scan them for subclasses of
+      ``intake.source.base.DataSourceBase``. This was previously the *only* mechanism
+      for auto-discoverying intake drivers, and it is maintained for backward
+      compatibility.
 
     Parameters
     ----------
     path : str or None
         Default is ``sys.path``.
     plugin_prefix : str
-        DEPRECATED. Default is 'intake_'.
+        DEPRECATED. Default is 'intake\_'.
     do_package_scan : boolean
-        Default is True. In the future, the default will be changed to False,
-        and the option may eventually be removed entirely.
+        Whether to look for intake source classes in packages named
+        "intake_*". This has been superceded by entrypoints declarations.
 
     Returns
     -------
@@ -53,10 +50,11 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=True):
     """
     # Discover drivers via package scan.
     if do_package_scan:
-        warnings.warn(
-            "The option `do_package_scan` may be removed in a future release.",
-            PendingDeprecationWarning)
         package_scan_results = _package_scan(path, plugin_prefix)
+        if package_scan_results:
+            warnings.warn(
+                "The option `do_package_scan` may be removed in a future release.",
+                PendingDeprecationWarning)
     else:
         package_scan_results = {}
 
@@ -296,14 +294,25 @@ def load_plugins_from_module(module_name):
     Plugin classes are instantiated and added to the dictionary, keyed by the
     name attribute of the plugin object.
     """
+    from intake.source import DataSource
+    from intake.catalog import Catalog
     plugins = {}
 
     try:
-        if module_name.endswith('.py'):
-            import imp
-            mod = imp.load_source('module.name', module_name)
-        else:
+        try:
             mod = importlib.import_module(module_name)
+        except ImportError as error:
+            if module_name.endswith('.py'):
+                # Provide a specific error regarding the removal of behavior
+                # that intake formerly supported.
+                raise ImportError(
+                    "Intake formerly supported executing arbitrary Python "
+                    "files not on the sys.path. This is no longer supported. "
+                    "Drivers must be specific with a module path like "
+                    "'package_name.module_name, not a Python filename like "
+                    "'module.py'.") from error
+            else:
+                raise
     except Exception as e:
         logger.debug("Import module <{}> failed: {}".format(module_name, e))
         return {}
@@ -348,3 +357,9 @@ def disable(name):
         conf['drivers'] = {}
     conf['drivers'][name] = False
     save_conf()
+
+
+def register_all():
+    from intake.source import register_driver
+    for name, driver in autodiscover().items():
+        register_driver(name, driver)

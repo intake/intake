@@ -3,9 +3,8 @@
 Roadmap
 =======
 
-Some high-level work that we expect to be achieved ont he time-scale of months. This list
-is not exhaustive, but
-rather aims to whet the appetite for what Intake can be in the future.
+Some high-level work that we expect to be achieved on the time-scale of months. This list
+is not exhaustive, but rather aims to whet the appetite for what Intake can be in the future.
 
 Since Intake aims to be a community of data-oriented pythoneers, nothing written here is laid in
 stone, and users and devs are encouraged to make their opinions known!
@@ -21,7 +20,8 @@ impetus to get the work done. Conversations over the coming months can help dete
 drivers that should be created by the Intake team, and those that might be contributed by the
 community.
 
-The next type that we would specifically like to consider is machine learning model artefacts.
+The next type that we would specifically like to consider is machine learning
+model artifacts.
 
 Streaming Source
 ----------------
@@ -36,20 +36,6 @@ be extended to read from an arbitrary socket.
 
 Streamz has seen renewed development recently and a new version is coming soon.
 
-GUI interactive plotting
-------------------------
-
-The new `Panel`-based GUI can act as a standalone data catalog browser. It has the ability,
-currently, to display the "builtin" plots included with the data source specification (which
-are generally interactive). We would
-like to develop more arbitrary interactions, so the user can choose the type of plot (or
-data table) to show,
-the fields to build from and display options for various data types; and this should include
-options on how to sample from the data.
-
-It would be good to be able to save these hand-made plot definitions into the catalogs containing
-the data source specs.
-
 Server publish hooks
 --------------------
 
@@ -58,3 +44,11 @@ specifications to a running server, optionally saving the specs to a catalog ser
 we will consider the possibility of being able to upload and/or transform data
 (rather than refer to it in a third-party location), so that you would have a one-line "publish"
 ability from the client.
+
+Simplify dependencies and class hierarchy
+-----------------------------------------
+
+We would like the make it easier to write Intake drivers which don't need any
+persist or GUI functionality, and to be able to install Intake core
+functionality (driver registry, data loading and catalog traversal) without
+needing many other packages at all.

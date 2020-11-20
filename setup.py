@@ -14,8 +14,8 @@ requires = [line.strip() for line in open('requirements.txt').readlines()
             if not line.startswith("#")]
 extras_require = {
   'server': ['tornado', 'python-snappy'],
-  'plot': ['hvplot', 'panel >= 0.5.1'],
-  'dataframe': ['dask[dataframe]', 'msgpack-numpy'],
+  'plot': ['hvplot', 'panel >= 0.7.0', 'bokeh < 2.0'],
+  'dataframe': ['dask[dataframe]', 'msgpack-numpy', 'pyarrow'],
 }
 extras_require['complete'] = sorted(set(sum(extras_require.values(), [])))
 
@@ -49,15 +49,17 @@ setup(
             'csv = intake.source.csv:CSVSource',
             'textfiles = intake.source.textfiles:TextFilesSource',
             'catalog = intake.catalog.base:Catalog',
-            'intake_remote = intake.catalog.base:RemoteCatalog',
+            'intake_remote = intake.catalog.remote:RemoteCatalog',
             'numpy = intake.source.npy:NPySource',
-            'ndzarr = intake.source.zarr:ZarrArraySource'
+            'ndzarr = intake.source.zarr:ZarrArraySource',
+            'zarr_cat = intake.catalog.zarr:ZarrGroupCatalog',
         ]
     },
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
     python_requires=">=3.6",
     long_description=open('README.md').read(),

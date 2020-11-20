@@ -30,7 +30,7 @@ optional packages to be installed.
 
 Example::
 
-    cat = intake.load_catalog('mycat.yaml')  # load a remote cat
+    cat = intake.open_catalog('mycat.yaml')  # load a remote cat
     source = cat.csvsource()  # source pointing to remote data
     source.persist()
 
@@ -40,7 +40,7 @@ To control whether a catalog will automatically give you the persisted version o
 source in this way using the argument ``persist_mode``, e.g., to ignore locally
 persisted versions, you could have done::
 
-    cat = intake.load_catalog('mycat.yaml', persist_mode='never')
+    cat = intake.open_catalog('mycat.yaml', persist_mode='never')
     or
     source = cat.csvsource(persist_mode='never')
 
@@ -95,7 +95,7 @@ For details on the methods of the persist store, see the API documentation:
 information about the sources they were made from, so that they can be remade
 successfully. This all appears in the source metadata.
 The sources use the "token" of the original
-data source as their key in the store, a value which can be found by ``source._tok``
+data source as their key in the store, a value which can be found by ``dask.base.tokenize(source)``
 for the original source, or can be taken from the metadata of a persisted source.
 
 Note that all of the information about persisted sources is held in a single YAML file in
@@ -106,8 +106,7 @@ for example, set some persisted source not to expire. This is only recommended f
 Future Enhancements
 -------------------
 
-- CLI functionality to investigate and alter the state of the persist store, similar to the
-  cache commands.
+- CLI functionality to investigate and alter the state of the persist store.
 
 - Time check-pointing of persisted data, such that you can not only get the "most recent" but
   any version in the time-series.

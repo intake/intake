@@ -22,36 +22,27 @@ def catalog_cache():
     return intake.open_catalog(os.path.join(path, 'catalog_caching.yml'))
 
 
-def test_load_csv(catalog_cache):
-    cat = catalog_cache['test_cache']
-    cache = cat.cache[0]
+def test_load_csv(catalog_cache, tempdir):
+    os.environ['TEST_CACHE_DIR'] = str(tempdir)
 
-    cache_paths = cache.load(cat._urlpath, output=False)
-    cache_path = cache_paths[-1]
-
-    assert cache._cache_dir in cache_path
-    assert os.path.isfile(cache_path)
-
-    cache_id = os.path.basename(os.path.dirname(cache_path))
-    # Checking for md5 hash
+    catalog_cache['test_cache_new'].read()
+    files = os.listdir(tempdir)
+    assert 'cache' in files
+    assert len(files) == 2
+    cache_id = [f for f in files if f != 'cache'][0]
     assert all(c in string.hexdigits for c in cache_id)
-    cache.clear_all()
+
+
+def test_list_of_files(catalog_cache):
+    pd = pytest.importorskip('pandas')
+    s1 = catalog_cache['test_cache']
+    s2 = catalog_cache['test_list_cache']
+    assert s2.read().equals(pd.concat([s1.read(), s1.read()]))
 
 
 def test_bad_type_cache(catalog_cache):
-    cat = catalog_cache['test_bad_type_cache_spec']
-    cache = cat.cache[0]
-
-    cache_paths = cache.load(cat._urlpath, output=False)
-    cache_path = cache_paths[-1]
-
-    assert cache._cache_dir in cache_path
-    assert os.path.isfile(cache_path)
-
-    cache_id = os.path.basename(os.path.dirname(cache_path))
-    # Checking for md5 hash
-    assert all(c in string.hexdigits for c in cache_id)
-    cache.clear_all()
+    with pytest.raises(IndexError):
+        catalog_cache['test_bad_type_cache_spec'].cache
 
 
 def test_load_textfile(catalog_cache):

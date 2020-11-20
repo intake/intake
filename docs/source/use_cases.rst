@@ -44,7 +44,7 @@ Often, finding and grabbing data is a major hurdle to productivity. People may b
 required to download artifacts from various places or search through storage
 systems to find the specific thing that they are after. One-line commands which
 can retrieve data-source specifications or the files themselves can be a massive
-time-saver. Furthermore, each data-set will typically need it's own code to
+time-saver. Furthermore, each data-set will typically need its own code to
 be able to access it, and probably additional software dependencies.
 
 Intake allows you to build ``conda`` packages, which can include catalog files
@@ -158,7 +158,7 @@ data will be used in preference at analysis time, and the schedule for updating 
 the original source is configurable. The location of these persisted data-sets can
 be shared with others, so they can also gain the benefits, or the "export" variant
 can be used to produce an independent version in the same format, together with a
-spec to be reference it by - then you would share this spec with others.
+spec to reference it by; you would then share this spec with others.
 
 Access data without leaking credentials
 ---------------------------------------
@@ -193,7 +193,7 @@ to your data.
 Clear distinction between data curator and analyst roles
 --------------------------------------------------------
 
-It is desirable to separate out two tasks: the definition of data sources specifications, and
+It is desirable to separate out two tasks: the definition of data-source specifications, and
 accessing and using data. This is so that those who understand the origins of the data
 and the implications of various formats and other storage options (such as chunk-size)
 should make those decisions and encode what they have done into specs. It leaves the
@@ -201,7 +201,7 @@ data users, e.g., data scientists, free to find and use the data-sets appropriat
 their work and simply get on with their job - without having to learn about various
 storage formats and access APIs.
 
-This separation is at the very base of what Intake was designed to do.
+This separation is at the very core of what Intake was designed to do.
 
 Users to be able to access data without learning every backend API
 ------------------------------------------------------------------
@@ -236,7 +236,7 @@ data without having to load all of it into memory first.
 A data source hierarchy for natural structuring
 -----------------------------------------------
 
-Usually, the set of data sources held by an organisation have relationships to one-another,
+Usually, the set of data sources held by an organisation have relationships to one another,
 and would be poorly served to be provided as a simple flat list of everything available.
 Intake allows catalogs to refer to other catalogs. This means, that you can group data
 sources by various facets (type, department, time...) and establish hierarchical
@@ -254,10 +254,10 @@ Expose several data collections under a single system
 
 There are already several catalog-like data services in existence in the world, and
 some organisation may have several of these in-house for various different purposes.
-For example, a SQL-server may hold details of customer lists and transactions, but
-historical time-series and reference data are held in archival data formats like
+For example, an SQL server may hold details of customer lists and transactions, but
+historical time-series and reference data may be held separately in archival data formats like
 parquet on a file-storage system; while real-time system monitoring is done by a
-totally unrelated system such as Splunk or elastic-search.
+totally unrelated system such as Splunk or elastic search.
 
 Of course, Intake can read from various file formats and data services. However, it
 can also interpret the internal conception of data catalogs that some data services may
@@ -272,15 +272,15 @@ graphical data browser, for searching, selecting and visualising data-sets.
 Modern visualisations for all data-sets
 ---------------------------------------
 
-Intake is integrated with the ``pyviz`` suite, particularly ``hvplot``, to bring
-simple yet powerful data visualisations to any Intake data source by using just one
+Intake is integrated with the comprehensive ``holoviz`` suite, particularly ``hvplot``, to 
+bring simple yet powerful data visualisations to any Intake data source by using just one
 single method for everything. These plots are interactive, and can include server-side
 dynamic aggregation of very large data-sets to display more data points than the
 browser can handle.
 
-You can specify specific plot types right in the data source definition, as have these
-customised visualisations available to the user as simple one-liners know to well-describe
-the content of the data, or even view the same visuals right in the graphical
+You can specify specific plot types right in the data source definition, to have these
+customised visualisations available to the user as simple one-liners known to
+reveal the content of the data, or even view the same visuals right in the graphical
 data source browser application. Thus, Intake is already an all-in-one data investigation
 and dashboarding app.
 
@@ -297,7 +297,7 @@ created within a SQL server.
 Distribute data in a custom format
 ----------------------------------
 
-Sometimes, the well-know data formats are just not right for a give data-set,
+Sometimes, the well-known data formats are just not right for a given data-set,
 and a custom-built format is required. In such cases, the code to read the data
 may not exist in any library. Intake allows for code to be distributed along
 with data source specs/catalogs or even files in a single ``conda`` package.
@@ -320,7 +320,7 @@ so that you can include it in a catalog, you should use the set of functions
 ``intake.open_*``, where you need to pick the function appropriate for your
 particular data. You can use tab-completion to list the set of data drivers you have
 installed, and find others you may not yet have installed at :ref:`plugin-directory`.
-One you have determined the right set of parameters to load the data in the manner
+Once you have determined the right set of parameters to load the data in the manner
 you wish, you can use the source's ``.yaml()`` method to find the spec that describes
 the source, so you can insert it into a catalog (with appropriate description and
 metadata). Alternatively, you can open a YAML file as a catalog with ``intake.open_catalog``

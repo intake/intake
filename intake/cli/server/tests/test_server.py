@@ -18,7 +18,7 @@ from tornado.ioloop import IOLoop
 from tornado.testing import AsyncHTTPTestCase
 import msgpack
 
-from intake import Catalog, open_catalog
+from intake import open_catalog
 from intake.container.serializer import MsgPackSerializer, GzipCompressor
 from intake.cli.server.server import IntakeServer
 from intake.compat import unpack_kwargs, pack_kwargs
@@ -30,7 +30,7 @@ catalog_file = make_path_posix(
 
 class TestServerV1Base(AsyncHTTPTestCase):
     def get_app(self):
-        local_catalog = Catalog(catalog_file)
+        local_catalog = open_catalog(catalog_file)
         self.server = IntakeServer(local_catalog)
         return self.server.make_app()
 
@@ -96,11 +96,14 @@ class TestServerV1Source(TestServerV1Base):
         self.assertEqual(response.code, expected_status)
 
         responses = []
-        unpacker = msgpack.Unpacker(**unpack_kwargs)
-        unpacker.feed(response.body)
+        if expected_status < 400:
+            unpacker = msgpack.Unpacker(**unpack_kwargs)
+            unpacker.feed(response.body)
 
-        for msg in unpacker:
-            responses.append(msg)
+            for msg in unpacker:
+                responses.append(msg)
+        else:
+            responses = [{'error': str(response.error)}]
 
         return responses
 
@@ -135,6 +138,9 @@ class TestServerV1Source(TestServerV1Base):
         self.assertEqual(resp_msg['description'], 'entry1 part')
 
     def test_read_part_compressed(self):
+        # because the msgpack format actually depends on pyarrow
+        pytest.importorskip('pyarrow')
+
         msg = dict(action='open', name='entry1', parameters={})
         resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
@@ -158,6 +164,8 @@ class TestServerV1Source(TestServerV1Base):
             self.assertEqual(len(data), 4)
 
     def test_read_partition(self):
+        # because the msgpack format actually depends on pyarrow
+        pytest.importorskip('pyarrow')
         msg = dict(action='open', name='entry1', parameters={})
         resp_msg, = self.make_post_request(msg)
         source_id = resp_msg['source_id']
@@ -238,19 +246,83 @@ def multi_server(tmpdir):
     while True:
         try:
             requests.get('http://localhost:5000')
-            try:
-                yield 'intake://localhost:5000'
-            finally:
-                P.terminate()
-                P.wait()
-                shutil.rmtree(tmpdir)
+            yield 'intake://localhost:5000'
             break
         except:
             time.sleep(0.2)
-            assert time.time() - t < 10
+            if time.time() - t > 10:
+                break
+    P.terminate()
+    P.wait()
+    shutil.rmtree(tmpdir)
 
 
 def test_flatten_flag(multi_server):
     cat = open_catalog(multi_server)
     assert list(cat) == ['cat1', 'cat2']
     assert 'use_example1' in cat.cat1()
+
+
+def free_port():
+    import socket
+
+    s = socket.socket()
+    s.bind(('', 0))  # Bind to a free port provided by the host.
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+
+@pytest.fixture(scope='function')
+def port_server(tmpdir):
+    fn1 = make_path_posix(os.path.join(tmpdir, 'cat1.yaml'))
+    shutil.copyfile(catalog_file, fn1)
+    port = free_port()
+
+    P = subprocess.Popen(['intake-server', '--port', str(port), fn1])
+    t = time.time()
+    try:
+        while True:
+            try:
+                requests.get('http://localhost:%s' % port)
+                yield 'intake://localhost:%s' % port
+                break
+            except:
+                time.sleep(0.2)
+                if time.time() - t > 10:
+                    break
+    finally:
+        P.terminate()
+        P.wait()
+        shutil.rmtree(tmpdir)
+
+
+def test_port_flag(port_server):
+    cat = open_catalog(port_server)
+    assert 'use_example1' in list(cat)
+
+
+@pytest.fixture()
+def address_server(tmpdir):
+    fn1 = make_path_posix(os.path.join(tmpdir, 'cat1.yaml'))
+    shutil.copyfile(catalog_file, fn1)
+    port = free_port()
+    P = subprocess.Popen(['intake-server', '--port', str(port), '--address', '0.0.0.0', fn1])
+    t = time.time()
+    while True:
+        try:
+            requests.get('http://0.0.0.0:%s' % port)
+            yield 'intake://0.0.0.0:%s' % port
+            break
+        except:
+            time.sleep(0.2)
+            if time.time() - t > 10:
+                break
+    P.terminate()
+    P.wait()
+    shutil.rmtree(tmpdir)
+
+
+def test_address_flag(address_server):
+    cat = open_catalog(address_server)
+    assert 'use_example1' in list(cat)

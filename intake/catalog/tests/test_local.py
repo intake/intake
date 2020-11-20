@@ -16,7 +16,7 @@ import pytest
 import pandas
 
 from .util import assert_items_equal
-from intake import Catalog, open_catalog
+from intake import open_catalog
 from intake.catalog import exceptions, local
 from intake.catalog.local import get_dir, UserParameter, LocalCatalogEntry
 from intake.utils import make_path_posix
@@ -31,6 +31,7 @@ def test_local_catalog(catalog1):
     assert_items_equal(list(catalog1),
                        ['use_example1', 'nested', 'entry1', 'entry1_part',
                         'remote_env', 'local_env', 'text', 'arr', 'datetime'])
+    assert len(catalog1) == 9
     assert catalog1['entry1'].describe() == {
         'name': 'entry1',
         'container': 'dataframe',
@@ -39,7 +40,8 @@ def test_local_catalog(catalog1):
         'description': 'entry1 full',
         'args': {'urlpath': '{{ CATALOG_DIR }}/entry1_*.csv'},
         'metadata': {'bar': [1, 2, 3], 'foo': 'bar'},
-        'plugin': ['csv']
+        'plugin': ['csv'],
+        'driver': ['csv']
     }
     assert catalog1['entry1_part'].describe() == {
         'name': 'entry1_part',
@@ -57,17 +59,19 @@ def test_local_catalog(catalog1):
         'direct_access': 'allow',
         'args': {'urlpath': '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'},
         'metadata': {'foo': 'baz', 'bar': [2, 4, 6]},
-        'plugin': ['csv']
+        'plugin': ['csv'],
+        'driver': ['csv']
     }
-    assert catalog1['entry1'].get().container == 'dataframe'
-    md = catalog1['entry1'].get().metadata
+    assert catalog1['entry1'].container == 'dataframe'
+    md = catalog1['entry1'].metadata
     md.pop('catalog_dir')
-    assert md == dict(foo='bar', bar=[1, 2, 3])
+    assert md['foo'] == 'bar'
+    assert md['bar'] == [1, 2, 3]
 
     # Use default parameters
-    assert catalog1['entry1_part'].get().container == 'dataframe'
+    assert catalog1['entry1_part'].container == 'dataframe'
     # Specify parameters
-    assert catalog1['entry1_part'].get(part='2').container == 'dataframe'
+    assert catalog1['entry1_part'].configure_new(part='2').container == 'dataframe'
 
 
 def test_get_items(catalog1):
@@ -81,9 +85,8 @@ def test_nested(catalog1):
     assert catalog1.entry1.read().equals(catalog1.nested.nested.entry1.read())
     assert 'nested.nested' not in catalog1.walk(depth=1)
     assert 'nested.nested' in catalog1.walk(depth=2)
-    assert catalog1.nested._catalog == catalog1
-    assert catalog1.nested().cat == catalog1
-    assert catalog1.nested.nested.nested().cat.cat.cat is catalog1
+    assert catalog1.nested.cat == catalog1
+    assert catalog1.nested.nested.nested.cat.cat.cat is catalog1
 
 
 def test_nested_gets_name_from_super(catalog1):
@@ -116,7 +119,7 @@ def test_metadata(catalog1):
 
 
 def test_use_source_plugin_from_config(catalog1):
-    catalog1['use_example1'].get()
+    catalog1['use_example1']
 
 
 def test_get_dir():
@@ -155,11 +158,10 @@ def test_user_parameter_default_value(dtype, expected):
     assert p.validate(None) == expected
 
 
-def test_user_parameter_str_method():
+def test_user_parameter_repr():
     p = local.UserParameter('a', 'a desc', 'str')
-    expected = ("UserParameter(name='a', description='a desc', type='str', "
-                "default='', min=None, max=None, allowed=None)")
-    assert str(p) == expected
+    expected = "<UserParameter 'a'>"
+    assert repr(p) == str(p) == expected
 
 
 @pytest.mark.parametrize("dtype,given,expected", [
@@ -259,7 +261,6 @@ def test_user_parameter_validation_allowed():
     "params_value_bad_type",
     "params_value_non_dict",
     "plugins_non_dict",
-    "plugins_source_both",
     "plugins_source_missing",
     "plugins_source_missing_key",
     "plugins_source_non_dict",
@@ -267,7 +268,7 @@ def test_user_parameter_validation_allowed():
 ])
 def test_parser_validation_error(filename):
     with pytest.raises(exceptions.ValidationError):
-        Catalog(abspath(filename + ".yml"))
+        list(open_catalog(abspath(filename + ".yml")))
 
 
 @pytest.mark.parametrize("filename", [
@@ -276,7 +277,7 @@ def test_parser_validation_error(filename):
 ])
 def test_parser_obsolete_error(filename):
     with pytest.raises(exceptions.ObsoleteError):
-        Catalog(abspath(filename + ".yml"))
+        open_catalog(abspath(filename + ".yml"))
 
 
 def test_union_catalog():
@@ -284,7 +285,7 @@ def test_union_catalog():
     uri1 = os.path.join(path, 'catalog_union_1.yml')
     uri2 = os.path.join(path, 'catalog_union_2.yml')
 
-    union_cat = Catalog([uri1, uri2])
+    union_cat = open_catalog([uri1, uri2])
 
     assert_items_equal(list(union_cat), ['entry1', 'entry1_part', 'use_example1'])
 
@@ -308,7 +309,7 @@ def test_union_catalog():
 
     # Implied creation of data source
     assert union_cat.entry1.container == 'dataframe'
-    md = union_cat.entry1._metadata
+    md = union_cat.entry1.describe()['metadata']
     assert md == dict(foo='bar', bar=[1, 2, 3])
 
     # Use default parameters in explict creation of data source
@@ -324,14 +325,14 @@ def test_persist_local_cat(temp_cache):
     uri1 = os.path.join(path, 'catalog_union_1.yml')
     uri2 = os.path.join(path, 'catalog_union_2.yml')
 
-    s = Catalog([uri1, uri2])
+    s = open_catalog([uri1, uri2])
     s2 = s.persist()
     assert isinstance(s2, YAMLFileCatalog)
     assert set(s) == set(s2)
 
 
 def test_empty_catalog():
-    cat = Catalog()
+    cat = open_catalog()
     assert list(cat) == []
 
 
@@ -345,7 +346,7 @@ def test_duplicate_data_sources():
     uri = os.path.join(path, 'catalog_dup_sources.yml')
 
     with pytest.raises(exceptions.DuplicateKeyError):
-        Catalog(uri)
+        open_catalog(uri)
 
 
 def test_duplicate_parameters():
@@ -353,7 +354,7 @@ def test_duplicate_parameters():
     uri = os.path.join(path, 'catalog_dup_parameters.yml')
 
     with pytest.raises(exceptions.DuplicateKeyError):
-        Catalog(uri)
+        open_catalog(uri)
 
 
 @pytest.fixture
@@ -380,11 +381,11 @@ sources:
 
 def test_catalog_file_removal(temp_catalog_file):
     cat_dir = os.path.dirname(temp_catalog_file)
-    cat = Catalog(cat_dir + '/*')
+    cat = open_catalog(cat_dir + '/*', ttl=0.1)
     assert set(cat) == {'a', 'b'}
 
     os.remove(temp_catalog_file)
-    time.sleep(1.5)  # wait for catalog refresh
+    time.sleep(0.5)  # wait for catalog refresh
     assert set(cat) == set()
 
 
@@ -436,6 +437,7 @@ def test_cat_with_declared_name():
     cat = open_catalog(fn, name='name_in_func', description=description)
     assert cat.name == 'name_in_func'
     assert cat.description == description
+    cat._load()  # we don't get metadata until load/list/getitem
     assert cat.metadata.get('some') == 'thing'
 
     cat = open_catalog(fn)
@@ -491,7 +493,7 @@ def test_default_expansions():
 
 def test_remote_cat(http_server):
     url = http_server + 'catalog1.yml'
-    cat = Catalog(url)
+    cat = open_catalog(url)
     assert 'entry1' in cat
     assert cat.entry1.describe()
 
@@ -542,14 +544,12 @@ def test_multi_plugins():
 def test_no_plugins():
     fn = abspath('multi_plugins.yaml')
     cat = open_catalog(fn)
-    s = cat.tables6
     with pytest.raises(ValueError) as e:
-        s()
+        cat.tables6
     assert 'doesnotexist' in str(e.value)
     assert 'plugin-directory' in str(e.value)
-    s = cat.tables7
     with pytest.raises(ValueError) as e:
-        s()
+        cat.tables7
     assert 'doesnotexist' in str(e.value)
 
 
@@ -581,29 +581,28 @@ def test_getitem_and_getattr():
         catalog.doesnotexit
     with pytest.raises(AttributeError):
         catalog._doesnotexit
-    assert catalog.tables0 is catalog['tables0']
-    assert isinstance(catalog.tables0, LocalCatalogEntry)
+    assert catalog.tables0 == catalog['tables0']
     assert isinstance(catalog.metadata, (dict, type(None)))
 
 
 def test_dot_names():
     fn = abspath('dot-nest.yaml')
     cat = open_catalog(fn)
-    assert cat.self.leaf._description == 'leaf'
-    assert cat.self['leafdot.dot']._description == 'leaf-dot'
-    assert cat['selfdot.dot', 'leafdot.dot']._description == 'leaf-dot'
+    assert cat.self.leaf.description == 'leaf'
+    assert cat.self['leafdot.dot'].description == 'leaf-dot'
+    assert cat['selfdot.dot', 'leafdot.dot'].description == 'leaf-dot'
 
-    assert cat['self.selfdot.dot', 'leafdot.dot']._description == 'leaf-dot'
-    assert cat['self.self.dot', 'leafdot.dot']._description == 'leaf-dot'
-    assert cat['self.self.dot', 'leaf']._description == 'leaf'
-    assert cat['self.self.dot', 'leaf.dot']._description == 'leaf-dot'
+    assert cat['self.selfdot.dot', 'leafdot.dot'].description == 'leaf-dot'
+    assert cat['self.self.dot', 'leafdot.dot'].description == 'leaf-dot'
+    assert cat['self.self.dot', 'leaf'].description == 'leaf'
+    assert cat['self.self.dot', 'leaf.dot'].description == 'leaf-dot'
 
-    assert cat['self.self.dot.leaf.dot']._description == 'leaf-dot'
+    assert cat['self.self.dot.leaf.dot'].description == 'leaf-dot'
 
 
 def test_listing(catalog1):
     assert list(catalog1) == list(catalog1.nested)
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         list(catalog1.arr)
 
 
@@ -611,40 +610,68 @@ def test_dict_save():
     from intake.catalog.base import Catalog
     fn = os.path.join(tempfile.mkdtemp(), 'mycat.yaml')
     entry = LocalCatalogEntry(name='trial', description='get this back',
-                              driver='csv')
+                              driver='csv', args=dict(urlpath=""))
     cat = Catalog.from_dict({'trial': entry}, name='mycat')
     cat.save(fn)
 
     cat2 = open_catalog(fn)
     assert 'trial' in cat2
     assert cat2.name == 'mycat'
-    assert cat2.trial._driver =='csv'
+    assert "CSV" in cat2.trial.classname
+
+
+def test_dict_save_complex():
+    from intake.catalog.base import Catalog
+    fn = os.path.join(tempfile.mkdtemp(), 'mycat.yaml')
+    cat = Catalog()
+    entry = LocalCatalogEntry(name='trial', description='get this back',
+                              driver='csv', cache=[], catalog=cat,
+                              parameters=[UserParameter(name='par1', description='desc', type='int')],
+                              args={'urlpath': 'none'})
+
+    cat._entries = {'trial': entry}
+    cat.save(fn)
+
+    cat2 = open_catalog(fn)
+    assert 'trial' in cat2
+    assert cat2.name == 'mycat'
+    assert cat2.trial.describe()['plugin'][0] == 'csv'
 
 
 def test_dict_adddel():
     from intake.catalog.base import Catalog
     entry = LocalCatalogEntry(name='trial', description='get this back',
-                              driver='csv')
+                              driver='csv', args=dict(urlpath=""))
     cat = Catalog.from_dict({'trial': entry}, name='mycat')
     assert 'trial' in cat
     cat['trial2'] = entry
     assert list(cat) == ['trial', 'trial2']
     cat.pop('trial')
     assert list(cat) == ['trial2']
-    assert cat['trial2'] is entry
+    assert cat['trial2'].describe() == entry.describe()
 
 
 def test_filter():
     from intake.catalog.base import Catalog
     entry1 = LocalCatalogEntry(name='trial', description='get this back',
-                              driver='csv')
+                               driver='csv', args=dict(urlpath=""))
     entry2 = LocalCatalogEntry(name='trial', description='pass this through',
-                              driver='csv')
+                               driver='csv', args=dict(urlpath=""))
     cat = Catalog.from_dict({'trial1': entry1,
                              'trial2': entry2}, name='mycat')
     cat2 = cat.filter(lambda e: 'pass' in e._description)
     assert list(cat2) == ['trial2']
-    assert cat2.trial2 is entry2
+    assert cat2.trial2 == entry2()
+
+
+def test_from_dict_with_data_source():
+    "Check that Catalog.from_dict accepts DataSources not wrapped in Entry."
+    from intake.catalog.base import Catalog
+    fn = os.path.join(tempfile.mkdtemp(), 'mycat.yaml')
+    entry = LocalCatalogEntry(name='trial', description='get this back',
+                              driver='csv', args=dict(urlpath=""))
+    ds = entry()
+    cat = Catalog.from_dict({'trial': ds}, name='mycat')
 
 
 def test_no_instance():
@@ -709,3 +736,31 @@ def test_cat_add(tmpdir):
     cat = open_catalog(fn)
     assert list(cat) == ['cat']
 
+
+def test_no_entries_items(catalog1):
+    from intake.catalog.entry import CatalogEntry
+    from intake.source.base import DataSource
+
+    for k, v in catalog1.items():
+        assert not isinstance(v, CatalogEntry)
+        assert isinstance(v, DataSource)
+
+    for k in catalog1:
+        v = catalog1[k]
+        assert not isinstance(v, CatalogEntry)
+        assert isinstance(v, DataSource)
+
+    for k in catalog1:
+        # we can't do attribute access on "text" because it
+        # collides with a property
+        if k == 'text':
+            continue
+        v = getattr(catalog1, k)
+        assert not isinstance(v, CatalogEntry)
+        assert isinstance(v, DataSource)
+
+
+def test_cat_dictlike(catalog1):
+    assert list(catalog1) == list(catalog1.keys())
+    assert len(list(catalog1)) == len(catalog1)
+    assert list(catalog1.items()) == list(zip(catalog1.keys(), catalog1.values()))

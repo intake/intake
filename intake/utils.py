@@ -6,9 +6,13 @@
 #-----------------------------------------------------------------------------
 
 import collections
+from collections import OrderedDict
+import collections.abc
 import datetime
 from contextlib import contextmanager
+import warnings
 import yaml
+import sys
 
 
 def make_path_posix(path):
@@ -45,6 +49,13 @@ def tuple_constructor(loader, node, deep=False):
                  for node in node.value)
 
 
+def represent_dictionary_order(self, dict_data):
+    return self.represent_mapping('tag:yaml.org,2002:map', dict_data.items())
+
+
+yaml.add_representer(OrderedDict, represent_dictionary_order)
+
+
 @contextmanager
 def no_duplicate_yaml():
     yaml.SafeLoader.add_constructor(
@@ -77,13 +88,15 @@ def classname(ob):
 
 
 class DictSerialiseMixin(object):
+
+    __tok_cache = None
+
     def __new__(cls, *args, **kwargs):
         """Capture creation args when instantiating"""
-        from dask.base import tokenize
         o = object.__new__(cls)
         o._captured_init_args = args
         o._captured_init_kwargs = kwargs
-        o.__dict__['_tok'] = tokenize(o.__getstate__())
+
         return o
 
     @property
@@ -91,18 +104,28 @@ class DictSerialiseMixin(object):
         return classname(self)
 
     def __dask_tokenize__(self):
-        return hash(self)
+        if self.__tok_cache is None:
+            from dask.base import tokenize
+            self.__tok_cache = tokenize(self.__getstate__())
+        return self.__tok_cache
 
     def __getstate__(self):
         args = [arg.__getstate__() if isinstance(arg, DictSerialiseMixin)
                 else arg
                 for arg in self._captured_init_args]
-        kwargs = {k: arg.__getstate__() if isinstance(arg, DictSerialiseMixin)
-                  else arg
-                  for k, arg in self._captured_init_kwargs.items()}
-        return dict(cls=self.classname,
-                    args=args,
-                    kwargs=kwargs)
+        # We employ OrderedDict in several places. The motivation
+        # is to speed up dask tokenization. When dask tokenizes a plain dict,
+        # it sorts the keys, and it turns out that this sort operation
+        # dominates the call time, even for very small dicts. Using an
+        # OrderedDict steers dask toward a different and faster tokenization.
+        kwargs = collections.OrderedDict({
+            k: arg.__getstate__()
+            if isinstance(arg, DictSerialiseMixin) else arg
+            for k, arg in self._captured_init_kwargs.items()
+        })
+        return collections.OrderedDict(cls=self.classname,
+                                       args=args,
+                                       kwargs=kwargs)
 
     def __setstate__(self, state):
         # reconstitute instances here
@@ -112,7 +135,8 @@ class DictSerialiseMixin(object):
         self.__init__(*state['args'], **state['kwargs'])
 
     def __hash__(self):
-        return int(self._tok, 16)
+        from dask.base import tokenize
+        return int(tokenize(self), 16)
 
     def __eq__(self, other):
         return hash(self) == hash(other)
@@ -140,6 +164,7 @@ def pretty_describe(object, nestedness=0, indent=2):
         return f'{sep}{out}'
     return out
 
+
 def decode_datetime(obj):
     import numpy
     if not isinstance(obj, numpy.ndarray) and "__datetime__" in obj:
@@ -155,7 +180,99 @@ def decode_datetime(obj):
             )
     return obj
 
+
 def encode_datetime(obj):
     if isinstance(obj, datetime.datetime):
         return {"__datetime__": True, "as_str": obj.strftime("%Y%m%dT%H:%M:%S.%f%z")}
     return obj
+
+
+class RegistryView(collections.abc.Mapping):
+    """
+    Wrap registry dict in a read-only dict view.
+
+    Subclasses define attributes filled into warning and error messages:
+    - self._registry_name
+    - self._register_func_name
+    - self._unregister_func_name
+    """
+    def __init__(self, registry):
+        self._registry = registry
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self._registry!r})"
+
+    def __getitem__(self, key):
+        return self._registry[key]
+
+    def __iter__(self):
+        yield from self._registry
+
+    def __len__(self):
+        return len(self._registry)
+
+    # Support the common mutation methods for now, but warn.
+
+    def update(self, *args, **kwargs):
+        warnings.warn(
+            f"In a future release of intake, the {self._registry_name} will "
+            f"not be directly mutable. Use {self._register_func_name}.",
+            DeprecationWarning)
+        self._registry.update(*args, **kwargs)
+        # raise TypeError(
+        #     f"The registry cannot be edited directly. "
+        #     f"Instead, use the {self._register_func_name{")
+
+    def __setitem__(self, key, value):
+        warnings.warn(
+            f"In a future release of intake, the {self._registry_name} will "
+            f"not be directly mutable. Use {self._register_func_name}.",
+            DeprecationWarning)
+        self._registry[key] = value
+        # raise TypeError(
+        #     f"The registry cannot be edited directly. "
+        #     f"Instead, use the {self._register_func_name{")
+
+    def __delitem__(self, key):
+        warnings.warn(
+            f"In a future release of intake, the {self._registry_name} will "
+            f"not be directly mutable. Use {self._unregister_func_name}.",
+            DeprecationWarning)
+        del self._registry[key]
+        # raise TypeError(
+        #     f"The registry cannot be edited directly. "
+        #     f"Instead, use the {self._unregister_func_name{")
+
+
+class DriverRegistryView(RegistryView):
+    # This attributes are used by the base class
+    # to fill in warning and error messages.
+    _registry_name = "intake.registry"
+    _register_func_name = "intake.register_driver"
+    _unregister_func_name = "intake.unregister_driver"
+
+
+class ContainerRegistryView(RegistryView):
+    # This attributes are used by the base class
+    # to fill in warning and error messages.
+    _registry_name = "intake.container_map"
+    _register_func_name = "intake.register_container"
+    _unregister_func_name = "intake.unregister_container"
+
+
+class ModuleImporter:
+    def __init__(self, destination):
+        self.destination = destination
+        self.module = None
+
+    def __getattribute__(self, item):
+        d = object.__getattribute__(self, "__dict__")
+        if item in d:
+            return d[item]
+        if self.module is None:
+            print("Importing module: ", self.destination)
+            self.module = __import__(self.destination)
+        else:
+            print("Referencing module: ", self.destination)
+        sys.modules[self.destination] = self.module
+        return getattr(self.module, item)

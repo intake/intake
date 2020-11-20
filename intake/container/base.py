@@ -55,7 +55,6 @@ class RemoteSource(DataSource):
             self._parse_open_response(response)
 
     def _parse_open_response(self, response):
-        self.datashape = response['datashape']
         dtype_descr = response['dtype']
         if isinstance(dtype_descr, list):
             # Reformat because NumPy needs list of tuples

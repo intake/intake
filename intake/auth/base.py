@@ -8,6 +8,10 @@
 from ..utils import DictSerialiseMixin
 
 
+class AuthenticationFailure(Exception):
+    pass
+
+
 class BaseAuth(DictSerialiseMixin):
     """Base class for authorization
 

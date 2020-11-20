@@ -4,12 +4,13 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-
+import collections
+import entrypoints
 import inspect
 import logging
 import os
+import warnings
 
-from jinja2 import Template
 from fsspec import open_files, get_filesystem_class
 from fsspec.core import split_protocol
 
@@ -17,7 +18,7 @@ from .. import __version__
 from .base import Catalog, DataSource
 from . import exceptions
 from .entry import CatalogEntry
-from ..source import registry as global_registry
+from ..source import register_driver
 from ..source import get_plugin_class
 from ..source.discovery import load_plugins_from_module
 from .utils import (expand_defaults, coerce, COERCION_RULES, merge_pars,
@@ -77,14 +78,10 @@ class UserParameter(DictSerialiseMixin):
             self.allowed = [coerce(self.type, item)
                             for item in self.allowed]
 
-    def __str__(self):
-        return ('UserParameter(name={self.name!r}, '
-                'description={self.description!r}, '
-                'type={self.type!r}, '
-                'default={self.default!r}, '
-                'min={self.min!r}, '
-                'max={self.max!r}, '
-                'allowed={self.allowed!r})'.format(self=self))
+    def __repr__(self):
+        return f'<{self.__class__.__name__} {self.name!r}>'
+
+    __str__ = __repr__
 
     def describe(self):
         """Information about this parameter"""
@@ -168,6 +165,7 @@ class LocalCatalogEntry(CatalogEntry):
             Catalog object in which this entry belongs
         """
         self._name = name
+        self._default_source = None
         self._description = description
         self._driver = driver
         self._direct_access = direct_access
@@ -227,7 +225,8 @@ class LocalCatalogEntry(CatalogEntry):
         return {
             'name': self._name,
             'container': self._container,
-            'plugin': pl,
+            'plugin': pl,   # deprecated
+            'driver': pl,
             'description': self._description,
             'direct_access': self._direct_access,
             'user_parameters': [u.describe() for u in self._user_parameters],
@@ -279,6 +278,9 @@ class LocalCatalogEntry(CatalogEntry):
 
     def get(self, **user_parameters):
         """Instantiate the DataSource for the given parameters"""
+        if not user_parameters and self._default_source is not None:
+            return self._default_source
+
         plugin, open_args = self._create_open_args(user_parameters)
         data_source = plugin(**open_args)
         data_source.catalog_object = self._catalog
@@ -286,7 +288,18 @@ class LocalCatalogEntry(CatalogEntry):
         data_source.description = self._description
         data_source.cat = self._catalog
 
+        # Cache the default source if there are no user parameters.
+        if not user_parameters:
+            self._default_source = data_source
+
         return data_source
+
+    def clear_cached_default_source(self):
+        """
+        Clear a cached default source so it can be created anew (if, for instance,
+        it depends on changing environment variables or execution context)
+        """
+        self._default_source = None
 
 
 class CatalogParser(object):
@@ -352,18 +365,16 @@ class CatalogParser(object):
                            "dictionary", data['plugins'], 'source')
                 continue
 
-            if 'module' in plugin_source and 'dir' in plugin_source:
-                self.error("keys 'module' and 'dir' both exist (select only "
-                           "one)", plugin_source)
-            elif 'module' in plugin_source:
+            if 'module' in plugin_source:
                 register_plugin_module(plugin_source['module'])
             elif 'dir' in plugin_source:
-                path = Template(plugin_source['dir']).render(
-                    {'CATALOG_DIR': self._context['root']})
-                register_plugin_dir(path)
+                self.error(
+                    "The key 'dir', and in general the feature of registering "
+                    "plugins from a directory of Python scripts outside of "
+                    "sys.path, is no longer supported. Use 'module'.",
+                    plugin_source)
             else:
-                self.error("missing one of the available keys ('module' or "
-                           "'dir')", plugin_source)
+                self.error("missing 'module'", plugin_source)
 
     def _getitem(self, obj, key, dtype, required=True, default=None,
                  choices=None):
@@ -514,16 +525,7 @@ def register_plugin_module(mod):
         if k:
             if isinstance(k, (list, tuple)):
                 k = k[0]
-            global_registry[k] = v
-
-
-def register_plugin_dir(path):
-    """Find plugins in given directory"""
-    import glob
-    for f in glob.glob(path + '/*.py'):
-        for k, v in load_plugins_from_module(f).items():
-            if k:
-                global_registry[k] = v
+            register_driver(k, v)
 
 
 def get_dir(path):
@@ -562,6 +564,7 @@ class YAMLFileCatalog(Catalog):
         self.text = None
         self.autoreload = autoreload  # set this to False if don't want reloads
         self.filesystem = kwargs.pop('fs', None)
+        self.access = "name" not in kwargs
         super(YAMLFileCatalog, self).__init__(**kwargs)
 
     def _load(self, reload=False):
@@ -570,6 +573,11 @@ class YAMLFileCatalog(Catalog):
         Will do nothing if auto-reload is off and reload is not explicitly
         requested
         """
+        if self.access is False:
+            # skip first load, if cat has given name (i.e., is subcat)
+            self.updated = 0
+            self.access = True
+            return
         if self.autoreload or reload:
             # First, we load from YAML, failing if syntax errors are found
             options = self.storage_options or {}
@@ -720,11 +728,17 @@ class YAMLFilesCatalog(Catalog):
         self._kwargs = kwargs.copy()
         self._cat_files = []
         self._cats = {}
+        self.access = "name" not in kwargs
         super(YAMLFilesCatalog, self).__init__(**kwargs)
 
     def _load(self):
         # initial: find cat files
         # if flattening, need to get all entries from each.
+        if self.access is False:
+            # skip first load, if cat has given name (i.e., is subcat)
+            self.updated = 0
+            self.access = True
+            return
         self._entries.clear()
         options = self.storage_options or {}
         if isinstance(self.path, (list, tuple)):
@@ -779,5 +793,84 @@ class YAMLFilesCatalog(Catalog):
                 self._entries[entry._name] = entry
 
 
-global_registry['yaml_file_cat'] = YAMLFileCatalog
-global_registry['yaml_files_cat'] = YAMLFilesCatalog
+class MergedCatalog(Catalog):
+    """
+    A Catalog that merges the entries of a list of catalogs.
+    """
+    def __init__(self, catalogs, *args, **kwargs):
+        self._catalogs = catalogs
+        super().__init__(*args, **kwargs)
+
+    def _load(self):
+        for catalog in self._catalogs:
+            catalog._load()
+
+    def _make_entries_container(self):
+        return collections.ChainMap(*(catalog._entries for catalog in self._catalogs))
+
+
+class EntrypointEntry(CatalogEntry):
+    """
+    A catalog entry for an entrypoint.
+
+    """
+
+    def __init__(self, entrypoint):
+        self._entrypoint = entrypoint
+        self._container = None
+        self._user_parameters = []
+        super().__init__()
+
+    def __repr__(self):
+        return f"<Entry '{self.name}'>"
+
+    @property
+    def name(self):
+        return self._entrypoint.name
+
+    def describe(self):
+        """Basic information about this entry"""
+        if self._container is None:
+            self._container = self().container
+        return {'name': self.name,
+                'module_name': self._entrypoint.module_name,
+                'object_name': self._entrypoint.object_name,
+                'distro': self._entrypoint.distro,
+                'extras': self._entrypoint.extras,
+                'container': self._container
+                }
+
+    def get(self):
+        """Instantiate the DataSource for the given parameters"""
+        return self._entrypoint.load()
+
+
+class EntrypointsCatalog(Catalog):
+    """
+    A catalog of discovered entrypoint catalogs.
+    """
+
+    def __init__(self, *args, entrypoints_group='intake.catalogs', paths=None,
+                 **kwargs):
+        self._entrypoints_group = entrypoints_group
+        self._paths = paths
+        super().__init__(*args, **kwargs)
+
+    def _load(self):
+        catalogs = entrypoints.get_group_named(self._entrypoints_group,
+                                               path=self._paths)
+        self.name = self.name or 'EntrypointsCatalog'
+        self.description = (self.description
+                            or f'EntrypointsCatalog of {len(catalogs)} catalogs.')
+        for name, entrypoint in catalogs.items():
+            try:
+                self._entries[name] = EntrypointEntry(entrypoint)
+            except Exception as e:
+                warnings.warn(f"Failed to load {name}, {entrypoint}, {e!r}.")
+
+
+# Register these early in the import process to support the default catalog
+# which is built at import time. (Without this, 'yaml_file_cat' is looked for
+# in intake.registry before the registry has been populated.)
+register_driver('yaml_file_cat', YAMLFileCatalog)
+register_driver('yaml_files_cat', YAMLFilesCatalog)

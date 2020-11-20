@@ -3,7 +3,7 @@ metadata:
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
+    - module: intake.catalog.tests.example2_source
 sources:
   test_cache:
     description: cache a csv file from the local filesystem
@@ -14,6 +14,15 @@ sources:
         type: file
     args:
       urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
+  test_cache_new:
+    description: cache a csv file from the local filesystem
+    driver: csv
+    args:
+      urlpath: 'filecache://{{ CATALOG_DIR }}/cache_data/states.csv'
+      storage_options:
+        target_protocol: 'file'
+        cache_storage: "{{env(TEST_CACHE_DIR)}}"
+
   test_multiple_cache:
     description: testing what happens when there are multiple cache specs
     driver: csv
@@ -26,6 +35,15 @@ sources:
         type: file
     args:
       urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
+  test_list_cache:
+    description: testing what happens when there are multiple cache specs
+    driver: csv
+    cache:
+      - argkey: urlpath
+        regex: '{{ CATALOG_DIR }}cache_data'
+        type: file
+    args:
+      urlpath: ['{{ CATALOG_DIR }}cache_data/states.csv', '{{ CATALOG_DIR }}cache_data/states.csv']
   test_bad_type_cache_spec:
     description: cache a csv file from the local filesystem
     driver: csv

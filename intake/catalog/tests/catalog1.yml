@@ -4,7 +4,7 @@ metadata:
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
+    - module: intake.catalog.tests.example_plugin_dir.example2_source
 sources:
   use_example1:
     description: example1 source plugin
@@ -41,7 +41,7 @@ sources:
       urlpath: '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'
   remote_env:
     description: env gets interpreted in server
-    driver: csv
+    driver: intake.conftest.TestSource
     args:
       urlpath: 'path-{{intake_test}}'
     parameters:
@@ -72,9 +72,9 @@ sources:
       chunks: 5
   datetime:
     description: datetime parameters
-    driver: csv
+    driver: intake.conftest.TestSource
     args:
-      time: "{{time}}"
+      urlpath: "{{time}}"
     parameters:
       time:
         description: some time

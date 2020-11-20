@@ -14,7 +14,7 @@ import time
 import pytest
 
 from .util import assert_items_equal
-from intake import Catalog
+from intake import open_catalog
 
 TMP_DIR = tempfile.mkdtemp()
 TEST_CATALOG_PATH = [TMP_DIR]
@@ -39,7 +39,7 @@ def intake_server_with_config(intake_server):
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
+    - module: intake.catalog.tests.example_plugin_dir.example2_source
 sources:
   use_example1:
     description: example1 source plugin
@@ -54,7 +54,7 @@ sources:
 
 
 def test_reload_updated_config(intake_server_with_config):
-    catalog = Catalog(intake_server_with_config)
+    catalog = open_catalog(intake_server_with_config, ttl=0.1)
 
     entries = list(catalog)
     assert entries == ['use_example1']
@@ -64,7 +64,7 @@ def test_reload_updated_config(intake_server_with_config):
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
+    - module: intake.catalog.tests.example_plugin_dir.example2_source
 sources:
   use_example1:
     description: example1 source plugin
@@ -76,13 +76,13 @@ sources:
     args: {}
         ''')
 
-    time.sleep(2)
+    time.sleep(1.2)
 
     assert_items_equal(list(catalog), ['use_example1', 'use_example1_1'])
 
 
 def test_reload_updated_directory(intake_server_with_config):
-    catalog = Catalog(intake_server_with_config)
+    catalog = open_catalog(intake_server_with_config, ttl=0.1)
 
     orig_entries = list(catalog)
     assert 'example2' not in orig_entries
@@ -98,7 +98,7 @@ sources:
         urlpath: none
         ''')
 
-    time.sleep(2)
+    time.sleep(1.2)
 
     assert_items_equal(list(catalog), ['example2'] + orig_entries)
 
@@ -110,7 +110,7 @@ def test_reload_missing_remote_directory(intake_server):
         pass
 
     time.sleep(1)
-    catalog = Catalog(intake_server)
+    catalog = open_catalog(intake_server, ttl=0.1)
     assert_items_equal(list(catalog), [])
 
     os.mkdir(TMP_DIR)
@@ -119,14 +119,14 @@ def test_reload_missing_remote_directory(intake_server):
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
+    - module: intake.catalog.tests.example_plugin_dir.example2_source
 sources:
   use_example1:
     description: example1 source plugin
     driver: example1
     args: {}
         ''')
-    time.sleep(2)
+    time.sleep(1.2)
 
     assert_items_equal(list(catalog), ['use_example1'])
     try:
@@ -136,7 +136,7 @@ sources:
 
 
 def test_reload_missing_local_directory(tempdir):
-    catalog = Catalog(tempdir + '/*')
+    catalog = open_catalog(tempdir + '/*', ttl=0.1)
     assert_items_equal(list(catalog), [])
 
     with open(os.path.join(tempdir, YAML_FILENAME), 'w') as f:
@@ -144,7 +144,7 @@ def test_reload_missing_local_directory(tempdir):
 plugins:
   source:
     - module: intake.catalog.tests.example1_source
-    - dir: '{{ CATALOG_DIR }}/example_plugin_dir'
+    - module: intake.catalog.tests.example_plugin_dir.example2_source
 sources:
   use_example1:
     description: example1 source plugin
@@ -152,5 +152,5 @@ sources:
     args: {}
         ''')
 
-    time.sleep(1)
+    time.sleep(1.2)
     assert 'use_example1' in catalog

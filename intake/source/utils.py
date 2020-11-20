@@ -245,15 +245,16 @@ def path_to_glob(path):
     if not isinstance(path, str):
         return path
 
-    # Get just the real bits of the urlpath
-    literal_texts = [i[0] for i in fmt.parse(path)]
-
-    # Only use a star for first empty string in literal_texts
-    index_of_empty = [i for i, lt in enumerate(literal_texts) if lt == '' and i != 0]
-    glob = '*'.join([literal_texts[i] for i in range(len(literal_texts)) if i not in index_of_empty])
-
+    # calculate glob expression
+    glob = ''
+    prev_field_name = None
+    for literal_text, field_name, _, _ in fmt.parse(path):
+        glob += literal_text
+        # condition to avoid repeated * on adjacent fields
+        if field_name and (literal_text or prev_field_name is None):
+            glob += '*'
+        prev_field_name = field_name
     return glob
-
 
 def path_to_pattern(path, metadata=None):
     """

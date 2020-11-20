@@ -135,7 +135,6 @@ class NumpyAccess(object):
         start = self.offset + block * self.dtype.itemsize
         shape = (first, ) + self.shape[1:]
         fn = copy.copy(self.f)  # makes local copy to avoid close while reading
-        print(start, count, shape)
         with fn as f:
             f.seek(start)
             data = f.read(count * self.dtype.itemsize)

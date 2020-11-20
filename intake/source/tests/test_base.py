@@ -23,9 +23,8 @@ def test_datasource_base_method_exceptions():
                                 ('_get_partition', [1]),
                                 ('_close', [])]:
         method = getattr(d, method_name)
-        with pytest.raises(Exception) as except_info:
+        with pytest.raises(NotImplementedError):
             method(*args)
-        assert method_name in str(except_info.value)
 
 
 def test_name():
@@ -38,10 +37,9 @@ def test_datasource_base_context_manager():
     # Base data source should raise a "need to implement" exception when it
     # enters the context manager (which loads the schema)
 
-    with pytest.raises(Exception) as except_info:
+    with pytest.raises(NotImplementedError):
         with base.DataSource():
             pass
-    assert '_get_schema' in str(except_info.value)
 
 
 class MockDataSourceDataFrame(base.DataSource):
@@ -67,8 +65,7 @@ class MockDataSourceDataFrame(base.DataSource):
     def _get_schema(self):
         self.call_count['_get_schema'] += 1
 
-        return base.Schema(datashape='datashape',
-                           dtype=np.dtype([('x', np.int64), ('y', np.int64)]),
+        return base.Schema(dtype=np.dtype([('x', np.int64), ('y', np.int64)]),
                            shape=(6,),
                            npartitions=2,
                            extra_metadata=dict(c=3, d=4))
@@ -109,7 +106,6 @@ def test_datasource_discover(source_dataframe):
 
     row_dtype = np.dtype([('x', np.int64), ('y', np.int64)])
     assert r == {
-        'datashape': 'datashape',
         'dtype': row_dtype,
         'shape': (6,),
         'npartitions': 2,
@@ -117,7 +113,6 @@ def test_datasource_discover(source_dataframe):
     }
 
     # check attributes have been set
-    assert source_dataframe.datashape == 'datashape'
     assert source_dataframe.dtype == row_dtype
     assert source_dataframe.shape == (6,)
     assert source_dataframe.npartitions == 2
@@ -232,8 +227,7 @@ class MockDataSourcePython(base.DataSource):
     def _get_schema(self):
         self.call_count['_get_schema'] += 1
 
-        return base.Schema(datashape=None,
-                           dtype=None,
+        return base.Schema(dtype=None,
                            shape=(4,),
                            npartitions=2,
                            extra_metadata=dict(c=3, d=4))
@@ -274,7 +268,6 @@ def test_datasource_python_discover(source_python):
     assert source_python.container == 'python'
 
     assert r == {
-        'datashape': None,
         'dtype': None,
         'shape': (4,),
         'npartitions': 2,
@@ -282,7 +275,6 @@ def test_datasource_python_discover(source_python):
     }
 
     # check attributes have been set
-    assert source_python.datashape is None
     assert source_python.dtype is None
     assert source_python.shape == (4,)
     assert source_python.npartitions == 2

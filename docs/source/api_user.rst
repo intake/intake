@@ -6,6 +6,8 @@ These are reference class and function definitions likely to be useful to everyo
 .. autosummary::
    intake.open_catalog
    intake.registry
+   intake.register_driver
+   intake.unregister_driver
    intake.upload
    intake.open_
    intake.source.csv.CSVSource
@@ -14,7 +16,8 @@ These are reference class and function definitions likely to be useful to everyo
    intake.source.zarr.ZarrArraySource
    intake.catalog.local.YAMLFileCatalog
    intake.catalog.local.YAMLFilesCatalog
-   intake.gui.gui.GUI
+   intake.catalog.zarr.ZarrGroupCatalog
+   intake.interface.gui.GUI
 
 .. autofunction::
    intake.open_catalog
@@ -33,7 +36,7 @@ These are reference class and function definitions likely to be useful to everyo
 .. autofunction::
    intake.upload
 
-.. autoclass:: intake.gui.gui.GUI
+.. autoclass:: intake.interface.gui.GUI
    :members:
 
 Source classes
@@ -56,3 +59,6 @@ Source classes
 
 .. autoclass:: intake.catalog.local.YAMLFilesCatalog
    :members: __init__, reload, search, walk, persist, export
+
+.. autoclass:: intake.catalog.zarr.ZarrGroupCatalog
+   :members: __init__, reload, search, walk, persist, export, to_zarr

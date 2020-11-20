@@ -56,7 +56,7 @@ class FileSelector(Base):
     def setup(self):
         self.path_text = pn.widgets.TextInput(value=os.getcwd() + '/',
                                               width_policy='max')
-        self.protocol = pn.widgets.Select(options=list(known_implementations),
+        self.protocol = pn.widgets.Select(options=list(sorted(known_implementations)),
                                           value='file', name='protocol')
         self.storage_options = pn.widgets.TextInput(name='kwargs',
                                                     value="{}")
@@ -130,13 +130,13 @@ class FileSelector(Base):
                     continue
                 elif f['type'] == 'directory':
                     out.append(bn + '/')
-                elif any(bn.endswith(ext) for ext in self.filters):
+                elif not self.filters or any(bn.endswith(ext) for ext in self.filters):
                     out.append(bn)
         except Exception as e:
             print(e)
 
         self.main.value = []
-        self.main.options = out
+        self.main.options = sorted(out)
 
     def move_down(self, *events):
         for event in events:
@@ -144,7 +144,7 @@ class FileSelector(Base):
                 fn = event.new[0]
                 if fn.endswith('/'):
                     if self.path_text.value:
-                        self.path_text.value = self.path_text.value + '/' + fn
+                        self.path_text.value = os.path.join(self.path_text.value, fn)
                     else:
                         self.path_text.value = fn
                     self.make_options()
@@ -187,7 +187,7 @@ class URLSelector(Base):
         is set to false.
     """
     def __init__(self, **kwargs):
-        self.panel = pn.Row(name='Remote',
+        self.panel = pn.Row(name='URL',
                             width_policy='max', margin=0)
         super().__init__(**kwargs)
 
