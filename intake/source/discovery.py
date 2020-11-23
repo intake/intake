@@ -29,7 +29,7 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=False):
       environment.
     - Search all packages in the environment for names that begin with
       ``intake\_``. Import them and scan them for subclasses of
-      ``intake.source.base.Plugin``. This was previously the *only* mechanism
+      ``intake.source.base.DataSourceBase``. This was previously the *only* mechanism
       for auto-discoverying intake drivers, and it is maintained for backward
       compatibility.
 

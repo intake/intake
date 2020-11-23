@@ -1,3 +1,5 @@
+.. _usecases:
+
 Use Cases - I want to...
 ========================
 
