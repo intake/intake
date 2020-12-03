@@ -48,7 +48,7 @@ time-saver. Furthermore, each data-set will typically need its own code to
 be able to access it, and probably additional software dependencies.
 
 Intake allows you to build ``conda`` packages, which can include catalog files
-referencing online resources, or to include data files directly in tha package.
+referencing online resources, or to include data files directly in that package.
 Whether uploaded to ``anaconda.org`` or hosted on a private enterprise channel,
 getting the data becomes a single ``conda install ...`` command, whereafter
 it will appear as an entry in ``intake.cat``. The conda package brings versioning
