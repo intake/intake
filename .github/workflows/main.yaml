@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: "*"
+  pull_request:
+    branches: master
+
+jobs:
+  test:
+    name: ${{ matrix.CONDA_ENV }}-pytest
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        CONDA_ENV: [py38]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          auto-activate-base: false
+          activate-environment: test_env
+          environment-file: ci/environment-${{ matrix.CONDA_ENV }}.yml
+
+      - name: Run Tests
+        shell: bash -l {0}
+        run: |
+          pytest --verbose --cov=intake
