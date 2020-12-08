@@ -1,0 +1,40 @@
+name: test_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - aiohttp
+  - flask
+  - appdirs
+  - dask
+  - jinja2
+  - numpy
+  - pyyaml
+  - requests
+  - msgpack-numpy
+  - pytest-cov
+  - coveralls
+  - pytest
+  - fsspec
+  - intake-parquet
+  - zarr
+  - notebook
+  - panel
+  - hvplot
+  - bokeh
+  - dask
+  - h5netcdf
+  - intake
+  - netcdf4
+  - pip
+  - pydap
+  - pytest
+  - rasterio
+  - s3fs
+  - scikit-image
+  - xarray
+  - zarr
+  - moto
+  - pip:
+       - rangehttpserver
