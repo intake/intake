@@ -26,6 +26,11 @@ jobs:
           activate-environment: test_env
           environment-file: scripts/ci/environment-${{ matrix.CONDA_ENV }}.yml
 
+      - name: pip-install
+        shell: bash -l {0}
+        run: |
+          pip install -e . --no-deps
+
       - name: Run Tests
         shell: bash -l {0}
         run: |
