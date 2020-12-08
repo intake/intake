@@ -24,7 +24,7 @@ jobs:
           auto-update-conda: true
           auto-activate-base: false
           activate-environment: test_env
-          environment-file: ci/environment-${{ matrix.CONDA_ENV }}.yml
+          environment-file: scripts/ci/environment-${{ matrix.CONDA_ENV }}.yml
 
       - name: Run Tests
         shell: bash -l {0}
