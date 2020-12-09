@@ -1,11 +1,11 @@
 Plotting
 ========
 
-Intake provides a plotting API based on the `hvPlot <https://hvplot.holoviz.org/hvplot/index.html>`_ library, which
+Intake provides a plotting API based on the `hvPlot <https://hvplot.holoviz.org/index.html>`_ library, which
 closely mirrors the pandas plotting API but generates interactive plots using `HoloViews <http://holoviews.org/>`_
 and `Bokeh <http://bokeh.pydata.org/>`_.
 
-The `hvPlot website <https://hvplot.holoviz.org/hvplot/index.html>`_ provides comprehensive documentation on using the
+The `hvPlot website <https://hvplot.holoviz.org/index.html>`_ provides comprehensive documentation on using the
 plotting API to quickly visualize and explore small and large datasets. The main features offered by the plotting API
 include:
 
