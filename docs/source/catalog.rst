@@ -284,7 +284,7 @@ Expressed in YAML, a parameter may look as follows:
     parameters:
       name:
         description: name to use  # human-readable text for what this parameter means
-        type: str  # optional, one of bool, str, int, float, list[str], list[int], list[float], datetime
+        type: str  # one of bool, str, int, float, list[str], list[int], list[float], datetime
         default: normal  # optional, value to assume if user does not override
         allowed: ["normal", "strange"]  # optional, list of values that are OK, for validation
         min: "n"  # optional, minimum allowed, for validation
