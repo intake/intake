@@ -415,7 +415,7 @@ class CatalogParser(object):
 
         return UserParameter(**params)
 
-    def _parse_data_source(self, name, data):
+    def _parse_data_source(self, name, data, global_parameters):
         if data.pop('remote', False):
             from intake.catalog.remote import RemoteCatalogEntry
             return RemoteCatalogEntry(getenv=self.getenv,
@@ -424,9 +424,36 @@ class CatalogParser(object):
             from intake.utils import remake_instance
             return remake_instance(data)
         else:
-            return self._parse_data_source_local(name, data)
+            return self._parse_data_source_local(name, data, global_parameters)
 
-    def _parse_data_source_local(self, name, data):
+    def _parse_user_parameters(self, data):
+        if isinstance(data['parameters'], list):
+            raise exceptions.ObsoleteParameterError
+
+        if not isinstance(data['parameters'], dict):
+            self.error("value of key 'parameters' must be a dictionary",
+                       data, 'parameters')
+            return None
+
+        parameters = []
+
+        for name, parameter in data['parameters'].items():
+            if not isinstance(name, str):
+                self.error("key '{}' must be a string".format(name),
+                           data['parameters'], name)
+                continue
+
+            if not isinstance(parameter, dict):
+                self.error("value of key '{}' must be a dictionary"
+                           "".format(name), data['parameters'], name)
+                continue
+
+            obj = self._parse_user_parameter(name, parameter)
+            if obj:
+                parameters.append(obj)
+        return parameters
+
+    def _parse_data_source_local(self, name, data, global_parameters):
         ds = {
             'name': name,
             'description': self._getitem(data, 'description', str,
@@ -443,31 +470,13 @@ class CatalogParser(object):
         if ds['driver'] is None:
             return None
 
-        ds['parameters'] = []
-
         if 'parameters' in data:
-            if isinstance(data['parameters'], list):
-                raise exceptions.ObsoleteParameterError
-
-            if not isinstance(data['parameters'], dict):
-                self.error("value of key 'parameters' must be a dictionary",
-                           data, 'parameters')
+            parameters = self._parse_user_parameters(data)
+            if parameters is None:
                 return None
-
-            for name, parameter in data['parameters'].items():
-                if not isinstance(name, str):
-                    self.error("key '{}' must be a string".format(name),
-                               data['parameters'], name)
-                    continue
-
-                if not isinstance(parameter, dict):
-                    self.error("value of key '{}' must be a dictionary"
-                               "".format(name), data['parameters'], name)
-                    continue
-
-                obj = self._parse_user_parameter(name, parameter)
-                if obj:
-                    ds['parameters'].append(obj)
+            ds['parameters'] = global_parameters + parameters
+        else:
+            ds['parameters'] = global_parameters
 
         return LocalCatalogEntry(catalog_dir=self._context['root'],
                                  getenv=self.getenv, getshell=self.getshell,
@@ -488,6 +497,11 @@ class CatalogParser(object):
                        'sources')
             return sources
 
+        if 'parameters' in data:
+            global_parameters = self._parse_user_parameters(data)
+        else:
+            global_parameters = []
+
         for name, source in data['sources'].items():
             if not isinstance(name, str):
                 self.error("key '{}' must be a string".format(name),
@@ -499,7 +513,7 @@ class CatalogParser(object):
                            "".format(name), data['sources'], name)
                 continue
 
-            obj = self._parse_data_source(name, source)
+            obj = self._parse_data_source(name, source, global_parameters)
             if obj:
                 sources.append(obj)
 
