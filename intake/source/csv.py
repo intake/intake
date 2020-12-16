@@ -58,20 +58,14 @@ class CSVSource(base.DataSource, base.PatternMixin):
     def _set_pattern_columns(self, path_column):
         """Get a column of values for each field in pattern
         """
-        try:
-            # CategoricalDtype allows specifying known categories when
-            # creating objects. It was added in pandas 0.21.0.
-            from pandas.api.types import CategoricalDtype
-            _HAS_CDT = True
-        except ImportError:
-            _HAS_CDT = False
+        from pandas.api.types import CategoricalDtype
 
         col = self._dataframe[path_column]
-        paths = col.cat.categories
+        paths = sorted(col.cat.categories)
 
         column_by_field = {field:
             col.cat.codes.map(dict(enumerate(values))).astype(
-                "category" if not _HAS_CDT else CategoricalDtype(set(values))
+                CategoricalDtype(set(values))
             ) for field, values in reverse_formats(self.pattern, paths).items()
         }
         self._dataframe = self._dataframe.assign(**column_by_field)
@@ -101,12 +95,6 @@ class CSVSource(base.DataSource, base.PatternMixin):
                 urlpath, storage_options=self._storage_options,
                 **self._csv_kwargs)
             return
-
-        if not (DASK_VERSION >= '0.19.0'):
-            raise ValueError("Your version of dask is '{}'. "
-                "The ability to include filenames in read_csv output "
-                "(``include_path_column``) was added in 0.19.0, so "
-                "pattern urlpaths are not supported.".format(DASK_VERSION))
 
         drop_path_column = 'include_path_column' not in self._csv_kwargs
         path_column = self._path_column()
