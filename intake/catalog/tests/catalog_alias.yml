@@ -15,7 +15,7 @@ sources:
     args:
       target: test_cache
   alias1:
-    driver: intake.source.base.AliasSource
+    driver: alias
     args:
       target: "{{choice}}"
       mapping:

@@ -4,9 +4,10 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-''' Base classes for Data Loader interface
+"""
+Base classes for Data Loader interface
+"""
 
-'''
 from yaml import dump
 
 from .cache import make_caches
@@ -471,75 +472,3 @@ class PatternMixin(object):
         elif self.path_as_pattern:
             return path_to_pattern(self._original_urlpath, self.metadata)
         return
-
-
-class AliasSource(DataSource):
-    """Refer to another named source, unmodified
-
-    The purpose of an Alias is to be able to refer to other source(s) in the
-    same catalog, perhaps leaving the choice of which target to load up to the
-    user. This source makes no sense outside of a catalog.
-
-    In this case, the output of the target source is not modified, but this
-    class acts as a prototype 'derived' source for processing the output of
-    some standard driver.
-
-    After initial discovery, the source's container and other details will be
-    updated from the target; initially, the AliasSource container is not
-    any standard.
-    """
-    container = 'other'
-    version = 1
-    name = 'alias'
-
-    def __init__(self, target, mapping=None, metadata=None, **kwargs):
-        """
-
-        Parameters
-        ----------
-        target: str
-            Name of the source to load, must be a key in the same catalog
-        mapping: dict or None
-            If given, use this to map the string passed as ``target`` to
-            entries in the catalog
-        metadata: dict or None
-            Extra metadata to associate
-        kwargs: passed on to the target
-        """
-        super(AliasSource, self).__init__(metadata)
-        self.target = target
-        self.mapping = mapping or {target: target}
-        self.kwargs = kwargs
-        self.metadata = metadata
-        self.source = None
-
-    def _get_source(self):
-        if self.cat is None:
-            raise ValueError('AliasSource cannot be used outside a catalog')
-        if self.source is None:
-            self.source = self.cat[self.mapping[self.target]](
-                metadata=self.metadata, **self.kwargs)
-            self.metadata = self.source.metadata.copy()
-            self.container = self.source.container
-            self.partition_access = self.source.partition_access
-            self.description = self.source.description
-
-    def discover(self):
-        self._get_source()
-        return self.source.discover()
-
-    def read(self):
-        self._get_source()
-        return self.source.read()
-
-    def read_partition(self, i):
-        self._get_source()
-        return self.source.read_partition(i)
-
-    def read_chunked(self):
-        self._get_source()
-        return self.source.read_chunked()
-
-    def to_dask(self):
-        self._get_source()
-        return self.source.to_dask()

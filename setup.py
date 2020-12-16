@@ -53,6 +53,8 @@ setup(
             'numpy = intake.source.npy:NPySource',
             'ndzarr = intake.source.zarr:ZarrArraySource',
             'zarr_cat = intake.catalog.zarr:ZarrGroupCatalog',
+            'alias = intake.source.derived.AliasSource',
+            'derived = intake.source.derived.DerivedSource'
         ]
     },
     classifiers=[
