@@ -96,12 +96,6 @@ class CSVSource(base.DataSource, base.PatternMixin):
                 **self._csv_kwargs)
             return
 
-        if not (DASK_VERSION >= '0.19.0'):
-            raise ValueError("Your version of dask is '{}'. "
-                "The ability to include filenames in read_csv output "
-                "(``include_path_column``) was added in 0.19.0, so "
-                "pattern urlpaths are not supported.".format(DASK_VERSION))
-
         drop_path_column = 'include_path_column' not in self._csv_kwargs
         path_column = self._path_column()
 
