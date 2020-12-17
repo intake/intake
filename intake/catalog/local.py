@@ -418,10 +418,22 @@ class CatalogParser(object):
     def _parse_data_source(self, name, data, global_parameters):
         if data.pop('remote', False):
             from intake.catalog.remote import RemoteCatalogEntry
+            if global_parameters:
+                data = dict(data)
+                source_parameters = data.get('user_parameters', [])
+                data['user_parameters'] = global_parameters + source_parameters
             return RemoteCatalogEntry(getenv=self.getenv,
                                       getshell=self.getshell, **data)
         elif 'cls' in data:
             from intake.utils import remake_instance
+            if global_parameters:
+                data = dict(data)
+                if 'kwargs' in data:
+                    data['kwargs'] = dict(data['kwargs'])
+                else:
+                    data['kwargs'] = {}
+                source_parameters = data['kwargs'].get('parameters', [])
+                data['kwargs']['user_parameters'] = global_parameters + source_parameters
             return remake_instance(data)
         else:
             return self._parse_data_source_local(name, data, global_parameters)
@@ -482,7 +494,7 @@ class CatalogParser(object):
                                  getenv=self.getenv, getshell=self.getshell,
                                  **ds)
 
-    def _parse_data_sources(self, data):
+    def _parse_data_sources(self, data, global_parameters):
         sources = []
 
         if 'sources' not in data:
@@ -496,11 +508,6 @@ class CatalogParser(object):
             self.error("value of key 'sources' must be a dictionary", data,
                        'sources')
             return sources
-
-        if 'parameters' in data:
-            global_parameters = self._parse_user_parameters(data)
-        else:
-            global_parameters = []
 
         for name, source in data['sources'].items():
             if not isinstance(name, str):
@@ -524,12 +531,18 @@ class CatalogParser(object):
             self.error("catalog must be a dictionary", data)
             return
 
+        if 'parameters' in data:
+            global_parameters = self._parse_user_parameters(data)
+        else:
+            global_parameters = []
+
         return dict(
             plugin_sources=self._parse_plugins(data),
-            data_sources=self._parse_data_sources(data),
+            data_sources=self._parse_data_sources(data, global_parameters),
             metadata=data.get('metadata', {}),
             name=data.get('name'),
             description=data.get('description'),
+            parameters=global_parameters
         )
 
 
@@ -658,7 +671,7 @@ class YAMLFileCatalog(Catalog):
         assert len(file_open) == 1
         file_open = file_open[0]
 
-        data = {'metadata': self.metadata, 'sources': {}}
+        data = {'metadata': self.metadata, 'sources': {}, 'parameters': self.parameters}
         for e in entries:
             data['sources'][e] = list(entries[e]._yaml()['sources'].values())[0]
         with file_open as f:
@@ -708,6 +721,7 @@ class YAMLFileCatalog(Catalog):
         self.metadata = cfg.get('metadata', {})
         self.name = self.name or cfg.get('name') or self.name_from_path
         self.description = self.description or cfg.get('description')
+        self.parameters = cfg['parameters']
 
     @property
     def name_from_path(self):
