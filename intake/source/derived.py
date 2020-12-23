@@ -1,5 +1,5 @@
 from . import import_name
-from .base import DataSource
+from .base import DataSource, Schema
 
 
 class AliasSource(DataSource):
@@ -78,7 +78,7 @@ def first(targets, cat, kwargs):
     targ = targets[0]
     if cat:
         s = cat[targ]
-        if targ in kwargs:
+        if kwargs and targ in kwargs:
             s = kwargs.configure_new(**kwargs[targ])
         return s
     else:
@@ -94,10 +94,10 @@ def first_discoverable(targets, cat, kwargs):
         try:
             if cat:
                 s = cat[t]
-                if t in kwargs:
+                if kwargs and t in kwargs:
                     s = s.configure_new(**kwargs[t])
             else:
-                t = t
+                s = t
             s.discover()
             return s
         except Exception:
@@ -106,21 +106,59 @@ def first_discoverable(targets, cat, kwargs):
 
 
 class DerivedSource(DataSource):
+    input_container = "other"  # no constraint
     container = 'other'  # to be filled in per instance at access time
     name = 'derived'
+    required_params = []  # list of kwargs that must be present
+    optional_params = {}  # optional kwargs with defaults
 
     def __init__(self, targets, target_chooser=first, target_kwargs=None,
-                 transform=identity, transform_params=None,
-                 container=None, allow_dask=True, metadata=None):
+                 container=None, metadata=None, **kwargs):
         """
 
         Parameters
         ----------
-        targets: list of string or Data Source
+        targets: list of string or DataSources
+            If string(s), refer to entries of the same catalog as this Source
         target_chooser: function to choose between targets
             function(targets, cat) -> source, or a fully-qualified dotted string pointing
             to it
         target_kwargs: dict of dict with keys matching items of targets
+        container: str (optional)
+            Assumed output container, if different from input
+        """
+        self.targets = targets
+        self._chooser = (target_chooser if callable(target_chooser)
+                         else import_name(target_chooser))
+        self._kwargs = target_kwargs
+        self._source = None
+        self._params = kwargs
+        if container:
+            self.container = container
+        self._validate_params()
+        super().__init__(metadata=metadata)
+
+    def _validate_params(self):
+        assert set(self.required_params) - set(self._params) == set()
+        for par, val in self.optional_params.items():
+            if par not in self._params:
+                self._params[par] = val
+
+    def _pick(self):
+        self._source = self._chooser(self.targets, self.cat, self._kwargs)
+        if self.input_container != "other":
+            assert self._source.container == self.input_container
+
+        self.metadata['target'] = self._source.metadata
+        if self.container is None:
+            self.container = self._source.container
+
+
+class GenericTransform(DerivedSource):
+    name = "transform"
+    required_params = ["transform", "transform_kwargs"]
+    optional_params = {"allow_dask": True}
+    """
         transform: function to perform transform
             function(container_object) -> output, or a fully-qualified dotted string pointing
             to it
@@ -128,33 +166,51 @@ class DerivedSource(DataSource):
             The keys are names of kwargs to pass to the transform function. Values are either
             concrete values to pass; or param objects which can be made into widgets (but
             must have a default value) - or a spec to be able to make these objects.
-        container: str (optional)
-            Assumed output container, if different from input
-        allow_dask: bool (True)
-            Whether we will be calling to_dask() on the target (True) or
-            read (False). If False, to_dask() on this source will raise
-            an exception.
-        """
-        self.targets = targets
-        self._chooser = target_chooser if callable(target_chooser) else import_name(target_chooser)
-        self._kwargs = target_kwargs
-        self._source = None
-        self._transform = transform if callable(transform) else import_name(transform)
-        self._params = transform_params
-        if container:
-            self.container = container
-        self._dask = allow_dask
-        super().__init__(metadata=metadata)
+    """
+
+    def _valdate_params(self):
+        super()._validate_params()
+        transform = self._params["transform"]
+        self._transform = (transform if callable(transform)
+                           else import_name(transform))
 
     def _get_schema(self):
-        if self._source is None:
-            self._source = self._chooser(self.targets, self.cat, self._kwargs)
+        self._pick()
+        return Schema()
 
-            self.metadata['target'] = self._source.metadata
-            if self.container is None:
-                self.container = self._source.container
-            if self._dask:
-                self._obj = self._source.to_dask()
-        if self._dask:
-            if self.container == "dataframe":
-                return self._obj.dtypes
+    def to_dask(self):
+        if not self._params['allow_dask']:
+            raise ValueError("This transform is not compatible with Dask"
+                             "because it has use_dask=False")
+        return self._transform(self._source.to_dask(), **self._params["transform_kwargs"])
+
+    def read(self):
+        return self._transform(self._source.read(), **self._params["transform_kwargs"])
+
+
+class Columns(DerivedSource):
+    input_container = "dataframe"
+    container = "dataframe"
+    required_params = ["columns"]
+    """
+        columns: list
+            Columns to choose from the target dataframe
+    """
+
+    def _get_schema(self):
+        self._pick()
+        disc = self._source.discover()
+        self._dtypes = {k: v for k, v in disc['dtype'].items()
+                        if k in self._params["columns"]}
+
+        return Schema(dtype=self._dtypes,
+                      shape=(None, len(self._dtypes)),
+                      npartitions=self._source.npartitions,
+                      metadata=self.metadata)
+
+    def to_dask(self):
+        self._pick()
+        return self._source.to_dask()[self._params["columns"]]
+
+    def read(self):
+        return self.to_dask().compute()

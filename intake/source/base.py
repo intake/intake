@@ -210,7 +210,7 @@ class DataSourceBase(DictSerialiseMixin):
     def __init__(self, storage_options=None, metadata=None):
         # default data
         self.metadata = metadata or {}
-        if isinstance(self.metadata, dict):
+        if isinstance(self.metadata, dict) and storage_options is None:
             storage_options = self._captured_init_kwargs.get('storage_options',
                                                              {})
         self.storage_options = storage_options

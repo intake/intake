@@ -1,0 +1,13 @@
+sources:
+  base:
+    driver: csv
+    args:
+      urlpath: "{{CATALOG_DIR}}/sample1.csv"
+  cols:
+    driver: intake.source.derived.Columns
+    args:
+      targets:
+        - base
+      columns:
+        - score
+        - rank
