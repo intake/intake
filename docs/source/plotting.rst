@@ -1,11 +1,11 @@
 Plotting
 ========
 
-Intake provides a plotting API based on the `hvPlot <https://pyviz.github.io/hvplot/index.html>`_ library, which
+Intake provides a plotting API based on the `hvPlot <https://hvplot.holoviz.org/index.html>`_ library, which
 closely mirrors the pandas plotting API but generates interactive plots using `HoloViews <http://holoviews.org/>`_
 and `Bokeh <http://bokeh.pydata.org/>`_.
 
-The `hvPlot website <https://pyviz.github.io/hvplot/index.html>`_ provides comprehensive documentation on using the
+The `hvPlot website <https://hvplot.holoviz.org/index.html>`_ provides comprehensive documentation on using the
 plotting API to quickly visualize and explore small and large datasets. The main features offered by the plotting API
 include:
 
@@ -20,7 +20,7 @@ Setup
 '''''
 
 For detailed installation instructions see the
-`getting started section <https://pyviz.github.io/hvplot/getting_started/index.html>`_ in the hvPlot documentation.
+`getting started section <https://hvplot.holoviz.org/getting_started/index.html>`_ in the hvPlot documentation.
 To start with install hvplot using conda:
 
 .. code-block:: bash
@@ -45,7 +45,7 @@ the PyViz lab extension must be installed first:
     jupyter labextension install @pyviz/jupyterlab_pyviz
 
 For detailed instructions on displaying plots in the notebook and from the Python command prompt see the
-`hvPlot user guide <https://pyviz.github.io/hvplot/user_guide/Viewing.html>`_.
+`hvPlot user guide <https://hvplot.holoviz.org/user_guide/Viewing.html>`_.
 
 Python Command Prompt & Scripts
 --------------------------------
@@ -182,7 +182,7 @@ Just like the default plot options the `fields` may be declared under the metada
 Declaring custom plots
 ----------------------
 
-As shown in the `hvPlot user guide <https://pyviz.github.io/hvplot/user_guide/Plotting.html>`__, the plotting API
+As shown in the `hvPlot user guide <https://hvplot.holoviz.org/user_guide/Plotting.html>`__, the plotting API
 provides a variety of plot types, which can be declared using the `kind` argument or via convenience methods on the
 plotting API, e.g. `cat.source.plot.scatter()`. In addition to declaring default plot options and field metadata data
 sources may also declare custom plot, which will be made available as methods on the plotting API. In this way a

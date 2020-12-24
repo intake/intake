@@ -212,6 +212,7 @@ def reverse_format(format_string, resolved_string):
 
     return args
 
+
 def path_to_glob(path):
     """
     Convert pattern style paths to glob style paths
@@ -255,6 +256,7 @@ def path_to_glob(path):
             glob += '*'
         prev_field_name = field_name
     return glob
+
 
 def path_to_pattern(path, metadata=None):
     """
