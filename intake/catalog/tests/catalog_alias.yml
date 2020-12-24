@@ -11,7 +11,7 @@ sources:
       path: "{{ CATALOG_DIR }}/small.npy"
       chunks: 5
   alias0:
-    driver: intake.source.base.AliasSource
+    driver: intake.source.derived.AliasSource
     args:
       target: test_cache
   alias1:

@@ -806,9 +806,9 @@ class MergedCatalog(Catalog):
     def _load(self):
         for catalog in self._catalogs:
             catalog._load()
-
-    def _make_entries_container(self):
-        return collections.ChainMap(*(catalog._entries for catalog in self._catalogs))
+        self._entries = collections.ChainMap(
+            *(catalog._entries for catalog in self._catalogs)
+        )
 
 
 class EntrypointEntry(CatalogEntry):

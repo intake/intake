@@ -8,13 +8,13 @@ sources:
     args:
       urlpath: '{{ CATALOG_DIR }}/*.yaml'
   alias1:
-    driver: intake.source.base.AliasSource
+    driver: intake.source.derived.AliasSource
     args:
       mapping:
         first: csvs
         second: yamls
       target: first
   alias2:
-    driver: intake.source.base.AliasSource
+    driver: intake.source.derived.AliasSource
     args:
       target: csvs
