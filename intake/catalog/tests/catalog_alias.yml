@@ -27,3 +27,9 @@ sources:
         type: str
         default: first
         allowed: ["first", "second"]
+  derive_cols:
+    driver: intake.source.derived.Columns
+    args:
+      targets:
+        - test_cache
+      columns: ["state", "slug"]

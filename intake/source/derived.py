@@ -1,3 +1,4 @@
+import typing
 from . import import_name
 from .base import DataSource, Schema
 
@@ -159,6 +160,8 @@ class GenericTransform(DerivedSource):
     required_params = ["transform", "transform_kwargs"]
     optional_params = {"allow_dask": True}
     """
+    Perform an arbitrary function to transform an input
+    
         transform: function to perform transform
             function(container_object) -> output, or a fully-qualified dotted string pointing
             to it
@@ -166,15 +169,19 @@ class GenericTransform(DerivedSource):
             The keys are names of kwargs to pass to the transform function. Values are either
             concrete values to pass; or param objects which can be made into widgets (but
             must have a default value) - or a spec to be able to make these objects.
+        allow_dask: bool (optional, default True)
+            Whether to_dask() is expected to work, which will in turn call the
+            target's to_dasK()
     """
 
-    def _valdate_params(self):
+    def _validate_params(self):
         super()._validate_params()
         transform = self._params["transform"]
         self._transform = (transform if callable(transform)
                            else import_name(transform))
 
     def _get_schema(self):
+        """We do not know the schema of a generic transform"""
         self._pick()
         return Schema()
 
@@ -188,29 +195,47 @@ class GenericTransform(DerivedSource):
         return self._transform(self._source.read(), **self._params["transform_kwargs"])
 
 
-class Columns(DerivedSource):
+class DataFrameTransform(GenericTransform):
+    name = "dftransform"
+    input_container = "dataframe"
+    container = "dataframe"
+    optional_params = {}
+    _df = None
+
+    def to_dask(self):
+        if self._df is None:
+            self._pick()
+            self._df = self._transform(self._source.to_dask(),
+                                       **self._params["transform_kwargs"])
+        return self._df
+
+    def _get_schema(self):
+        """load metadata only if needed"""
+        self.to_dask()
+        return Schema(dtype=self._df.dtypes,
+                      shape=(None, len(self._df.columns)),
+                      npartitions=self._df.npartitions,
+                      metadata=self.metadata)
+
+    def read(self):
+        return self.to_dask().compute()
+
+
+class Columns(DataFrameTransform):
     input_container = "dataframe"
     container = "dataframe"
     required_params = ["columns"]
     """
-        columns: list
+        columns: list of labels (usually str) or slice
             Columns to choose from the target dataframe
     """
+    def __init__(self, columns, **kwargs):
+        # this class wants requires "columns", but DataFrameTransform
+        # uses "transform_kwargs", which we don't need since we use a method for the
+        # transform
+        kwargs.update(transform=self.pick_columns, columns=columns,
+                      transform_kwargs={})
+        super().__init__(**kwargs)
 
-    def _get_schema(self):
-        self._pick()
-        disc = self._source.discover()
-        self._dtypes = {k: v for k, v in disc['dtype'].items()
-                        if k in self._params["columns"]}
-
-        return Schema(dtype=self._dtypes,
-                      shape=(None, len(self._dtypes)),
-                      npartitions=self._source.npartitions,
-                      metadata=self.metadata)
-
-    def to_dask(self):
-        self._pick()
-        return self._source.to_dask()[self._params["columns"]]
-
-    def read(self):
-        return self.to_dask().compute()
+    def pick_columns(self, df):
+        return df[self._params["columns"]]
