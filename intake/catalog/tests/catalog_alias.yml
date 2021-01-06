@@ -33,3 +33,12 @@ sources:
       targets:
         - test_cache
       columns: ["state", "slug"]
+  derive_cols_func:
+    driver: intake.source.derived.DataFrameTransform
+    args:
+      targets:
+        - test_cache
+      transform: "intake.source.tests.test_derived._pick_columns"
+      transform_kwargs:
+        columns: ["state", "slug"]
+
