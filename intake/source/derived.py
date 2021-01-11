@@ -1,4 +1,3 @@
-import typing
 from . import import_name
 from .base import DataSource, Schema
 
@@ -76,21 +75,28 @@ class AliasSource(DataSource):
 
 
 def first(targets, cat, kwargs):
+    """A target chooser that simply picks the first from the given list
+
+    This is the default, particularly for the case of only one element in
+    the list
+    """
     targ = targets[0]
     if cat:
         s = cat[targ]
         if kwargs and targ in kwargs:
             s = kwargs.configure_new(**kwargs[targ])
         return s
-    else:
+    else:  # pragma: no cover
+        # for testing only
         return targ
 
 
-def identity(x):
-    return x
-
-
 def first_discoverable(targets, cat, kwargs):
+    """A target chooser: the first target for which discover() succeeds
+
+    This may be useful where some drivers are not importable, or some
+    sources can be available only sometimes.
+    """
     for t in targets:
         try:
             if cat:
@@ -107,9 +113,15 @@ def first_discoverable(targets, cat, kwargs):
 
 
 class DerivedSource(DataSource):
+    """Base source deriving from another source in the same catalog
+
+    Target picking and parameter validation are performed here, but
+    you probably want to subclass from one of the more specific
+    classes like ``DataFrameTransform``.
+    """
+
     input_container = "other"  # no constraint
     container = 'other'  # to be filled in per instance at access time
-    name = 'derived'
     required_params = []  # list of kwargs that must be present
     optional_params = {}  # optional kwargs with defaults
 
@@ -126,7 +138,7 @@ class DerivedSource(DataSource):
             to it
         target_kwargs: dict of dict with keys matching items of targets
         container: str (optional)
-            Assumed output container, if different from input
+            Assumed output container, if known/different from input
         """
         self.targets = targets
         self._chooser = (target_chooser if callable(target_chooser)
@@ -140,12 +152,14 @@ class DerivedSource(DataSource):
         super().__init__(metadata=metadata)
 
     def _validate_params(self):
+        """That all required params are present and that optional types match"""
         assert set(self.required_params) - set(self._params) == set()
         for par, val in self.optional_params.items():
             if par not in self._params:
                 self._params[par] = val
 
     def _pick(self):
+        """ Pick the source from the given targets """
         self._source = self._chooser(self.targets, self.cat, self._kwargs)
         if self.input_container != "other":
             assert self._source.container == self.input_container
@@ -156,7 +170,6 @@ class DerivedSource(DataSource):
 
 
 class GenericTransform(DerivedSource):
-    name = "transform"
     required_params = ["transform", "transform_kwargs"]
     optional_params = {"allow_dask": True}
     """
@@ -196,7 +209,12 @@ class GenericTransform(DerivedSource):
 
 
 class DataFrameTransform(GenericTransform):
-    name = "dftransform"
+    """Transform where the input and output are both Dask-compatible dataframes
+
+    This derives from GenericTransform, and you mus supply ``transform`` and
+    any ``transform_kwargs``.
+    """
+
     input_container = "dataframe"
     container = "dataframe"
     optional_params = {}
@@ -222,14 +240,22 @@ class DataFrameTransform(GenericTransform):
 
 
 class Columns(DataFrameTransform):
+    """Simple dataframe transform to pick columns
+
+    Given as an example of how to make a specific dataframe transform.
+    Note that you could use DataFrameTransform directly, by writing a
+    function to choose the columns instead of a method as here.
+    """
+
     input_container = "dataframe"
     container = "dataframe"
     required_params = ["columns"]
-    """
-        columns: list of labels (usually str) or slice
-            Columns to choose from the target dataframe
-    """
+
     def __init__(self, columns, **kwargs):
+        """
+            columns: list of labels (usually str) or slice
+                Columns to choose from the target dataframe
+        """
         # this class wants requires "columns", but DataFrameTransform
         # uses "transform_kwargs", which we don't need since we use a method for the
         # transform
