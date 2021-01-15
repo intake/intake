@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 
 import intake.source.base as base
+import intake.source.derived as der
 
 
 def test_datasource_base_method_exceptions():
@@ -310,7 +311,7 @@ def test_yaml_method(source_python):
 
 
 def test_alias_fail():
-    s = base.AliasSource('atarget')
+    s = der.AliasSource('atarget')
     s.container == 'other'
     with pytest.raises(ValueError):
         s.read()

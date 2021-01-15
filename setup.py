@@ -53,6 +53,7 @@ setup(
             'numpy = intake.source.npy:NPySource',
             'ndzarr = intake.source.zarr:ZarrArraySource',
             'zarr_cat = intake.catalog.zarr:ZarrGroupCatalog',
+            'alias = intake.source.derived:AliasSource',
         ]
     },
     classifiers=[
@@ -60,6 +61,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
     python_requires=">=3.6",
     long_description=open('README.md').read(),

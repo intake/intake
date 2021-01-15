@@ -1,6 +1,6 @@
 sources:
-  test_cache:
-    description: cache a csv file from the local filesystem
+  input_data:
+    description: a local data file
     driver: csv
     args:
       urlpath: '{{ CATALOG_DIR }}cache_data/states.csv'
@@ -11,15 +11,15 @@ sources:
       path: "{{ CATALOG_DIR }}/small.npy"
       chunks: 5
   alias0:
-    driver: intake.source.base.AliasSource
+    driver: intake.source.derived.AliasSource
     args:
-      target: test_cache
+      target: input_data
   alias1:
-    driver: intake.source.base.AliasSource
+    driver: alias
     args:
       target: "{{choice}}"
       mapping:
-        first: test_cache
+        first: input_data
         second: arr_cache
     parameters:
       choice:
@@ -27,3 +27,18 @@ sources:
         type: str
         default: first
         allowed: ["first", "second"]
+  derive_cols:
+    driver: intake.source.derived.Columns
+    args:
+      targets:
+        - input_data
+      columns: ["state", "slug"]
+  derive_cols_func:
+    driver: intake.source.derived.DataFrameTransform
+    args:
+      targets:
+        - input_data
+      transform: "intake.source.tests.test_derived._pick_columns"
+      transform_kwargs:
+        columns: ["state", "slug"]
+

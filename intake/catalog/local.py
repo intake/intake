@@ -779,18 +779,20 @@ class YAMLFilesCatalog(Catalog):
                 else:
                     # store a catalog entry
                     self._cats[f.path] = entry
+        entries = {}
         for name, entry in list(self._cats.items()):
             if self._flatten:
                 entry.reload()
-                inter = set(entry._entries).intersection(self._entries)
+                inter = set(entry._entries).intersection(entries)
                 if inter:
                     raise ValueError(
                         'Conflicting names when flattening multiple'
                         ' catalogs. Sources %s exist in more than'
                         ' one' % inter)
-                self._entries.update(entry._entries)
+                entries.update(entry._entries)
             else:
-                self._entries[entry._name] = entry
+                entries[entry._name] = entry
+        self._entries = entries
 
 
 class MergedCatalog(Catalog):
@@ -804,9 +806,9 @@ class MergedCatalog(Catalog):
     def _load(self):
         for catalog in self._catalogs:
             catalog._load()
-
-    def _make_entries_container(self):
-        return collections.ChainMap(*(catalog._entries for catalog in self._catalogs))
+        self._entries = collections.ChainMap(
+            *(catalog._entries for catalog in self._catalogs)
+        )
 
 
 class EntrypointEntry(CatalogEntry):

@@ -14,3 +14,4 @@ how to use the graphical interface, plotting, etc.
     plotting.rst
     plugin-directory.rst
     server.rst
+    transforms.rst
