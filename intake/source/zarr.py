@@ -43,6 +43,9 @@ class ZarrArraySource(DataSource):
         self.storage_options = storage_options or {}
         self.component = component
         self.kwargs = kwargs
+        self.shape = None
+        self.dtype = None
+        self.chunks = None
         self._arr = None
         super(ZarrArraySource, self).__init__(metadata=metadata)
 
@@ -53,6 +56,8 @@ class ZarrArraySource(DataSource):
                                      storage_options=self.storage_options,
                                      **self.kwargs)
             self.chunks = self._arr.chunks
+            self.shape = self._arr.shape
+            self.dtype = self._arr.dtype
             self.npartitions = self._arr.npartitions
         return Schema(dtype=str(self.dtype), shape=self.shape,
                       extra_metadata=self.metadata,
