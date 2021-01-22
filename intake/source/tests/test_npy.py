@@ -66,6 +66,8 @@ def test_zarr_minimal():
     cat = intake.open_catalog(posixpath.join(here, 'sources.yaml'))
     s = cat.zarr1()
     assert s.container == 'ndarray'
-    assert s.read().tolist() == [73, 98, 46, 38, 20, 12, 31,  8, 89, 72]
+    assert s.read().tolist() == [73, 98, 46, 38, 20, 12, 31, 8, 89, 72]
     assert s.npartitions == 1
+    assert s.dtype == 'int'
+    assert s.shape == (10,)
     assert (s.read_partition((0, )) == s.read()).all()
