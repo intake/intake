@@ -43,8 +43,6 @@ class ZarrArraySource(DataSource):
         self.storage_options = storage_options or {}
         self.component = component
         self.kwargs = kwargs
-        self.shape = None
-        self.dtype = None
         self.chunks = None
         self._arr = None
         super(ZarrArraySource, self).__init__(metadata=metadata)
