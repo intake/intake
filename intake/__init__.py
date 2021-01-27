@@ -126,6 +126,8 @@ def open_catalog(uri=None, **kwargs):
     intake.open_intake_remote
     """
     driver = kwargs.pop('driver', None)
+    if hasattr(path, "__fspath__"):
+        path = path.__fspath__()
     if driver is None:
         if uri:
             if ((isinstance(uri, str) and "*" in uri)
