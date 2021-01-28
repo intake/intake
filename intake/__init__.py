@@ -8,6 +8,7 @@
 import importlib
 import re
 import logging
+import os
 import warnings
 
 from ._version import get_versions
@@ -126,8 +127,8 @@ def open_catalog(uri=None, **kwargs):
     intake.open_intake_remote
     """
     driver = kwargs.pop('driver', None)
-    if hasattr(uri, "__fspath__"):
-        uri = uri.__fspath__()
+    if isinstance(uri, os.Pathlike):
+        uri = os.fspath(uri)
     if driver is None:
         if uri:
             if ((isinstance(uri, str) and "*" in uri)
