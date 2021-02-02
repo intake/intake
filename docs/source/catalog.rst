@@ -415,6 +415,18 @@ authentication (anonymous access), respectively
 
 .. _caching:
 
+** Using S3 Profiles**
+
+An AWS profile may be specified as an argument under ``storage_options`` via the following format:
+
+.. code-block:: yaml
+
+      args:
+        urlpath: s3://bucket/path/*.csv
+        storage_options:
+          profile: aws-profile-name
+
+
 Caching
 '''''''
 
