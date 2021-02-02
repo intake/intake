@@ -415,7 +415,7 @@ authentication (anonymous access), respectively
 
 .. _caching:
 
-** Using S3 Profiles**
+**Using S3 Profiles**
 
 An AWS profile may be specified as an argument under ``storage_options`` via the following format:
 
