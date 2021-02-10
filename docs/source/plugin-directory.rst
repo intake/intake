@@ -19,6 +19,7 @@ contains in parentheses:
 * `intake-geopandas <https://github.com/informatics-lab/intake_geopandas>`_: load from ESRI Shape Files, GeoJSON, and geospatial databases with geopandas (``geojson``, ``postgis``, ``shapefile``, ``spatialite``) and ``regionmask`` for opening shapefiles into `regionmask <https://github.com/mathause/regionmask/>`_.
 * `intake-hbase <https://github.com/intake/intake-hbase>`_: Apache HBase database (``hbase``)
 * `intake-iris <https://github.com/informatics-lab/intake-iris>`_ load netCDF and GRIB files with IRIS (``grib``, ``netcdf``)
+* `intake-metabase <https://github.com/continuumio/intake-metabase>`_: Generate catalogs and load tables as DataFrames from Metabase (``metabase_catalog``, ``metabase_table``)
 * `intake-mongo <https://github.com/intake/intake-mongo>`_: MongoDB noSQL query (``mongo``)
 * `intake-nested-yaml-catalog <https://github.com/zillow/intake-nested-yaml-catalog>`__: Plugin supporting a single YAML hierarchical catalog to organize datasets and avoid a data swamp. (``nested_yaml_cat``)
 * `intake-netflow <https://github.com/intake/intake-netflow>`_: Netflow packet format (``netflow``)
@@ -28,6 +29,7 @@ contains in parentheses:
 * `intake-pcap <https://github.com/intake/intake-pcap>`_: PCAP network packet format (``pcap``)
 * `intake-postgres <https://github.com/intake/intake-postgres>`_: PostgreSQL database (``postgres``)
 * `intake-s3-manifests <https://github.com/informatics-lab/intake-s3-manifests>`_ (``s3_manifest``)
+* `intake-sklearn <https://github.com/AlbertDeFusco/intake-sklearn>`_: Load scikit-learn models from Pickle files (``sklearn``)
 * `intake-solr <https://github.com/intake/intake-solr>`_: Apache Solr search platform (``solr``)
 * `intake-stac <https://github.com/pangeo/intake-stac>`_: Intake Driver for `SpatioTemporal Asset Catalogs (STAC) <https://stacspec.org/>`_.
 * `intake-spark <https://github.com/intake/intake-spark>`_: data processed by Apache Spark (``spark_cat``, ``spark_rdd``, ``spark_dataframe``)
@@ -35,6 +37,7 @@ contains in parentheses:
 * `intake-splunk <https://github.com/intake/intake-splunk>`_: Splunk machine data query (``splunk``)
 * `intake-xarray <https://github.com/intake/intake-xarray>`_: load netCDF, Zarr and other multi-dimensional data (``xarray_image``, ``netcdf``, ``opendap``,
   ``rasterio``, ``remote-xarray``, ``zarr``)
+
 
 The status of these projects is available at `Status Dashboard <https://intake.github.io/status/>`_.
 
