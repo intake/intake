@@ -104,7 +104,13 @@ def test_path_catalog(tmp_path_catalog):
 
 def test_bad_open():
     with pytest.raises(ValueError):
-        intake.open_catalog(None, driver='unknown')
+        # unknown driver
+        intake.open_catalog("", driver='unknown')
+    with pytest.raises(ValueError):
+        # bad URI type (NB falsish values become empty catalogs)
+        intake.open_catalog(True)
+    # default empty catalog
+    assert intake.open_catalog() == intake.open_catalog(None)
 
 
 def test_output_notebook():

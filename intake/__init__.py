@@ -8,6 +8,7 @@
 import importlib
 import re
 import logging
+import os
 import warnings
 
 from ._version import get_versions
@@ -106,11 +107,11 @@ def open_catalog(uri=None, **kwargs):
       files. In the latter case, assume it is a directory.
     - if ``uri`` beings with protocol ``"intake:"``, connect to a remote
       Intake server
-    - otherwise, create a base Catalog object without entries.
+    - if ``uri`` is ``None`` or missing, create a base Catalog object without entries.
 
     Parameters
     ----------
-    uri: str
+    uri: str or pathlib.Path
         Designator for the location of the catalog.
     kwargs:
         passed to subclass instance, see documentation of the individual
@@ -126,6 +127,8 @@ def open_catalog(uri=None, **kwargs):
     intake.open_intake_remote
     """
     driver = kwargs.pop('driver', None)
+    if isinstance(uri, os.PathLike):
+        uri = os.fspath(uri)
     if driver is None:
         if uri:
             if ((isinstance(uri, str) and "*" in uri)
@@ -151,6 +154,8 @@ def open_catalog(uri=None, **kwargs):
                     else:
                         uri = uri.rstrip('/') + '/*.y*ml'
                         driver = 'yaml_files_cat'
+            else:
+                raise ValueError("URI not understood: %s" % uri)
         else:
             # empty cat
             driver = 'catalog'
