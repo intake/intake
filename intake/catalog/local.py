@@ -792,7 +792,11 @@ class YAMLFilesCatalog(Catalog):
                 entries.update(entry._entries)
             else:
                 entries[entry._name] = entry
-        self._entries = entries
+        # This is thread safe as long as the hash values for entries are
+        # computed in C --- i.e. if they are built-in types like strings. If
+        # they implement __hash__ in Python then this is not threadsafe, and it
+        # would need a lock.
+        self._entries.update(entries)
 
 
 class MergedCatalog(Catalog):
