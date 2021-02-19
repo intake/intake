@@ -29,6 +29,7 @@ contains in parentheses:
 * `intake-pcap <https://github.com/intake/intake-pcap>`_: PCAP network packet format (``pcap``)
 * `intake-postgres <https://github.com/intake/intake-postgres>`_: PostgreSQL database (``postgres``)
 * `intake-s3-manifests <https://github.com/informatics-lab/intake-s3-manifests>`_ (``s3_manifest``)
+* `intake-salesforce <https://github.com/sophiamyang/intake-salesforce>`_: Generate catalogs and load tables as DataFrames from Salesforce (``salesforce_catalog``, ``salesforce_table``)
 * `intake-sklearn <https://github.com/AlbertDeFusco/intake-sklearn>`_: Load scikit-learn models from Pickle files (``sklearn``)
 * `intake-solr <https://github.com/intake/intake-solr>`_: Apache Solr search platform (``solr``)
 * `intake-stac <https://github.com/pangeo/intake-stac>`_: Intake Driver for `SpatioTemporal Asset Catalogs (STAC) <https://stacspec.org/>`_.
