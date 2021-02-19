@@ -3,3 +3,4 @@ dask
 entrypoints
 pyyaml
 fsspec >=0.7.4
+jinja2
