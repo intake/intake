@@ -21,3 +21,10 @@ def test_df_transform():
     df1 = cat.input_data.read()
     df2 = cat.derive_cols_func.read()
     assert df1[["state", "slug"]].equals(df2)
+
+
+def test_barebones():
+    cat = intake.open_catalog(catfile)
+    df1 = cat.input_data.read()
+    cat = intake.open_catalog(catfile)
+    assert cat.barebones.read() == len(df1)

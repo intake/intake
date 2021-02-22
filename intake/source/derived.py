@@ -199,12 +199,14 @@ class GenericTransform(DerivedSource):
         return Schema()
 
     def to_dask(self):
+        self._get_schema()
         if not self._params['allow_dask']:
             raise ValueError("This transform is not compatible with Dask"
                              "because it has use_dask=False")
         return self._transform(self._source.to_dask(), **self._params["transform_kwargs"])
 
     def read(self):
+        self._get_schema()
         return self._transform(self._source.read(), **self._params["transform_kwargs"])
 
 

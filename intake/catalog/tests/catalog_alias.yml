@@ -14,6 +14,13 @@ sources:
     driver: intake.source.derived.AliasSource
     args:
       target: input_data
+  barebones:
+    driver: intake.source.derived.GenericTransform
+    args:
+      targets:
+        - input_data
+      transform: builtins.len
+      transform_kwargs: {}
   alias1:
     driver: alias
     args:
