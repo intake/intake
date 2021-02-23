@@ -89,22 +89,22 @@ Functional Example
 This second version of the same output uses the more generic and flexible
 ``intake.source.derived.DataFrameTransform``.
 
-.. code-block::yaml
+.. code-block:: yaml
 
-      derive_cols_func:
-        driver: intake.source.derived.DataFrameTransform
-        args:
-          targets:
-            - input_data
-          transform: "intake.source.tests.test_derived._pick_columns"
-          transform_kwargs:
-            columns: ["state", "slug"]
+    derive_cols_func:
+      driver: intake.source.derived.DataFrameTransform
+      args:
+        targets:
+          - input_data
+        transform: "intake.source.tests.test_derived._pick_columns"
+        transform_kwargs:
+          columns: ["state", "slug"]
 
 In this case, we pass a reference to a *function* defined in the Intake test suite.
 Normally this would be declared in user modules, where perhaps those declarations
 and catalog(s) are distributed together as a package.
 
-.. code-block::python
+.. code-block:: python
 
     def _pick_columns(df, columns):
         return df[columns]
@@ -127,7 +127,7 @@ Barebone Example
 The previous two examples both did dateframe to dataframe transforms. However, totally
 arbitrary computations are possible. Consider the following:
 
-.. code-block::yaml
+.. code-block:: yaml
 
   barebones:
     driver: intake.source.derived.GenericTransform
