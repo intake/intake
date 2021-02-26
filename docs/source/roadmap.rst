@@ -70,6 +70,7 @@ Reader API
 For those that wish to provide Intake's data source API, and make data sources
 available to Intake cataloguing, but don't wish to take Intake as a direct dependency.
 The actual API of ``DataSources`` is rather simple:
+
 - ``__init__``: collect arguments, minimal IO at this point
 - ``discover()``: get metadata from the source, by querying the files/service itself
 - ``read()``: return in-memory version of the data
