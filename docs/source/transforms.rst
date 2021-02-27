@@ -173,7 +173,7 @@ API
    :members:
 .. autoclass:: intake.source.derived.GenericTransform
    :members:
-.. autoclass:: ntake.source.derived.DataFrameTransform
+.. autoclass:: intake.source.derived.DataFrameTransform
    :members:
 .. autoclass:: intake.source.derived.Columns
    :members:
