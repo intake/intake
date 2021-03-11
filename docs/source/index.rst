@@ -15,10 +15,10 @@ smooth the progression of data from developers and providers to users.
 Intake contains the following main components. You *do not* need to use them all! The
 library is modular, only use the parts you need:
 
-* A set of **data loaders** (:term:`Driver`s) with a common interface, so that you can
+* A set of **data loaders** (:term:`Drivers<Driver>`) with a common interface, so that you can
   investigate or load anything, from local or remote, with the exact same call, and turning into data structures
   that you already know how to manipulate, such as arrays and data-frames.
-* A **:term:`Catalog`ing system** for listing data sources, their metadata and parameters,
+* A **Cataloging system** (:term:`Catalogs<Catalog>`) for listing data sources, their metadata and parameters,
   and referencing which of the Drivers should load each. The catalogs for a hierarchical,
   searchable structure, which can be backed by files, Intake servers or third-party
   data services
