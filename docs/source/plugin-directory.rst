@@ -39,8 +39,7 @@ contains in parentheses:
 * `intake-splunk <https://github.com/intake/intake-splunk>`_: Splunk machine data query (``splunk``)
 * `intake-streamz <https://github.com/intake/intake-streamz>`_: real-time event processing using Streamz (``streamz``)
 * `intake-thredds <https://github.com/NCAR/intake-thredds>`_: Intake interface to THREDDS data catalogs (``thredds_cat``, ``thredds_merged_source``)
-* `intake-xarray <https://github.com/intake/intake-xarray>`_: load netCDF, Zarr and other multi-dimensional data (``xarray_image``, ``netcdf``, ``opendap``,
-  ``rasterio``, ``remote-xarray``, ``zarr``)
+* `intake-xarray <https://github.com/intake/intake-xarray>`_: load netCDF, Zarr and other multi-dimensional data (``xarray_image``, ``netcdf``, ``grib``, ``opendap``, ``rasterio``, ``remote-xarray``, ``zarr``)
 
 
 The status of these projects is available at `Status Dashboard <https://intake.github.io/status/>`_.
