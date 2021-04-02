@@ -149,5 +149,6 @@ def test_nested_catalog_access(tmp_path_catalog_nested):
     cat = intake.open_catalog(tmp_path_catalog_nested)
     entry1 = cat.nested.ex1
     entry2 = cat["nested.ex1"]
-    entry3 = cat["nested", "ex1"]
-    assert entry1 == entry2 == entry3
+    entry3 = cat[["nested", "ex1"]]
+    entry4 = cat["nested", "ex1"]
+    assert entry1 == entry2 == entry3 == entry4
