@@ -1,0 +1,6 @@
+sources:
+  ex1:
+    description: this is a sub-resource
+    driver: csv
+    args:
+      urlpath: ""

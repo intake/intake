@@ -412,7 +412,7 @@ class Catalog(DataSource):
         elif isinstance(key, tuple):
             out = self
             for part in key:
-                out = self[part]
+                out = out[part]
             return out()
         raise KeyError(key)
 
