@@ -20,7 +20,7 @@ Documentation is available at [Read the Docs](http://intake.readthedocs.io/en/la
 Status of intake and related packages is available at [Status Dashboard](https://intake.github.io/status)
 
 Weekly news about this repo and other related projects can be found on the
-[wiki](https://github.com/intake/intake/wiki/Community-News) 
+[wiki](https://github.com/intake/intake/wiki/Community-News)
 
 Install
 -------
@@ -43,15 +43,16 @@ and additional sections `[server]`, `[plot]` and `[dataframe]`, or to include ev
 pip install intake[complete]
 ```
 
-Note that you may well need specific drivers and other plugins, which usually have additional 
-dependencies of their own. 
+Note that you may well need specific drivers and other plugins, which usually have additional
+dependencies of their own.
 
 Development
 -----------
- * Create development Python environment, ideally with `conda`. The requirements can be found in the
-   recipe in the `conda/` directory of this repo or in the sister 
-   [feedstock](https://github.com/conda-forge/intake-feedstock)
- * Install using `pip install -e .[complete]`
- * Add `pytest` to the environment to be able to run tests
+ * Create development Python environment with the required dependencies, ideally with `conda`.
+   The requirements can be found in the yml files in the `scripts/ci/` directory of this repo or in the sister
+   [feedstock](https://github.com/conda-forge/intake-feedstock).
+   * e.g. `conda env create -f scripts/ci/environment-py38.yml` and then `conda activate test_env`
+ * Install intake using `pip install -e .[complete]`
+ * Use `pytest` to run tests.
  * Create a fork on github to be able to submit PRs.
  * We respect, but do not enforce, pep8 standards; all new code should be covered by tests.
