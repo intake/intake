@@ -49,8 +49,7 @@ dependencies of their own.
 Development
 -----------
  * Create development Python environment with the required dependencies, ideally with `conda`.
-   The requirements can be found in the yml files in the `scripts/ci/` directory of this repo or in the sister
-   [feedstock](https://github.com/conda-forge/intake-feedstock).
+   The requirements can be found in the yml files in the `scripts/ci/` directory of this repo.
    * e.g. `conda env create -f scripts/ci/environment-py38.yml` and then `conda activate test_env`
  * Install intake using `pip install -e .[complete]`
  * Use `pytest` to run tests.
