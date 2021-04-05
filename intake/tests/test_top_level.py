@@ -134,3 +134,21 @@ def test_no_imports():
     for mod in ['intake.tests', 'intake.interface', 'intake.source.csv',
                 'intake.cli', 'intake.auth']:
         assert mod not in sys.modules
+
+
+@pytest.fixture
+def tmp_path_catalog_nested():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = posixpath.join(tmp_dir, 'intake')
+        target_catalog = copy_test_file('catalog_nested.yml', tmp_path)
+        copy_test_file('catalog_nested_sub.yml', tmp_path)
+        yield target_catalog
+
+
+def test_nested_catalog_access(tmp_path_catalog_nested):
+    cat = intake.open_catalog(tmp_path_catalog_nested)
+    entry1 = cat.nested.ex1
+    entry2 = cat["nested.ex1"]
+    entry3 = cat[["nested", "ex1"]]
+    entry4 = cat["nested", "ex1"]
+    assert entry1 == entry2 == entry3 == entry4

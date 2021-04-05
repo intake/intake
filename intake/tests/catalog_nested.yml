@@ -1,0 +1,6 @@
+sources:
+  nested:
+    description: References catalog_nested_sub.yml
+    driver: yaml_file_cat
+    args:
+      path: "{{ CATALOG_DIR }}__unit_test_catalog_nested_sub.yml"
