@@ -135,7 +135,7 @@ returned data.  Each data source has several attributes:
   Markdown.
 
 - ``driver``: Name of the Intake :term:`Driver` to use with this source.  Must either already be installed in the current
-  Python environment (i.e. with conda or pip) or loaded in the ``plugin`` section of the file. Can be a dimple
+  Python environment (i.e. with conda or pip) or loaded in the ``plugin`` section of the file. Can be a simple
   driver name like "csv" or the full path to the implementation class like "package.module.Class".
 
 - ``args``: Keyword arguments to the init method of the driver.  Arguments may use template expansion.
