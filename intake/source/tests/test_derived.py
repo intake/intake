@@ -28,3 +28,9 @@ def test_barebones():
     df1 = cat.input_data.read()
     cat = intake.open_catalog(catfile)
     assert cat.barebones.read() == len(df1)
+
+
+def test_other_cat():
+    cat = intake.open_catalog(catfile)
+    df1 = cat.other_cat.read()
+    assert df1.columns.tolist() == ["name", "score"]
