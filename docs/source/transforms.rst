@@ -171,12 +171,12 @@ API
    intake.source.derived.Columns
 
 .. autoclass:: intake.source.derived.DerivedSource
-   :members:
+   :members: __init__
 .. autoclass:: intake.source.derived.Alias
-   :members:
+   :members: __init__
 .. autoclass:: intake.source.derived.GenericTransform
-   :members:
+   :members: __init__
 .. autoclass:: intake.source.derived.DataFrameTransform
-   :members:
+   :members: __init__
 .. autoclass:: intake.source.derived.Columns
-   :members:
+   :members: __init__
