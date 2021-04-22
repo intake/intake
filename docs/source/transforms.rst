@@ -12,8 +12,11 @@ Intake allows for the definition of data sources which take as their input
 another source in the same directory, so that you have the opportunity to
 present *processing* to the user of the catalog.
 
-For the time being, a derived dataset must live in the same catalogue as
-the target from which it derives.
+The "target" or a derived data source will normally be a string. In the
+simple case, it is the name of a data source in the same catalog. However,
+we use the syntax "catalog:source" to refer to sources in other catalogs,
+where the part before ":" will be passed to :func:`intake.open_catalog`,
+together with any keyword arguments from ``cat_kwargs``.
 
 This can be done by defining classes which inherit from
 ``intake.source.derived.DerivedSource``, or using one of the pre-defined classes

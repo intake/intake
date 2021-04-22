@@ -145,6 +145,9 @@ class DerivedSource(DataSource):
             another catalog
         container: str (optional)
             Assumed output container, if known/different from input
+
+        [Note: the exact form of target_kwargs and cat_kwargs may be
+        subject to change]
         """
         self.targets = targets
         self._chooser = (target_chooser if callable(target_chooser)
