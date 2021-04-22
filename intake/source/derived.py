@@ -1,4 +1,6 @@
+from functools import lru_cache
 from . import import_name
+from .. import open_catalog
 from .base import DataSource, Schema
 
 
@@ -74,24 +76,30 @@ class AliasSource(DataSource):
         return self.source.to_dask()
 
 
-def first(targets, cat, kwargs):
+cached_cats = lru_cache(10)(open_catalog)
+
+
+def get_source(target, cat, kwargs, cat_kwargs):
+    if ":" in target:
+        caturl, target = target.rsplit(":", 1)
+        cat = cached_cats(caturl, **cat_kwargs)
+    if cat:
+        return cat[target].configure_new(**kwargs)
+    # for testing only
+    return target  # pragma: no cover
+
+
+def first(targets, cat, kwargs, cat_kwargs):
     """A target chooser that simply picks the first from the given list
 
     This is the default, particularly for the case of only one element in
     the list
     """
     targ = targets[0]
-    if cat:
-        s = cat[targ]
-        if kwargs and targ in kwargs:
-            s = kwargs.configure_new(**kwargs[targ])
-        return s
-    else:  # pragma: no cover
-        # for testing only
-        return targ
+    return get_source(targ, cat, kwargs.get(targ, {}), cat_kwargs)
 
 
-def first_discoverable(targets, cat, kwargs):
+def first_discoverable(targets, cat, kwargs, cat_kwargs):
     """A target chooser: the first target for which discover() succeeds
 
     This may be useful where some drivers are not importable, or some
@@ -99,12 +107,7 @@ def first_discoverable(targets, cat, kwargs):
     """
     for t in targets:
         try:
-            if cat:
-                s = cat[t]
-                if kwargs and t in kwargs:
-                    s = s.configure_new(**kwargs[t])
-            else:
-                s = t
+            s = get_source(t, cat, kwargs.get(t, {}), cat_kwargs)
             s.discover()
             return s
         except Exception:
@@ -126,6 +129,7 @@ class DerivedSource(DataSource):
     optional_params = {}  # optional kwargs with defaults
 
     def __init__(self, targets, target_chooser=first, target_kwargs=None,
+                 cat_kwargs=None,
                  container=None, metadata=None, **kwargs):
         """
 
@@ -137,15 +141,18 @@ class DerivedSource(DataSource):
             function(targets, cat) -> source, or a fully-qualified dotted string pointing
             to it
         target_kwargs: dict of dict with keys matching items of targets
+        cat_kwargs: to pass to intake.open_catalog, if the target is in
+            another catalog
         container: str (optional)
             Assumed output container, if known/different from input
         """
         self.targets = targets
         self._chooser = (target_chooser if callable(target_chooser)
                          else import_name(target_chooser))
-        self._kwargs = target_kwargs
+        self._kwargs = target_kwargs or {}
         self._source = None
         self._params = kwargs
+        self._cat_kwargs = cat_kwargs or {}
         if container:
             self.container = container
         self._validate_params()
@@ -160,7 +167,8 @@ class DerivedSource(DataSource):
 
     def _pick(self):
         """ Pick the source from the given targets """
-        self._source = self._chooser(self.targets, self.cat, self._kwargs)
+        self._source = self._chooser(self.targets, self.cat, self._kwargs,
+                                     self._cat_kwargs)
         if self.input_container != "other":
             assert self._source.container == self.input_container
 
