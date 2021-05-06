@@ -22,19 +22,10 @@ Conversation happens in the following places:
     because gitter chat is not searchable by future users we discourage usage
     questions and bug reports on gitter and instead ask people to use Stack
     Overflow or GitHub.
-4.  **Monthly developer meeting** happens the first Thursday of the month at
-    9:00 US Central Time in `this video meeting <https://anaconda.zoom.us/j/5408205637>`_.
-    Meeting notes are available at
-    https://docs.google.com/document/d/1GVcqubeTGICQzPGq_BZxn2Bdtf31lnvcrRxMY3GPCPs/edit
+4.  **Monthly community meeting** happens the first Thursday of the month at
+    9:00 US Central Time. See `<https://github.com/intake/intake/issues/596>`_,
+    with a reminder sent out on the gitter channel. Strictly informal chatter.
 
-    .. raw:: html
-
-       <iframe src="https://calendar.google.com/calendar/embed?height=600&amp;wkst=1&amp;bgcolor=%23ffffff&amp;ctz=UTC&amp;src=aW50YWtlLmRldkBnbWFpbC5jb20&amp;color=%23039BE5&amp;showPrint=0&amp;showDate=1&amp;showTitle=1&amp;title=Developer%20Meetings" style="border:solid 1px #777" width="700" height="600" frameborder="0" scrolling="no"></iframe>
-
-    You can subscribe to this calendar to be notified of changes:
-
-    * `Google Calendar <https://calendar.google.com/calendar/embed?src=intake.dev%40gmail.com>`__
-    * `iCal <https://calendar.google.com/calendar/ical/intake.dev%40gmail.com/public/basic.ics>`__
 
 .. _`Stack Overflow with the #intake tag`: https://stackoverflow.com/questions/tagged/intake
 .. _`GitHub issue tracker`: https://github.com/intake/intake/issues/
