@@ -14,6 +14,7 @@ import pandas as pd
 
 import intake.source.base as base
 import intake.source.derived as der
+import intake.source
 
 
 def test_datasource_base_method_exceptions():
@@ -315,3 +316,15 @@ def test_alias_fail():
     s.container == 'other'
     with pytest.raises(ValueError):
         s.read()
+
+
+@pytest.mark.parametrize("data", [
+    ("intake.source.import_name", intake.source.import_name),
+    ("intake.source:import_name", intake.source.import_name),
+    ("intake.source.DataSource", intake.source.DataSource),
+    ("intake.source:DataSource", intake.source.DataSource),
+    ("intake.source:base.DataSource", intake.source.DataSource),
+])
+def test_import_name(data):
+    text, object = data
+    assert intake.source.import_name(text) == object
