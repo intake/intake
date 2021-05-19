@@ -85,9 +85,18 @@ classes = {}
 
 def import_name(name):
     import importlib
-    mod, cls = name.rsplit('.', 1)
-    module = importlib.import_module(mod)
-    return getattr(module, cls)
+    if ":" in name:
+        if name.count(":") > 1:
+            raise ValueError("Cannot decipher name to import: %s", name)
+        mod, rest = name.split(":")
+        bit = importlib.import_module(mod)
+        for part in rest.split("."):
+            bit = getattr(bit, part)
+        return bit
+    else:
+        mod, cls = name.rsplit('.', 1)
+        module = importlib.import_module(mod)
+        return getattr(module, cls)
 
 
 def get_plugin_class(name):
