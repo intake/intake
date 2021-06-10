@@ -360,13 +360,16 @@ class DataSourceBase(DictSerialiseMixin):
         the original entry definition in a catalog **if** this source was originally
         created from a catalog.
         """
-        kw = self._captured_init_kwargs.copy()
-        kw.update(kwargs)
         if self._entry is not None:
+            kw = {k: v for k, v in self._captured_init_kwargs.items()
+                  if k in self._passed_kwargs}
+            kw.update(kwargs)
             obj = self._entry(**kw)
             obj._entry = self._entry
             return obj
         else:
+            kw = self._captured_init_kwargs.copy()
+            kw.update(kwargs)
             return type(self)(*self._captured_init_args, **kw)
 
     __call__ = get = configure_new  # compatibility aliases
