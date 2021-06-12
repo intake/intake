@@ -318,6 +318,16 @@ def test_alias_fail():
         s.read()
 
 
+def test_reconfigure():
+    s = MockDataSourcePython(a=1, b=2)
+    assert s.a == 1
+    s2 = s(a=3, b=4)
+    assert s2.a == 3
+    s3 = s2(a=4)
+    assert s3.a == 4
+    assert s3.b == 4
+
+
 @pytest.mark.parametrize("data", [
     ("intake.source.import_name", intake.source.import_name),
     ("intake.source:import_name", intake.source.import_name),

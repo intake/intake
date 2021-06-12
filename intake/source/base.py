@@ -361,7 +361,10 @@ class DataSourceBase(DictSerialiseMixin):
         created from a catalog.
         """
         if self._entry is not None:
-            obj = self._entry(**kwargs)
+            kw = {k: v for k, v in self._captured_init_kwargs.items()
+                  if k in self._passed_kwargs}
+            kw.update(kwargs)
+            obj = self._entry(**kw)
             obj._entry = self._entry
             return obj
         else:

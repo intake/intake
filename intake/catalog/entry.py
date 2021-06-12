@@ -87,6 +87,7 @@ class CatalogEntry(DictSerialiseMixin):
             else:
                 s = store.refresh(s2)
         s._entry = self
+        s._passed_kwargs = list(kwargs)
         return s
 
     @property

@@ -342,8 +342,8 @@ class Catalog(DataSource):
             # Fall back to __getitem__.
             try:
                 return self[item]  # triggers reload_on_change
-            except KeyError:
-                raise AttributeError(item)
+            except KeyError as e:
+                raise AttributeError(item) from e
         raise AttributeError(item)
 
     def __setitem__(self, key, entry):
