@@ -22,7 +22,8 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2.1.1
         with:
           auto-update-conda: false
-          use-mamba: true
+          mamba-version: "*"
+          channels: conda-forge,defaults
           auto-activate-base: false
           activate-environment: test_env
           environment-file: scripts/ci/environment-${{ matrix.CONDA_ENV }}.yml
