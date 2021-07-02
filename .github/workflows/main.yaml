@@ -21,7 +21,8 @@ jobs:
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
-          auto-update-conda: true
+          auto-update-conda: false
+          use-mamba: true
           auto-activate-base: false
           activate-environment: test_env
           environment-file: scripts/ci/environment-${{ matrix.CONDA_ENV }}.yml
