@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@2.1.1
+        uses: conda-incubator/setup-miniconda@latest
         with:
           auto-update-conda: false
           use-mamba: true
