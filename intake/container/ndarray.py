@@ -41,7 +41,8 @@ class RemoteArray(RemoteSource):
 
                 for part in itertools.product(*nparts)
             }
-            self.arr = da.Array(dask, name, self.chunks, self.dtype, self.shape)
+            self.arr = da.Array(dask, name=name, chunks=self.chunks,
+                                dtype=self.dtype, shape=self.shape)
 
         return self._schema
 
