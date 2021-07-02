@@ -7,19 +7,19 @@
 
 import datetime
 import os.path
+import posixpath
 import shutil
 import tempfile
 import time
 
-import pytest
-
 import pandas
-
-from .util import assert_items_equal
+import pytest
 from intake import open_catalog
 from intake.catalog import exceptions, local
-from intake.catalog.local import get_dir, UserParameter, LocalCatalogEntry
+from intake.catalog.local import LocalCatalogEntry, UserParameter, get_dir
 from intake.utils import make_path_posix
+
+from .util import assert_items_equal
 
 
 def abspath(filename):
@@ -764,3 +764,36 @@ def test_cat_dictlike(catalog1):
     assert list(catalog1) == list(catalog1.keys())
     assert len(list(catalog1)) == len(catalog1)
     assert list(catalog1.items()) == list(zip(catalog1.keys(), catalog1.values()))
+
+
+@pytest.fixture
+def inherit_params_cat():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = posixpath.join(tmp_dir, "intake")
+        target_catalog = copy_test_file("catalog_inherit_params.yml", tmp_path)
+        return intake.open_catalog(target_catalog)
+
+
+def test_inherit_params(inherit_params_cat):
+    assert inherit_params_cat.param._urlpath == "s3://test_bucket/file.parquet"
+
+
+def test_runtime_overwrite_params(inherit_params_cat):
+    assert (
+        inherit_params_cat.param(bucket="runtime_overwrite")._urlpath
+        == "s3://runtime_overwrite/file.parquet"
+    )
+
+
+def test_local_param_overwrites(inherit_params_cat):
+    assert (
+        inherit_params_cat.local_param_overwrites._urlpath
+        == "s3://local_param/file.parquet"
+    )
+
+
+def test_local_and_global_params(inherit_params_cat):
+    assert (
+        inherit_params_cat.local_and_global_params._urlpath
+        == "s3://test_bucket/local_filename.parquet"
+    )
