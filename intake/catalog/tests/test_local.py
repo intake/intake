@@ -17,6 +17,7 @@ import pytest
 from intake import open_catalog
 from intake.catalog import exceptions, local
 from intake.catalog.local import LocalCatalogEntry, UserParameter, get_dir
+from intake.tests.test_utils import copy_test_file
 from intake.utils import make_path_posix
 
 from .util import assert_items_equal
@@ -771,7 +772,7 @@ def inherit_params_cat():
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = posixpath.join(tmp_dir, "intake")
         target_catalog = copy_test_file("catalog_inherit_params.yml", tmp_path)
-        return intake.open_catalog(target_catalog)
+        return open_catalog(target_catalog)
 
 
 def test_inherit_params(inherit_params_cat):
