@@ -35,4 +35,4 @@ jobs:
       - name: Run Tests
         shell: bash -l {0}
         run: |
-          pytest --verbose --cov=intake
+          pytest -v
