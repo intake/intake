@@ -9,9 +9,11 @@ import keyword
 import logging
 import re
 import time
+from tkinter import W
 
-from .utils import flatten, reload_on_change
 from ..source.base import DataSource, NoEntry
+from .utils import flatten, reload_on_change
+
 logger = logging.getLogger('intake')
 
 
@@ -171,6 +173,7 @@ class Catalog(DataSource):
     def search(self, text, depth=2):
         import copy
         words = text.lower().split()
+        #breakpoint()
         entries = {k: copy.copy(v)for k, v in self.walk(depth=depth).items()
                    if any(word in str(v.describe().values()).lower()
                    for word in words)}
@@ -239,6 +242,7 @@ class Catalog(DataSource):
         """
         out = sofar if sofar is not None else {}
         prefix = [] if prefix is None else prefix
+        #breakpoint()
         for name, item in self._entries.items():
             if item._container == 'catalog' and depth > 1:
                 # recurse with default open parameters

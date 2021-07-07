@@ -9,6 +9,7 @@ import inspect
 import logging
 import os
 import warnings
+from tkinter import W
 
 import entrypoints
 from fsspec import get_filesystem_class, open_files
@@ -695,6 +696,8 @@ class YAMLFileCatalog(Catalog):
             params = None
 
         for entry in cfg['data_sources']:
+            #if entry.name == "local_and_global_params":
+            #    breakpoint()
             entry._catalog = self
             if params is not None:
                 try:
@@ -705,6 +708,8 @@ class YAMLFileCatalog(Catalog):
                     all_params = params
 
                 entry.__setattr__("_user_parameters", all_params)
+                # Necessary for a copy of the entry to have the same parameters
+                entry._captured_init_kwargs["parameters"] = all_params
             self._entries[entry.name] = entry
             entry._filesystem = self.filesystem
 

@@ -775,6 +775,15 @@ def inherit_params_cat():
         return open_catalog(target_catalog)
 
 
+@pytest.fixture
+def inherit_params_multiple_cats():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = posixpath.join(tmp_dir, "intake")
+        copy_test_file("catalog_inherit_params.yml", tmp_path)
+        copy_test_file("catalog_nested_sub.yml", tmp_path)
+        return open_catalog(tmp_path + "/*.yml")
+
+
 def test_inherit_params(inherit_params_cat):
     assert inherit_params_cat.param._urlpath == "s3://test_bucket/file.parquet"
 
@@ -796,5 +805,19 @@ def test_local_param_overwrites(inherit_params_cat):
 def test_local_and_global_params(inherit_params_cat):
     assert (
         inherit_params_cat.local_and_global_params._urlpath
+        == "s3://test_bucket/local_filename.parquet"
+    )
+
+
+def test_search_inherit_params(inherit_params_cat):
+    assert (
+        inherit_params_cat.search("local_and_global").local_and_global_params._urlpath
+        == "s3://test_bucket/local_filename.parquet"
+    )
+
+
+def test_multiple_cats_params(inherit_params_multiple_cats):
+    assert (
+        inherit_params_multiple_cats.local_and_global_params._urlpath
         == "s3://test_bucket/local_filename.parquet"
     )
