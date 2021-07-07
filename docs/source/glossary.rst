@@ -116,7 +116,7 @@ Glossary
         specific circumstances.
 
     TTL
-        Time-to-live, how long before the give entity is considered to have expired. Usually in seconds.
+        Time-to-live, how long before the given entity is considered to have expired. Usually in seconds.
 
     User Parameter
         A data source definition can contain a "parameters" section, which can act as explicit decision indicators
