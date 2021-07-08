@@ -696,8 +696,6 @@ class YAMLFileCatalog(Catalog):
             params = None
 
         for entry in cfg['data_sources']:
-            #if entry.name == "local_and_global_params":
-            #    breakpoint()
             entry._catalog = self
             if params is not None:
                 try:
