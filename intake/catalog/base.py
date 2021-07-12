@@ -10,8 +10,9 @@ import logging
 import re
 import time
 
-from .utils import flatten, reload_on_change
 from ..source.base import DataSource, NoEntry
+from .utils import reload_on_change
+
 logger = logging.getLogger('intake')
 
 

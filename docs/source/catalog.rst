@@ -63,6 +63,11 @@ Here is an example:
 
     metadata:
       version: 1
+      parameters:
+        file_name:
+          type: str
+          description: default file name for child entries
+          default: example_file_name
     sources:
       example:
         description: test
@@ -90,6 +95,14 @@ Here is an example:
         args:
           urlpath: '{{ CATALOG_DIR }}/entry1_{{ part }}.csv'
 
+      entry2:
+        description: entry2
+        driver: csv
+        args:
+          # file_name parameter will be inherited from file-level parameters, so will
+          # default to "example_file_name"
+          urlpath: '{{ CATALOG_DIR }}/entry2/{{ file_name }}.csv`
+
 
 Metadata
 ''''''''
@@ -100,6 +113,10 @@ field that is expected is ``version``, which will be updated when a breaking cha
 file format. Any catalog will have ``.metadata`` and ``.version`` attributes available.
 
 Note that each source also has its own metadata.
+
+The metadata section an also contain ``parameters`` which will be inherited by the sources in
+the file (note that these sources can augment these parameters, or override them with their own
+parameters).
 
 Extra drivers
 '''''''''''''

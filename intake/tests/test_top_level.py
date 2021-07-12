@@ -7,29 +7,16 @@
 
 import os
 import posixpath
-import shutil
-import time
-import tempfile
 import sys
+import tempfile
+import time
 
-import intake
 import appdirs
-import pytest
-from intake.utils import make_path_posix
+import intake
 import intake.catalog.local
+import pytest
 
-
-def copy_test_file(filename, target_dir):
-    if not os.path.exists(target_dir):
-        os.makedirs(target_dir)  # can't use exist_ok in Python 2.7
-    target_dir = make_path_posix(target_dir)
-    # Put a catalog file in the user catalog directory
-    test_dir = make_path_posix(os.path.dirname(__file__))
-    test_catalog = posixpath.join(test_dir, filename)
-    target_catalog = posixpath.join(target_dir, '__unit_test_'+filename)
-
-    shutil.copyfile(test_catalog, target_catalog)
-    return target_catalog
+from .test_utils import copy_test_file
 
 
 @pytest.fixture

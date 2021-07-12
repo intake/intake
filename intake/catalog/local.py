@@ -5,25 +5,24 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 import collections
-import entrypoints
 import inspect
 import logging
 import os
 import warnings
 
-from fsspec import open_files, get_filesystem_class
+import entrypoints
+from fsspec import get_filesystem_class, open_files
 from fsspec.core import split_protocol
 
 from .. import __version__
-from .base import Catalog, DataSource
-from . import exceptions
-from .entry import CatalogEntry
-from ..source import register_driver
-from ..source import get_plugin_class
+from ..source import get_plugin_class, register_driver
 from ..source.discovery import load_plugins_from_module
-from .utils import (expand_defaults, coerce, COERCION_RULES, merge_pars,
-                    _has_catalog_dir)
-from ..utils import yaml_load, DictSerialiseMixin, make_path_posix, classname
+from ..utils import DictSerialiseMixin, classname, make_path_posix, yaml_load
+from . import exceptions
+from .base import Catalog, DataSource
+from .entry import CatalogEntry
+from .utils import (COERCION_RULES, _has_catalog_dir, coerce, expand_defaults,
+                    merge_pars)
 
 logger = logging.getLogger('intake')
 
@@ -686,8 +685,28 @@ class YAMLFileCatalog(Catalog):
         cfg = result.data
 
         self._entries = {}
+        try:
+            shared_parameters = data["metadata"]["parameters"]
+            params = [
+                UserParameter(name, **attrs)
+                for name, attrs in shared_parameters.items()
+            ]
+        except KeyError:
+            params = None
+
         for entry in cfg['data_sources']:
             entry._catalog = self
+            if params is not None:
+                try:
+                    # Note that putting the entry parameters after the global parameters
+                    # means that local parameters will overwrite any inherited parameters
+                    all_params = params + entry._user_parameters
+                except AttributeError:
+                    all_params = params
+
+                entry.__setattr__("_user_parameters", all_params)
+                # Necessary for a copy of the entry to have the same parameters
+                entry._captured_init_kwargs["parameters"] = all_params
             self._entries[entry.name] = entry
             entry._filesystem = self.filesystem
 
