@@ -278,11 +278,15 @@ def coerce_datetime(v=None):
 COERCION_RULES = {
     'bool': bool,
     'datetime': coerce_datetime,
+    'dict': dict,
     'float': float,
+    'tuple': tuple,
+    'mlist': list,
     'int': int,
     'list': list,
     'str': str,
-    'unicode': str
+    'unicode': str,
+    'other': lambda x: x
 }
 
 
@@ -298,6 +302,12 @@ def coerce(dtype, value):
     if dtype is None:
         return value
     if type(value).__name__ == dtype:
+        return value
+    if dtype == "mlist":
+        if isinstance(value, (tuple, set, dict)):
+            return list(value)
+        if not isinstance(value, list):
+            raise TypeError("Will not coerce value %s to list", value)
         return value
     op = COERCION_RULES[dtype]
     return op() if value is None else op(value)
