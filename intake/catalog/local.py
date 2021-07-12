@@ -9,7 +9,6 @@ import inspect
 import logging
 import os
 import warnings
-from tkinter import W
 
 import entrypoints
 from fsspec import get_filesystem_class, open_files
