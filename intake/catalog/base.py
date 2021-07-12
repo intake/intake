@@ -9,10 +9,9 @@ import keyword
 import logging
 import re
 import time
-from tkinter import W
 
 from ..source.base import DataSource, NoEntry
-from .utils import flatten, reload_on_change
+from .utils import reload_on_change
 
 logger = logging.getLogger('intake')
 
