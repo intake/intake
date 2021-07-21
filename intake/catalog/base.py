@@ -276,6 +276,8 @@ class Catalog(DataSource):
             kw = entry._captured_init_kwargs.copy()
             kw.pop('catalog', None)
             kw['parameters'] = {k.name: k.__getstate__()['kwargs'] for k in kw.get('parameters', [])}
+            if not isinstance(kw['driver'], str):
+                kw['driver'] = str(kw['driver']).split("'")[1]
             output["sources"][key] = kw
         return yaml.dump(output)
 
