@@ -40,7 +40,7 @@ class TextFilesSource(base.DataSource):
             common
         compression : str or None
             If given, decompress the file with the given codec on load. Can
-            be something like "gz", "bz2", or to try to guess from the filename,
+            be something like "gzip", "bz2", or to try to guess from the filename,
             'infer'
         decoder : function, str or None
             Use this to decode the contents of files. If None, you will get
