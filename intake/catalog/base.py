@@ -10,7 +10,7 @@ import logging
 import re
 import time
 
-from ..source.base import DataSource, NoEntry
+from ..source.base import DataSource, NoEntry, DataSourceBase
 from .utils import reload_on_change
 
 logger = logging.getLogger('intake')
@@ -276,6 +276,11 @@ class Catalog(DataSource):
             kw = entry._captured_init_kwargs.copy()
             kw.pop('catalog', None)
             kw['parameters'] = {k.name: k.__getstate__()['kwargs'] for k in kw.get('parameters', [])}
+            try:
+                if issubclass(kw['driver'], DataSourceBase):
+                    kw['driver'] = ".".join([kw['driver'].__module__, kw['driver'].__name__])
+            except TypeError:
+                pass # ignore exception for a string input
             output["sources"][key] = kw
         return yaml.dump(output)
 
