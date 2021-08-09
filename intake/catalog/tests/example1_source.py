@@ -15,4 +15,5 @@ class ExampleSource(DataSource):
     partition_access = True
 
     def __init__(self, **kwargs):
+        self.kwargs = kwargs
         super(ExampleSource, self).__init__()

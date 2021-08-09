@@ -6,3 +6,28 @@ sources:
     description: example1 source plugin
     driver: example1
     args: {}
+  allowed_list_absolute:
+    description: pick one list out of a few
+    driver: example1
+    args:
+      arg1: "{{up}}"
+    parameters:
+      mylist:
+        description: ""
+        type: list
+        default: []
+        allowed:
+          - []
+          - ["one"]
+          - ["one", "two"]
+  allowed_list_multi:
+    description: pick multiple values from an allowed list
+    driver: example1
+    args:
+      args1: "{{up}}"
+    parameters:
+      mylist:
+        description: ""
+        type: list
+        default: []
+        allowed: ["one", "two", "three"]

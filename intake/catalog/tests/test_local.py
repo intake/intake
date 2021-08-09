@@ -249,6 +249,42 @@ def test_user_parameter_validation_allowed():
     assert 'allowed' in str(except_info.value)
 
 
+def test_user_pars_list():
+    # first case: allowed are all lists, must choose exactly one of them
+    # NB: order must match
+    p = local.UserParameter("", "", "list",
+                            allowed=[[], ["one"], ["one", "two"]])
+    with pytest.raises(TypeError):
+        p.validate(0)
+    with pytest.raises((TypeError, ValueError)):
+        # unfortunately, a string does coerce to a list
+        p.validate("one")
+    with pytest.raises(ValueError, match="allowed"):
+        p.validate(["two"])
+    with pytest.raises(ValueError, match="allowed"):
+        p.validate(["two", "one"])
+    p.validate(["one"])
+    p.validate(["one", "two"])
+
+
+def test_user_pars_mlist():
+    # second case: allowed are not lists, can choose any number of them
+    # NB: repeats are allowed
+    p = local.UserParameter("", "", "mlist",
+                            allowed=["one", "two", "three"])
+    with pytest.raises(TypeError):
+        p.validate(0)
+    with pytest.raises((TypeError, ValueError)):
+        # unfortunately, a string does coerce to a list
+        p.validate("one")
+    with pytest.raises(ValueError, match="allowed"):
+        p.validate(["two" ,"other"])
+    p.validate(["two"])
+    p.validate(["two", "two"])
+    p.validate(["two", "one"])
+    p.validate([])
+
+
 @pytest.mark.parametrize("filename", [
     "catalog_non_dict",
     "data_source_missing",

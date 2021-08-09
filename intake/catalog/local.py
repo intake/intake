@@ -73,7 +73,7 @@ class UserParameter(DictSerialiseMixin):
         if self.max:
             self.max = coerce(self.type, self.max)
 
-        if self.allowed:
+        if self.allowed and type != "mlist":
             self.allowed = [coerce(self.type, item)
                             for item in self.allowed]
 
@@ -109,6 +109,12 @@ class UserParameter(DictSerialiseMixin):
         """Does value meet parameter requirements?"""
         if self.type is not None:
             value = coerce(self.type, value)
+
+        if self.type == "mlist":
+            for v in value:
+                if v not in self.allowed:
+                    raise ValueError("Item %s not in allowed list", v)
+            return value
 
         if self.min is not None and value < self.min:
             raise ValueError('%s=%s is less than %s' % (self.name, value,
