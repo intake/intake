@@ -81,7 +81,7 @@ applies a column selection to it.
 
 Running ``cat.derive_cols.read()`` will indeed, as expected, produce a version of the data
 with only the selected columns included. It does this by defining the original dataset,
-appying the selection, and then getting Dask to generate the output. For some datastets,
+appying the selection, and then getting Dask to generate the output. For some datasets,
 this can mean that the selection is pushed down to the reader, and the data for the dropped
 columns is never loaded. The user may choose to do ``.to_dask()`` instead, and manipulate
 the lazy dataframe directly, before loading.
@@ -151,7 +151,7 @@ Execution engine
 
 None of the above example specified explicitly where the compute implied by the
 transformation will take place. However, most Intake drivers support in-memory containers
-and Dask; remembering that the input dataste here is a dataframe. However, the behaviour
+and Dask; remembering that the input dataset here is a dataframe. However, the behaviour
 is defined in the driver class itself - so it would be fine to write a driver in which
 we make different assumptions. Let's suppose, for instance, that the original source
 is to be loaded from ``spark`` (see the ``intake-spark`` package), the driver could
