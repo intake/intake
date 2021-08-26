@@ -195,7 +195,7 @@ class GenericTransform(DerivedSource):
             must have a default value) - or a spec to be able to make these objects.
         allow_dask: bool (optional, default True)
             Whether to_dask() is expected to work, which will in turn call the
-            target's to_dasK()
+            target's to_dask()
     """
 
     def _validate_params(self):
