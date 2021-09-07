@@ -26,6 +26,7 @@ contains in parentheses:
 * `intake-notebook <https://github.com/informatics-lab/intake-notebook>`_: Experimental plugin to access parameterised notebooks through intake and executed via papermill (``ipynb``)
 * `intake-odbc <https://github.com/intake/intake-odbc>`_: ODBC database (``odbc``)
 * `intake-parquet <https://github.com/intake/intake-parquet>`_: Apache Parquet file format (``parquet``)
+* `intake-pattern-catalog <https://bitbucket.org/dtnse/intake_pattern_catalog/>`_: Plugin for specifying a file-path pattern which can represent a number of different entries (``pattern_cat``)
 * `intake-pcap <https://github.com/intake/intake-pcap>`_: PCAP network packet format (``pcap``)
 * `intake-postgres <https://github.com/intake/intake-postgres>`_: PostgreSQL database (``postgres``)
 * `intake-s3-manifests <https://github.com/informatics-lab/intake-s3-manifests>`_ (``s3_manifest``)
