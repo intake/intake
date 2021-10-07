@@ -64,6 +64,17 @@ def test_cli():
             assert r.ok
 
 
+def test_persist_never():
+    expected_pmode = "never"
+
+    with temp_conf({}) as fn:
+        env = os.environ.copy()
+        env["INTAKE_CONF_FILE"] = fn
+        with server(args=("-p", "5555"), env=env, wait=5555):
+            cat = RemoteCatalog("intake://localhost:5555", persist_mode="never")
+            assert cat.pmode == expected_pmode
+
+
 def test_conf():
     with temp_conf({'port': 5555}) as fn:
         env = os.environ.copy()
