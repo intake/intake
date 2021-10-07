@@ -1,5 +1,10 @@
-include intake/interface/icons/*
-
+recursive-include intake *.html
+recursive-include intake *.csv
+recursive-include intake *.npy
+recursive-include intake *.yml
+recursive-include intake *.yaml
+recursive-include intake *.zip
+recursive-include intake *.png
 recursive-include templates *
 
 include versioneer.py
@@ -11,3 +16,6 @@ include intake/cli/sample/*
 
 prune **/tests/**
 prune docs
+recursive-include intake/source/tests/plugin_searchpath *.py
+recursive-include intake/catalog/tests/catalog_search *
+

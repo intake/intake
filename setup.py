@@ -35,6 +35,8 @@ setup(
     maintainer='Martin Durant',
     maintainer_email='mdurant@anaconda.com',
     license='BSD',
+    package_data={'': ['*.csv', '*.yml', '*.yaml', '*.html']},
+    include_package_data=True,
     install_requires=requires,
     packages=find_packages(),
     entry_points={
