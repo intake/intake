@@ -8,9 +8,9 @@
 The simplest possible panel server. To launch a panel server containing the intake gui
 run:
 
-panel serve intake/gui/server.py
+panel serve intake/interface/server.py
 
 """
 
-import intake
-intake.interface.servable()
+import intake.interface
+intake.interface.instance.servable()
