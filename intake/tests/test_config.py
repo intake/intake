@@ -64,16 +64,19 @@ def test_cli():
             assert r.ok
 
 
-def test_persist_never():
-    expected_pmode = "never"
+def test_persist_modes():
+    expected_never = "never"
+    expected_default = "default"
 
     with temp_conf({}) as fn:
         env = os.environ.copy()
         env["INTAKE_CONF_FILE"] = fn
         with server(args=("-p", "5555"), env=env, wait=5555):
-            cat = RemoteCatalog("intake://localhost:5555", persist_mode="never")
-            assert cat.pmode == expected_pmode
+            cat_never = RemoteCatalog("intake://localhost:5555", persist_mode="never")
+            assert cat_never.pmode == expected_never
 
+            cat_default = RemoteCatalog("intake://localhost:5555")
+            assert cat_default.pmode == expected_default
 
 def test_conf():
     with temp_conf({'port': 5555}) as fn:
