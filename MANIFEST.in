@@ -7,6 +7,7 @@ include intake/_version.py
 include requirements.txt
 include setup.py
 include LICENSE
+include intake/cli/sample/*
 
 prune **/tests/**
 prune docs
