@@ -31,7 +31,7 @@ jobs:
       - name: pip-install
         shell: bash -l {0}
         run: |
-          pip install -e . --no-deps
+          pip install . --no-deps
 
       - name: Run Tests
         shell: bash -l {0}
