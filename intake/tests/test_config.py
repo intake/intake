@@ -12,7 +12,7 @@ import requests
 import intake
 from intake import config
 from intake.util_tests import temp_conf, server
-
+from intake.catalog.remote import RemoteCatalog
 
 @pytest.mark.parametrize('conf', [
     {},
@@ -63,6 +63,20 @@ def test_cli():
             r = requests.get('http://localhost:5555/v1/info')
             assert r.ok
 
+
+def test_persist_modes():
+    expected_never = "never"
+    expected_default = "default"
+
+    with temp_conf({}) as fn:
+        env = os.environ.copy()
+        env["INTAKE_CONF_FILE"] = fn
+        with server(args=("-p", "5555"), env=env, wait=5555):
+            cat_never = RemoteCatalog("intake://localhost:5555", persist_mode="never")
+            assert cat_never.pmode == expected_never
+
+            cat_default = RemoteCatalog("intake://localhost:5555")
+            assert cat_default.pmode == expected_default
 
 def test_conf():
     with temp_conf({'port': 5555}) as fn:

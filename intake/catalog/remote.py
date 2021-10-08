@@ -32,7 +32,7 @@ class RemoteCatalog(Catalog):
     def __init__(self, url, http_args=None, page_size=None,
                  name=None, source_id=None, metadata=None, auth=None, ttl=1,
                  getenv=True, getshell=True,
-                 storage_options=None, parameters=None):
+                 storage_options=None, parameters=None, persist_mode="default"):
         """Connect to remote Intake Server as a catalog
 
         Parameters
@@ -97,7 +97,7 @@ class RemoteCatalog(Catalog):
                 '.', '_').replace(':', '_')
         super(RemoteCatalog, self).__init__(
             name=name, metadata=name, ttl=ttl, getenv=getenv,
-            getshell=getshell, storage_options=storage_options)
+            getshell=getshell, storage_options=storage_options, persist_mode=persist_mode)
 
     def _make_entries_container(self):
         return Entries(self)
@@ -420,8 +420,10 @@ class RemoteCatalogEntry(CatalogEntry):
         self.http_args = (http_args or {}).copy()
         if 'headers' not in self.http_args:
             self.http_args['headers'] = {}
+        
         super(RemoteCatalogEntry, self).__init__(getenv=getenv,
                                                  getshell=getshell)
+        self._pmode = "never"
 
     def describe(self):
         return {
