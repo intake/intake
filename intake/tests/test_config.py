@@ -12,7 +12,7 @@ import requests
 import intake
 from intake import config
 from intake.util_tests import temp_conf, server
-from intake.remote import RemoteCatalog
+from intake.catalog.remote import RemoteCatalog
 
 @pytest.mark.parametrize('conf', [
     {},
