@@ -2,5 +2,5 @@ appdirs
 dask
 entrypoints
 pyyaml
-fsspec >=0.7.4
+fsspec >=2021.7.0
 jinja2
