@@ -55,7 +55,7 @@ class UserParameter(DictSerialiseMixin):
                  min=None, max=None, allowed=None):
         self.name = name
         self.description = description
-        self.type = type
+        self.type = type or __builtins__["type"](default).__name__
         self.min = min
         self.max = max
         self.allowed = allowed

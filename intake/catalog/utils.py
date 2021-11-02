@@ -320,7 +320,7 @@ def coerce(dtype, value):
     if isinstance(out, dict) and inner is not None:
         # TODO: recurse into coerce here, to allow list[list[str]] and such?
         out = {k: COERCION_RULES[inner](v) for k, v in out.items()}
-    if isinstance(out, Iterable) and inner is not None:
+    if isinstance(out, (tuple, list, set)) and inner is not None:
         out = op(COERCION_RULES[inner](v) for v in out)
     return out
 
