@@ -6,8 +6,10 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from setuptools import setup, find_packages
 import sys
+
+from setuptools import find_packages, setup
+
 import versioneer
 
 requires = [line.strip() for line in open('requirements.txt').readlines()
@@ -49,6 +51,8 @@ setup(
             'yaml_files_cat = intake.catalog.local:YAMLFilesCatalog',
             'csv = intake.source.csv:CSVSource',
             'textfiles = intake.source.textfiles:TextFilesSource',
+            'json = intake.source.jsonfiles:JSONFileSource',
+            'jsonl = intake.source.jsonfiles:JSONLinesFileSource',
             'catalog = intake.catalog.base:Catalog',
             'intake_remote = intake.catalog.remote:RemoteCatalog',
             'numpy = intake.source.npy:NPySource',
