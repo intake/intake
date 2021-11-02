@@ -84,7 +84,7 @@ class JSONFileSource(DataSource):
 class JSONLinesFileSource(DataSource):
     """
     Read a JSONL (https://jsonlines.org/) file and return a list of objects,
-    each containing a dictionary or list.
+    each being valid json object (e.g. a dictionary or list)
     """
 
     name = "jsonl"
@@ -102,7 +102,6 @@ class JSONLinesFileSource(DataSource):
         storage_options: dict = None,
     ):
         """
-
         Parameters
         ----------
         urlpath : str
