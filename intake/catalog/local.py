@@ -42,7 +42,7 @@ class UserParameter(DictSerialiseMixin):
     description: str
         narrative text
     type: str
-        one of list``(COERSION_RULES)``
+        one of list ``(COERSION_RULES)``
     default: type value
         same type as ``type``. It a str, may include special functions
         env, shell, client_env, client_shell.

@@ -301,7 +301,7 @@ Expressed in YAML, a parameter may look as follows:
     parameters:
       name:
         description: name to use  # human-readable text for what this parameter means
-        type: str  # one of bool, str, int, float, list[str], list[int], list[float], datetime
+        type: str  # one of bool, str, int, float, list[str | int | float], datetime, mlist
         default: normal  # optional, value to assume if user does not override
         allowed: ["normal", "strange"]  # optional, list of values that are OK, for validation
         min: "n"  # optional, minimum allowed, for validation
@@ -321,6 +321,10 @@ can have one of two uses:
   to use the string templating system (e.g., to get a value from the environment), but pass the final value as,
   for example, an integer. It makes no sense to provide a default for this case (the argument already has a value),
   but providing a default will not raise an exception.
+
+- the "mlist" type is special: it means that the input must be a list, whose values are chosen from the
+  allowed list. This is the only type where the parameter value is not the same type as the allowed list's
+  values, e.g., if a list of str is set for ``allowed``, a list of str must also be the final value.
 
 Note: the ``datetime`` type accepts multiple values:
 Python datetime, ISO8601 string,  Unix timestamp int, "now" and  "today".
