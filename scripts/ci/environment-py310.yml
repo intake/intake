@@ -7,7 +7,7 @@ dependencies:
   - aiohttp
   - flask
   - appdirs
-  - dask=2021.06.0
+  - dask
   - jinja2
   - numpy
   - pyyaml
