@@ -5,6 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+from collections.abc import Iterable
 import functools
 import itertools
 from jinja2 import Environment, meta, Undefined
@@ -299,6 +300,11 @@ def coerce(dtype, value):
     type constructor is returned. Otherwise, the type constructor converts
     and returns the value.
     """
+    if "[" in dtype:
+        dtype, inner = dtype.split("[")
+        inner = inner.rstrip("]")
+    else:
+        inner = None
     if dtype is None:
         return value
     if type(value).__name__ == dtype:
@@ -310,7 +316,13 @@ def coerce(dtype, value):
             raise TypeError("Will not coerce value %s to list", value)
         return value
     op = COERCION_RULES[dtype]
-    return op() if value is None else op(value)
+    out = op() if value is None else op(value)
+    if isinstance(out, dict) and inner is not None:
+        # TODO: recurse into coerce here, to allow list[list[str]] and such?
+        out = {k: COERCION_RULES[inner](v) for k, v in out.items()}
+    if isinstance(out, (tuple, list, set)) and inner is not None:
+        out = op(COERCION_RULES[inner](v) for v in out)
+    return out
 
 
 class RemoteCatalogError(Exception):

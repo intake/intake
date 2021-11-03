@@ -42,7 +42,7 @@ class UserParameter(DictSerialiseMixin):
     description: str
         narrative text
     type: str
-        one of list``(COERSION_RULES)``
+        one of list ``(COERSION_RULES)``
     default: type value
         same type as ``type``. It a str, may include special functions
         env, shell, client_env, client_shell.
@@ -55,7 +55,7 @@ class UserParameter(DictSerialiseMixin):
                  min=None, max=None, allowed=None):
         self.name = name
         self.description = description
-        self.type = type
+        self.type = type or __builtins__["type"](default).__name__
         self.min = min
         self.max = max
         self.allowed = allowed

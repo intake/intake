@@ -163,6 +163,19 @@ def test_validate_par():
     assert s.kwargs['arg1'] == 1  # a number, not str
 
 
+def test_mlist_parameter():
+    up = UserParameter("", "", "mlist", allowed=["a", "b"])
+    up.validate([])
+    up.validate(['b'])
+    up.validate(['b', 'a'])
+    with pytest.raises(ValueError):
+        up.validate(["c"])
+    with pytest.raises(ValueError):
+        up.validate(["a", "c"])
+    with pytest.raises(TypeError):
+        up.validate("hello")
+
+
 def test_explicit_overrides():
     e = LocalCatalogEntry('', '', driver, args={'arg1': "oi"})
     s = e(arg1='hi')

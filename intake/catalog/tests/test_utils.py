@@ -40,3 +40,18 @@ def test_coerce_datetime(test_input, expected):
 
 def test_flatten():
     assert list(utils.flatten([["hi"], ["oi"]])) == ['hi', 'oi']
+
+@pytest.mark.parametrize(
+    "value,dtype,expected", [
+        (1, "int", 1),
+        ("1", "int", 1),
+        (1, "str", "1"),
+        ((), "list", []),
+        ((1, ), "list", [1]),
+        ((1, ), "list[str]", ["1"])
+    ],
+)
+def test_coerce(value, dtype, expected):
+    out = utils.coerce(dtype, value)
+    assert out == expected
+    assert type(out) == type(expected)
