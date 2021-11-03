@@ -47,9 +47,9 @@ class JSONFileSource(DataSource):
             encoding arguments, and parameters specific to the remote
             file-system driver, if using.
         """
-        from fsspec.compression import compr
+        from fsspec.utils import compressions
 
-        VALID_COMPRESSIONS = [k for k in compr.keys()] + ["infer"]
+        VALID_COMPRESSIONS = list(compressions.values()) + ["infer"]
 
         self._urlpath = urlpath
         self._storage_options = storage_options or {}
@@ -121,9 +121,9 @@ class JSONLinesFileSource(DataSource):
             encoding arguments, and parameters specific to the remote
             file-system driver, if using.
         """
-        from fsspec.compression import compr
+        from fsspec.utils import compressions
 
-        VALID_COMPRESSIONS = [k for k in compr.keys()] + ["infer"]
+        VALID_COMPRESSIONS = list(compressions.values()) + ["infer"]
 
         self._urlpath = urlpath
         self._storage_options = storage_options or {}

@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2021, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import json
 import os
@@ -12,14 +12,14 @@ from typing import Dict, Optional
 
 import pytest
 from fsspec import open_files
+from fsspec.utils import compressions
+
 from intake.source.jsonfiles import JSONFileSource, JSONLinesFileSource
 
 here = os.path.abspath(os.path.dirname(__file__))
 
 EXTENSIONS = {
-    None: "",
-    "gzip": ".gz",
-    "bz2": ".bz2",
+    compression: f".{extension}" for extension, compression in compressions.items()
 }
 
 
@@ -27,7 +27,7 @@ EXTENSIONS = {
 def json_file(request, tmp_path) -> str:
     data = {"hello": "world"}
     file_path = str(tmp_path / "1.json")
-    file_path += EXTENSIONS[request.param]
+    file_path += EXTENSIONS.get(request.param, "")
     with open_files([file_path], mode="wt", compression=request.param)[0] as f:
         f.write(json.dumps(data))
     return file_path
@@ -35,9 +35,9 @@ def json_file(request, tmp_path) -> str:
 
 @pytest.fixture(params=[None, "gzip", "bz2"])
 def jsonl_file(request, tmp_path) -> str:
-    data = [{"hello": "world"}, [1,2,3]]
+    data = [{"hello": "world"}, [1, 2, 3]]
     file_path = str(tmp_path / "1.jsonl")
-    file_path += EXTENSIONS[request.param]
+    file_path += EXTENSIONS.get(request.param, "")
     with open_files([file_path], mode="wt", compression=request.param)[0] as f:
         f.write("\n".join(json.dumps(row) for row in data))
     return file_path
