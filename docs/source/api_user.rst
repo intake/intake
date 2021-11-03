@@ -54,10 +54,10 @@ Source classes
    :members: __init__, discover, read_partition, read, to_dask, persist, export
 
 .. autoclass:: intake.source.jsonfiles.JSONFileSource
-   :members: __init__, read
+   :members: __init__, discover, read, persist, export
 
 .. autoclass:: intake.source.jsonfiles.JSONLinesFileSource
-   :members: __init__, read, head
+   :members: __init__, discover, read, head, persist, export
 
 .. autoclass:: intake.source.npy.NPySource
    :members: __init__, discover, read_partition, read, to_dask, persist, export
