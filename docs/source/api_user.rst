@@ -12,6 +12,8 @@ These are reference class and function definitions likely to be useful to everyo
    intake.open_
    intake.source.csv.CSVSource
    intake.source.textfiles.TextFilesSource
+   intake.source.jsonfiles.JSONFileSource
+   intake.source.jsonfiles.JSONLinesFileSource
    intake.source.npy.NPySource
    intake.source.zarr.ZarrArraySource
    intake.catalog.local.YAMLFileCatalog
@@ -50,6 +52,12 @@ Source classes
 
 .. autoclass:: intake.source.textfiles.TextFilesSource
    :members: __init__, discover, read_partition, read, to_dask, persist, export
+
+.. autoclass:: intake.source.jsonfiles.JSONFileSource
+   :members: __init__, discover, read, persist, export
+
+.. autoclass:: intake.source.jsonfiles.JSONLinesFileSource
+   :members: __init__, discover, read, head, persist, export
 
 .. autoclass:: intake.source.npy.NPySource
    :members: __init__, discover, read_partition, read, to_dask, persist, export
