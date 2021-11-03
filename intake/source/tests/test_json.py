@@ -16,64 +16,42 @@ from intake.source.jsonfiles import JSONFileSource, JSONLinesFileSource
 
 here = os.path.abspath(os.path.dirname(__file__))
 
+EXTENSIONS = {
+    None: "",
+    "gzip": ".gz",
+    "bz2": ".bz2",
+}
 
-@pytest.fixture
-def json_file_path(tmp_path) -> Path:
-    file_path = tmp_path / "1.json"
-    file_path.write_text('{"hello":"world"}')
-    return file_path
 
-
-@pytest.fixture
-def json_file_compressed_paths(tmp_path) -> Dict[Optional[str], str]:
+@pytest.fixture(params=[None, "gzip", "bz2"])
+def json_file(request, tmp_path) -> str:
     data = {"hello": "world"}
-    file_path = tmp_path / "1.json"
-    compressed_paths = {}
-    for compression in [None, "gzip", "bz2"]:
-        path = str(file_path)
-        if compression is not None:
-            path = f"{file_path}.{compression}"
-        with open_files([path], mode="wt", compression=compression)[0] as f:
-            f.write(json.dumps(data))
-        compressed_paths[compression] = path
-
-    return compressed_paths
-
-
-@pytest.fixture
-def jsonl_file_path(tmp_path) -> Path:
-    data = [{"hello": "world"}, [1,2,3]]
-    file_path = tmp_path / "1.jsonl"
-    file_path.write_text("\n".join(json.dumps(row) for row in data))
+    file_path = str(tmp_path / "1.json")
+    file_path += EXTENSIONS[request.param]
+    with open_files([file_path], mode="wt", compression=request.param)[0] as f:
+        f.write(json.dumps(data))
     return file_path
 
 
-@pytest.fixture
-def jsonl_file_compressed_paths(tmp_path) -> Dict[Optional[str], str]:
+@pytest.fixture(params=[None, "gzip", "bz2"])
+def jsonl_file(request, tmp_path) -> str:
     data = [{"hello": "world"}, [1,2,3]]
-    file_path = tmp_path / "1.json"
-    compressed_paths = {}
-    for compression in [None, "gzip", "bz2"]:
-        path = str(file_path)
-        if compression is not None:
-            path = f"{file_path}.{compression}"
-        with open_files([path], mode="wt", compression=compression)[0] as f:
-            f.write("\n".join(json.dumps(row) for row in data))
-        compressed_paths[compression] = path
-
-    return compressed_paths
+    file_path = str(tmp_path / "1.jsonl")
+    file_path += EXTENSIONS[request.param]
+    with open_files([file_path], mode="wt", compression=request.param)[0] as f:
+        f.write("\n".join(json.dumps(row) for row in data))
+    return file_path
 
 
-
-def test_jsonfile(json_file_path):
-    j = JSONFileSource(str(json_file_path))
+def test_jsonfile(json_file: str):
+    j = JSONFileSource(json_file, text_mode=True, compression="infer")
     out = j.read()
     assert isinstance(out, dict)
     assert out["hello"] == "world"
 
 
-def test_jsonlfile(jsonl_file_path):
-    j = JSONLinesFileSource(str(jsonl_file_path))
+def test_jsonlfile(jsonl_file: str):
+    j = JSONLinesFileSource(jsonl_file, compression="infer")
     out = j.read()
     assert isinstance(out, list)
 
@@ -84,31 +62,8 @@ def test_jsonlfile(jsonl_file_path):
     assert out[1] == [1, 2, 3]
 
 
-@pytest.mark.parametrize('compression', [None, 'gzip', 'bz2'])
-def test_compressed_json(json_file_compressed_paths: Dict[Optional[str], str], compression: Optional[str]):
-    path = json_file_compressed_paths[compression]
-    j = JSONFileSource(path, text_mode=True, compression=compression)
-    out = j.read()
-    assert isinstance(out, dict)
-    assert out["hello"] == "world"
-
-
-@pytest.mark.parametrize('compression', [None, 'gzip', 'bz2'])
-def test_compressed_jsonl(jsonl_file_compressed_paths: Dict[Optional[str], str], compression: Optional[str]):
-    path = jsonl_file_compressed_paths[compression]
-    j = JSONLinesFileSource(path, text_mode=True, compression=compression)
-    out = j.read()
-    assert isinstance(out, list)
-
-    assert isinstance(out[0], dict)
-    assert out[0]["hello"] == "world"
-
-    assert isinstance(out[1], list)
-    assert out[1] == [1, 2, 3]
-
-
-def test_jsonl_head(jsonl_file_path: Path):
-    j = JSONLinesFileSource(jsonl_file_path)
+def test_jsonl_head(jsonl_file: str):
+    j = JSONLinesFileSource(jsonl_file, compression="infer")
     out = j.head(1)
     assert isinstance(out, list)
     assert len(out) == 1
