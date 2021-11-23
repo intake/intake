@@ -515,6 +515,6 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
             source = container_map[container](url, http_args, **response)
         source.description = description
         return source
-
     else:
         raise Exception('Server error: %d, %s' % (req.status_code, req.reason))
+
