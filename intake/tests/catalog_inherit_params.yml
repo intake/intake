@@ -32,3 +32,12 @@ sources:
         default: local_filename.parquet
     args:
       urlpath: s3://{{bucket}}/{{filename}}
+  subcat:
+    driver: yaml_file_cat
+    args:
+      path: "{{CATALOG_DIR}}/catalog_nested_sub.yml"
+      user_parameters:
+        inner:
+          type: str
+          description: description
+          default: test_name

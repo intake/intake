@@ -9,15 +9,18 @@ import os
 import subprocess
 import time
 
+import posixpath
 import pytest
 import requests
+import tempfile
 
-from intake import config
+from intake import config, open_catalog
 from intake.container import persist
 from intake.util_tests import ex, PY2
 from intake.utils import make_path_posix
 from intake.source.base import DataSource, Schema
 from intake import register_driver
+from intake.tests.test_utils import copy_test_file
 
 here = os.path.dirname(__file__)
 
@@ -201,3 +204,20 @@ def env(temp_cache, tempdir):
     env["INTAKE_CONF_DIR"] = intake.config.confdir
     env['INTAKE_CACHE_DIR'] = intake.config.conf['cache_dir']
     return env
+
+
+@pytest.fixture
+def inherit_params_cat():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = posixpath.join(tmp_dir, "intake")
+        target_catalog = copy_test_file("catalog_inherit_params.yml", tmp_path)
+        return open_catalog(target_catalog)
+
+
+@pytest.fixture
+def inherit_params_multiple_cats():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = posixpath.join(tmp_dir, "intake")
+        copy_test_file("catalog_inherit_params.yml", tmp_path)
+        copy_test_file("catalog_nested_sub.yml", tmp_path)
+        return open_catalog(tmp_path + "/*.yml")

@@ -217,3 +217,7 @@ def test_unknown():
                           parameters=[up])
     s = e()
     assert s.kwargs['arg1'] == ""
+
+
+def test_catalog_passthrough(inherit_params_cat):
+    pass

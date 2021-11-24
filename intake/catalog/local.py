@@ -691,28 +691,14 @@ class YAMLFileCatalog(Catalog):
         cfg = result.data
 
         self._entries = {}
-        try:
-            shared_parameters = data["metadata"]["parameters"]
-            params = [
-                UserParameter(name, **attrs)
-                for name, attrs in shared_parameters.items()
-            ]
-        except KeyError:
-            params = None
+        shared_parameters = data.get("metadata", {}).get("parameters", {})
+        self.user_parameters = {
+            name: UserParameter(name, **attrs)
+            for name, attrs in shared_parameters.items()
+        }
 
         for entry in cfg['data_sources']:
             entry._catalog = self
-            if params is not None:
-                try:
-                    # Note that putting the entry parameters after the global parameters
-                    # means that local parameters will overwrite any inherited parameters
-                    all_params = params + entry._user_parameters
-                except AttributeError:
-                    all_params = params
-
-                entry.__setattr__("_user_parameters", all_params)
-                # Necessary for a copy of the entry to have the same parameters
-                entry._captured_init_kwargs["parameters"] = all_params
             self._entries[entry.name] = entry
             entry._filesystem = self.filesystem
 
@@ -793,11 +779,14 @@ class YAMLFilesCatalog(Catalog):
             if f.path not in self._cats:
                 entry = LocalCatalogEntry(name, "YAML file: %s" % name,
                                           'yaml_file_cat', True,
-                                          kwargs, [], {}, self.metadata, d)
+                                          kwargs, [], [], self.metadata, d)
                 if self._flatten:
                     # store a concrete Catalog
                     try:
-                        self._cats[f.path] = entry()
+                        cat = entry()
+                        cat.reload()
+                        self.user_parameters.update(cat.user_parameters)
+                        self._cats[f.path] = cat
                     except IOError as e:
                         logger.info('Loading "%s" as a catalog failed: %s'
                                     '' % (entry, e))
@@ -817,10 +806,6 @@ class YAMLFilesCatalog(Catalog):
                 entries.update(entry._entries)
             else:
                 entries[entry._name] = entry
-        # This is thread safe as long as the hash values for entries are
-        # computed in C --- i.e. if they are built-in types like strings. If
-        # they implement __hash__ in Python then this is not threadsafe, and it
-        # would need a lock.
         self._entries.update(entries)
 
 
