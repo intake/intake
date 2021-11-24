@@ -156,6 +156,7 @@ class RemoteCatalog(Catalog):
                 auth=self.auth,
                 http_args=self.http_args,
                 page_size=self._page_size,
+                persist_mode=self.pmode,
                 # user_parameters=user_parameters,
                 **source)
         return page
@@ -181,6 +182,7 @@ class RemoteCatalog(Catalog):
             auth=self.auth,
             http_args=self.http_args,
             page_size=self._page_size,
+            persist_mode=self.pmode,
             **info['source'])
 
     def _get_http_args(self, params):
@@ -274,6 +276,7 @@ class RemoteCatalog(Catalog):
             url=self.url,
             http_args=self.http_args,
             source_id=source_id,
+            persist_mode=self.pmode,
             name="")
         cat.cat = self
         return cat
@@ -389,8 +392,8 @@ class RemoteCatalogEntry(CatalogEntry):
     """An entry referring to a remote data definition"""
     def __init__(self, url, auth, name=None, user_parameters=None,
                  container=None, description='', metadata=None,
-                 http_args=None, page_size=None, direct_access=False,
-                 getenv=True, getshell=True, **kwags):
+                 http_args=None, page_size=None, persist_mode="default", direct_access=False,
+                 getenv=True, getshell=True, **kwargs):
         """
 
         Parameters
@@ -412,6 +415,8 @@ class RemoteCatalogEntry(CatalogEntry):
         self.description = description
         self._metadata = metadata or {}
         self._page_size = page_size
+        # Persist mode describing a nested RemoteCatalog
+        self.catalog_pmode = persist_mode
         self._user_parameters = [remake_instance(up)
                                  if (isinstance(up, dict) and 'cls' in up)
                                  else up
@@ -423,6 +428,8 @@ class RemoteCatalogEntry(CatalogEntry):
         
         super(RemoteCatalogEntry, self).__init__(getenv=getenv,
                                                  getshell=getshell)
+
+        # Persist mode for the RemoteCatalogEntry
         self._pmode = "never"
 
     def describe(self):
@@ -456,11 +463,12 @@ class RemoteCatalogEntry(CatalogEntry):
             page_size=self._page_size,
             auth=self.auth,
             getenv=self.getenv,
+            persist_mode=self.catalog_pmode,
             getshell=self.getshell)
 
 
 def open_remote(url, entry, container, user_parameters, description, http_args,
-                page_size=None, auth=None, getenv=None, getshell=None):
+                page_size=None, persist_mode=None, auth=None, getenv=None, getshell=None):
     """Create either local direct data source or remote streamed source"""
     from intake.container import container_map
     import msgpack
@@ -499,13 +507,14 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
                 response.update({'auth': auth,
                                  'getenv': getenv,
                                  'getshell': getshell,
-                                 'page_size': page_size
+                                 'page_size': page_size,
+                                 'persist_mode': persist_mode
                                  # TODO ttl?
                                  # TODO storage_options?
                                  })
             source = container_map[container](url, http_args, **response)
         source.description = description
         return source
-
     else:
         raise Exception('Server error: %d, %s' % (req.status_code, req.reason))
+
