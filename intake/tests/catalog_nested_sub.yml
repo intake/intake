@@ -8,4 +8,4 @@ sources:
     description: this is a sub-resource
     driver: csv
     args:
-      urlpath: "{{test_bucket}}/{{test_name}}"
+      urlpath: "{{bucket}}/{{inner}}"

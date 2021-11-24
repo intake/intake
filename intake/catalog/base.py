@@ -83,8 +83,11 @@ class Catalog(DataSource):
         self.getenv = getenv
         self.getshell = getshell
         self.storage_options = storage_options
-        if isinstance(user_parameters, dict):
-            self.user_parameters = user_parameters
+        if isinstance(user_parameters, dict) and user_parameters:
+            from .local import UserParameter
+            self.user_parameters = {name: (UserParameter(name=name, **up) if isinstance(up, dict)
+                                           else up)
+                                    for name, up in user_parameters.items()}
         elif isinstance(user_parameters, (list, tuple)):
             self.user_parameters = {up["name"]: up for up in user_parameters}
         else:
@@ -321,21 +324,28 @@ class Catalog(DataSource):
 
     def configure_new(self, **kwargs):
         from .local import UserParameter
-        new = super().configure_new(**kwargs)
-        for k, v in kwargs.items():
-            for up in new.user_parameters:
+        ups = {}
+        for k, v in kwargs.copy().items():
+            for up in self.user_parameters.values():
                 if isinstance(up, dict):
                     if k == up["name"]:
                         kw = up.copy()
                         kw['default'] = v
-                        up = UserParameter(**kw)
+                        ups[k] = UserParameter(**kw)
+                        kwargs.pop(k)
                 else:
                     if k == up.name:
                         kw = up._captured_init_kwargs.copy()
                         kw['default'] = v
-                        up = UserParameter(**kw)
+                        kw["name"] = k
+                        ups[k] = UserParameter(**kw)
+                        kwargs.pop(k)
 
+        new = super().configure_new(**kwargs)
+        new.user_parameters.update(ups)
         return new
+
+    __call__ = get = configure_new
 
     @reload_on_change
     def _get_entries(self):
@@ -426,7 +436,7 @@ class Catalog(DataSource):
             s = self._get_entry(key)
             if s.container == 'catalog':
                 s.name = key
-                s.user_parameters = self.user_parameters.copy()
+                s.user_parameters.update(self.user_parameters.copy())
                 return s
             return s
         if isinstance(key, str) and '.' in key:

@@ -221,3 +221,12 @@ def inherit_params_multiple_cats():
         copy_test_file("catalog_inherit_params.yml", tmp_path)
         copy_test_file("catalog_nested_sub.yml", tmp_path)
         return open_catalog(tmp_path + "/*.yml")
+
+
+@pytest.fixture
+def inherit_params_subcat():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = posixpath.join(tmp_dir, "intake")
+        target_catalog = copy_test_file("catalog_inherit_params.yml", tmp_path)
+        copy_test_file("catalog_nested_sub.yml", tmp_path)
+        return open_catalog(target_catalog)

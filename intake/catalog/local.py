@@ -692,10 +692,10 @@ class YAMLFileCatalog(Catalog):
 
         self._entries = {}
         shared_parameters = data.get("metadata", {}).get("parameters", {})
-        self.user_parameters = {
+        self.user_parameters.update({
             name: UserParameter(name, **attrs)
             for name, attrs in shared_parameters.items()
-        }
+        })
 
         for entry in cfg['data_sources']:
             entry._catalog = self
