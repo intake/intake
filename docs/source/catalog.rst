@@ -293,6 +293,9 @@ resolve to ``"http://server:port/user/"``
 Parameter Definition
 --------------------
 
+Source parameters
+~~~~~~~~~~~~~~~~~
+
 A source definition can contain a "parameters" block.
 Expressed in YAML, a parameter may look as follows:
 
@@ -328,6 +331,55 @@ can have one of two uses:
 
 Note: the ``datetime`` type accepts multiple values:
 Python datetime, ISO8601 string,  Unix timestamp int, "now" and  "today".
+
+Catalog parameters
+~~~~~~~~~~~~~~~~~~
+
+You can also define user parameters at the catalog level. This applies the parameter to
+all entries within that catalog, without having to define it for each and every entry.
+Furthermore, catalogs dested within the catalog will also inherit the parameter(s).
+
+For example, with the following spec
+
+.. code-block:: yaml
+
+    metadata:
+      version: 1
+      parameters:
+        bucket:
+          type: str
+          description: description
+          default: test_bucket
+    sources:
+      param_source:
+        driver: parquet
+        description: description
+        args:
+          urlpath: s3://{{bucket}}/file.parquet
+      subcat:
+        driver: yaml_file
+        path: "{{CATALOG_DIR}}/other.yaml"
+
+If ``cat`` is the corresponsing catalog instance,
+the URL of source ``cat.param_source`` will evaluate to "s3://test_bucket/file.parquet", but
+the parameter can be overridden with ``cat.param_source(bucket="other_bucket")``. Also, any
+entries of ``subcat``, another catalog referenced from here, would also have the "bucket"-named
+parameter attached to all sources. Of course, those sources do no need to make use of the
+parameter.
+
+To change the default, we can gerenate a new instance
+
+.. code-block:: python
+
+    cat2 = cat(bucket="production")  # sets default value of "bucket" for cat2
+    subcat = cat.subcat(bucket="production")  # sets default only for the nested catalog
+
+Of course, in these situations you can still override the value of the parameter for any
+source, or pass explicit values for the arguments of the source, as normal.
+
+For cases where the catalog is not defined in a YAML spec, the argument ``user_parameters``
+to the constructor takes the same form as ``parameters`` above: a dict of user parameters,
+either as ``UserParameter`` instances or as a dictionary spec for each one.
 
 Driver Selection
 ----------------
