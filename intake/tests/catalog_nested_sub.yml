@@ -4,3 +4,8 @@ sources:
     driver: csv
     args:
       urlpath: ""
+  ex2:
+    description: this is a sub-resource
+    driver: csv
+    args:
+      urlpath: "{{bucket}}/{{inner}}"

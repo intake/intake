@@ -42,7 +42,7 @@ class Catalog(DataSource):
 
     def __init__(self, entries=None, name=None, description=None, metadata=None,
                  ttl=60, getenv=True, getshell=True,
-                 persist_mode='default', storage_options=None):
+                 persist_mode='default', storage_options=None, user_parameters=None):
         """
         Parameters
         ----------
@@ -83,6 +83,15 @@ class Catalog(DataSource):
         self.getenv = getenv
         self.getshell = getshell
         self.storage_options = storage_options
+        if isinstance(user_parameters, dict) and user_parameters:
+            from .local import UserParameter
+            self.user_parameters = {name: (UserParameter(name=name, **up) if isinstance(up, dict)
+                                           else up)
+                                    for name, up in user_parameters.items()}
+        elif isinstance(user_parameters, (list, tuple)):
+            self.user_parameters = {up["name"]: up for up in user_parameters}
+        else:
+            self.user_parameters = {}
         if persist_mode not in ['always', 'never', 'default']:
             # should be True, False, None ?
             raise ValueError('Persist mode (%s) not understood' % persist_mode)
@@ -181,7 +190,9 @@ class Catalog(DataSource):
             getenv=self.getenv,
             getshell=self.getshell,
             metadata=(self.metadata or {}).copy(),
-            storage_options=self.storage_options)
+            storage_options=self.storage_options,
+            user_parameters=self.user_parameters.copy()
+        )
         cat.metadata['search'] = {'text': text, 'upstream': self.name}
         cat.cat = self
         for e in entries.values():
@@ -304,7 +315,37 @@ class Catalog(DataSource):
         entry = self._entries[name]
         entry._catalog = self
         entry._pmode = self.pmode
+
+        up_names = set((up["name"] if isinstance(up, dict) else up.name)
+                        for up in entry._user_parameters)
+        ups = [up for name, up in self.user_parameters.items() if name not in up_names]
+        entry._user_parameters = ups + (entry._user_parameters or [])
         return entry()
+
+    def configure_new(self, **kwargs):
+        from .local import UserParameter
+        ups = {}
+        for k, v in kwargs.copy().items():
+            for up in self.user_parameters.values():
+                if isinstance(up, dict):
+                    if k == up["name"]:
+                        kw = up.copy()
+                        kw['default'] = v
+                        ups[k] = UserParameter(**kw)
+                        kwargs.pop(k)
+                else:
+                    if k == up.name:
+                        kw = up._captured_init_kwargs.copy()
+                        kw['default'] = v
+                        kw["name"] = k
+                        ups[k] = UserParameter(**kw)
+                        kwargs.pop(k)
+
+        new = super().configure_new(**kwargs)
+        new.user_parameters.update(ups)
+        return new
+
+    __call__ = get = configure_new
 
     @reload_on_change
     def _get_entries(self):
@@ -390,14 +431,14 @@ class Catalog(DataSource):
         nested directories with cat.name1.name2, cat['name1.name2'] *or*
         cat['name1', 'name2']
         """
-        if not isinstance(key, list) and key in self._get_entries():
+        if not isinstance(key, list) and key in self:
             # triggers reload_on_change
-            e = self._entries[key]
-            e._catalog = self
-            e._pmode = self.pmode
-            if e.container == 'catalog':
-                return e(name=key)
-            return e()
+            s = self._get_entry(key)
+            if s.container == 'catalog':
+                s.name = key
+                s.user_parameters.update(self.user_parameters.copy())
+                return s
+            return s
         if isinstance(key, str) and '.' in key:
             key = key.split('.')
         if isinstance(key, list):

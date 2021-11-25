@@ -803,23 +803,6 @@ def test_cat_dictlike(catalog1):
     assert list(catalog1.items()) == list(zip(catalog1.keys(), catalog1.values()))
 
 
-@pytest.fixture
-def inherit_params_cat():
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        tmp_path = posixpath.join(tmp_dir, "intake")
-        target_catalog = copy_test_file("catalog_inherit_params.yml", tmp_path)
-        return open_catalog(target_catalog)
-
-
-@pytest.fixture
-def inherit_params_multiple_cats():
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        tmp_path = posixpath.join(tmp_dir, "intake")
-        copy_test_file("catalog_inherit_params.yml", tmp_path)
-        copy_test_file("catalog_nested_sub.yml", tmp_path)
-        return open_catalog(tmp_path + "/*.yml")
-
-
 def test_inherit_params(inherit_params_cat):
     assert inherit_params_cat.param._urlpath == "s3://test_bucket/file.parquet"
 

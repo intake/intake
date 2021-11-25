@@ -45,9 +45,9 @@ sources:
     description: example1 source plugin
     driver: example1
     args: {}
-        ''')
+''')
 
-    time.sleep(2)
+    time.sleep(1)
 
     yield intake_server
     os.remove(fullname)
@@ -59,22 +59,13 @@ def test_reload_updated_config(intake_server_with_config):
     entries = list(catalog)
     assert entries == ['use_example1']
 
-    with open(os.path.join(TMP_DIR, YAML_FILENAME), 'w') as f:
+    with open(os.path.join(TMP_DIR, YAML_FILENAME), 'a') as f:
         f.write('''
-plugins:
-  source:
-    - module: intake.catalog.tests.example1_source
-    - module: intake.catalog.tests.example_plugin_dir.example2_source
-sources:
-  use_example1:
-    description: example1 source plugin
-    driver: example1
-    args: {}
   use_example1_1:
     description: example1 other
     driver: example1
     args: {}
-        ''')
+''')
 
     time.sleep(1.2)
 

@@ -1,5 +1,6 @@
 import os
 import pytest
+import intake
 from intake.catalog.local import LocalCatalogEntry, UserParameter
 from intake.source.base import DataSource
 
@@ -217,3 +218,20 @@ def test_unknown():
                           parameters=[up])
     s = e()
     assert s.kwargs['arg1'] == ""
+
+
+def test_catalog_passthrough():
+    root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    cat = intake.open_catalog(os.path.join(root, "tests/catalog_inherit_params.yml"))
+    assert set(cat.subcat.user_parameters) == {"bucket", "inner"}
+    url = cat.subcat.ex2.urlpath
+    assert url == "test_bucket/test_name"
+    url = cat.subcat.ex2(bucket="hi", inner="ho").urlpath
+    assert url == "hi/ho"
+
+    # test clone
+    cat2 = cat(bucket="yet")
+    url = cat2.subcat(inner="another").ex2.urlpath
+    assert url == "yet/another"
+    url = cat2.subcat(inner="another").ex2(bucket="hi").urlpath
+    assert url == "hi/another"
