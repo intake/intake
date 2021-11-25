@@ -319,7 +319,7 @@ class Catalog(DataSource):
         up_names = set((up["name"] if isinstance(up, dict) else up.name)
                         for up in entry._user_parameters)
         ups = [up for name, up in self.user_parameters.items() if name not in up_names]
-        entry._user_parameters = ups + entry._user_parameters
+        entry._user_parameters = ups + (entry._user_parameters or [])
         return entry()
 
     def configure_new(self, **kwargs):
