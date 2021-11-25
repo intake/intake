@@ -294,7 +294,7 @@ Parameter Definition
 --------------------
 
 Source parameters
-~~~~~~~~~~~~~~~~~
+'''''''''''''''''
 
 A source definition can contain a "parameters" block.
 Expressed in YAML, a parameter may look as follows:
@@ -333,7 +333,7 @@ Note: the ``datetime`` type accepts multiple values:
 Python datetime, ISO8601 string,  Unix timestamp int, "now" and  "today".
 
 Catalog parameters
-~~~~~~~~~~~~~~~~~~
+''''''''''''''''''
 
 You can also define user parameters at the catalog level. This applies the parameter to
 all entries within that catalog, without having to define it for each and every entry.
@@ -361,7 +361,7 @@ For example, with the following spec
         path: "{{CATALOG_DIR}}/other.yaml"
 
 If ``cat`` is the corresponsing catalog instance,
-the URL of source ``cat.param_source`` will evaluate to "s3://test_bucket/file.parquet", but
+the URL of source ``cat.param_source`` will evaluate to "s3://test_bucket/file.parquet" by default, but
 the parameter can be overridden with ``cat.param_source(bucket="other_bucket")``. Also, any
 entries of ``subcat``, another catalog referenced from here, would also have the "bucket"-named
 parameter attached to all sources. Of course, those sources do no need to make use of the
