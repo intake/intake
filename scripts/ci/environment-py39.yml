@@ -37,6 +37,7 @@ dependencies:
   - zarr
   - moto
   - httpx
+  - typer
   - pip:
        - rangehttpserver
-       - tiled
+       - tiled[all]
