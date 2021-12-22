@@ -59,6 +59,8 @@ setup(
             'ndzarr = intake.source.zarr:ZarrArraySource',
             'zarr_cat = intake.catalog.zarr:ZarrGroupCatalog',
             'alias = intake.source.derived:AliasSource',
+            'tiled_cat = intake.source.tiled:TiledCatalog',
+            'tiled = intake.source.tiled:TiledSource'
         ]
     },
     classifiers=[
