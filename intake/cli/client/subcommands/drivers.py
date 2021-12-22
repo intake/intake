@@ -76,7 +76,9 @@ class Drivers(Subcommand):
         drivers_by_name = autodiscover()   # dict mapping name to driver
         all_drivers = autodiscover_all()  # listof (name, driver)
         direct = {k: v for k, v in intake.registry.items()
-                  if k not in all_drivers and k not in drivers_by_name}
+                  if k not in all_drivers and k not in drivers_by_name and v is not None}
+        failed = {k: v for k, v in intake.registry.items()
+                  if k not in all_drivers and k not in drivers_by_name and v is None}
 
         print("Direct:", file=sys.stderr)
         none = True
@@ -105,6 +107,15 @@ class Drivers(Subcommand):
                 print(fmt.format(name=str(name), cls=cls, file=inspect.getfile(cls)),
                       file=sys.stderr)
                 none = False
+        if none:
+            print("<none>")
+
+        print("\nCould not be imported:", file=sys.stderr)
+        none = True
+        for name in sorted(failed, key=str):
+            print(fmt.format(name=str(name), cls=cls, file=inspect.getfile(cls)),
+                  file=sys.stderr)
+            none = False
         if none:
             print("<none>")
 

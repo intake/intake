@@ -36,6 +36,7 @@ dependencies:
   - xarray
   - zarr
   - moto
-  - tiled
+  - httpx
   - pip:
        - rangehttpserver
+       - tiled
