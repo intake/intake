@@ -23,10 +23,7 @@ class DriverRegistry(dict):
 
     def __getitem__(self, item):
         if isinstance(super().__getitem__(item), entrypoints.EntryPoint):
-            try:
-                self[item] = super().__getitem__(item).load()
-            except ImportError:
-                self[item] = None
+            self[item] = super().__getitem__(item).load()
         return super().__getitem__(item)
 
 
