@@ -74,6 +74,6 @@ class Config(Subcommand):
         print(yaml.dump(defaults, default_flow_style=False))
 
     def _reset(self, args):
-        from intake.config import reset_conf, save_conf
-        reset_conf()
-        save_conf()
+        from intake.config import conf
+        conf.reset()
+        conf.save()

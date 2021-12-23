@@ -53,7 +53,7 @@ def tmp_config_path(tmp_path):
     os.environ[key] = temp_config_path
     assert config.cfile() == temp_config_path
     yield temp_config_path
-    config.reset_conf()
+    config.conf.reset()
     if original:
         os.environ[key] = original
     else:
@@ -187,7 +187,7 @@ def temp_cache(tempdir):
     intake.config.conf.update({'cache_dir': make_path_posix(str(tempdir)),
                                'cache_download_progress': False,
                                'cache_disabled': False})
-    intake.config.save_conf()
+    intake.config.conf.save()
     store.__init__(os.path.join(tempdir, 'persist'))
     try:
         yield

@@ -27,9 +27,9 @@ defaults = {
     'cache_download_progress': True,
     'logging': 'INFO',
     'catalog_path': [],
-    'persist_path': posixpath.join(confdir, 'persisted')
-    }
-conf = {}
+    'persist_path': posixpath.join(confdir, 'persisted'),
+    'package_scan': False
+}
 
 
 def cfile():
@@ -37,43 +37,67 @@ def cfile():
         os.getenv('INTAKE_CONF_FILE', posixpath.join(confdir, 'conf.yaml')))
 
 
-def reset_conf():
-    """Set conf values back to defaults"""
-    conf.clear()
-    conf.update(defaults)
+class Config(dict):
+    def __init__(self, filename=None, **kwargs):
+        self.filename = filename if filename is not None else cfile()
+        self.reload_all()
+        super().__init__(**kwargs)
 
+    def reset(self):
+        """Set conf values back to defaults"""
+        self.clear()
+        self.update(defaults)
 
-def save_conf(fn=None):
-    """Save current configuration to file as YAML
+    def save(self):
+        """Save current configuration to file as YAML
 
-    If not given, uses current config directory, ``confdir``, which can be
-    set by INTAKE_CONF_DIR.
-    """
-    if fn is None:
-        fn = cfile()
-    try:
-        os.makedirs(os.path.dirname(fn))
-    except (OSError, IOError):
-        pass
-    with open(fn, 'w') as f:
-        yaml.dump(conf, f)
+        Uses ``.filename`` for target location
+        """
+        if self.filename is False:
+            return
+        try:
+            os.makedirs(os.path.dirname(self.filename))
+        except (OSError, IOError):
+            pass
+        with open(self.filename, 'w') as f:
+            yaml.dump(dict(self), f)
 
+    def reload_all(self):
+        self.reset()
+        self.load()
+        self.load_env()
 
-def load_conf(fn=None):
-    """Update global config from YAML file
+    def load(self, fn=None):
+        """Update global config from YAML file
 
-    If fn is None, looks in global config directory, which is either defined
-    by the INTAKE_CONF_DIR env-var or is ~/.intake/ .
-    """
-    if fn is None:
-        fn = cfile()
-    if os.path.isfile(fn):
-        with open(fn) as f:
-            try:
-                conf.update(yaml_load(f))
-            except Exception as e:
-                logger.warning('Failure to load config file "{fn}": {e}'
-                               ''.format(fn=fn, e=e))
+        If fn is None, looks in global config directory, which is either defined
+        by the INTAKE_CONF_DIR env-var or is ~/.intake/ .
+        """
+        fn = fn or self.filename
+
+        if os.path.isfile(fn):
+            with open(fn) as f:
+                try:
+                    self.update(yaml_load(f))
+                except Exception as e:
+                    logger.warning('Failure to load config file "{fn}": {e}'
+                                   ''.format(fn=fn, e=e))
+
+    def load_env(self):
+        """Analyse environment variables and update conf accordingly"""
+        # environment variables take precedence over conf file
+        for key, envvar in [['cache_dir', 'INTAKE_CACHE_DIR'],
+                            ['catalog_path', 'INTAKE_PATH'],
+                            ['persist_path', 'INTAKE_PERSIST_PATH']]:
+            if envvar in os.environ:
+                self[key] = make_path_posix(os.environ[envvar])
+        self['catalog_path'] = intake_path_dirs(self['catalog_path'])
+        for key, envvar in [['cache_disabled', 'INTAKE_DISABLE_CACHING'],
+                            ['cache_download_progress', 'INTAKE_CACHE_PROGRESS']]:
+            if envvar in os.environ:
+                self[key] = os.environ[envvar].lower() in ['true', 't', 'y', 'yes']
+        if 'INTAKE_LOG_LEVEL' in os.environ:
+            self['logging'] = os.environ['INTAKE_LOG_LEVEL']
 
 
 def intake_path_dirs(path):
@@ -90,30 +114,10 @@ def intake_path_dirs(path):
     return pattern.split(path)
 
 
-def load_env():
-    """Analyse environment variables and update conf accordingly"""
-    # environment variables take precedence over conf file
-    for key, envvar in [['cache_dir', 'INTAKE_CACHE_DIR'],
-                        ['catalog_path', 'INTAKE_PATH'],
-                        ['persist_path', 'INTAKE_PERSIST_PATH']]:
-        if envvar in os.environ:
-            conf[key] = make_path_posix(os.environ[envvar])
-    conf['catalog_path'] = intake_path_dirs(conf['catalog_path'])
-    for key, envvar in [['cache_disabled', 'INTAKE_DISABLE_CACHING'],
-                        ['cache_download_progress', 'INTAKE_CACHE_PROGRESS']]:
-        if envvar in os.environ:
-            conf[key] = os.environ[envvar].lower() in ['true', 't', 'y', 'yes']
-    if 'INTAKE_LOG_LEVEL' in os.environ:
-        conf['logging'] = os.environ['INTAKE_LOG_LEVEL']
-
-
-def reload_all():
-    reset_conf()
-    load_conf(cfile())
-    load_env()
-
-
-reload_all()
+conf = Config()
+conf.reload_all()
+save_conf = conf.save
+load_cond = conf.load
 
 logger.setLevel(conf['logging'].upper())
 ch = logging.StreamHandler()

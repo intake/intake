@@ -13,6 +13,7 @@ import sys
 
 import pytest
 
+import intake
 from intake.source import discovery
 
 
@@ -56,7 +57,7 @@ def test_discover_cli(extra_pythonpath, tmp_config_path):
     ), stderr=subprocess.STDOUT, env=env)
 
     assert b'foo' in out
-    assert out.index(b'Not enabled') > out.index(b'foo')
+    assert out.index(b'Disabled') > out.index(b'foo')
 
     subprocess.check_output(shlex.split(
         "intake drivers disable foo"
@@ -66,25 +67,15 @@ def test_discover_cli(extra_pythonpath, tmp_config_path):
         "intake drivers list"
     ), stderr=subprocess.STDOUT, env=env)
     assert b'foo' in out
-    assert out.index(b'Not enabled') < out.index(b'foo')
+    assert out.index(b'Disabled') < out.index(b'foo')
 
 
 def test_discover(extra_pythonpath, tmp_config_path):
+    drivers = intake.source.discovery.DriverSouces(do_scan=True)
     with pytest.warns(PendingDeprecationWarning):
-        registry = discovery.autodiscover(do_package_scan=True)
+        assert "foo" in drivers.scanned
 
-    # Check that package scan (name-based) discovery worked.
-    assert 'foo' in registry
-    registry['foo']()
-    # Check that entrypoints-based discovery worked.
-    assert 'some_test_driver' in registry
-    registry['some_test_driver']()
-
-    # Now again, giving the special PYTHONPATH explicit via kwarg.
-
-    with pytest.warns(PendingDeprecationWarning):
-        registry = discovery.autodiscover(path=[extra_pythonpath], do_package_scan=True)
-
+    registry = intake.source.DriverRegistry(drivers)
     # Check that package scan (name-based) discovery worked.
     assert 'foo' in registry
     registry['foo']()
@@ -94,9 +85,8 @@ def test_discover(extra_pythonpath, tmp_config_path):
 
     # Now again, turning off the package scan.
 
-    registry = discovery.autodiscover(
-        path=[extra_pythonpath],
-        do_package_scan=False)
+    drivers = intake.source.discovery.DriverSouces()
+    registry = intake.source.DriverRegistry(drivers)
 
     # Check that package scan (name-based) discovery did *not* happen.
     assert 'foo' not in registry
@@ -109,48 +99,34 @@ def test_enable_and_disable(extra_pythonpath, tmp_config_path):
     # Disable and then enable a package scan result.
 
     try:
-        discovery.disable('foo')
+        drivers = intake.source.discovery.DriverSouces(do_scan=True)
+        drivers.disable('foo')
+        registry = intake.source.DriverRegistry(drivers)
         with pytest.warns(PendingDeprecationWarning):
-            registry = discovery.autodiscover(do_package_scan=True)
+            assert 'foo' in discovery.drivers.scanned
         assert 'foo' not in registry
 
-        discovery.enable('foo', 'intake_foo.FooPlugin')
-        with pytest.warns(PendingDeprecationWarning):
-            registry = discovery.autodiscover(do_package_scan=True)
+        drivers.enable('foo', 'intake_foo.FooPlugin')
         assert 'foo' in registry
     finally:
-        discovery.enable('foo', 'intake_foo.FooPlugin')
+        drivers.enable('foo', 'intake_foo.FooPlugin')
 
     # Disable and then enable an entrypoint result.
 
     try:
-        discovery.disable('some_test_driver')
-        with pytest.warns(PendingDeprecationWarning):
-            registry = discovery.autodiscover(do_package_scan=True)
+        drivers.disable('some_test_driver')
         assert 'some_test_driver' not in registry
 
-        discovery.enable(
+        drivers.enable(
             'some_test_driver',
             'driver_with_entrypoints.SomeTestDriver')
-        with pytest.warns(PendingDeprecationWarning):
-            registry = discovery.autodiscover(do_package_scan=True)
         assert 'some_test_driver' in registry
     finally:
-        discovery.enable(
+        drivers.enable(
             'some_test_driver',
             'driver_with_entrypoints.SomeTestDriver')
-
-
-def test_discover_pluginprefix(extra_pythonpath, tmp_config_path):
-    with pytest.warns(PendingDeprecationWarning):
-        registry = discovery.autodiscover(plugin_prefix='not_intake_',
-                                          do_package_scan=True)
-
-    assert 'otherfoo' in registry
-    registry['otherfoo']()
-    registry.pop('otherfoo', None)
 
 
 def test_discover_collision(extra_pythonpath, tmp_config_path):
     with pytest.warns(UserWarning):
-        discovery.autodiscover(plugin_prefix='collision_', do_package_scan=True)
+        discovery._package_scan(plugin_prefix='collision_')

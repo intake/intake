@@ -11,8 +11,10 @@ import requests
 
 import intake
 from intake import config
+from intake.config import Config, defaults
 from intake.util_tests import temp_conf, server
 from intake.catalog.remote import RemoteCatalog
+
 
 @pytest.mark.parametrize('conf', [
     {},
@@ -21,14 +23,15 @@ from intake.catalog.remote import RemoteCatalog
 ])
 def test_load_conf(conf):
     # This test will only work if your config is set to default
-    inconf = config.defaults.copy()
+    inconf = defaults.copy()
     expected = inconf.copy()
     with temp_conf(conf) as fn:
-        config.load_conf(fn)
+        config = Config(fn)
+        config.load(fn)
         expected.update(conf)
-        assert config.conf == expected
-        config.reset_conf()
-        assert config.conf == inconf
+        assert dict(config) == expected
+        config.reset()
+        assert dict(config) == inconf
 
 
 # Tests with a real separate server process

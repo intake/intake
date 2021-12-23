@@ -5,79 +5,54 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+from collections.abc import MappingView
+
 import entrypoints
 import logging
 
-from ..utils import DriverRegistryView
 from .base import DataSource
+from .discovery import drivers
 
 logger = logging.getLogger('intake')
 
 
-class DriverRegistry(dict):
+class DriverRegistry(MappingView):
     """Dict of driver: DataSource class
 
-    If the value object is a EntryPoint, will load it when accesses, which
+    If the value object is a EntryPoint or str, will load it when accesses, which
     does the import.
     """
+    def __init__(self, drivers_source=drivers):
+        self.drivers = drivers_source
 
     def __getitem__(self, item):
-        if isinstance(super().__getitem__(item), entrypoints.EntryPoint):
-            self[item] = super().__getitem__(item).load()
-        return super().__getitem__(item)
+        it = self.drivers.enabled_plugins()[item]
+        if isinstance(it, entrypoints.EntryPoint):
+            return it.load()
+        elif isinstance(it, str):
+            return import_name(it)
+        elif issubclass(it, DataSource):
+            return it
+        raise ValueError
+
+    def __iter__(self):
+        return iter(self.drivers.enabled_plugins())
+
+    def keys(self):
+        return list(self)
+
+    def __len__(self):
+        return len(self.drivers.enabled_plugins())
+
+    def __repr__(self):
+        return """<Intake driver registry>"""
+
+    def __contains__(self, item):
+        return item in self.keys()
 
 
-_registry = DriverRegistry()  # internal mutable registry
-registry = DriverRegistryView(_registry)  # public, read-ony wrapper
-
-
-def register_driver(name, driver, overwrite=False):
-    """
-    Add a driver to intake.registry.
-
-    Parameters
-    ----------
-    name: string
-    driver: DataSource
-    overwrite: bool, optional
-        False by default.
-
-    Raises
-    ------
-    ValueError
-        If name collides with an existing name in the registry and overwrite is
-        False.
-    """
-    if name in _registry and not overwrite:
-        # If we are re-registering the same object, there is no problem.
-        original = _registry[name]
-        if original is driver:
-            return
-        raise ValueError(
-            f"The driver {driver} could not be registered for the "
-            f"name {name} because {_registry[name]} is already "
-            f"registered for that name. Use overwrite=True to force it.")
-    _registry[name] = driver
-
-
-def unregister_driver(name):
-    """
-    Ensure that a given name in the registry is cleared.
-
-    This function is idempotent: if the name does not exist, nothing is done,
-    and the function returns None
-
-    Parameters
-    ----------
-    name: string
-
-    Returns
-    -------
-    driver: DataSource or None
-        Whatever was registered for ``name``, or ``None``
-    """
-    return _registry.pop(name, None)
-
+registry = DriverRegistry()
+register_driver = drivers.register_driver
 
 # A set of fully-qualified package.module.Class mappings
 classes = {}
