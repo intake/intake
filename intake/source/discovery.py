@@ -141,7 +141,7 @@ def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=False):
         try:
             drivers[entrypoint.name] = _load_entrypoint(entrypoint)
         except ConfigurationError:
-            logger.exception(
+            logger.debug(
                 "Error while loading entrypoint %s",
                 entrypoint.name)
             continue
@@ -218,7 +218,7 @@ def autodiscover_all(path=None, plugin_prefix='intake_', do_package_scan=True):
         try:
             drivers.append((entrypoint.name, _load_entrypoint(entrypoint)))
         except ConfigurationError:
-            logger.exception(
+            logger.debug(
                 "Error while loading entrypoint %s",
                 entrypoint.name)
             continue
@@ -245,10 +245,10 @@ def _load_entrypoint(entrypoint):
     """
     try:
         return entrypoint.load()
-    except ModuleNotFoundError as err:
+    except ImportError as err:
         raise ConfigurationError(
             f"Failed to load {entrypoint.name} driver because module "
-            f"{entrypoint.module_name} could not be found.") from err
+            f"{entrypoint.module_name} could not be imported.") from err
     except AttributeError as err:
         raise ConfigurationError(
             f"Failed to load {entrypoint.name} driver because no object "

@@ -75,8 +75,13 @@ class Drivers(Subcommand):
             fmt = '{name:<30}{cls.__module__}.{cls.__name__}'
         drivers_by_name = autodiscover()   # dict mapping name to driver
         all_drivers = autodiscover_all()  # listof (name, driver)
-        direct = {k: v for k, v in intake.registry.items()
-                  if k not in all_drivers and k not in drivers_by_name}
+        direct = {}
+        for k in intake.registry:
+            if k not in all_drivers and k not in drivers_by_name:
+                try:
+                    direct[k] = intake.registry[k]
+                except ImportError:
+                    pass
 
         print("Direct:", file=sys.stderr)
         none = True

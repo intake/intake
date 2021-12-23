@@ -53,7 +53,7 @@ def test_discover_cli(extra_pythonpath, tmp_config_path):
 
     out = subprocess.check_output(shlex.split(
         "intake drivers list"
-    ), stderr=subprocess.STDOUT)
+    ), stderr=subprocess.STDOUT, env=env)
 
     assert b'foo' in out
     assert out.index(b'Not enabled') > out.index(b'foo')
