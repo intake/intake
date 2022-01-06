@@ -655,10 +655,7 @@ class YAMLFileCatalog(Catalog):
         with file_open as f:
             yaml.dump(data, f, default_flow_style=False)
 
-        if path:
-            return self
-        else:
-            return YAMLFileCatalog(self.path, storage_options=storage_options,
+        return YAMLFileCatalog(path or self.path, storage_options=storage_options,
                                    autoreload=self.autoreload)
 
     def parse(self, text):
