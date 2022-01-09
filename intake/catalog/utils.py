@@ -5,6 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import ast
 from collections.abc import Iterable
 import functools
 import itertools
@@ -312,8 +313,12 @@ def coerce(dtype, value):
     if dtype == "mlist":
         if isinstance(value, (tuple, set, dict)):
             return list(value)
-        if not isinstance(value, list):
-            raise TypeError("Will not coerce value %s to list", value)
+        if isinstance(value, str):
+            try:
+                value = ast.literal_eval(value)
+                return list(value)
+            except ValueError as e:
+                raise ValueError("Failed to coerce string to list") from e
         return value
     op = COERCION_RULES[dtype]
     out = op() if value is None else op(value)
