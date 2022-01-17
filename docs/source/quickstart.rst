@@ -124,7 +124,7 @@ with the following :term:`YAML`-syntax content:
 .. code-block:: yaml
 
     sources:
-      states
+      states:
         description: US state information from [CivilServices](https://civil.services/)
         driver: csv
         args:
