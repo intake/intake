@@ -173,7 +173,7 @@ def test_mlist_parameter():
         up.validate(["c"])
     with pytest.raises(ValueError):
         up.validate(["a", "c"])
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         up.validate("hello")
 
 
