@@ -56,7 +56,7 @@ class JSONFileSource(DataSource):
         self._file = None
         self.compression = compression
 
-        if compression not in VALID_COMPRESSIONS or None:
+        if compression not in VALID_COMPRESSIONS:
             raise ValueError(
                 f"Compression value {compression} must be one of {VALID_COMPRESSIONS}"
             )
