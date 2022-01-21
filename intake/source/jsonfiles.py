@@ -95,7 +95,7 @@ class JSONLinesFileSource(DataSource):
         urlpath: str,
         text_mode: bool = True,
         text_encoding: str = "utf8",
-        compression: str = None,
+        compression: str = "infer",
         read: bool = True,
         metadata: dict = None,
         storage_options: dict = None,
@@ -111,10 +111,9 @@ class JSONLinesFileSource(DataSource):
         text_encoding : str
             If text_mode is True, apply this encoding. UTF* is by far the most
             common
-        compression : str or None
-            If given, decompress the file with the given codec on load. Can
-            be something like "zip", "gzip", "bz2", or to try to guess from the
-            filename, 'infer'.
+        compression : str
+            decompress the file with the given codec on load. Can
+            be something like "zip", "gzip", "bz2", "xz". Defualt "infer".
         storage_options: dict
             Options to pass to the file reader backend, including text-specific
             encoding arguments, and parameters specific to the remote
@@ -122,7 +121,7 @@ class JSONLinesFileSource(DataSource):
         """
         from fsspec.utils import compressions
 
-        VALID_COMPRESSIONS = list(compressions.values()) + ["infer", None]
+        VALID_COMPRESSIONS = list(compressions.values()) + ["infer"]
 
         self._urlpath = urlpath
         self._storage_options = storage_options or {}
