@@ -51,7 +51,7 @@ def test_jsonfile(json_file: str):
 
 
 def test_jsonlfile(jsonl_file: str):
-    j = JSONLinesFileSource(jsonl_file, compression="infer")
+    j = JSONLinesFileSource(jsonl_file)
     out = j.read()
     assert isinstance(out, list)
 
@@ -63,7 +63,7 @@ def test_jsonlfile(jsonl_file: str):
 
 
 def test_jsonl_head(jsonl_file: str):
-    j = JSONLinesFileSource(jsonl_file, compression="infer")
+    j = JSONLinesFileSource(jsonl_file)
     out = j.head(1)
     assert isinstance(out, list)
     assert len(out) == 1

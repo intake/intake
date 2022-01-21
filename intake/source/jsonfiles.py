@@ -22,7 +22,7 @@ class JSONFileSource(DataSource):
         urlpath: str,
         text_mode: bool = True,
         text_encoding: str = "utf8",
-        compression: str = None,
+        compression: str = "infer",
         read: bool = True,
         metadata: dict = None,
         storage_options: dict = None,
@@ -38,10 +38,9 @@ class JSONFileSource(DataSource):
         text_encoding : str
             If text_mode is True, apply this encoding. UTF* is by far the most
             common
-        compression : str or None
-            If given, decompress the file with the given codec on load. Can
-            be something like "zip", "gzip", "bz2", "xz". To try to guess from the
-            filename use "infer".
+        compression : str
+            decompress the file with the given codec on load. Can
+            be something like "zip", "gzip", "bz2", "xz". Defualt "infer".
         storage_options: dict
             Options to pass to the file reader backend, including text-specific
             encoding arguments, and parameters specific to the remote
@@ -49,7 +48,7 @@ class JSONFileSource(DataSource):
         """
         from fsspec.utils import compressions
 
-        VALID_COMPRESSIONS = list(compressions.values()) + ["infer", None]
+        VALID_COMPRESSIONS = list(compressions.values()) + ["infer"]
 
         self._urlpath = urlpath
         self._storage_options = storage_options or {}
