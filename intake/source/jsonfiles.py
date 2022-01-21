@@ -40,8 +40,8 @@ class JSONFileSource(DataSource):
             common
         compression : str or None
             If given, decompress the file with the given codec on load. Can
-            be something like "zip", "gzip", "bz2", or to try to guess from the
-            filename, 'infer'
+            be something like "zip", "gzip", "bz2", "xz". To try to guess from the
+            filename use "infer".
         storage_options: dict
             Options to pass to the file reader backend, including text-specific
             encoding arguments, and parameters specific to the remote
@@ -49,7 +49,7 @@ class JSONFileSource(DataSource):
         """
         from fsspec.utils import compressions
 
-        VALID_COMPRESSIONS = list(compressions.values()) + ["infer"]
+        VALID_COMPRESSIONS = list(compressions.values()) + ["infer", None]
 
         self._urlpath = urlpath
         self._storage_options = storage_options or {}
@@ -57,7 +57,7 @@ class JSONFileSource(DataSource):
         self._file = None
         self.compression = compression
 
-        if compression not in VALID_COMPRESSIONS:
+        if compression not in VALID_COMPRESSIONS or None:
             raise ValueError(
                 f"Compression value {compression} must be one of {VALID_COMPRESSIONS}"
             )
@@ -123,7 +123,7 @@ class JSONLinesFileSource(DataSource):
         """
         from fsspec.utils import compressions
 
-        VALID_COMPRESSIONS = list(compressions.values()) + ["infer"]
+        VALID_COMPRESSIONS = list(compressions.values()) + ["infer", None]
 
         self._urlpath = urlpath
         self._storage_options = storage_options or {}
