@@ -43,9 +43,8 @@ def jsonl_file(request, tmp_path) -> str:
     return file_path
 
 
-@pytest.mark.parametrize("compression", ["infer", None])
-def test_jsonfile(json_file: str, compression):
-    j = JSONFileSource(json_file, text_mode=True, compression=compression)
+def test_jsonfile(json_file: str):
+    j = JSONFileSource(json_file, text_mode=True)
     out = j.read()
     assert isinstance(out, dict)
     assert out["hello"] == "world"
