@@ -1,4 +1,4 @@
-# Intake: A general interface for loading data
+# Intake: A general interface for loading data 
 
 ![Logo](https://github.com/intake/intake/raw/master/logo-small.png)
 
