@@ -44,14 +44,28 @@ def jsonl_file(request, tmp_path) -> str:
 
 
 def test_jsonfile(json_file: str):
-    j = JSONFileSource(json_file, text_mode=True)
+    j = JSONFileSource(json_file, text_mode=True, compression="infer")
     out = j.read()
     assert isinstance(out, dict)
     assert out["hello"] == "world"
 
 
+def test_jsonfile_none(json_file: str):
+    try:
+        j = JSONFileSource(json_file, text_mode=True, compression=None)
+        out = j.read()
+        # compression=None should not raise exception for uncompressed files
+        assert json_file.endswith(".json")
+    except UnicodeDecodeError:
+        # compression=None should raise exception for compressed files
+        assert not json_file.endswith(".json")
+        return
+    assert isinstance(out, dict)
+    assert out["hello"] == "world"
+
+
 def test_jsonlfile(jsonl_file: str):
-    j = JSONLinesFileSource(jsonl_file)
+    j = JSONLinesFileSource(jsonl_file, compression="infer")
     out = j.read()
     assert isinstance(out, list)
 
@@ -62,8 +76,27 @@ def test_jsonlfile(jsonl_file: str):
     assert out[1] == [1, 2, 3]
 
 
+def test_jsonfilel_none(jsonl_file: str):
+    try:
+        j = JSONFileSource(jsonl_file, compression=None)
+        out = j.read()
+        # compression=None should not raise exception for uncompressed files
+        assert jsonl_file.endswith(".jsonl")
+    except UnicodeDecodeError:
+        # compression=None should raise exception for compressed files
+        assert not jsonl_file.endswith(".jsonl")
+        return
+    assert isinstance(out, list)
+
+    assert isinstance(out[0], dict)
+    assert out[0]["hello"] == "world"
+
+    assert isinstance(out[1], list)
+    assert out[1] == [1, 2, 3]
+
+
 def test_jsonl_head(jsonl_file: str):
-    j = JSONLinesFileSource(jsonl_file)
+    j = JSONLinesFileSource(jsonl_file, compression="infer")
     out = j.head(1)
     assert isinstance(out, list)
     assert len(out) == 1

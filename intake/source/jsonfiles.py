@@ -22,7 +22,7 @@ class JSONFileSource(DataSource):
         urlpath: str,
         text_mode: bool = True,
         text_encoding: str = "utf8",
-        compression: str = "infer",
+        compression: str = None,
         read: bool = True,
         metadata: dict = None,
         storage_options: dict = None,
@@ -38,9 +38,10 @@ class JSONFileSource(DataSource):
         text_encoding : str
             If text_mode is True, apply this encoding. UTF* is by far the most
             common
-        compression : str
-            decompress the file with the given codec on load. Can
-            be something like "zip", "gzip", "bz2", "xz". Defualt "infer".
+        compression : str or None
+            If given, decompress the file with the given codec on load. Can
+            be something like "zip", "gzip", "bz2", or to try to guess from the
+            filename, 'infer'
         storage_options: dict
             Options to pass to the file reader backend, including text-specific
             encoding arguments, and parameters specific to the remote
@@ -55,11 +56,11 @@ class JSONFileSource(DataSource):
         self._dataframe = None
         self._file = None
         self.compression = compression
-
-        if compression not in VALID_COMPRESSIONS:
-            raise ValueError(
-                f"Compression value {compression} must be one of {VALID_COMPRESSIONS}"
-            )
+        if compression is not None:
+            if compression not in VALID_COMPRESSIONS:
+                raise ValueError(
+                    f"Compression value {compression} must be one of {VALID_COMPRESSIONS}"
+                )
         self.mode = "rt" if text_mode else "rb"
         self.encoding = text_encoding
         self._read = read
@@ -95,7 +96,7 @@ class JSONLinesFileSource(DataSource):
         urlpath: str,
         text_mode: bool = True,
         text_encoding: str = "utf8",
-        compression: str = "infer",
+        compression: str = None,
         read: bool = True,
         metadata: dict = None,
         storage_options: dict = None,
@@ -111,9 +112,10 @@ class JSONLinesFileSource(DataSource):
         text_encoding : str
             If text_mode is True, apply this encoding. UTF* is by far the most
             common
-        compression : str
-            decompress the file with the given codec on load. Can
-            be something like "zip", "gzip", "bz2", "xz". Defualt "infer".
+        compression : str or None
+            If given, decompress the file with the given codec on load. Can
+            be something like "zip", "gzip", "bz2", or to try to guess from the
+            filename, 'infer'.
         storage_options: dict
             Options to pass to the file reader backend, including text-specific
             encoding arguments, and parameters specific to the remote
@@ -128,10 +130,11 @@ class JSONLinesFileSource(DataSource):
         self._dataframe = None
         self._file = None
         self.compression = compression
-        if compression not in VALID_COMPRESSIONS:
-            raise ValueError(
-                f"Compression value {compression} must be one of {VALID_COMPRESSIONS}"
-            )
+        if compression is not None:
+            if compression not in VALID_COMPRESSIONS:
+                raise ValueError(
+                    f"Compression value {compression} must be one of {VALID_COMPRESSIONS}"
+                )
         self.mode = "rt" if text_mode else "rb"
         self.encoding = text_encoding
         self._read = read
