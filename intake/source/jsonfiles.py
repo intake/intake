@@ -56,11 +56,11 @@ class JSONFileSource(DataSource):
         self._dataframe = None
         self._file = None
         self.compression = compression
-
-        if compression not in VALID_COMPRESSIONS:
-            raise ValueError(
-                f"Compression value {compression} must be one of {VALID_COMPRESSIONS}"
-            )
+        if compression is not None:
+            if compression not in VALID_COMPRESSIONS:
+                raise ValueError(
+                    f"Compression value {compression} must be one of {VALID_COMPRESSIONS}"
+                )
         self.mode = "rt" if text_mode else "rb"
         self.encoding = text_encoding
         self._read = read
@@ -130,10 +130,11 @@ class JSONLinesFileSource(DataSource):
         self._dataframe = None
         self._file = None
         self.compression = compression
-        if compression not in VALID_COMPRESSIONS:
-            raise ValueError(
-                f"Compression value {compression} must be one of {VALID_COMPRESSIONS}"
-            )
+        if compression is not None:
+            if compression not in VALID_COMPRESSIONS:
+                raise ValueError(
+                    f"Compression value {compression} must be one of {VALID_COMPRESSIONS}"
+                )
         self.mode = "rt" if text_mode else "rb"
         self.encoding = text_encoding
         self._read = read
