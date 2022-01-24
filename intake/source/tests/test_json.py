@@ -78,7 +78,7 @@ def test_jsonlfile(jsonl_file: str):
 
 def test_jsonfilel_none(jsonl_file: str):
     try:
-        j = JSONFileSource(jsonl_file, compression=None)
+        j = JSONLinesFileSource(jsonl_file, compression=None)
         out = j.read()
         # compression=None should not raise exception for uncompressed files
         assert jsonl_file.endswith(".jsonl")
