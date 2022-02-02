@@ -7,7 +7,6 @@
 
 from contextlib import contextmanager
 import os
-import posixpath
 import requests
 import shutil
 import subprocess

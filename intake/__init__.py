@@ -15,7 +15,7 @@ from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
 
-from .source import register_driver, registry
+from .source import registry
 from .catalog.base import Catalog
 
 imports = {
@@ -29,7 +29,7 @@ imports = {
     "register_driver": "intake.source:register_driver",
     "unregister_driver": "intake.source:unregister_driver",
 }
-openers = {}
+openers = set()
 logger = logging.getLogger('intake')
 
 
@@ -41,7 +41,7 @@ def __getattr__(attr):
     """
     gl = globals()
     if attr in openers:
-        driver = openers[attr].load()
+        driver = registry[attr[5:]]  # "open_..."
         gl[attr] = driver
     else:
         if attr in gl:
@@ -69,21 +69,19 @@ def __dir__(*_, **__):
 
 def make_open_functions():
     """From the current state of ``registry``, create open_* functions"""
-    import entrypoints
+    from .source.discovery import drivers
 
-    for plugin in entrypoints.get_group_all('intake.drivers'):
+    for name in drivers.enabled_plugins():
 
-        register_driver(plugin.name, plugin, True)
-        func_name = 'open_' + plugin.name
+        func_name = 'open_' + name
         if not func_name.isidentifier():
             # primitive name normalization
             func_name = re.sub('[-=~^&|@+]', '_', func_name)
         if func_name.isidentifier():
             # stash name for dir() and later fetch
-            openers[func_name] = plugin
+            openers.add(func_name)
         else:
-            warnings.warn('Invalid Intake plugin name "%s" found.' %
-                          plugin.name)
+            warnings.warn('Invalid Intake plugin name "%s" found.', name)
 
 
 make_open_functions()

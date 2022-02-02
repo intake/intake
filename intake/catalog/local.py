@@ -530,7 +530,8 @@ def register_plugin_module(mod):
         if k:
             if isinstance(k, (list, tuple)):
                 k = k[0]
-            register_driver(k, v)
+            # we clobber by default here
+            register_driver(k, v, clobber=True)
 
 
 def get_dir(path):
@@ -888,5 +889,5 @@ class EntrypointsCatalog(Catalog):
 # Register these early in the import process to support the default catalog
 # which is built at import time. (Without this, 'yaml_file_cat' is looked for
 # in intake.registry before the registry has been populated.)
-register_driver('yaml_file_cat', YAMLFileCatalog)
-register_driver('yaml_files_cat', YAMLFilesCatalog)
+register_driver('yaml_file_cat', YAMLFileCatalog, clobber=True)
+register_driver('yaml_files_cat', YAMLFilesCatalog, clobber=True)

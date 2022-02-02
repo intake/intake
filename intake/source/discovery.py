@@ -5,238 +5,165 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+from collections.abc import MutableMapping
 import pkgutil
 import warnings
 import importlib
 import inspect
-import itertools
 import time
 import logging
 
 import entrypoints
 
-from ..config import save_conf, conf, cfile
+from ..config import conf
 logger = logging.getLogger('intake')
 
 
-def autodiscover(path=None, plugin_prefix='intake_', do_package_scan=False):
-    r"""Discover intake drivers.
-
-    In order of decreasing precedence:
-
-    - Respect the 'drivers' section of the intake configuration file.
-    - Find 'intake.drivers' entrypoints provided by any Python packages in the
-      environment.
-    - Search all packages in the environment for names that begin with
-      ``intake\_``. Import them and scan them for subclasses of
-      ``intake.source.base.DataSourceBase``. This was previously the *only* mechanism
-      for auto-discoverying intake drivers, and it is maintained for backward
-      compatibility.
-
-    Parameters
-    ----------
-    path : str or None
-        Default is ``sys.path``.
-    plugin_prefix : str
-        DEPRECATED. Default is 'intake\_'.
-    do_package_scan : boolean
-        Whether to look for intake source classes in packages named
-        "intake_*". This has been superceded by entrypoints declarations.
-
-    Returns
-    -------
-    drivers : dict
-        Name mapped to driver class.
+class DriverSouces:
     """
-    # Discover drivers via package scan.
-    if do_package_scan:
-        package_scan_results = _package_scan(path, plugin_prefix)
-        if package_scan_results:
-            warnings.warn(
-                "The option `do_package_scan` may be removed in a future release.",
-                PendingDeprecationWarning)
-    else:
-        package_scan_results = {}
-
-    # Discover drivers via entrypoints.
-    group = entrypoints.get_group_named('intake.drivers', path=path)
-    group_all = entrypoints.get_group_all('intake.drivers', path=path)
-    if len(group_all) != len(group):
-        # There are some name collisions. Let's go digging for them.
-        for name, matches in itertools.groupby(group_all, lambda ep: ep.name):
-            matches = list(matches)
-            if len(matches) != 1:
-                winner = group[name]
-                logger.debug(
-                    "There are %d 'intake.driver' entrypoints for the name "
-                    "%r. They are %r. The match %r has won the race.",
-                    len(matches),
-                    name,
-                    matches,
-                    winner)
-
-    for name, entrypoint in group.items():
-        logger.debug("Discovered entrypoint '%s = %s.%s'",
-                     name,
-                     entrypoint.module_name,
-                     entrypoint.object_name)
-        if name in package_scan_results:
-            cls = package_scan_results[name]
-            del package_scan_results[name]
-            logger.debug("Entrypoint shadowed package_scan result '%s = %s.%s'",
-                         name, cls.__module__, cls.__name__)
-
-    # Discover drivers via config.
-    drivers_conf = conf.get('drivers', {})
-    logger.debug("Using configuration file at %s", cfile())
-    for name, dotted_object_name in drivers_conf.items():
-        if not dotted_object_name:
-            logger.debug('Name %s is banned in config file', name)
-            if name in group:
-                entrypoint = group[name]
-                del group[name]
-                logger.debug("Disabled entrypoint '%s = %s.%s'",
-                             entrypoint.name,
-                             entrypoint.module_name,
-                             entrypoint.object_name)
-            if name in package_scan_results:
-                cls = package_scan_results[name]
-                del package_scan_results[name]
-                logger.debug("Disabled package_scan result '%s = %s.%s'",
-                             name, cls.__module__, cls.__name__)
-            continue
-        module_name, object_name = dotted_object_name.rsplit('.', 1)
-        entrypoint = entrypoints.EntryPoint(name, module_name, object_name)
-        logger.debug("Discovered config-specified '%s = %s.%s'",
-                     entrypoint.name,
-                     entrypoint.module_name,
-                     entrypoint.object_name)
-        if name in group:
-            shadowed = group[name]
-            logger.debug("Config shadowed entrypoint '%s = %s.%s'",
-                         shadowed.name,
-                         shadowed.module_name,
-                         shadowed.object_name)
-        if name in package_scan_results:
-            cls = package_scan_results[name]
-            del package_scan_results[name]
-            logger.debug("Config shadowed package scan result '%s = %s.%s'",
-                         name, cls.__module__, cls.__name__)
-        group[name] = entrypoint
-
-    # Discovery is complete.
-
-    if package_scan_results:
-        warnings.warn(
-            f"The drivers {list(package_scan_results)} do not specify entry_"
-            f"points and were only discovered via a package scan. This may "
-            f"break in a future release of intake. The packages should be "
-            f"updated.",
-            FutureWarning)
-
-    # Load entrypoints. Any that were shadowed or banned have already been
-    # removed above.
-    drivers = {}
-    for entrypoint in group.values():
-        try:
-            drivers[entrypoint.name] = _load_entrypoint(entrypoint)
-        except ConfigurationError:
-            logger.debug(
-                "Error while loading entrypoint %s",
-                entrypoint.name)
-            continue
-        logger.debug("Loaded entrypoint '%s = %s.%s'",
-                     entrypoint.name,
-                     entrypoint.module_name,
-                     entrypoint.object_name)
-
-    # Now include any package scan results. Any that were shadowed or
-    # banned have already been removed above.
-    for name, cls in package_scan_results.items():
-        drivers[name] = cls
-        logger.debug("Loaded package scan result '%s = %s.%s'",
-                     name,
-                     cls.__module__,
-                     cls.__name__)
-
-    return drivers
-
-
-def autodiscover_all(path=None, plugin_prefix='intake_', do_package_scan=True):
-    """Discover intake drivers including those registered for the same name.
-
-    Parameters
-    ----------
-    path : str or None
-        Default is ``sys.path``.
-    plugin_prefix : str
-        DEPRECATED. Default is 'intake_'.
-    do_package_scan : boolean
-        Default is True. In the future, the default will be changed to False,
-        and the option may eventually be removed entirely.
-
-    Returns
-    -------
-    drivers : list
-        Each entry is a tuple: ``(name, driver_class)``.
+    Handles the various ways in which drivers can be known to Intake
     """
-    # Discover drivers via package scan.
-    if do_package_scan:
-        warnings.warn(
-            "The option `do_package_scan` may be removed in a future release.",
-            PendingDeprecationWarning)
-        package_scan_results = _package_scan(path, plugin_prefix)
-    else:
-        package_scan_results = {}
 
-    # Discover drivers via entrypoints.
-    group_all = entrypoints.get_group_all('intake.drivers', path=path)
-    for entrypoint in group_all:
-        logger.debug("Discovered entrypoint '%s = %s.%s'",
-                     entrypoint.name,
-                     entrypoint.module_name,
-                     entrypoint.object_name)
+    def __init__(self, config=None, do_scan=None):
+        """
 
-    # Discover drivers via config.
-    drivers_conf = conf.get('drivers', {})
-    logger.debug("Using configuration file at %s", cfile())
-    for name, dotted_object_name in drivers_conf.items():
-        if not dotted_object_name:
-            continue
-        module_name, object_name = dotted_object_name.rsplit('.', 1)
-        entrypoint = entrypoints.EntryPoint(name, module_name, object_name)
-        logger.debug("Discovered config-specified '%s = %s.%s'",
-                     entrypoint.name,
-                     entrypoint.module_name,
-                     entrypoint.object_name)
-        group_all.append(entrypoint)
+        Parameters
+        ----------
+        config: intake.config.Config oinstance, optional
+            If not given, will use ``intake.config.conf`` singleton
+        do_scan: bool or None
+            Whether to scan packages with names ``intake_*`` for valid drivers.
+            This is for backward compatibility only. If not given, value comes
+            from the config key "package_scan", default False.
+        """
+        self.conf = config or conf
+        self.do_scan = do_scan
+        self._scanned = None
+        self._entrypoints = None
+        self.registered = {}
 
-    # Load entrypoints. Any that were shadowed or banned have already been
-    # removed above.
-    drivers = []
-    for entrypoint in group_all:
-        try:
-            drivers.append((entrypoint.name, _load_entrypoint(entrypoint)))
-        except ConfigurationError:
-            logger.debug(
-                "Error while loading entrypoint %s",
-                entrypoint.name)
-            continue
-        logger.debug("Loaded entrypoint '%s = %s.%s'",
-                     entrypoint.name,
-                     entrypoint.module_name,
-                     entrypoint.object_name)
+    @property
+    def package_scan(self):
+        return self.conf.get("package_scan", False) if self.do_scan is None else self.do_scan
 
-    # Now include any package scan results. Any that were shadowed or
-    # banned have already been removed above.
-    for name, cls in package_scan_results.items():
-        drivers.append((name, cls))
-        logger.debug("Loaded package scan result '%s = %s.%s'",
-                     name,
-                     cls.__module__,
-                     cls.__name__)
+    @package_scan.setter
+    def package_scan(self, val):
+        self.conf["package_scan"] = val
 
-    return drivers
+    def from_entrypoints(self):
+        if self._entrypoints is None:
+            # must cache this, since lookup if fairly slow and we do this a lot
+            self._entrypoints = list(entrypoints.get_group_all("intake.drivers"))
+        return self._entrypoints
+
+    def from_conf(self):
+        return [
+            entrypoints.EntryPoint(
+                name=k,
+                module_name=v.rsplit(":", 1)[0] if ":" in v else v.rsplit(".", 1)[0],
+                object_name=v.rsplit(":", 1)[1] if ":" in v else v.rsplit(".", 1)[1]
+            )
+            for k, v in self.conf.get("drivers", {}).items() if v
+        ]
+
+    def disabled(self):
+        return [k for k, v in self.conf.get("drivers", {}).items() if v is False]
+
+    def __setitem__(self, key, value):
+        super(DriverSouces, self).__setitem__(key, value)
+        self.save()
+
+    def __delitem__(self, key):
+        super(DriverSouces, self).__delitem__(key)
+        self.save()
+
+    @property
+    def scanned(self):
+        # cache since imports should not change during session
+        if self._scanned is None:
+            # these are already classes
+            self._scanned = _package_scan()
+        return self._scanned
+
+    def enabled_plugins(self):
+        # priority order (decreasing): runtime, config, entrypoints, package scan
+        out = {}
+        if self.package_scan:
+            out.update(self.scanned)
+
+        for ep in self.from_entrypoints() + self.from_conf():
+            out[ep.name] = ep
+
+        out.update(self.registered)
+        out = {k: v for k, v in out.items() if k not in self.disabled()}
+        return out
+
+    def register_driver(self, name, value, clobber=False, do_enable=False):
+        """Add runtime driver definition
+
+        Parameters
+        ----------
+        name: str
+            Name of the driver
+        value: str, entrypoint or class
+            Pointer to the implementation
+        clobber: bool
+            If True, perform the operation even if the driver exists
+        do_enable: bool
+            If True, unset the disabled flag for this driver
+        """
+        if not clobber and name in self.enabled_plugins():
+            raise ValueError(f"Driver {name} already enabled")
+        if name in self.disabled():
+            if do_enable:
+                self.enable(name)
+            else:
+                logger.warning(f"Adding driver {name}, but it is disabled")
+
+        self.registered[name] = value
+
+    def unregister_driver(self, name):
+        """Remove runtime registered driver"""
+        self.registered.pop(name)
+
+    def enable(self, name, driver=None):
+        """
+        Explicitly assign a driver to a name, or remove ban
+
+        Updates the associated config, which will be persisted
+
+        Parameters
+        ----------
+        name : string
+            As in ``'zarr'``
+        driver : string
+            Dotted object name, as in ``'intake_xarray.xzarr.ZarrSource'``.
+            If None, simply remove driver disable flag, if it is found
+        """
+        config = self.conf
+        if 'drivers' not in config:
+            config['drivers'] = {}
+        if driver:
+            config['drivers'][name] = driver
+        elif config['drivers'].get(name) is False:
+            del config['drivers'][name]
+        config.save()
+
+    def disable(self, name):
+        """Disable a driver by name.
+
+        Updates the associated config, which will be persisted
+
+        Parameters
+        ----------
+        name : string
+            As in ``'zarr'``
+        """
+        config = self.conf
+        if 'drivers' not in config:
+            config['drivers'] = {}
+        config['drivers'][name] = False
+        config.save()
 
 
 def _load_entrypoint(entrypoint):
@@ -264,6 +191,7 @@ def _package_scan(path=None, plugin_prefix='intake_'):
     of intake.source.base.Plugin.  Any subclasses found will be instantiated
     and returned in a dictionary, with the plugin's name attribute as the key.
     """
+    warnings.warn("Package scanning may be removed", category=PendingDeprecationWarning)
 
     plugins = {}
 
@@ -286,6 +214,9 @@ def _package_scan(path=None, plugin_prefix='intake_'):
                     plugins[plugin_name] = plugin
             logger.debug("Import %s took: %7.2f s" % (name, time.time() - t))
     return plugins
+
+
+drivers = DriverSouces()
 
 
 def load_plugins_from_module(module_name):
@@ -328,38 +259,3 @@ class ConfigurationError(Exception):
     pass
 
 
-def enable(name, driver):
-    """
-    Update config file drivers section to explicitly assign a driver to a name.
-
-    Parameters
-    ----------
-    name : string
-        As in ``'zarr'``
-    driver : string
-        Dotted object name, as in ``'intake_xarray.xzarr.ZarrSource'``
-    """
-    if 'drivers' not in conf:
-        conf['drivers'] = {}
-    conf['drivers'][name] = driver
-    save_conf()
-
-
-def disable(name):
-    """Update config file drivers section to disable a name.
-
-    Parameters
-    ----------
-    name : string
-        As in ``'zarr'``
-    """
-    if 'drivers' not in conf:
-        conf['drivers'] = {}
-    conf['drivers'][name] = False
-    save_conf()
-
-
-def register_all():
-    from intake.source import register_driver
-    for name, driver in autodiscover().items():
-        register_driver(name, driver)
