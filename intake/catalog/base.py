@@ -282,7 +282,7 @@ class Catalog(DataSource):
         """
         import yaml
         output = {"metadata": self.metadata, "sources": {},
-                  "name": self.name}
+                  "name": self.name, "description": self.description}
         for key, entry in self._entries.items():
             kw = entry._captured_init_kwargs.copy()
             kw.pop('catalog', None)
