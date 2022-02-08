@@ -37,10 +37,13 @@ def __getattr__(attr):
     """Lazy attribute propagator
 
     Defers inputs of functions until they are needed, according to the
-    contents of the ``imports`` and ``openers`` dicts
+    contents of the ``imports`` (submodules and classes) and ``openers``
+    (functions which instantiate data sources directly)
+    dicts. All keys in ``openers``
+    must start with "open_", else they will be ignored.
     """
     gl = globals()
-    if attr in openers:
+    if attr in openers and attr[:5] == "open_":
         driver = registry[attr[5:]]  # "open_..."
         gl[attr] = driver
     else:
@@ -81,7 +84,7 @@ def make_open_functions():
             # stash name for dir() and later fetch
             openers.add(func_name)
         else:
-            warnings.warn('Invalid Intake plugin name "%s" found.', name)
+            warnings.warn('Invalid Intake plugin name "%s" found.', name, stacklevel=2)
 
 
 make_open_functions()
