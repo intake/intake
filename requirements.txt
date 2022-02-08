@@ -4,3 +4,4 @@ entrypoints
 pyyaml
 fsspec >=2021.7.0
 jinja2
+msgpack

@@ -45,7 +45,7 @@ def tmp_path_catalog():
 
 
 def test_autoregister_open():
-    assert intake.open_csv
+    assert hasattr(intake, "open_csv")
 
 
 def test_default_catalogs():
