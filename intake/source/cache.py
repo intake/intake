@@ -18,7 +18,7 @@ import shutil
 import warnings
 
 from intake.config import conf
-from intake.utils import make_path_posix
+from intake.utils import is_notebook, make_path_posix
 
 logger = logging.getLogger('intake')
 
@@ -155,7 +155,7 @@ class BaseCache(object):
             'cache_download_progress', True)
 
         cache_paths = self._from_metadata(urlpath)
-        if cache_paths is None:
+        if cache_paths is None or any(not os.path.exists(c) for c in cache_paths):
             files_in, files_out = self._make_files(urlpath)
             self._load(files_in, files_out, urlpath)
         cache_paths = self._from_metadata(urlpath)
@@ -267,6 +267,16 @@ def _download(file_in, file_out, blocksize, output=False):
                 logger.warn("Cache progress bar requires tqdm to be installed:"
                             " conda/pip install tqdm")
                 output = False
+
+        if is_notebook():
+            try:
+                import ipywidgets
+            except ImportError:
+                logger.warn(
+                    "Cache progress bar in a notebook requires ipywidgets to be installed:"
+                    " conda/pip install ipywidgets")
+                output = False
+
         try:
             file_size = file_in.fs.size(file_in.path)
             pbar_disabled = not file_size
