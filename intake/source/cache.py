@@ -155,7 +155,9 @@ class BaseCache(object):
             'cache_download_progress', True)
 
         cache_paths = self._from_metadata(urlpath)
-        if cache_paths is None:
+        if cache_paths is not None:
+            all_file_exists = not any(not os.path.exists(c) for c in cache_paths)
+        if cache_paths is None or not all_file_exists:
             files_in, files_out = self._make_files(urlpath)
             self._load(files_in, files_out, urlpath)
         cache_paths = self._from_metadata(urlpath)
