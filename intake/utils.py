@@ -13,6 +13,7 @@ from contextlib import contextmanager
 import warnings
 import yaml
 import sys
+import os
 
 
 def make_path_posix(path):
@@ -276,3 +277,25 @@ class ModuleImporter:
             print("Referencing module: ", self.destination)
         sys.modules[self.destination] = self.module
         return getattr(self.module, item)
+
+
+def is_notebook() -> bool:
+    """ Check if code is running in a notebook
+
+    Copied from tqdm.autonotebook
+
+    Returns
+    -------
+    bool
+        True if inside a notebook. False if not inside a notebook.
+    """
+
+    try:
+        get_ipython = sys.modules['IPython'].get_ipython
+        if 'IPKernelApp' not in get_ipython().config:  # pragma: no cover
+            raise ImportError("console")
+        if 'VSCODE_PID' in os.environ:  # pragma: no cover
+            raise ImportError("vscode")
+        return True
+    except Exception:
+        return False
