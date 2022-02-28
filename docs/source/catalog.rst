@@ -381,6 +381,28 @@ For cases where the catalog is not defined in a YAML spec, the argument ``user_p
 to the constructor takes the same form as ``parameters`` above: a dict of user parameters,
 either as ``UserParameter`` instances or as a dictionary spec for each one.
 
+Templating parameters
+''''''''''''''''''
+
+Template functions can also be used in parameters (see `Templating`_, above), but you can use the available functions directly without the extra `{{...}}`.
+
+For example, this catalog entry uses the ``env("USER")`` functionality as described to set a default based on the user's home directory.
+
+.. code-block:: yaml
+
+    sources:
+      variabledefault:
+        description: "This entry leads to an example csv file in the user's home directory by default, but the user can pass root="somepath" to override that."
+        driver: csv
+        args:
+          path: "{{root}}/example.csv"
+        parameters:
+          root:
+            description: "root path"
+            type: str
+            default: "env(HOME)"
+
+
 Driver Selection
 ----------------
 
