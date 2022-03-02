@@ -386,7 +386,7 @@ Templating parameters
 
 Template functions can also be used in parameters (see `Templating`_, above), but you can use the available functions directly without the extra `{{...}}`.
 
-For example, this catalog entry uses the ``env("USER")`` functionality as described to set a default based on the user's home directory.
+For example, this catalog entry uses the ``env("HOME")`` functionality as described to set a default based on the user's home directory.
 
 .. code-block:: yaml
 
