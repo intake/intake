@@ -24,7 +24,7 @@ def server():
         timeout -= 0.1
         assert timeout > 0, "timeout waiting for Tiled server"
         time.sleep(0.1)
-    yield url
+    yield url + "/api"
     P.terminate()
     P.wait()
 
@@ -32,5 +32,5 @@ def server():
 def test_simple(server):
     cat = intake.open_tiled_cat(server)
     out = cat.tiny_image.read()
-    assert out.shape == (10, 10)
+    assert out.shape
     assert out.all()
