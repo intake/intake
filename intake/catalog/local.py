@@ -556,19 +556,24 @@ class YAMLFileCatalog(Catalog):
     partition_access = None
     name = 'yaml_file_cat'
 
-    def __init__(self, path, autoreload=True, **kwargs):
+    def __init__(self, path=None, text=None, autoreload=True, **kwargs):
         """
         Parameters
         ----------
         path: str
             Location of the file to parse (can be remote)
+        text: str
+            YAML contents of catalog, takes precedence over path
         reload : bool
             Whether to watch the source file for changes; make False if you want
             an editable Catalog
         """
         self.path = path
-        self.text = None
-        self.autoreload = autoreload  # set this to False if don't want reloads
+        if text:
+            self.parse(text)
+            self.autoreload = False
+        else:
+            self.autoreload = autoreload  # set this to False if don't want reloads
         self.filesystem = kwargs.pop('fs', None)
         self.access = "name" not in kwargs
         super(YAMLFileCatalog, self).__init__(**kwargs)
@@ -703,7 +708,9 @@ class YAMLFileCatalog(Catalog):
             self._entries[entry.name] = entry
             entry._filesystem = self.filesystem
 
-        self.metadata = cfg.get('metadata', {})
+        meta = self.metadata.copy()
+        meta.update(cfg.get('metadata', {}))
+        self.metadata = meta
         self.name = self.name or cfg.get('name') or self.name_from_path
         self.description = self.description or cfg.get('description')
 

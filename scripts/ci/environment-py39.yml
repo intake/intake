@@ -13,8 +13,6 @@ dependencies:
   - pyyaml
   - requests
   - msgpack-numpy
-  - pytest-cov
-  - coveralls
   - pytest
   - fsspec
   - intake-parquet
@@ -24,20 +22,18 @@ dependencies:
   - hvplot
   - bokeh
   - dask
-  - h5netcdf
   - intake
-  - netcdf4
   - pip
-  - pydap
   - pytest
   - rasterio
   - s3fs
-  - scikit-image
   - xarray
   - zarr
   - moto
   - httpx
   - typer
+  - pydantic >=1.8
+  - sqlalchemy
   - pip:
        - rangehttpserver
        - tiled[all]
