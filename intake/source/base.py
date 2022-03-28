@@ -136,8 +136,6 @@ class HoloviewsMixin:
 class HVplotCapture(hvPlot):
 
     def __call__(self, *args, plotname=None, **kwargs):
-        import pdb
-        pdb.set_trace()
         if plotname:
             self._data.metadata["plots"][plotname] = kwargs
         return super().__call__(*args, **kwargs)
