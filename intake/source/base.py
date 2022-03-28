@@ -84,6 +84,12 @@ class CacheMixin:
         return [c.load(urlpath) for c in self.cache]
 
 
+try:
+    from hvplot import hvPlot
+except ImportError:
+    hvPlot = object
+
+
 class HoloviewsMixin:
     """Adds plotting and GUI to DataSource"""
 
@@ -105,9 +111,7 @@ class HoloviewsMixin:
         To display in a notebook, be sure to run ``intake.output_notebook()``
         first.
         """
-        try:
-            from hvplot import hvPlot
-        except ImportError:
+        if hvPlot is object:
             raise ImportError("The intake plotting API requires hvplot."
                               "hvplot may be installed with:\n\n"
                               "`conda install -c pyviz hvplot` or "
@@ -119,7 +123,7 @@ class HoloviewsMixin:
                 attrs['range'] = tuple(attrs['range'])
         metadata['fields'] = fields
         plots = self.metadata.get('plots', {})
-        return hvPlot(self, custom_plots=plots, **metadata)
+        return HVplotCapture(self, custom_plots=plots, **metadata)
 
     @property
     def hvplot(self):
@@ -127,6 +131,16 @@ class HoloviewsMixin:
         Returns a hvPlot object to provide a high-level plotting API.
         """
         return self.plot
+
+
+class HVplotCapture(hvPlot):
+
+    def __call__(self, *args, plotname=None, **kwargs):
+        import pdb
+        pdb.set_trace()
+        if plotname:
+            self._data.metadata["plots"][plotname] = kwargs
+        return super().__call__(*args, **kwargs)
 
 
 class PersistMixin:

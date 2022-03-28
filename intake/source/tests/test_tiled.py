@@ -17,7 +17,7 @@ def server():
     while True:
         try:
             r = httpx.get(url)
-            if r.status_code -- 200:
+            if r.status_code == 200:
                 break
         except:
             pass
