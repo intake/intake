@@ -13,7 +13,7 @@ def server():
     cmd = shlex.split("tiled serve pyobject --public tiled.examples.generated:tree")
     P = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     url = "http://localhost:8000"
-    timeout = 10
+    timeout = 20
     while True:
         try:
             r = httpx.get(url)
