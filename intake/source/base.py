@@ -84,6 +84,12 @@ class CacheMixin:
         return [c.load(urlpath) for c in self.cache]
 
 
+try:
+    from hvplot import hvPlot
+except ImportError:
+    hvPlot = object
+
+
 class HoloviewsMixin:
     """Adds plotting and GUI to DataSource"""
 
@@ -100,14 +106,44 @@ class HoloviewsMixin:
     @property
     def plot(self):
         """
-        Returns a hvPlot object to provide a high-level plotting API.
+        Plot API accessor
+
+        This property exposes both predefined plots (described in the source metadata)
+        and general-purpose plotting via the hvPlot library. Supported containers
+        are: array, dataframe and xarray,
 
         To display in a notebook, be sure to run ``intake.output_notebook()``
         first.
+
+        The set of plots defined for this source can be found by
+
+        >>> source.plots
+        ["plot1", "plot2"]
+
+        and to display one of these:
+
+        >>> source.plot.plot1()
+        <holoviews/panel output>
+
+        To create new plot types and supply custom configuration, use one of the
+        methods of ``hvplot.hvPlot``:
+
+        >>> source.plot.line(x="fieldX", y="fieldY")
+
+        The full set of arguments that can be passed, and the types of plot they refer to,
+        can be found in the doc and attributes of ``hvplot.HoloViewsConverter``.
+
+        Once you have found a suitable plot, you may wish to update the plots definitions
+        of the source. Simply add the ``plotname=`` optional argument (this will overwrite
+        any existing plot of that name). The source's YAML representation will include the
+        new plot, and it could be saved into a catalog with this new definition.
+
+        >>> source.plot.line(plotname="new", x="fieldX", y="fieldY");
+        >>> source.plots
+        ["plot1", "plot2", "new"]
+
         """
-        try:
-            from hvplot import hvPlot
-        except ImportError:
+        if hvPlot is object:
             raise ImportError("The intake plotting API requires hvplot."
                               "hvplot may be installed with:\n\n"
                               "`conda install -c pyviz hvplot` or "
@@ -119,14 +155,27 @@ class HoloviewsMixin:
                 attrs['range'] = tuple(attrs['range'])
         metadata['fields'] = fields
         plots = self.metadata.get('plots', {})
-        return hvPlot(self, custom_plots=plots, **metadata)
+        return HVplotCapture(self, custom_plots=plots, **metadata)
 
     @property
     def hvplot(self):
         """
-        Returns a hvPlot object to provide a high-level plotting API.
+        alias for ``DataSource.plot``
         """
         return self.plot
+
+
+class HVplotCapture(hvPlot):
+    """Calls hvPlot, and allows storing the plot spec in the source"""
+
+    def __call__(self, *args, plotname=None, **kwargs):
+        """
+        If plotname is not None, this plot spec will be stored in the original
+        source's metadata's "plots" section
+        """
+        if plotname:
+            self._data.metadata["plots"][plotname] = kwargs
+        return super().__call__(*args, **kwargs)
 
 
 class PersistMixin:
