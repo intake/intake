@@ -11,7 +11,7 @@ import httpx  # required by tiled, so will be here
 @pytest.fixture()
 def server():
     cmd = shlex.split("tiled serve pyobject --public tiled.examples.generated:tree")
-    P = subprocess.Popen(cmd)
+    P = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     url = "http://localhost:8000"
     timeout = 10
     while True:
@@ -22,7 +22,10 @@ def server():
         except:
             pass
         timeout -= 0.1
-        assert timeout > 0, "timeout waiting for Tiled server"
+        if timeout < 0:
+            P.terminate()
+            out = P.communicate()
+            raise RuntimeError("timeout waiting for Tiled server\n%s", out)
         time.sleep(0.1)
     yield url + "/api"
     P.terminate()
