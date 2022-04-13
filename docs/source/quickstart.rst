@@ -110,7 +110,7 @@ working with Dask collections (Bag, Array or Data-frames).
 Opening a Catalog
 -----------------
 
-A :term:`Catalog` is a collection of data sources, with the type and arguments prescribed for each, and
+A :term:`Catalog` is an inventory of data sources, with the type and arguments prescribed for each, and
 arbitrary metadata about each source.
 In the simplest case, a catalog can be described by a file in YAML format, a
 ":term:`Catalog file`". In real usage, catalogues can be defined in a number of ways, such as remote

@@ -24,7 +24,7 @@ class Catalog(DataSource):
     directory of files). This can be expanded to include a
     collection of subcatalogs, which are then managed as a single unit.
 
-    A catalog is created with a single URI or a collection of URIs. A URI can
+    A catalog is created with a single URI or a group of URIs. A URI can
     either be a URL or a file path.
 
     Each catalog in the hierarchy is responsible for caching the most recent

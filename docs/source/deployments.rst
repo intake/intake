@@ -64,14 +64,14 @@ across multiple (of the order ~300,000) netCDF files. Finding, investigating, lo
 such as `xarray` can be a daunting task due to the large number of files a user may be interested in.
 ``Intake-esm`` addresses this issue in three steps:
 
-- `Datasets Collection Curation`_ in form of YAML files. These YAML files provide information about data locations,
+- `Dataset Catalog Curation`_ in form of YAML files. These YAML files provide information about data locations,
   access pattern,  directory structure, etc. ``intake-esm`` uses these YAML files in conjunction with file name templates
   to construct a local database. Each row in this database consists of a set of metadata such as ``experiment``,
   ``modeling realm``, ``frequency`` corresponding to data contained in one netCDF file.
 
 .. code-block:: python
 
-   col = intake.open_esm_metadatastore(collection_input_definition="GLADE-CMIP5")
+   cat = intake.open_esm_metadatastore(catalog_input_definition="GLADE-CMIP5")
 
 
 - Search and Discovery: once the database is built, ``intake-esm`` can be used for searching and discovering
@@ -80,7 +80,7 @@ such as `xarray` can be a daunting task due to the large number of files a user 
 
 .. code-block:: python
 
-   cat = col.search(variable=['hfls'], frequency='mon', modeling_realm='atmos', institute=['CCCma', 'CNRM-CERFACS'])
+   sub_cat = cat.search(variable=['hfls'], frequency='mon', modeling_realm='atmos', institute=['CCCma', 'CNRM-CERFACS'])
 
 - Access: when the user is satisfied with the results of their query, they can ask ``intake-esm``
   to load the actual netCDF files into xarray datasets:
@@ -90,7 +90,7 @@ such as `xarray` can be a daunting task due to the large number of files a user 
    dsets = cat.to_xarray(decode_times=True, chunks={'time': 50})
 
 .. _intake-esm: https://github.com/NCAR/intake-esm
-.. _Datasets Collection Curation: https://github.com/NCAR/intake-esm-datastore
+.. _Datasets Catalog Curation: https://github.com/NCAR/intake-esm-datastore
 .. _Coupled Model Intercomparison Project (CMIP): https://www.wcrp-climate.org/wgcm-cmip
 .. _Community Earth System Model (CESM) Large Ensemble Project: http://www.cesm.ucar.edu/projects/community-projects/LENS/
 
@@ -98,7 +98,7 @@ Brookhaven Archive
 ~~~~~~~~~~~~~~~~~~
 
 The `Bluesky`_ project uses Intake to dynamically query a MongoDB instance, which
-holds the details of experimental and simulation data collections, to return a
+holds the details of experimental and simulation data catalogs, to return a
 custom Catalog for every query. Data-sets can then be loaded into python, or the original
 raw data can be accessed ...
 
