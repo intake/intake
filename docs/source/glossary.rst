@@ -14,7 +14,7 @@ Glossary
         format of the files is unchanged in this case, but may be decompressed.
 
     Catalog
-        A collection of entries, each of which corresponds to a specific :term:`Data-set`. Within these docs, a catalog is
+        An inventory of entries, each of which corresponds to a specific :term:`Data-set`. Within these docs, a catalog is
         most commonly defined in a :term:`YAML` file, for simplicity, but there are other possibilities, such as connecting to an Intake
         server or another third-party data service, like a SQL database. Thus, catalogs form a hierarchy: any
         catalog can contain other, nested catalogs.
@@ -41,7 +41,7 @@ Glossary
         Pandas data-frame.
 
     Data-set
-        A specific collection of data. The type of data (tabular, multi-dimensional or something else) and the format
+        A specific assemblage of data. The type of data (tabular, multi-dimensional or something else) and the format
         (file type, data service type) are all attributes of the data-set. In addition, in the context of Intake,
         data-sets are usually entries within a :term:`Catalog` with additional descriptive text and metadata and
         a specification of *how* to load the data.

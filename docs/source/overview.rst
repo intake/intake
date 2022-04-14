@@ -69,7 +69,7 @@ Intake is built out of four core concepts:
 * Data Source: An object that represents a reference to a data source.  Data source instances have methods for loading the
   data into standard containers, like Pandas DataFrames, but do not load any data until specifically requested.
 
-* Catalog: A collection of catalog entries, each of which defines a Data Source. Catalog objects can be created from
+* Catalog: An inventory of catalog entries, each of which defines a Data Source. Catalog objects can be created from
   local YAML definitions, by connecting
   to remote servers, or by some driver that knows how to query an external data service.
 
