@@ -224,7 +224,7 @@ class GenericTransform(DerivedSource):
 class DataFrameTransform(GenericTransform):
     """Transform where the input and output are both Dask-compatible dataframes
 
-    This derives from GenericTransform, and you mus supply ``transform`` and
+    This derives from GenericTransform, and you must supply ``transform`` and
     any ``transform_kwargs``.
     """
 
