@@ -127,7 +127,7 @@ less obvious where to put these things.
 Barebone Example
 ~~~~~~~~~~~~~~~~
 
-The previous two examples both did dateframe to dataframe transforms. However, totally
+The previous two examples both did dataframe to dataframe transforms. However, totally
 arbitrary computations are possible. Consider the following:
 
 .. code-block:: yaml
@@ -149,7 +149,7 @@ will not be used directly often.
 Execution engine
 ````````````````
 
-None of the above example specified explicitly where the compute implied by the
+None of the above examples specified explicitly where the compute implied by the
 transformation will take place. However, most Intake drivers support in-memory containers
 and Dask; remembering that the input dataset here is a dataframe. However, the behaviour
 is defined in the driver class itself - so it would be fine to write a driver in which
