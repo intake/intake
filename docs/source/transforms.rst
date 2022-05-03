@@ -127,7 +127,7 @@ less obvious where to put these things.
 Barebone Example
 ~~~~~~~~~~~~~~~~
 
-The previous two examples both did dateframe to dataframe transforms. However, totally
+The previous two examples both did dataframe to dataframe transforms. However, totally
 arbitrary computations are possible. Consider the following:
 
 .. code-block:: yaml
