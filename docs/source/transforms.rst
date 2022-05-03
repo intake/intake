@@ -149,7 +149,7 @@ will not be used directly often.
 Execution engine
 ````````````````
 
-None of the above example specified explicitly where the compute implied by the
+None of the above examples specified explicitly where the compute implied by the
 transformation will take place. However, most Intake drivers support in-memory containers
 and Dask; remembering that the input dataset here is a dataframe. However, the behaviour
 is defined in the driver class itself - so it would be fine to write a driver in which
