@@ -19,9 +19,10 @@ class AliasSource(DataSource):
     updated from the target; initially, the AliasSource container is not
     any standard.
     """
-    container = 'other'
+
+    container = "other"
     version = 1
-    name = 'alias'
+    name = "alias"
 
     def __init__(self, target, mapping=None, metadata=None, **kwargs):
         """
@@ -46,10 +47,11 @@ class AliasSource(DataSource):
 
     def _get_source(self):
         if self.cat is None:
-            raise ValueError('AliasSource cannot be used outside a catalog')
+            raise ValueError("AliasSource cannot be used outside a catalog")
         if self.source is None:
             self.source = self.cat[self.mapping[self.target]](
-                metadata=self.metadata, **self.kwargs)
+                metadata=self.metadata, **self.kwargs
+            )
             self.metadata = self.source.metadata.copy()
             self.container = self.source.container
             self.partition_access = self.source.partition_access
@@ -124,13 +126,20 @@ class DerivedSource(DataSource):
     """
 
     input_container = "other"  # no constraint
-    container = 'other'  # to be filled in per instance at access time
+    container = "other"  # to be filled in per instance at access time
     required_params = []  # list of kwargs that must be present
     optional_params = {}  # optional kwargs with defaults
 
-    def __init__(self, targets, target_chooser=first, target_kwargs=None,
-                 cat_kwargs=None,
-                 container=None, metadata=None, **kwargs):
+    def __init__(
+        self,
+        targets,
+        target_chooser=first,
+        target_kwargs=None,
+        cat_kwargs=None,
+        container=None,
+        metadata=None,
+        **kwargs
+    ):
         """
 
         Parameters
@@ -150,8 +159,9 @@ class DerivedSource(DataSource):
         subject to change]
         """
         self.targets = targets
-        self._chooser = (target_chooser if callable(target_chooser)
-                         else import_name(target_chooser))
+        self._chooser = (
+            target_chooser if callable(target_chooser) else import_name(target_chooser)
+        )
         self._kwargs = target_kwargs or {}
         self._source = None
         self._params = kwargs
@@ -169,13 +179,14 @@ class DerivedSource(DataSource):
                 self._params[par] = val
 
     def _pick(self):
-        """ Pick the source from the given targets """
-        self._source = self._chooser(self.targets, self.cat, self._kwargs,
-                                     self._cat_kwargs)
+        """Pick the source from the given targets"""
+        self._source = self._chooser(
+            self.targets, self.cat, self._kwargs, self._cat_kwargs
+        )
         if self.input_container != "other":
             assert self._source.container == self.input_container
 
-        self.metadata['target'] = self._source.metadata
+        self.metadata["target"] = self._source.metadata
         if self.container is None:
             self.container = self._source.container
 
@@ -201,8 +212,7 @@ class GenericTransform(DerivedSource):
     def _validate_params(self):
         super()._validate_params()
         transform = self._params["transform"]
-        self._transform = (transform if callable(transform)
-                           else import_name(transform))
+        self._transform = transform if callable(transform) else import_name(transform)
 
     def _get_schema(self):
         """We do not know the schema of a generic transform"""
@@ -211,10 +221,14 @@ class GenericTransform(DerivedSource):
 
     def to_dask(self):
         self._get_schema()
-        if not self._params['allow_dask']:
-            raise ValueError("This transform is not compatible with Dask"
-                             "because it has use_dask=False")
-        return self._transform(self._source.to_dask(), **self._params["transform_kwargs"])
+        if not self._params["allow_dask"]:
+            raise ValueError(
+                "This transform is not compatible with Dask"
+                "because it has use_dask=False"
+            )
+        return self._transform(
+            self._source.to_dask(), **self._params["transform_kwargs"]
+        )
 
     def read(self):
         self._get_schema()
@@ -236,17 +250,20 @@ class DataFrameTransform(GenericTransform):
     def to_dask(self):
         if self._df is None:
             self._pick()
-            self._df = self._transform(self._source.to_dask(),
-                                       **self._params["transform_kwargs"])
+            self._df = self._transform(
+                self._source.to_dask(), **self._params["transform_kwargs"]
+            )
         return self._df
 
     def _get_schema(self):
         """load metadata only if needed"""
         self.to_dask()
-        return Schema(dtype=self._df.dtypes,
-                      shape=(None, len(self._df.columns)),
-                      npartitions=self._df.npartitions,
-                      metadata=self.metadata)
+        return Schema(
+            dtype=self._df.dtypes,
+            shape=(None, len(self._df.columns)),
+            npartitions=self._df.npartitions,
+            metadata=self.metadata,
+        )
 
     def read(self):
         return self.to_dask().compute()
@@ -266,15 +283,80 @@ class Columns(DataFrameTransform):
 
     def __init__(self, columns, **kwargs):
         """
-            columns: list of labels (usually str) or slice
-                Columns to choose from the target dataframe
+        columns: list of labels (usually str) or slice
+            Columns to choose from the target dataframe
         """
-        # this class wants requires "columns", but DataFrameTransform
+        # this class wants required "columns", but DataFrameTransform
         # uses "transform_kwargs", which we don't need since we use a method for the
         # transform
-        kwargs.update(transform=self.pick_columns, columns=columns,
-                      transform_kwargs={})
+        kwargs.update(transform=self.pick_columns, columns=columns, transform_kwargs={})
         super().__init__(**kwargs)
 
     def pick_columns(self, df):
         return df[self._params["columns"]]
+
+
+class ArrayTransform(GenericTransform):
+    """Transform where the input and output are both Dask-compatible arrays
+
+    This derives from GenericTransform, and you must supply ``transform`` and
+    any ``transform_kwargs``.
+    """
+
+    input_container = "xarray"
+    container = "xarray"
+    optional_params = {}
+    _ds = None
+
+    def to_dask(self):
+        if self._ds is None:
+            self._pick()
+            self._ds = self._transform(
+                self._source.to_dask(), **self._params["transform_kwargs"]
+            )
+        return self._ds
+
+    def _get_schema(self):
+        """load metadata only if needed"""
+        self.to_dask()
+        return Schema(
+            datashape=None,
+            dtype=None,
+            shape=None,
+            npartitions=None,
+            extra_metadata=self._ds.extra_metadata,
+        )
+
+    def read(self):
+        return self.to_dask().compute()
+
+
+class Subsample(ArrayTransform):
+    """Simple array transform to subsample an array
+
+    Given as an example of how to make a specific array transform.
+    Note that you could use ArrayTransform directly, by writing a
+    function to choose the subsample instead of a method as here.
+    """
+
+    input_container = "xarray"
+    container = "xarray"
+    required_params = ["subsample_dict"]
+
+    def __init__(self, subsample_dict, **kwargs):
+        """
+        subsample_dict: dict of with keys as dimensions and values as slice
+            Subsample to choose from the target array
+        """
+        # this class wants required "subsample_dict", but ArrayTransform
+        # uses "transform_kwargs", which we don't need since we use a method for the
+        # transform
+        kwargs.update(
+            transform=self.select_subsample,
+            subsample_dict=subsample_dict,
+            transform_kwargs={},
+        )
+        super().__init__(**kwargs)
+
+    def select_subsample(self, ds):
+        return ds.sel(self._params["subsample_dict"])
