@@ -39,6 +39,7 @@ contains in parentheses:
 * `intake-stripe <https://github.com/sophiamyang/intake-stripe>`_: Generate catalogs and load tables as DataFrames from Stripe (``stripe_catalog``, ``stripe_table``)
 * `intake-spark <https://github.com/intake/intake-spark>`_: data processed by Apache Spark (``spark_cat``, ``spark_rdd``, ``spark_dataframe``)
 * `intake-sql <https://github.com/intake/intake-sql>`_: Generic SQL queries via SQLAlchemy (``sql_cat``, ``sql``, ``sql_auto``, ``sql_manual``)
+* `intake-sqlite <https://github.com/catalyst-cooperative/intake-sqlite>`_: Local caching of remote SQLite DBs and queries via SQLAlchemy (``sqlite_cat``, ``sqlite``, ``sqlite_auto``, ``sqlite_manual``)
 * `intake-splunk <https://github.com/intake/intake-splunk>`_: Splunk machine data query (``splunk``)
 * `intake-streamz <https://github.com/intake/intake-streamz>`_: real-time event processing using Streamz (``streamz``)
 * `intake-thredds <https://github.com/NCAR/intake-thredds>`_: Intake interface to THREDDS data catalogs (``thredds_cat``, ``thredds_merged_source``)
