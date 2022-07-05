@@ -23,28 +23,6 @@ def make_path_posix(path):
     return path.replace('\\', '/').replace('//', '/')
 
 
-def no_duplicates_constructor(loader, node, deep=False):
-    """Check for duplicate keys while loading YAML
-
-    https://gist.github.com/pypt/94d747fe5180851196eb
-    """
-
-    mapping = {}
-    for key_node, value_node in node.value:
-        key = loader.construct_object(key_node, deep=deep)
-        value = loader.construct_object(value_node, deep=deep)
-        if key in mapping:
-            from intake.catalog.exceptions import DuplicateKeyError
-
-            raise DuplicateKeyError("while constructing a mapping",
-                                    node.start_mark,
-                                    "found duplicate key (%s)" % key,
-                                    key_node.start_mark)
-        mapping[key] = value
-
-    return loader.construct_mapping(node, deep)
-
-
 def tuple_constructor(loader, node, deep=False):
     return tuple(loader.construct_object(node, deep=deep)
                  for node in node.value)
@@ -57,26 +35,9 @@ def represent_dictionary_order(self, dict_data):
 yaml.add_representer(OrderedDict, represent_dictionary_order)
 
 
-@contextmanager
-def no_duplicate_yaml():
-    yaml.SafeLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        no_duplicates_constructor)
-    yaml.SafeLoader.add_constructor('tag:yaml.org,2002:python/tuple',
-                                    tuple_constructor)
-    try:
-        yield
-    finally:
-        yaml.SafeLoader.add_constructor(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            yaml.constructor.SafeConstructor.construct_yaml_map
-        )
-
-
 def yaml_load(stream):
     """Parse YAML in a context where duplicate keys raise exception"""
-    with no_duplicate_yaml():
-        return yaml.safe_load(stream)
+    return yaml.safe_load(stream)
 
 
 def classname(ob):
