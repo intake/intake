@@ -173,3 +173,9 @@ class JSONLinesFileSource(DataSource):
         """
         with self._open() as f:
             return list(map(json.loads, islice(f, nrows)))
+
+    def _load_metadata(self):
+        pass
+
+    def _get_schema(self):
+        pass
