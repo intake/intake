@@ -80,6 +80,12 @@ class JSONFileSource(DataSource):
         ) as f:
             return json.load(f)
 
+    def _load_metadata(self):
+        pass
+
+    def _get_schema(self):
+        pass
+
 
 class JSONLinesFileSource(DataSource):
     """
