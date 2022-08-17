@@ -64,6 +64,12 @@ def test_jsonfile_none(json_file: str):
     assert out["hello"] == "world"
 
 
+def test_jsonfile_discover(json_file: str):
+    j = JSONFileSource(json_file, text_mode=True, compression=None)
+    schema = j.discover()
+    assert schema == {'dtype': None, 'shape': None, 'npartitions': 0, 'metadata': {}}
+
+
 def test_jsonlfile(jsonl_file: str):
     j = JSONLinesFileSource(jsonl_file, compression="infer")
     out = j.read()
@@ -93,6 +99,12 @@ def test_jsonfilel_none(jsonl_file: str):
 
     assert isinstance(out[1], list)
     assert out[1] == [1, 2, 3]
+
+
+def test_jsonfilel_discover(json_file: str):
+    j = JSONLinesFileSource(jsonl_file, compression=None)
+    schema = j.discover()
+    assert schema == {'dtype': None, 'shape': None, 'npartitions': 0, 'metadata': {}}
 
 
 def test_jsonl_head(jsonl_file: str):
