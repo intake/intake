@@ -160,6 +160,13 @@ Spark object to work with. It should, of course, explain in its documentation wh
 assumptions are being made and that, presumably, the user is expected to also call
 ``.to_spark`` if they wished to directly manipulate the spark object.
 
+Plugin examples
+```````````````
+
+ - call `.sel` on xarray datasets `xarray-plugin-transform`_
+ 
+.. _xarray-plugin-transform: https://github.com/intake/intake-xarray/blob/master/intake_xarray/derived.py#L38
+
 API
 ```
 
