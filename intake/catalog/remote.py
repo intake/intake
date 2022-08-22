@@ -481,7 +481,7 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
                    name=entry,
                    parameters=user_parameters,
                    available_plugins=list(plugin_registry))
-    req = requests.post(urljoin(url, '/v1/source'),
+    req = requests.post(urljoin(url, 'v1/source'),
                         data=msgpack.packb(payload, **pack_kwargs),
                         **http_args)
     if req.ok:

@@ -47,7 +47,7 @@ class RemoteSource(DataSource):
         if self._source_id is None:
             payload = dict(action='open', name=self.name,
                            parameters=self.parameters)
-            req = requests.post(urljoin(self.url, '/v1/source'),
+            req = requests.post(urljoin(self.url, 'v1/source'),
                                 data=msgpack.packb(payload, **pack_kwargs),
                                 **self.headers)
             req.raise_for_status()
@@ -103,7 +103,7 @@ def get_partition(url, headers, source_id, container, partition):
         payload['partition'] = partition
 
     try:
-        resp = requests.post(urljoin(url, '/v1/source'),
+        resp = requests.post(urljoin(url, 'v1/source'),
                              data=msgpack.packb(payload, **pack_kwargs),
                              **headers)
         if resp.status_code != 200:
