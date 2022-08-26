@@ -6,13 +6,15 @@ Changelog
 0.6.6
 -----
 
-Released on MONTH DAYNUM, YEAR.
+Released on August 26, 2022.
 
 - Fixed bug in json and jsonl driver.
 - Ensure description is retained in the catalog.
 - Fix cache issue when running inside a notebook.
 - Add templating parameters.
 - Plotting api keeps hold of hvplot calls to allow other plots to be made.
+- docs updates
+- fix urljoin for server via proxy
 
 .. _v0.6.5:
 
