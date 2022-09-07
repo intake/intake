@@ -248,7 +248,7 @@ Get
 '''
 
 Given the name of a catalog entry, this subcommand outputs the entire data
-source to standard output.
+source to standard output as CSV.
 
 ::
 

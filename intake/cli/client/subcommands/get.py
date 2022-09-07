@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 #-----------------------------------------------------------------------------
 
 # Standard library imports
+import sys
 
 # External imports
 
@@ -28,7 +29,7 @@ from intake.cli.util import Subcommand
 #-----------------------------------------------------------------------------
 
 class Get(Subcommand):
-    ''' Get a catalog entry
+    ''' Get a catalog entry as CSV
 
     '''
 
@@ -37,8 +38,14 @@ class Get(Subcommand):
     def initialize(self):
         self.parser.add_argument('uri', metavar='URI', type=str, help='Catalog URI')
         self.parser.add_argument('name', metavar='NAME', type=str, help='Catalog name')
+        self.parser.add_argument('--output', metavar='FILE', type=str, help='Output file')
 
     def invoke(self, args):
         catalog = open_catalog(args.uri)
         with catalog[args.name] as f:
-            print(f.read())
+            df = f.read()
+            if args.output:
+                out = args.output
+            else:
+                out = sys.stdout
+            df.to_csv(out, index=False)
