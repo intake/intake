@@ -22,7 +22,7 @@ import sys
 
 # Intake imports
 from intake import open_catalog
-from intake.cli.util import Subcommand
+from intake.cli.util import Subcommand, die
 
 #-----------------------------------------------------------------------------
 # API
@@ -43,9 +43,14 @@ class Get(Subcommand):
     def invoke(self, args):
         catalog = open_catalog(args.uri)
         with catalog[args.name] as f:
-            df = f.read()
+            result = f.read()
+
+            if not hasattr(result, 'to_csv'):
+                die("Catalog entry doesn't support CSV output")
+
             if args.output:
                 out = args.output
             else:
                 out = sys.stdout
-            df.to_csv(out, index=False)
+
+            result.to_csv(out, index=False)
