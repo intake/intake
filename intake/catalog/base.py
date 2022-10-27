@@ -169,7 +169,7 @@ class Catalog(DataSource):
 
     def reload(self):
         """Reload catalog if sufficient time has passed"""
-        if time.time() - self.updated > self.ttl:
+        if (self.ttl is not None) and (time.time() - self.updated > self.ttl):
             self.force_reload()
 
     @property
