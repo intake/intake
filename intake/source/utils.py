@@ -5,10 +5,10 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from distutils.version import LooseVersion
+from packaging.version import Version
 try:
     import dask
-    DASK_VERSION = LooseVersion(dask.__version__)
+    DASK_VERSION = Version(dask.__version__)
 except:
     DASK_VERSION = None
 from ..utils import make_path_posix
