@@ -257,6 +257,9 @@ def multi_server(tmpdir):
     shutil.rmtree(tmpdir)
 
 
+# If this tests fails on Mac running Monterey or newer,
+# Look at this solution to Apple using port 5000:
+# https://developer.apple.com/forums/thread/682332
 def test_flatten_flag(multi_server):
     cat = open_catalog(multi_server)
     assert list(cat) == ['cat1', 'cat2']

@@ -59,8 +59,8 @@ class MsgPackSerializer(object):
     name = 'msgpack'
 
     def encode(self, obj, container):
-        from ..compat import np_pack_kwargs
         if container in ['ndarray', 'xarray'] and msgpack_numpy:
+            from ..compat import np_pack_kwargs
             return msgpack.packb(obj, **np_pack_kwargs)
         elif container == 'dataframe':
             # Use pyarrow for serializing DataFrames, rather than
