@@ -34,6 +34,7 @@ def test_dataframe(ser):
 
 @all_serializers
 def test_ndarray(ser):
+    pytest.importorskip('msgpack_numpy')
     expected_array = np.arange(35).reshape((5, 7))
 
     # Check roundtrip
