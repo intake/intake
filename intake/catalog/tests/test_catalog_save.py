@@ -1,7 +1,7 @@
 """
 Test saving catalogs.
 """
-
+import os
 import intake
 from intake.catalog import Catalog
 from intake.catalog.local import LocalCatalogEntry
@@ -9,6 +9,8 @@ from intake.catalog.local import LocalCatalogEntry
 
 def test_catalog_description():
     """Make sure the description comes through the save."""
+
+    NAME = 'desc_test.yaml'
 
     cat1 = Catalog.from_dict({
                 'name': LocalCatalogEntry('name',
@@ -21,8 +23,10 @@ def test_catalog_description():
 
     )
 
-    cat1.save('desc_test.yaml')
+    cat1.save(NAME)
 
-    cat2 = intake.open_catalog('desc_test.yaml')
+    cat2 = intake.open_catalog(NAME)
 
     assert cat2.description is not None
+
+    os.remove(NAME)

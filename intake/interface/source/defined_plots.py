@@ -138,7 +138,7 @@ class Plots(BaseView):
     def interact(self, _):
         # "customize" was pressed
         if self.selected == 'None':
-            kwargs = {}
+            kwargs = {'y': []}
         else:
             kwargs = self.source.metadata['plots'][self.selected]
         if self.source.container == 'dataframe':

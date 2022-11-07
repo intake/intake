@@ -24,6 +24,7 @@ imports = {
     "load_combo_catalog": "intake.catalog.default:load_combo_catalog",
     "upload": "intake.container:upload",
     "gui": "intake.interface:instance",
+    "interface": "intake.interface",
     "cat": "intake.catalog:builtin",
     "output_notebook": "intake.interface:output_notebook",
     "register_driver": "intake.source:register_driver",
@@ -101,12 +102,12 @@ def open_catalog(uri=None, **kwargs):
 
     The default behaviour if not specifying the driver is as follows:
 
-    - if ``uri`` is a a single string ending in "yml" or "yaml", open it as a
+    - if ``uri`` is a single string ending in "yml" or "yaml", open it as a
       catalog file
     - if ``uri`` is a list of strings, a string containing a glob character
       ("*") or a string not ending in "y(a)ml", open as a set of catalog
       files. In the latter case, assume it is a directory.
-    - if ``uri`` beings with protocol ``"intake:"``, connect to a remote
+    - if ``uri`` begins with protocol ``"intake:"``, connect to a remote
       Intake server
     - if ``uri`` is ``None`` or missing, create a base Catalog object without entries.
 
