@@ -562,14 +562,16 @@ class YAMLFileCatalog(Catalog):
         ----------
         path: str
             Location of the file to parse (can be remote)
-        text: str
+        text: str (DEPRECATED)
             YAML contents of catalog, takes precedence over path
-        reload : bool
+        autoreload : bool
             Whether to watch the source file for changes; make False if you want
             an editable Catalog
         """
         self.path = path
-        if text:
+        if text is not None:
+            logger.warning("YAMLFileCatalog `text` argument is deprecated")
+            warnings.warn("`text` argument is deprecated", DeprecationWarning)
             self.parse(text)
             self.autoreload = False
         else:
