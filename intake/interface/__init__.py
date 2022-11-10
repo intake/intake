@@ -34,9 +34,9 @@ def do_import():
 
 
 def __getattr__(attr):
-    if attr == 'instance':
+    if attr in {'instance', 'gui'}:
         do_import()
-    return gl['instance']
+    return gl[attr]
 
 
 def output_notebook(inline=True, logo=False):
