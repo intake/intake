@@ -7,10 +7,11 @@ from intake.catalog import Catalog
 from intake.catalog.local import LocalCatalogEntry
 
 
-def test_catalog_description():
+def test_catalog_description(tmpdir):
     """Make sure the description comes through the save."""
 
-    NAME = 'desc_test.yaml'
+    tmpdir = str(tmpdir)
+    cat_path = os.path.join(tmpdir, 'desc_test.yaml')
 
     cat1 = Catalog.from_dict({
                 'name': LocalCatalogEntry('name',
@@ -23,10 +24,8 @@ def test_catalog_description():
 
     )
 
-    cat1.save(NAME)
+    cat1.save(cat_path)
 
-    cat2 = intake.open_catalog(NAME)
+    cat2 = intake.open_catalog(cat_path)
 
     assert cat2.description is not None
-
-    os.remove(NAME)
