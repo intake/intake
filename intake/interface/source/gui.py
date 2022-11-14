@@ -69,6 +69,7 @@ class SourceGUI(Base):
         self.description.source = self.sources
 
         self.plot = Plots(source=self.source_instance,
+                          edit_callback=self.on_plot_edited,
                           visible=self.plot_widget.value,
                           visible_callback=partial(
                           setattr, self.plot_widget, 'value'))
@@ -153,6 +154,10 @@ class SourceGUI(Base):
             self.description.panel.append(self.pars_editor.panel)
         else:
             self.description.panel.remove(self.pars_editor.panel)
+
+    def on_plot_edited(self):
+        # Manually triggered from plot widget when plot is saved
+        self.description.source = self.sources
 
     @property
     def sources(self):

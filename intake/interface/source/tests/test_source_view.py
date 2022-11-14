@@ -57,16 +57,15 @@ def test_description_clears_if_visible_is_set_to_false(description):
 def assert_is_empty(plots, visible=True):
     assert plots.source is None
     assert plots.has_plots is False
-    assert plots.instructions_contents == '*No predefined plots found - declare these in the catalog*'
     assert plots.options == []
     assert plots.selected is None
     if visible:
-        assert plots.instructions.object == plots.instructions_contents
         assert plots.pane.object is None
-        assert len(plots.children) == 2
+        assert plots.custom.name == 'Create'
+        assert len(plots.children) == 3
         assert isinstance(plots.children[-1][0][0], pn.pane.HoloViews)
         assert plots.panel.objects == plots.children
-        assert len(plots.watchers) == 2
+        assert len(plots.watchers) == 6
     else:
         assert not plots.selected
         assert not plots.watchers
@@ -75,17 +74,17 @@ def assert_is_empty(plots, visible=True):
 
 def assert_plotting_source2_0_line(plots, visible=True, desc=False):
     assert plots.has_plots is True
-    assert plots.instructions_contents == '**Select from the predefined plots:**'
     assert plots.options == ["None", 'line_example', 'violin_example']
     if visible:
         assert plots.selected == 'None'
         plots.selected = 'line_example'
-        assert plots.instructions.object == plots.instructions_contents
+        assert plots.custom.name == 'Edit'
+        assert plots.edit_options.visible
         assert plots.pane.object is not None
-        assert len(plots.children) == 2
+        assert len(plots.children) == 3
         assert isinstance(plots.children[-1][0][0], pn.pane.HoloViews)
         assert plots.panel.objects == plots.children
-        assert len(plots.watchers) == 2
+        assert len(plots.watchers) == 6
     else:
         assert not plots.selected
         assert not plots.watchers
