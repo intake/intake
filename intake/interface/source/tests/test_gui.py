@@ -4,10 +4,10 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-from distutils.version import LooseVersion
+from packaging.version import Version
 import pytest
 pn = pytest.importorskip('panel')
-too_old = LooseVersion(pn.__version__) < LooseVersion("0.9.5")
+too_old = Version(pn.__version__) < Version("0.9.5")
 
 
 @pytest.mark.skipif(too_old, reason="Use with latest panel")

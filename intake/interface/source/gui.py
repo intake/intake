@@ -80,8 +80,8 @@ class SourceGUI(Base):
             self.plot_widget.param.watch(self.on_click_plot_widget, 'value'),
             self.pars_widget.param.watch(self.on_click_pars_widget, 'value'),
             self.select.widget.link(self.description, value='source'),
-            self.plot.watch(self.on_plot_edited)
         ]
+        self.plot.watch(self.on_plot_edited)
 
     def setup(self):
         self._setup_watchers()

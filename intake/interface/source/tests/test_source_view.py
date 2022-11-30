@@ -62,8 +62,8 @@ def assert_is_empty(plots, visible=True):
     if visible:
         assert plots.pane.object is None
         assert plots.custom.name == 'Create'
-        assert len(plots.children) == 3
-        assert isinstance(plots.children[-1][0][0], pn.pane.HoloViews)
+        assert len(plots.children[0]) == 4
+        assert isinstance(plots.children[0][-1][0][0], pn.pane.HoloViews)
         assert plots.panel.objects == plots.children
         assert len(plots.watchers) == 6
     else:
@@ -81,8 +81,8 @@ def assert_plotting_source2_0_line(plots, visible=True, desc=False):
         assert plots.custom.name == 'Edit'
         assert plots.edit_options.visible
         assert plots.pane.object is not None
-        assert len(plots.children) == 3
-        assert isinstance(plots.children[-1][0][0], pn.pane.HoloViews)
+        assert len(plots.children[0]) == 4
+        assert isinstance(plots.children[0][-1][0][0], pn.pane.HoloViews)
         assert plots.panel.objects == plots.children
         assert len(plots.watchers) == 6
     else:

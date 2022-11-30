@@ -104,12 +104,14 @@ class Plots(BaseView):
             self.interact_cancel,
             self.interact_save,
         )
-        self.children = pn.Column(
-            self.row_select_plots,
-            self.row_dialog_buttons,
-            self.alert,
-            self.out,
-        )
+        self.children = [
+            pn.Column(
+                self.row_select_plots,
+                self.row_dialog_buttons,
+                pn.Row(self.alert),
+                self.out,
+            )
+        ]
         # Set initial visibility
         self.row_select_plots[-1].visible = False  # edit_options dropdown
         self.row_dialog_buttons.visible = False
