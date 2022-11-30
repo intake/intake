@@ -74,7 +74,7 @@ class CatalogEntry(DictSerialiseMixin):
                 'always', 'never', 'default']:
             raise ValueError('Persist value (%s) not understood' % persist)
         persist = persist or self._pmode
-        s = self.get(**kwargs)  # Should this live in an `else` below the `if`?
+        s = self.get(**kwargs)
         if persist != 'never' and isinstance(s, PersistMixin) and s.has_been_persisted:
             from ..container.persist import store
 

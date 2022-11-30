@@ -1,33 +1,29 @@
 #-----------------------------------------------------------------------------
-# Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
+# Copyright (c) 2012 - 2022, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-from distutils.version import LooseVersion
-
-try:
-    import dfviz
-    assert LooseVersion(dfviz.__version__) >= LooseVersion("0.1.0")
-except ImportError:
-    dfviz = False
-
-try:
-    import hvplot
-    assert LooseVersion(hvplot.__version__) >= LooseVersion("0.8.1")
-except ImportError:
-    hvplot = False
+from packaging.version import Version
+import hvplot
 
 try:
     import xrviz
     from xrviz.dashboard import Dashboard as XRViz
-    assert LooseVersion(xrviz.__version__) >= LooseVersion("0.1.1")
+    assert Version(xrviz.__version__) >= Version("0.1.1")
 except ImportError:
     xrviz = False
 
 import panel as pn
 from ..base import BaseView
 from ...catalog.local import LocalCatalogEntry, YAMLFileCatalog
+
+
+class Event:
+    def __init__(self, plot, **kwargs):
+        self.object = plot
+        for key, val in kwargs.items():
+            setattr(self, key, val)
 
 
 class Plots(BaseView):
@@ -59,12 +55,12 @@ class Plots(BaseView):
     """
     select = None
 
-    def __init__(self, source=None, edit_callback=None, **kwargs):
+    def __init__(self, source=None, **kwargs):
         self.custom = pn.widgets.Button(name='Create', width=70, align='center')
         self.source = source
-        self.callback_on_edit = edit_callback
         self.panel = pn.Column(name='Plot', width_policy='max', margin=0)
         self._behavior_callback = None
+        self._callbacks = []
         super().__init__(**kwargs)
 
     def setup(self):
@@ -72,6 +68,8 @@ class Plots(BaseView):
             "**Select Plot**", align='center', width=70)
         self.select = pn.widgets.Select(options=self.options, height=30,
                                         align='center', min_width=200)
+        # Add spaces in front of each option to make it render correctly.
+        # This is a bit of a hack to make a Select which only displays the down arrow.
         self.edit_options = pn.widgets.Select(options=['  Edit', '  Clone', '  Rename', '  Delete'],
                                               align='center',
                                               width=25, margin=(5, -10))
@@ -91,26 +89,31 @@ class Plots(BaseView):
             self.interact_cancel.param.watch(self.cancel, ['clicks']),
             self.interact_save.param.watch(self.interact_action, ['clicks']),
         ]
+        self.alert = pn.pane.Alert(alert_type="danger")
         self.out = pn.Row(self.pane, name="Plot")
 
-        self.children = [
-            pn.Row(
-                self.instructions,
-                self.select,
-                self.custom,
-                self.edit_options,
-            ),
-            pn.Row(
-                self.interact_label,
-                self.interact_name,
-                self.interact_cancel,
-                self.interact_save,
-            ),
+        self.row_select_plots = pn.Row(
+            self.instructions,
+            self.select,
+            self.custom,
+            self.edit_options,
+        )
+        self.row_dialog_buttons = pn.Row(
+            self.interact_label,
+            self.interact_name,
+            self.interact_cancel,
+            self.interact_save,
+        )
+        self.children = pn.Column(
+            self.row_select_plots,
+            self.row_dialog_buttons,
+            self.alert,
             self.out,
-        ]
+        )
         # Set initial visibility
-        self.children[0][-1].visible = False
-        self.children[1].visible = False
+        self.row_select_plots[-1].visible = False  # edit_options dropdown
+        self.row_dialog_buttons.visible = False
+        self.alert.visible = False
 
     @BaseView.source.setter
     def source(self, source):
@@ -123,9 +126,7 @@ class Plots(BaseView):
         BaseView.source.fset(self, source)
         if self.select:
             self.select.options = self.options
-        if source and hvplot and source.container == 'dataframe':
-            self.custom.disabled = False
-        elif source and dfviz and source.container == 'dataframe':
+        if source and source.container == 'dataframe':
             self.custom.disabled = False
         elif source and xrviz and source.container in ['xarray', 'ndarray', 'numpy']:
             self.custom.disabled = False
@@ -152,6 +153,9 @@ class Plots(BaseView):
         """When plot is selected set, make sure widget stays upto date"""
         self.select.value = selected
 
+    def watch(self, callback):
+        self._callbacks.append(callback)
+
     def plot_selected(self, *events):
         for event in events:
             if event.name == 'value':
@@ -162,29 +166,36 @@ class Plots(BaseView):
     def name_changed(self, *events):
         for event in events:
             if event.name == "value_input":
+                self.alert.visible = False
                 # Empty name not allowed and name cannot already be in use
-                if len(event.new) == 0 or event.new in self.options:
+                if len(event.new) == 0:
                     self.interact_save.disabled = True
+                elif event.new in self.options:
+                    self.interact_save.disabled = True
+                    self.alert.object = f'Name "{event.new}" already exists'
+                    self.alert.visible = True
                 else:
                     self.interact_save.disabled = False
 
     def cancel(self, _):
         self.pane.object = self._plot_object(self.selected)
         self.out[0] = self.pane
-        self.children[0].visible = True
-        self.children[1].visible = False
+        self.row_select_plots.visible = True
+        self.row_dialog_buttons.visible = False
         self._behavior_callback = None
 
     def interact_action(self, _):
         # Stop catalog from autoreloading
         self.source.cat.ttl = None
-        # Perform action
-        self._behavior_callback()
-        # Save catalog (if YAMLFileCatalog)
-        if isinstance(self.source.cat, YAMLFileCatalog):
-            self.source.cat.add(self.source)
-        # Update description
-        self.callback_on_edit()
+        if self._behavior_callback is not None:
+            # Perform action
+            event = self._behavior_callback()
+            # Save catalog (if YAMLFileCatalog)
+            if isinstance(self.source.cat, YAMLFileCatalog):
+                self.source.cat.add(self.source)
+            # Callbacks
+            for cb in self._callbacks:
+                cb(event)
         # Reset custom behavior callback
         self._behavior_callback = None
         # End action
@@ -238,8 +249,8 @@ class Plots(BaseView):
         else:
             raise ValueError(self.edit_options.value)
         # Update visibility of components
-        self.children[1].visible = True
-        self.children[0].visible = False
+        self.row_dialog_buttons.visible = True
+        self.row_select_plots.visible = False
         # Reset edit options selection (won't trigger
         # edit action because _behavior_callback is set)
         self.edit_options.value = 'Edit'
@@ -253,11 +264,7 @@ class Plots(BaseView):
             df = self.source.to_dask()
             if df.npartitions == 1:
                 df = df.compute()
-            if hvplot:
-                self._viz = viz = hvplot.explorer(df, **kwargs)
-            else:
-                self._viz = dfviz.DFViz(df, **kwargs)
-                viz = self._viz.panel
+            self._viz = viz = hvplot.explorer(df, **kwargs)
         elif self.source.container in ['xarray', 'ndarray', 'numpy']:
             import xarray
             try:
@@ -288,11 +295,13 @@ class Plots(BaseView):
         self.select.options = self.options
         # Select new graph
         self.selected = plot_name
+        return Event(self, kind="create", plot_name=plot_name)
 
     def _edit(self):
         # Update plot metadata for both DataSource and CatalogEntry
         self.source.metadata['plots'][self.selected] = self._viz.settings()
         self.source.entry._metadata['plots'][self.selected] = self._viz.settings()
+        return Event(self, kind="edit", plot_name=self.selected)
 
     def _clone(self):
         plot_name = self.interact_name.value
@@ -303,6 +312,7 @@ class Plots(BaseView):
         self.select.options = self.options
         # Select new graph
         self.selected = plot_name
+        return Event(self, kind="clone", plot_name=plot_name, cloned_from=self.selected)
 
     def _rename(self):
         plot_name = self.interact_name.value
@@ -313,6 +323,7 @@ class Plots(BaseView):
         self.select.options = self.options
         # Select renamed graph
         self.selected = plot_name
+        return Event(self, kind="rename", plot_name=plot_name, prev_name=self.selected)
 
     def _delete(self):
         # Delete plot metadata from both DataSource and CatalogEntry
@@ -321,6 +332,7 @@ class Plots(BaseView):
         # Update available options in dropdown
         self.select.options = self.options
         self.selected = 'None'
+        return Event(self, kind="delete", plot_name=self.selected)
 
     def __getstate__(self, include_source=True):
         """Serialize the current state of the object. Set include_source
