@@ -4,6 +4,7 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
+import yaml
 import pytest
 pn = pytest.importorskip('panel')
 
@@ -120,6 +121,145 @@ def test_gui_close_and_open_source(gui, cat2, sources2):
     assert gui.source.description.visible is True
     assert gui.source.plot.visible is False
     assert gui.source.sources == [sources2[0]]
+
+
+def test_gui_clone_plot(gui, copycat2, sources2):
+    pytest.importorskip('hvplot')
+
+    gui.source.select.cats = [copycat2]
+    gui.source.plot_widget.value = True
+    gui.source.plot.select.value = 'line_example'
+    assert gui.source.plot.edit_options.visible is True
+    assert gui.source.plot.row_dialog_buttons.visible is False
+    gui.source.plot.edit_options.value = '  Clone'
+    assert gui.source.plot.row_dialog_buttons.visible is True
+    assert gui.source.plot.row_select_plots.visible is False
+    assert gui.source.plot.interact_label.object == 'Clone "**line_example**" as '
+    assert gui.source.plot.interact_name.value == ''
+    assert gui.source.plot.interact_save.disabled is True
+    assert gui.source.plot.interact_save.name == 'Clone'
+    # Set to invalid name (already used)
+    gui.source.plot.interact_name.value = 'violin_example'
+    gui.source.plot.interact_name.value_input = 'violin_example'
+    assert gui.source.plot.interact_save.disabled is True
+    assert gui.source.plot.alert.visible is True
+    assert gui.source.plot.alert.object == 'Name "violin_example" already exists'
+    # Set to valid name
+    gui.source.plot.interact_name.value = 'clone_example'
+    gui.source.plot.interact_name.value_input = 'clone_example'
+    assert gui.source.plot.interact_save.disabled is False
+    assert gui.source.plot.alert.visible is False
+    # Click the Clone button
+    gui.source.plot.interact_save.clicks += 1
+    assert gui.source.plot.row_dialog_buttons.visible is False
+    assert gui.source.plot.row_select_plots.visible is True
+    assert gui.source.plot.select.value == 'clone_example'
+    # Verify written to disk
+    with open(copycat2.path) as f:
+        d = yaml.safe_load(f)
+        assert 'clone_example' in d['sources']['us_crime']['metadata']['plots']
+        assert 'line_example' in d['sources']['us_crime']['metadata']['plots']
+
+
+def test_gui_rename_plot(gui, copycat2, sources2):
+    pytest.importorskip('hvplot')
+
+    gui.source.select.cats = [copycat2]
+    gui.source.plot_widget.value = True
+    gui.source.plot.select.value = 'line_example'
+    assert gui.source.plot.edit_options.visible is True
+    assert gui.source.plot.row_dialog_buttons.visible is False
+    gui.source.plot.edit_options.value = '  Rename'
+    assert gui.source.plot.row_dialog_buttons.visible is True
+    assert gui.source.plot.row_select_plots.visible is False
+    assert gui.source.plot.interact_label.object == 'Rename "**line_example**" to '
+    assert gui.source.plot.interact_name.value == ''
+    assert gui.source.plot.interact_save.disabled is True
+    assert gui.source.plot.interact_save.name == 'Rename'
+    # Set to valid name
+    gui.source.plot.interact_name.value = 'rename_example'
+    gui.source.plot.interact_name.value_input = 'rename_example'
+    assert gui.source.plot.interact_save.disabled is False
+    assert gui.source.plot.alert.visible is False
+    # Click the Rename button
+    gui.source.plot.interact_save.clicks += 1
+    assert gui.source.plot.row_dialog_buttons.visible is False
+    assert gui.source.plot.row_select_plots.visible is True
+    assert gui.source.plot.select.value == 'rename_example'
+    # Verify written to disk
+    with open(copycat2.path) as f:
+        d = yaml.safe_load(f)
+        assert 'rename_example' in d['sources']['us_crime']['metadata']['plots']
+        assert 'line_example' not in d['sources']['us_crime']['metadata']['plots']
+
+
+def test_gui_delete_plot(gui, copycat2, sources2):
+    pytest.importorskip('hvplot')
+
+    gui.source.select.cats = [copycat2]
+    gui.source.plot_widget.value = True
+    gui.source.plot.select.value = 'line_example'
+    assert gui.source.plot.edit_options.visible is True
+    assert gui.source.plot.row_dialog_buttons.visible is False
+    gui.source.plot.edit_options.value = '  Delete'
+    assert gui.source.plot.row_dialog_buttons.visible is True
+    assert gui.source.plot.row_select_plots.visible is False
+    assert gui.source.plot.interact_label.object == 'Really delete "**line_example**" ?'
+    assert gui.source.plot.interact_save.disabled is False
+    assert gui.source.plot.interact_save.name == 'Delete'
+    # Click the Delete button
+    gui.source.plot.interact_save.clicks += 1
+    assert gui.source.plot.row_dialog_buttons.visible is False
+    assert gui.source.plot.row_select_plots.visible is True
+    assert gui.source.plot.select.value == 'None'
+    # Verify written to disk
+    with open(copycat2.path) as f:
+        d = yaml.safe_load(f)
+        assert 'line_example' not in d['sources']['us_crime']['metadata']['plots']
+
+
+def test_gui_edit_plot(gui, copycat2, sources2):
+    pytest.importorskip('hvplot')
+
+    gui.source.select.cats = [copycat2]
+    gui.source.plot_widget.value = True
+    gui.source.plot.select.value = 'line_example'
+    assert gui.source.plot.edit_options.visible is True
+    assert gui.source.plot.row_dialog_buttons.visible is False
+    assert gui.source.plot.custom.name == 'Edit'
+    gui.source.plot.custom.clicks += 1
+    assert gui.source.plot.row_dialog_buttons.visible is True
+    assert gui.source.plot.row_select_plots.visible is False
+    assert gui.source.plot.interact_label.object == 'Editing "**line_example**"'
+    assert gui.source.plot.interact_save.disabled is False
+    assert gui.source.plot.interact_save.name == 'Save'
+    # Click the Save button
+    gui.source.plot.interact_save.clicks += 1
+    assert gui.source.plot.row_dialog_buttons.visible is False
+    assert gui.source.plot.row_select_plots.visible is True
+    assert gui.source.plot.select.value == 'line_example'
+
+
+def test_gui_create_plot(gui, copycat2, sources2):
+    pytest.importorskip('hvplot')
+
+    gui.source.select.cats = [copycat2]
+    gui.source.plot_widget.value = True
+    gui.source.plot.select.value = 'None'
+    assert gui.source.plot.edit_options.visible is False
+    assert gui.source.plot.row_dialog_buttons.visible is False
+    assert gui.source.plot.custom.name == 'Create'
+    gui.source.plot.custom.clicks += 1
+    assert gui.source.plot.row_dialog_buttons.visible is True
+    assert gui.source.plot.row_select_plots.visible is False
+    assert gui.source.plot.interact_label.object == 'Name '
+    assert gui.source.plot.interact_save.disabled is True
+    assert gui.source.plot.interact_save.name == 'Save'
+    # Click the Cancel button
+    gui.source.plot.interact_cancel.clicks += 1
+    assert gui.source.plot.row_dialog_buttons.visible is False
+    assert gui.source.plot.row_select_plots.visible is True
+    assert gui.source.plot.select.value == 'None'
 
 
 def test_gui_init_empty():
