@@ -8,6 +8,7 @@
 import os
 import pytest
 import intake
+import shutil
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -36,6 +37,13 @@ def cat1(cat1_url):
 def cat2(cat2_url):
     return intake.open_catalog(cat2_url)
 
+
+@pytest.fixture
+def copycat2(cat2_url, tmp_path):
+    parent_dir = os.path.dirname(cat2_url)
+    shutil.copytree(parent_dir, tmp_path / 'catalogs')
+    shutil.copytree(os.path.join(os.path.dirname(parent_dir), 'data'), tmp_path / 'data')
+    return intake.open_catalog(tmp_path / 'catalogs' / 'catalog2.yaml')
 
 @pytest.fixture
 def parent_cat(parent_cat_url):

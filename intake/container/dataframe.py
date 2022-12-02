@@ -4,7 +4,7 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 
 from intake.source.base import Schema, DataSource
@@ -38,7 +38,7 @@ class RemoteDataFrame(RemoteSource):
                 self.url, self.headers, self._source_id, self.container, i
             )
                           for i in range(self.npartitions)]
-            if LooseVersion(dask.__version__) < LooseVersion("2.5.0"):
+            if Version(dask.__version__) < Version("2.5.0"):
                 self.dataframe = dd.from_delayed(self.parts)
             else:
                 self.dataframe = dd.from_delayed(self.parts, verify_meta=self.verify)

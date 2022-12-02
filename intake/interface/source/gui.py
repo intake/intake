@@ -81,6 +81,7 @@ class SourceGUI(Base):
             self.pars_widget.param.watch(self.on_click_pars_widget, 'value'),
             self.select.widget.link(self.description, value='source'),
         ]
+        self.plot.watch(self.on_plot_edited)
 
     def setup(self):
         self._setup_watchers()
@@ -153,6 +154,10 @@ class SourceGUI(Base):
             self.description.panel.append(self.pars_editor.panel)
         else:
             self.description.panel.remove(self.pars_editor.panel)
+
+    def on_plot_edited(self, event):
+        # Redraw source YAML
+        self.description.source = self.sources
 
     @property
     def sources(self):

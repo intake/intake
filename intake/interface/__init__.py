@@ -4,23 +4,23 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 gl = globals()
 
 
 def do_import():
-    error = too_old = False
     try:
         import panel as pn
-        too_old = LooseVersion(pn.__version__) < LooseVersion("0.9.5")
-    except ImportError as e:
-        error = e
+        import hvplot
+        error = (Version(pn.__version__) < Version("0.9.5")
+                   or Version(hvplot.__version__) < Version("0.8.1"))
+    except ImportError:
+        error = True
 
-    if too_old or error:
-        raise RuntimeError("Please install panel to use the GUI `conda "
-                           "install -c conda-forge panel>=0.8.0`. Import "
-                           "failed with error: %s" % error)
+    if error:
+        raise RuntimeError("Please install panel and hvplot to use the GUI\n"
+                           "`conda install -c conda-forge 'panel>=0.9.5' 'hvplot>=0.8.1'`")
 
     from .gui import GUI
     css = """
