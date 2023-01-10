@@ -262,7 +262,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                     raise tornado.web.HTTPError(
                         status_code=400,
                         log_message="Search query failed",
-                        reason=str(err))
+                        reason=str(err).replace("\n", " "))
                 self._cache.add(results_cat, source_id=query_source_id)
             response = {'source_id': query_source_id}
             self.write(msgpack.packb(response, **pack_kwargs))
@@ -309,7 +309,7 @@ class ServerSourceHandler(tornado.web.RequestHandler):
                     traceback.print_exc()
                     raise tornado.web.HTTPError(status_code=400,
                                                 log_message="Discover failed",
-                                                reason=str(e))
+                                                reason=str(e).replace("\n", " "))
                 source_id = self._cache.add(source)
                 logger.debug('Container: %s, ID: %s' % (source.container,
                                                         source_id))
