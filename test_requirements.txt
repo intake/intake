@@ -1,9 +1,10 @@
 intake-parquet
 zarr
 notebook
-panel==0.8.0
-hvplot==0.5.2
-bokeh<2.0.0
+panel
+hvplot
+bokeh
 fsspec
 aiohttp
 requests
+pandas

@@ -13,19 +13,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        CONDA_ENV: [py37, py38, py39, pip]
+        CONDA_ENV: [py38, py39, py310, py311, pip]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@v2.1.1
+      - name: Setup conda
+        uses: mamba-org/provision-with-micromamba@main
         with:
-          auto-update-conda: false
-          mamba-version: "*"
-          channels: conda-forge,defaults
-          auto-activate-base: false
-          activate-environment: test_env
           environment-file: scripts/ci/environment-${{ matrix.CONDA_ENV }}.yml
 
       - name: pip-install

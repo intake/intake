@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.7
+  - python=3.10
   - aiohttp
   - flask
   - appdirs
@@ -22,8 +22,17 @@ dependencies:
   - hvplot
   - bokeh
   - dask
+  - intake
   - pip
-  - pydap
   - pytest
+  - rasterio
   - s3fs
+  - xarray
+  - zarr
   - moto
+  - httpx
+  - typer
+  - pydantic >=1.8
+  - sqlalchemy
+  - click
+  - rangehttpserver

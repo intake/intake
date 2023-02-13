@@ -34,7 +34,5 @@ dependencies:
   - typer
   - pydantic >=1.8
   - sqlalchemy
-  - click==8.0  # https://github.com/tiangolo/typer/issues/377 until typer release
-  - pip:
-       - rangehttpserver
-       - tiled[all]
+  - click
+  - rangehttpserver
