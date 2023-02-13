@@ -37,3 +37,4 @@ dependencies:
   - click
   - rangehttpserver
   - tiled
+  - sparse
