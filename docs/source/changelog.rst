@@ -1,6 +1,19 @@
 Changelog
 =========
 
+.. _v0.6.7:
+
+0.6.7
+-----
+
+Released February 13, 2023
+
+- server fix for upstream dask change giving newlined in report
+- editable plots, based on hvPlot's "explorer"
+- remove "text" input to YAMLFileCatalog
+- GUI bug fixes
+- allow catalog TTL as None
+
 .. _v0.6.6:
 
 0.6.6

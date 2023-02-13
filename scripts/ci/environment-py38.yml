@@ -36,5 +36,4 @@ dependencies:
   - xarray
   - zarr
   - moto
-  - pip:
-       - rangehttpserver
+  - rangehttpserver
