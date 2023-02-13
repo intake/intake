@@ -36,5 +36,3 @@ dependencies:
   - sqlalchemy
   - click
   - rangehttpserver
-  - tiled
-  - sparse
