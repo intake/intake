@@ -343,9 +343,9 @@ no entrypoints, it will issue a ``FutureWarning``.
 Python API to Driver Discovery
 ''''''''''''''''''''''''''''''
 
-.. autofunction:: intake.source.discovery.autodiscover
-.. autofunction:: intake.source.discovery.enable
-.. autofunction:: intake.source.discovery.disable
+.. autofunction:: intake.source.discovery.DriverSouces.register_driver
+.. autofunction:: intake.source.discovery.DriverSouces.enable
+.. autofunction:: intake.source.discovery.DriverSouces.disable
 
 .. _remote_data:
 

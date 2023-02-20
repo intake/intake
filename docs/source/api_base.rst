@@ -7,7 +7,6 @@ This is a reference API class listing, useful mainly for developers.
    intake.source.base.DataSourceBase
    intake.source.base.DataSource
    intake.source.base.PatternMixin
-   intake.source.base.AliasSource
    intake.container.base.RemoteSource
    intake.catalog.Catalog
    intake.catalog.entry.CatalogEntry
@@ -41,9 +40,6 @@ This is a reference API class listing, useful mainly for developers.
 
 .. autoclass:: intake.source.cache.BaseCache
    :members:
-
-.. autoclass:: intake.source.base.AliasSource
-   :members: __init__, _get_source
 
 .. autoclass:: intake.source.base.PatternMixin
    :members:

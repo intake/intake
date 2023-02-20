@@ -96,8 +96,6 @@ GUI
    intake.interface.catalog.search.Search
    intake.interface.catalog.search.SearchInputs
    intake.interface.catalog.select.CatSelector
-   intake.interface.source.defined_plots.Plots
-   intake.interface.source.gui.SourceGUI
    intake.interface.source.description.Description
    intake.interface.source.select.SourceSelector
 
@@ -131,15 +129,8 @@ GUI
 .. autoclass:: intake.interface.catalog.select.CatSelector
    :members:
 
-.. autoclass:: intake.interface.source.defined_plots.Plots
-   :members:
-
-.. autoclass:: intake.interface.source.gui.SourceGUI
-   :members:
-
 .. autoclass:: intake.interface.source.description.Description
    :members:
 
 .. autoclass:: intake.interface.source.select.SourceSelector
    :members:
-
