@@ -36,3 +36,4 @@ dependencies:
   - sqlalchemy
   - click
   - rangehttpserver
+  - pre-commit

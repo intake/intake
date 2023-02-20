@@ -39,3 +39,4 @@ dependencies:
       - zarr
       - moto
       - toolz
+      - pre-commit
