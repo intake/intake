@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 class CatalogException(Exception):
@@ -18,6 +18,7 @@ class PermissionDenied(CatalogException):
 
 class ShellPermissionDenied(PermissionDenied):
     """The user does not have permission to execute shell commands."""
+
     def __init__(self, msg=None):
         if msg is None:
             msg = "Additional permissions needed to execute shell commands."
@@ -26,6 +27,7 @@ class ShellPermissionDenied(PermissionDenied):
 
 class EnvironmentPermissionDenied(PermissionDenied):
     """The user does not have permission to read environment variables."""
+
     def __init__(self, msg=None):
         if msg is None:
             msg = "Additional permissions needed to read environment variables."
@@ -34,6 +36,7 @@ class EnvironmentPermissionDenied(PermissionDenied):
 
 class ValidationError(CatalogException):
     """Something's wrong with the catalog spec"""
+
     def __init__(self, message, errors):
         super(ValidationError, self).__init__(message)
         self.errors = errors
@@ -41,11 +44,11 @@ class ValidationError(CatalogException):
 
 class DuplicateKeyError(ValidationError):
     """Catalog contains key duplications"""
+
     def __init__(self, context, context_mark, problem, problem_mark):
         line = problem_mark.line
         column = problem_mark.column
-        msg = "duplicate key found on line {}, column {}".format(
-            line + 1, column + 1)
+        msg = "duplicate key found on line {}, column {}".format(line + 1, column + 1)
         super(DuplicateKeyError, self).__init__(msg, [])
 
 

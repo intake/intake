@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import ast
 import functools
@@ -77,29 +77,27 @@ def _j_passthrough(x, funcname):
 
 def _expand(p, context, all_vars, client, getenv, getshell):
     if isinstance(p, dict):
-        return {k: _expand(v, context, all_vars, client, getenv, getshell)
-                for k, v in p.items()}
+        return {k: _expand(v, context, all_vars, client, getenv, getshell) for k, v in p.items()}
     elif isinstance(p, (list, tuple, set)):
-        return type(p)(_expand(v, context, all_vars, client, getenv, getshell)
-                       for v in p)
+        return type(p)(_expand(v, context, all_vars, client, getenv, getshell) for v in p)
     elif isinstance(p, str):
         jinja = Environment()
         if getenv and not client:
-            jinja.globals['env'] = _j_getenv
+            jinja.globals["env"] = _j_getenv
         else:
-            jinja.globals['env'] = lambda x: _j_passthrough(x, funcname='env')
+            jinja.globals["env"] = lambda x: _j_passthrough(x, funcname="env")
         if getenv and client:
-            jinja.globals['client_env'] = _j_getenv
+            jinja.globals["client_env"] = _j_getenv
         else:
-            jinja.globals['client_env'] = lambda x: _j_passthrough(x, funcname='client_env')
+            jinja.globals["client_env"] = lambda x: _j_passthrough(x, funcname="client_env")
         if getshell and not client:
-            jinja.globals['shell'] = _j_getshell
+            jinja.globals["shell"] = _j_getshell
         else:
-            jinja.globals['shell'] = lambda x: _j_passthrough(x, funcname='shell')
+            jinja.globals["shell"] = lambda x: _j_passthrough(x, funcname="shell")
         if getshell and client:
-            jinja.globals['client_shell'] = _j_getshell
+            jinja.globals["client_shell"] = _j_getshell
         else:
-            jinja.globals['client_shell'] = lambda x: _j_passthrough(x, funcname='client_shell')
+            jinja.globals["client_shell"] = lambda x: _j_passthrough(x, funcname="client_shell")
         ast = jinja.parse(p)
         all_vars -= meta.find_undeclared_variables(ast)
         return jinja.from_string(p).render(context)
@@ -108,8 +106,7 @@ def _expand(p, context, all_vars, client, getenv, getshell):
         return p
 
 
-def expand_templates(pars, context, return_left=False, client=False,
-                     getenv=True, getshell=True):
+def expand_templates(pars, context, return_left=False, client=False, getenv=True, getshell=True):
     """
     Render variables in context into the set of parameters with jinja2.
 
@@ -151,34 +148,31 @@ def expand_defaults(default, client=False, getenv=True, getshell=True):
     If the environment variable is missing or the shell command fails, the
     output is an empty string.
     """
-    r = re.match(r'env\((.*),?(.*)\)', default)
+    r = re.match(r"env\((.*),?(.*)\)", default)
     if r and not client and getenv:
         gs = r.groups()
         default = os.environ.get(gs[0], gs[1] if len(gs) > 1 else "")
-    r = re.match(r'client_env\((.*)\)', default)
+    r = re.match(r"client_env\((.*)\)", default)
     if r and client and getenv:
-        default = os.environ.get(r.groups()[0], '')
-    r = re.match(r'shell\((.*)\)', default)
+        default = os.environ.get(r.groups()[0], "")
+    r = re.match(r"shell\((.*)\)", default)
     if r and not client and getshell:
         try:
             cmd = shlex.split(r.groups()[0])
-            default = subprocess.check_output(
-                cmd).rstrip().decode('utf8')
+            default = subprocess.check_output(cmd).rstrip().decode("utf8")
         except (subprocess.CalledProcessError, OSError):
-            default = ''
-    r = re.match(r'client_shell\((.*)\)', default)
+            default = ""
+    r = re.match(r"client_shell\((.*)\)", default)
     if r and client and getshell:
         try:
             cmd = shlex.split(r.groups()[0])
-            default = subprocess.check_output(
-                cmd).rstrip().decode('utf8')
+            default = subprocess.check_output(cmd).rstrip().decode("utf8")
         except (subprocess.CalledProcessError, OSError):
-            default = ''
+            default = ""
     return default
 
 
-def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True,
-               getshell=True):
+def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True, getshell=True):
     """Produce open arguments by merging various inputs
 
     This function is called in the context of a catalog entry, when finalising
@@ -234,12 +228,10 @@ def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True,
         val = user_inputs.get(par.name, par.default)
         if val is not None:
             if isinstance(val, str):
-                val = expand_defaults(val, getenv=getenv, getshell=getshell,
-                                      client=client)
+                val = expand_defaults(val, getenv=getenv, getshell=getshell, client=client)
             context[par.name] = par.validate(val)
     context.update({k: v for k, v in user_inputs.items() if k not in context})
-    out, left = expand_templates(params, context, True, client, getenv,
-                                 getshell)
+    out, left = expand_templates(params, context, True, client, getenv, getshell)
     context = {k: v for k, v in context.items() if k in left}
     for par in spec_pars:
         if par.name in context:
@@ -248,10 +240,9 @@ def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True,
             left.remove(par.name)
 
     params.update(out)
-    user_inputs = expand_templates(user_inputs, context, False, client, getenv,
-                                   getshell)
+    user_inputs = expand_templates(user_inputs, context, False, client, getenv, getshell)
     params.update({k: v for k, v in user_inputs.items() if k in left})
-    params.pop('CATALOG_DIR', None)
+    params.pop("CATALOG_DIR", None)
     for k, v in params.copy().items():
         # final validation/coersion
         for sp in [p for p in spec_pars if p.name == k]:
@@ -268,7 +259,7 @@ def coerce_datetime(v=None):
 
     try:
         iter(v)
-    except TypeError: # not iterable
+    except TypeError:  # not iterable
         pass
     else:
         if "__datetime__" in v:
@@ -278,17 +269,17 @@ def coerce_datetime(v=None):
 
 
 COERCION_RULES = {
-    'bool': bool,
-    'datetime': coerce_datetime,
-    'dict': dict,
-    'float': float,
-    'tuple': tuple,
-    'mlist': list,
-    'int': int,
-    'list': list,
-    'str': str,
-    'unicode': str,
-    'other': lambda x: x
+    "bool": bool,
+    "datetime": coerce_datetime,
+    "dict": dict,
+    "float": float,
+    "tuple": tuple,
+    "mlist": list,
+    "int": int,
+    "list": list,
+    "str": str,
+    "unicode": str,
+    "other": lambda x: x,
 }
 
 
@@ -340,6 +331,6 @@ def _has_catalog_dir(args):
     for k, arg in args.items():
         parsed_content = env.parse(arg)
         vars = meta.find_undeclared_variables(parsed_content)
-        if 'CATALOG_DIR' in vars:
+        if "CATALOG_DIR" in vars:
             return True
     return False

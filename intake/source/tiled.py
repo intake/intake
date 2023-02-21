@@ -54,6 +54,7 @@ class TiledCatalog(Catalog):
         """
         if type == "text":
             from tiled.queries import FullText
+
             q = FullText(query)
         else:
             raise NotImplementedError
@@ -72,7 +73,7 @@ types = {
     "DaskDataArrayClient": "xarray",
     "DaskDatasetClient": "xarray",
     "DaskVariableClient": "xarray",
-    "DaskDataFrameClient": "dataframe"
+    "DaskDataFrameClient": "dataframe",
 }
 
 
@@ -118,10 +119,7 @@ class TiledSource(DataSource):
         x = self.to_dask()
         dt = getattr(x, "dtype", None) or getattr(x, "dtypes", None)
         parts = getattr(x, "npartitions", None) or x.data.npartitions
-        return dict(dtype=dt,
-                    shape=getattr(self.instance.structure().macro, "shape", x.shape),
-                    npartitions=parts,
-                    metadata=self.metadata)
+        return dict(dtype=dt, shape=getattr(self.instance.structure().macro, "shape", x.shape), npartitions=parts, metadata=self.metadata)
 
     def to_dask(self):
         # cache this?
@@ -132,6 +130,6 @@ class TiledSource(DataSource):
 
     def _yaml(self):
         y = super()._yaml()
-        v = list(y['sources'].values())[0]
-        v['args'].pop('instance')
+        v = list(y["sources"].values())[0]
+        v["args"].pop("instance")
         return y

@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 from .cache import Cache
 from .config import Config
@@ -17,5 +17,4 @@ from .info import Info
 from .list import List
 from .precache import Precache
 
-all  = (Cache, Config, Describe, Discover, Example, Exists, Get, Info, List,
-        Precache, Drivers)
+all = (Cache, Config, Describe, Discover, Example, Exists, Get, Info, List, Precache, Drivers)

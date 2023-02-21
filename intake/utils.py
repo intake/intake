@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import collections
 import collections.abc
@@ -18,10 +18,10 @@ import yaml
 
 
 def make_path_posix(path):
-    """ Make path generic """
-    if '://' in path:
+    """Make path generic"""
+    if "://" in path:
         return path
-    return path.replace('\\', '/').replace('//', '/')
+    return path.replace("\\", "/").replace("//", "/")
 
 
 def no_duplicates_constructor(loader, node, deep=False):
@@ -37,22 +37,18 @@ def no_duplicates_constructor(loader, node, deep=False):
         if key in mapping:
             from intake.catalog.exceptions import DuplicateKeyError
 
-            raise DuplicateKeyError("while constructing a mapping",
-                                    node.start_mark,
-                                    "found duplicate key (%s)" % key,
-                                    key_node.start_mark)
+            raise DuplicateKeyError("while constructing a mapping", node.start_mark, "found duplicate key (%s)" % key, key_node.start_mark)
         mapping[key] = value
 
     return loader.construct_mapping(node, deep)
 
 
 def tuple_constructor(loader, node, deep=False):
-    return tuple(loader.construct_object(node, deep=deep)
-                 for node in node.value)
+    return tuple(loader.construct_object(node, deep=deep) for node in node.value)
 
 
 def represent_dictionary_order(self, dict_data):
-    return self.represent_mapping('tag:yaml.org,2002:map', dict_data.items())
+    return self.represent_mapping("tag:yaml.org,2002:map", dict_data.items())
 
 
 yaml.add_representer(OrderedDict, represent_dictionary_order)
@@ -60,18 +56,12 @@ yaml.add_representer(OrderedDict, represent_dictionary_order)
 
 @contextmanager
 def no_duplicate_yaml():
-    yaml.SafeLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        no_duplicates_constructor)
-    yaml.SafeLoader.add_constructor('tag:yaml.org,2002:python/tuple',
-                                    tuple_constructor)
+    yaml.SafeLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, no_duplicates_constructor)
+    yaml.SafeLoader.add_constructor("tag:yaml.org,2002:python/tuple", tuple_constructor)
     try:
         yield
     finally:
-        yaml.SafeLoader.add_constructor(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            yaml.constructor.SafeConstructor.construct_yaml_map
-        )
+        yaml.SafeLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, yaml.constructor.SafeConstructor.construct_yaml_map)
 
 
 def yaml_load(stream):
@@ -83,14 +73,14 @@ def yaml_load(stream):
 def classname(ob):
     """Get the object's class's name as package.module.Class"""
     import inspect
+
     if inspect.isclass(ob):
-        return '.'.join([ob.__module__, ob.__name__])
+        return ".".join([ob.__module__, ob.__name__])
     else:
-        return '.'.join([ob.__class__.__module__, ob.__class__.__name__])
+        return ".".join([ob.__class__.__module__, ob.__class__.__name__])
 
 
 class DictSerialiseMixin(object):
-
     __tok_cache = None
 
     def __new__(cls, *args, **kwargs):
@@ -108,36 +98,30 @@ class DictSerialiseMixin(object):
     def __dask_tokenize__(self):
         if self.__tok_cache is None:
             from dask.base import tokenize
+
             self.__tok_cache = tokenize(self.__getstate__())
         return self.__tok_cache
 
     def __getstate__(self):
-        args = [arg.__getstate__() if isinstance(arg, DictSerialiseMixin)
-                else arg
-                for arg in self._captured_init_args]
+        args = [arg.__getstate__() if isinstance(arg, DictSerialiseMixin) else arg for arg in self._captured_init_args]
         # We employ OrderedDict in several places. The motivation
         # is to speed up dask tokenization. When dask tokenizes a plain dict,
         # it sorts the keys, and it turns out that this sort operation
         # dominates the call time, even for very small dicts. Using an
         # OrderedDict steers dask toward a different and faster tokenization.
-        kwargs = collections.OrderedDict({
-            k: arg.__getstate__()
-            if isinstance(arg, DictSerialiseMixin) else arg
-            for k, arg in self._captured_init_kwargs.items()
-        })
-        return collections.OrderedDict(cls=self.classname,
-                                       args=args,
-                                       kwargs=kwargs)
+        kwargs = collections.OrderedDict({k: arg.__getstate__() if isinstance(arg, DictSerialiseMixin) else arg for k, arg in self._captured_init_kwargs.items()})
+        return collections.OrderedDict(cls=self.classname, args=args, kwargs=kwargs)
 
     def __setstate__(self, state):
         # reconstitute instances here
-        self._captured_init_kwargs = state['kwargs']
-        self._captured_init_args = state['args']
-        state.pop('cls', None)
-        self.__init__(*state['args'], **state['kwargs'])
+        self._captured_init_kwargs = state["kwargs"]
+        self._captured_init_args = state["args"]
+        state.pop("cls", None)
+        self.__init__(*state["args"], **state["kwargs"])
 
     def __hash__(self):
         from dask.base import tokenize
+
         return int(tokenize(self), 16)
 
     def __eq__(self, other):
@@ -146,14 +130,15 @@ class DictSerialiseMixin(object):
 
 def remake_instance(data):
     import importlib
+
     if isinstance(data, str):
-        data = {'cls': data}
+        data = {"cls": data}
     else:
         data = data.copy()
-    mod, klass = data.pop('cls').rsplit('.', 1)
+    mod, klass = data.pop("cls").rsplit(".", 1)
     module = importlib.import_module(mod)
     cl = getattr(module, klass)
-    return cl(*data.get('args', ()), **data.get('kwargs', {}))
+    return cl(*data.get("args", ()), **data.get("kwargs", {}))
 
 
 def pretty_describe(object, nestedness=0, indent=2):
@@ -161,24 +146,25 @@ def pretty_describe(object, nestedness=0, indent=2):
     if not isinstance(object, dict):
         return str(object)
     sep = f'\n{" " * nestedness * indent}'
-    out = sep.join((f'{k}: {pretty_describe(v, nestedness + 1)}' for k, v in object.items()))
+    out = sep.join((f"{k}: {pretty_describe(v, nestedness + 1)}" for k, v in object.items()))
     if nestedness > 0 and out:
-        return f'{sep}{out}'
+        return f"{sep}{out}"
     return out
 
 
 def decode_datetime(obj):
     import numpy
+
     if not isinstance(obj, numpy.ndarray) and "__datetime__" in obj:
         try:
             obj = datetime.datetime.strptime(
-                    obj["as_str"],
-                    "%Y%m%dT%H:%M:%S.%f%z",
+                obj["as_str"],
+                "%Y%m%dT%H:%M:%S.%f%z",
             )
-        except ValueError: # Perhaps lacking tz info
+        except ValueError:  # Perhaps lacking tz info
             obj = datetime.datetime.strptime(
-                    obj["as_str"],
-                    "%Y%m%dT%H:%M:%S.%f",
+                obj["as_str"],
+                "%Y%m%dT%H:%M:%S.%f",
             )
     return obj
 
@@ -198,6 +184,7 @@ class RegistryView(collections.abc.Mapping):
     - self._register_func_name
     - self._unregister_func_name
     """
+
     def __init__(self, registry):
         self._registry = registry
 
@@ -217,9 +204,8 @@ class RegistryView(collections.abc.Mapping):
 
     def update(self, *args, **kwargs):
         warnings.warn(
-            f"In a future release of intake, the {self._registry_name} will "
-            f"not be directly mutable. Use {self._register_func_name}.",
-            DeprecationWarning)
+            f"In a future release of intake, the {self._registry_name} will " f"not be directly mutable. Use {self._register_func_name}.", DeprecationWarning
+        )
         self._registry.update(*args, **kwargs)
         # raise TypeError(
         #     f"The registry cannot be edited directly. "
@@ -227,9 +213,8 @@ class RegistryView(collections.abc.Mapping):
 
     def __setitem__(self, key, value):
         warnings.warn(
-            f"In a future release of intake, the {self._registry_name} will "
-            f"not be directly mutable. Use {self._register_func_name}.",
-            DeprecationWarning)
+            f"In a future release of intake, the {self._registry_name} will " f"not be directly mutable. Use {self._register_func_name}.", DeprecationWarning
+        )
         self._registry[key] = value
         # raise TypeError(
         #     f"The registry cannot be edited directly. "
@@ -237,9 +222,8 @@ class RegistryView(collections.abc.Mapping):
 
     def __delitem__(self, key):
         warnings.warn(
-            f"In a future release of intake, the {self._registry_name} will "
-            f"not be directly mutable. Use {self._unregister_func_name}.",
-            DeprecationWarning)
+            f"In a future release of intake, the {self._registry_name} will " f"not be directly mutable. Use {self._unregister_func_name}.", DeprecationWarning
+        )
         del self._registry[key]
         # raise TypeError(
         #     f"The registry cannot be edited directly. "
@@ -281,7 +265,7 @@ class ModuleImporter:
 
 
 def is_notebook() -> bool:
-    """ Check if code is running in a notebook
+    """Check if code is running in a notebook
 
     Copied from tqdm.autonotebook
 
@@ -292,10 +276,10 @@ def is_notebook() -> bool:
     """
 
     try:
-        get_ipython = sys.modules['IPython'].get_ipython
-        if 'IPKernelApp' not in get_ipython().config:  # pragma: no cover
+        get_ipython = sys.modules["IPython"].get_ipython
+        if "IPKernelApp" not in get_ipython().config:  # pragma: no cover
             raise ImportError("console")
-        if 'VSCODE_PID' in os.environ:  # pragma: no cover
+        if "VSCODE_PID" in os.environ:  # pragma: no cover
             raise ImportError("vscode")
         return True
     except Exception:

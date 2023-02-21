@@ -1,13 +1,13 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import pytest
 
-pytest.importorskip('panel')
+pytest.importorskip("panel")
 
 
 def assert_widget_matches(browser):
@@ -17,6 +17,7 @@ def assert_widget_matches(browser):
 
 def test_source_browser_init_with_cats(cat1, cat2, sources1, sources2):
     from ..select import SourceSelector
+
     source_browser = SourceSelector(cats=[cat1, cat2])
     assert sources1[0].name in source_browser.options
     assert sources2[0].name in source_browser.options
@@ -26,6 +27,7 @@ def test_source_browser_init_with_cats(cat1, cat2, sources1, sources2):
 
 def test_source_browser_set_cats(cat1, cat2, sources1, sources2):
     from ..select import SourceSelector
+
     source_browser = SourceSelector()
     source_browser.cats = [cat1, cat2]
     assert sources1[0].name in source_browser.options
@@ -61,17 +63,18 @@ def test_source_browser_add_list(source_browser, sources2):
 
 def test_source_browser_add_entry_with_nonunique_name(source_browser):
     from intake.catalog.local import LocalCatalogEntry
+
     name = source_browser.labels[0]
-    e0 = LocalCatalogEntry(name, '', 'csv', args=dict(urlpath='foo'))
+    e0 = LocalCatalogEntry(name, "", "csv", args=dict(urlpath="foo"))
     source_browser.add(e0)
-    assert f'{name}_0' in source_browser.labels
+    assert f"{name}_0" in source_browser.labels
     assert name in source_browser.labels
     assert_widget_matches(source_browser)
 
-    e1 = LocalCatalogEntry(name, '', 'csv', args=dict(urlpath='foo1'))
+    e1 = LocalCatalogEntry(name, "", "csv", args=dict(urlpath="foo1"))
     source_browser.add(e1)
-    assert f'{name}_1' in source_browser.labels
-    assert f'{name}_0' in source_browser.labels
+    assert f"{name}_1" in source_browser.labels
+    assert f"{name}_0" in source_browser.labels
     assert name in source_browser.labels
     assert_widget_matches(source_browser)
 

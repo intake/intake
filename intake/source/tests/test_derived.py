@@ -2,8 +2,7 @@ import os
 
 import intake
 
-catfile = os.path.join(os.path.dirname(__file__), "..", "..",
-                       "catalog", "tests", "catalog_alias.yml")
+catfile = os.path.join(os.path.dirname(__file__), "..", "..", "catalog", "tests", "catalog_alias.yml")
 
 
 def test_columns():

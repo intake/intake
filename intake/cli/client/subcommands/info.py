@@ -1,22 +1,23 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
-'''
+# -----------------------------------------------------------------------------
+"""
 
-'''
+"""
 
 import logging
 
 log = logging.getLogger(__name__)
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Imports
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import sys
+
 # Standard library imports
 from importlib import import_module
 
@@ -27,14 +28,13 @@ from intake.cli.util import Subcommand
 # External imports
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # API
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 
 class Info(Subcommand):
-    ''' Display runtime information related to Intake
-
-    '''
+    """Display runtime information related to Intake"""
 
     name = "info"
 
@@ -42,13 +42,14 @@ class Info(Subcommand):
         pass
 
     def invoke(self, args):
-        print("Python version      :  %s" % sys.version.split('\n')[0])
-        print("IPython version     :  %s" % _version_from_module('IPython'))
-        print("Tornado version     :  %s" % _version_from_module('tornado', 'version'))
-        print("Dask version        :  %s" % _version_from_module('dask'))
-        print("Pandas version      :  %s" % _version_from_module('pandas'))
-        print("Numpy version       :  %s" % _version_from_module('numpy'))
+        print("Python version      :  %s" % sys.version.split("\n")[0])
+        print("IPython version     :  %s" % _version_from_module("IPython"))
+        print("Tornado version     :  %s" % _version_from_module("tornado", "version"))
+        print("Dask version        :  %s" % _version_from_module("dask"))
+        print("Pandas version      :  %s" % _version_from_module("pandas"))
+        print("Numpy version       :  %s" % _version_from_module("numpy"))
         print("Intake version      :  %s" % __version__)
+
 
 def _version_from_module(modname, version_attr="__version__"):
     try:

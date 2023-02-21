@@ -1,15 +1,15 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import pytest
 
 import intake
 
-pytest.importorskip('panel')
+pytest.importorskip("panel")
 
 
 def assert_widget_matches(browser):
@@ -19,6 +19,7 @@ def assert_widget_matches(browser):
 
 def test_catalog_browser_init_emtpy():
     from ..select import CatSelector
+
     cat_browser = CatSelector()
     assert cat_browser.selected == [intake.cat]
     assert_widget_matches(cat_browser)
@@ -68,7 +69,7 @@ def test_catalog_browser_add_nested_catalog(cat_browser, parent_cat):
     cat_browser.add(parent_cat)
     assert parent_cat.name in cat_browser.options
     assert cat_browser.selected == [parent_cat]
-    assert list(cat_browser.options.keys()) == ['catalog1', 'parent', '└── child1', '└── child2']
+    assert list(cat_browser.options.keys()) == ["catalog1", "parent", "└── child1", "└── child2"]
     assert_widget_matches(cat_browser)
 
 
@@ -98,7 +99,7 @@ def test_catalog_browser_remove_nested_catalog(cat_browser, parent_cat):
     cat_browser.add(parent_cat)
     assert parent_cat.name in cat_browser.options
     assert cat_browser.selected == [parent_cat]
-    assert list(cat_browser.options.keys()) == ['catalog1', 'parent', '└── child1', '└── child2']
+    assert list(cat_browser.options.keys()) == ["catalog1", "parent", "└── child1", "└── child2"]
     cat_browser.remove_selected()
-    assert list(cat_browser.options.keys()) == ['catalog1']
+    assert list(cat_browser.options.keys()) == ["catalog1"]
     assert_widget_matches(cat_browser)

@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import importlib
 import logging
@@ -13,7 +13,7 @@ import warnings
 
 from ._version import get_versions
 
-__version__ = get_versions()['version']
+__version__ = get_versions()["version"]
 del get_versions
 
 from .catalog.base import Catalog
@@ -21,7 +21,7 @@ from .source import registry
 
 imports = {
     "DataSource": "intake.source.base:DataSource",
-    'Schema': "intake.source.base:Schema",
+    "Schema": "intake.source.base:Schema",
     "load_combo_catalog": "intake.catalog.default:load_combo_catalog",
     "upload": "intake.container:upload",
     "gui": "intake.interface:instance",
@@ -32,7 +32,7 @@ imports = {
     "unregister_driver": "intake.source:unregister_driver",
 }
 openers = set()
-logger = logging.getLogger('intake')
+logger = logging.getLogger("intake")
 
 
 def __getattr__(attr):
@@ -77,11 +77,10 @@ def make_open_functions():
     from .source.discovery import drivers
 
     for name in drivers.enabled_plugins():
-
-        func_name = 'open_' + name
+        func_name = "open_" + name
         if not func_name.isidentifier():
             # primitive name normalization
-            func_name = re.sub('[-=~^&|@+]', '_', func_name)
+            func_name = re.sub("[-=~^&|@+]", "_", func_name)
         if func_name.isidentifier():
             # stash name for dir() and later fetch
             openers.add(func_name)
@@ -129,42 +128,40 @@ def open_catalog(uri=None, **kwargs):
     intake.open_yaml_files_cat, intake.open_yaml_file_cat,
     intake.open_intake_remote
     """
-    driver = kwargs.pop('driver', None)
+    driver = kwargs.pop("driver", None)
     if isinstance(uri, os.PathLike):
         uri = os.fspath(uri)
     if driver is None:
         if uri:
-            if ((isinstance(uri, str) and "*" in uri)
-                    or ((isinstance(uri, (list, tuple))) and len(uri) > 1)):
+            if (isinstance(uri, str) and "*" in uri) or ((isinstance(uri, (list, tuple))) and len(uri) > 1):
                 # glob string or list of files/globs
-                driver = 'yaml_files_cat'
+                driver = "yaml_files_cat"
             elif isinstance(uri, (list, tuple)) and len(uri) == 1:
                 uri = uri[0]
                 if "*" in uri[0]:
                     # single glob string in a list
-                    driver = 'yaml_files_cat'
+                    driver = "yaml_files_cat"
                 else:
                     # single filename in a list
-                    driver = 'yaml_file_cat'
+                    driver = "yaml_file_cat"
             elif isinstance(uri, str):
                 # single URL
-                if uri.startswith('intake:'):
+                if uri.startswith("intake:"):
                     # server
-                    driver = 'intake_remote'
+                    driver = "intake_remote"
                 else:
-                    if uri.endswith(('.yml', '.yaml')):
-                        driver = 'yaml_file_cat'
+                    if uri.endswith((".yml", ".yaml")):
+                        driver = "yaml_file_cat"
                     else:
-                        uri = uri.rstrip('/') + '/*.y*ml'
-                        driver = 'yaml_files_cat'
+                        uri = uri.rstrip("/") + "/*.y*ml"
+                        driver = "yaml_files_cat"
             else:
                 raise ValueError("URI not understood: %s" % uri)
         else:
             # empty cat
-            driver = 'catalog'
-    if '_file' not in driver:
-        kwargs.pop('fs', None)
+            driver = "catalog"
+    if "_file" not in driver:
+        kwargs.pop("fs", None)
     if driver not in registry:
-        raise ValueError('Unknown catalog driver (%s), supply one of: %s'
-                         % (driver, list(sorted(registry))))
+        raise ValueError("Unknown catalog driver (%s), supply one of: %s" % (driver, list(sorted(registry))))
     return registry[driver](uri, **kwargs)

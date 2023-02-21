@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import keyword
 import logging
@@ -13,7 +13,7 @@ import time
 from ..source.base import DataSource, DataSourceBase, NoEntry
 from .utils import reload_on_change
 
-logger = logging.getLogger('intake')
+logger = logging.getLogger("intake")
 
 
 class Catalog(DataSource):
@@ -35,14 +35,25 @@ class Catalog(DataSource):
     metadata : dict
         Arbitrary information to carry along with the data source specs.
     """
+
     # emulate a DataSource
-    container = 'catalog'
-    name = 'catalog'
+    container = "catalog"
+    name = "catalog"
     auth = None
 
-    def __init__(self, entries=None, name=None, description=None, metadata=None,
-                 ttl=60, getenv=True, getshell=True,
-                 persist_mode='default', storage_options=None, user_parameters=None):
+    def __init__(
+        self,
+        entries=None,
+        name=None,
+        description=None,
+        metadata=None,
+        ttl=60,
+        getenv=True,
+        getshell=True,
+        persist_mode="default",
+        storage_options=None,
+        user_parameters=None,
+    ):
         """
         Parameters
         ----------
@@ -85,16 +96,15 @@ class Catalog(DataSource):
         self.storage_options = storage_options
         if isinstance(user_parameters, dict) and user_parameters:
             from .local import UserParameter
-            self.user_parameters = {name: (UserParameter(name=name, **up) if isinstance(up, dict)
-                                           else up)
-                                    for name, up in user_parameters.items()}
+
+            self.user_parameters = {name: (UserParameter(name=name, **up) if isinstance(up, dict) else up) for name, up in user_parameters.items()}
         elif isinstance(user_parameters, (list, tuple)):
             self.user_parameters = {up["name"]: up for up in user_parameters}
         else:
             self.user_parameters = {}
-        if persist_mode not in ['always', 'never', 'default']:
+        if persist_mode not in ["always", "never", "default"]:
             # should be True, False, None ?
-            raise ValueError('Persist mode (%s) not understood' % persist_mode)
+            raise ValueError("Persist mode (%s) not understood" % persist_mode)
         self.pmode = persist_mode
 
         if entries and isinstance(entries, str):
@@ -104,7 +114,8 @@ class Catalog(DataSource):
                 "Did you mean to use `intake.open_catalog`? Note that in "
                 "versions of intake <=0.5.4 `intake.Catalog` was an "
                 "alias for `intake.open_catalog`. It is now the intake base "
-                "Catalog class.")
+                "Catalog class."
+            )
         self.updated = time.time()
         self._entries = entries if entries is not None else self._make_entries_container()
         self.force_reload()
@@ -175,25 +186,25 @@ class Catalog(DataSource):
     @property
     def version(self):
         # default version for pre-v1 files
-        return self.metadata.get('version', 1)
+        return self.metadata.get("version", 1)
 
     @reload_on_change
     def search(self, text, depth=2):
         import copy
+
         words = text.lower().split()
-        entries = {k: copy.copy(v)for k, v in self.walk(depth=depth).items()
-                   if any(word in str(v.describe().values()).lower()
-                   for word in words)}
+        entries = {k: copy.copy(v) for k, v in self.walk(depth=depth).items() if any(word in str(v.describe().values()).lower() for word in words)}
         cat = Catalog.from_dict(
-            entries, name=self.name + "_search",
+            entries,
+            name=self.name + "_search",
             ttl=self.ttl,
             getenv=self.getenv,
             getshell=self.getshell,
             metadata=(self.metadata or {}).copy(),
             storage_options=self.storage_options,
-            user_parameters=self.user_parameters.copy()
+            user_parameters=self.user_parameters.copy(),
         )
-        cat.metadata['search'] = {'text': text, 'upstream': self.name}
+        cat.metadata["search"] = {"text": text, "upstream": self.name}
         cat.cat = self
         for e in entries.values():
             e._catalog = cat
@@ -227,8 +238,7 @@ class Catalog(DataSource):
         Catalog
            New catalog with Entries that still refer to their parents
         """
-        return Catalog.from_dict({key: entry for key, entry in self._entries.items()
-                                  if func(entry)})
+        return Catalog.from_dict({key: entry for key, entry in self._entries.items() if func(entry)})
 
     @reload_on_change
     def walk(self, sofar=None, prefix=None, depth=2):
@@ -252,14 +262,14 @@ class Catalog(DataSource):
         out = sofar if sofar is not None else {}
         prefix = [] if prefix is None else prefix
         for name, item in self._entries.items():
-            if item._container == 'catalog' and depth > 1:
+            if item._container == "catalog" and depth > 1:
                 # recurse with default open parameters
                 try:
-                    item().walk(out, prefix + [name], depth-1)
+                    item().walk(out, prefix + [name], depth - 1)
                 except Exception as e:
                     print(e)
                     pass  # ignore inability to descend
-            n = '.'.join(prefix + [name])
+            n = ".".join(prefix + [name])
             out[n] = item
         return out
 
@@ -281,17 +291,17 @@ class Catalog(DataSource):
         block referring to this catalog.
         """
         import yaml
-        output = {"metadata": self.metadata, "sources": {},
-                  "name": self.name, "description": self.description}
+
+        output = {"metadata": self.metadata, "sources": {}, "name": self.name, "description": self.description}
         for key, entry in self._entries.items():
             kw = entry._captured_init_kwargs.copy()
-            kw.pop('catalog', None)
-            kw['parameters'] = {k.name: k.__getstate__()['kwargs'] for k in kw.get('parameters', [])}
+            kw.pop("catalog", None)
+            kw["parameters"] = {k.name: k.__getstate__()["kwargs"] for k in kw.get("parameters", [])}
             try:
-                if issubclass(kw['driver'], DataSourceBase):
-                    kw['driver'] = ".".join([kw['driver'].__module__, kw['driver'].__name__])
+                if issubclass(kw["driver"], DataSourceBase):
+                    kw["driver"] = ".".join([kw["driver"].__module__, kw["driver"].__name__])
             except TypeError:
-                pass # ignore exception for a string input
+                pass  # ignore exception for a string input
             output["sources"][key] = kw
         return yaml.dump(output)
 
@@ -307,7 +317,8 @@ class Catalog(DataSource):
             Extra arguments for the file-system
         """
         from fsspec import open_files
-        with open_files([url], **(storage_options or {}), mode='wt')[0] as f:
+
+        with open_files([url], **(storage_options or {}), mode="wt")[0] as f:
             f.write(self.serialize())
 
     @reload_on_change
@@ -316,27 +327,27 @@ class Catalog(DataSource):
         entry._catalog = self
         entry._pmode = self.pmode
 
-        up_names = set((up["name"] if isinstance(up, dict) else up.name)
-                        for up in entry._user_parameters)
+        up_names = set((up["name"] if isinstance(up, dict) else up.name) for up in entry._user_parameters)
         ups = [up for name, up in self.user_parameters.items() if name not in up_names]
         entry._user_parameters = ups + (entry._user_parameters or [])
         return entry()
 
     def configure_new(self, **kwargs):
         from .local import UserParameter
+
         ups = {}
         for k, v in kwargs.copy().items():
             for up in self.user_parameters.values():
                 if isinstance(up, dict):
                     if k == up["name"]:
                         kw = up.copy()
-                        kw['default'] = v
+                        kw["default"] = v
                         ups[k] = UserParameter(**kw)
                         kwargs.pop(k)
                 else:
                     if k == up.name:
                         kw = up._captured_init_kwargs.copy()
-                        kw['default'] = v
+                        kw["default"] = v
                         kw["name"] = k
                         ups[k] = UserParameter(**kw)
                         kwargs.pop(k)
@@ -368,11 +379,11 @@ class Catalog(DataSource):
 
     def __dir__(self):
         # Include tab-completable entries and normal attributes.
-        return (
-            [entry for entry in self if
-             re.match("[_A-Za-z][_a-zA-Z0-9]*$", entry)  # valid Python identifer
-             and not keyword.iskeyword(entry)]  # not a Python keyword
-            + list(self.__dict__.keys()))
+        return [
+            entry for entry in self if re.match("[_A-Za-z][_a-zA-Z0-9]*$", entry) and not keyword.iskeyword(entry)  # valid Python identifer
+        ] + list(  # not a Python keyword
+            self.__dict__.keys()
+        )
 
     def _ipython_key_completions_(self):
         return list(self)
@@ -383,9 +394,9 @@ class Catalog(DataSource):
     def __getattr__(self, item):
         # we need this special case here because the (deprecated) entry
         # property on the base class
-        if item == 'entry':
+        if item == "entry":
             raise NoEntry("Source was not made from a catalog entry")
-        if not item.startswith('_'):
+        if not item.startswith("_"):
             # Fall back to __getitem__.
             try:
                 return self[item]  # triggers reload_on_change
@@ -434,21 +445,21 @@ class Catalog(DataSource):
         if not isinstance(key, list) and key in self:
             # triggers reload_on_change
             s = self._get_entry(key)
-            if s.container == 'catalog':
+            if s.container == "catalog":
                 s.name = key
                 s.user_parameters.update(self.user_parameters.copy())
                 return s
             return s
-        if isinstance(key, str) and '.' in key:
-            key = key.split('.')
+        if isinstance(key, str) and "." in key:
+            key = key.split(".")
         if isinstance(key, list):
             parts = list(key)[:]
-            prefix = ''
+            prefix = ""
             while parts:
                 bit = parts.pop(0)
-                prefix = prefix + ('.' if prefix else '') + bit
+                prefix = prefix + ("." if prefix else "") + bit
                 if prefix in self._entries:
-                    rest = '.'.join(parts)
+                    rest = ".".join(parts)
                     try:
                         out = self._entries[prefix][rest]
                         return out()
@@ -464,8 +475,7 @@ class Catalog(DataSource):
         raise KeyError(key)
 
     def discover(self):
-        return {"container": 'catalog', 'shape': None,
-                'dtype': None, 'metadata': self.metadata}
+        return {"container": "catalog", "shape": None, "dtype": None, "metadata": self.metadata}
 
     def _close(self):
         # TODO: maybe close all entries?
@@ -473,8 +483,9 @@ class Catalog(DataSource):
 
     @property
     def gui(self):
-        if not hasattr(self, '_gui'):
+        if not hasattr(self, "_gui"):
             from .gui import CatalogGUI
+
             self._gui = CatalogGUI(cat=self, visible=True)
         else:
             self._gui.visible = True

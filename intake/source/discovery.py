@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import importlib
 import inspect
@@ -16,7 +16,7 @@ import entrypoints
 
 from ..config import conf
 
-logger = logging.getLogger('intake')
+logger = logging.getLogger("intake")
 
 
 class DriverSouces:
@@ -59,11 +59,10 @@ class DriverSouces:
     def from_conf(self):
         return [
             entrypoints.EntryPoint(
-                name=k,
-                module_name=v.rsplit(":", 1)[0] if ":" in v else v.rsplit(".", 1)[0],
-                object_name=v.rsplit(":", 1)[1] if ":" in v else v.rsplit(".", 1)[1]
+                name=k, module_name=v.rsplit(":", 1)[0] if ":" in v else v.rsplit(".", 1)[0], object_name=v.rsplit(":", 1)[1] if ":" in v else v.rsplit(".", 1)[1]
             )
-            for k, v in self.conf.get("drivers", {}).items() if v
+            for k, v in self.conf.get("drivers", {}).items()
+            if v
         ]
 
     def disabled(self):
@@ -141,12 +140,12 @@ class DriverSouces:
             If None, simply remove driver disable flag, if it is found
         """
         config = self.conf
-        if 'drivers' not in config:
-            config['drivers'] = {}
+        if "drivers" not in config:
+            config["drivers"] = {}
         if driver:
-            config['drivers'][name] = driver
-        elif config['drivers'].get(name) is False:
-            del config['drivers'][name]
+            config["drivers"][name] = driver
+        elif config["drivers"].get(name) is False:
+            del config["drivers"][name]
         config.save()
 
     def disable(self, name):
@@ -160,9 +159,9 @@ class DriverSouces:
             As in ``'zarr'``
         """
         config = self.conf
-        if 'drivers' not in config:
-            config['drivers'] = {}
-        config['drivers'][name] = False
+        if "drivers" not in config:
+            config["drivers"] = {}
+        config["drivers"][name] = False
         config.save()
 
 
@@ -173,17 +172,16 @@ def _load_entrypoint(entrypoint):
     try:
         return entrypoint.load()
     except ImportError as err:
-        raise ConfigurationError(
-            f"Failed to load {entrypoint.name} driver because module "
-            f"{entrypoint.module_name} could not be imported.") from err
+        raise ConfigurationError(f"Failed to load {entrypoint.name} driver because module " f"{entrypoint.module_name} could not be imported.") from err
     except AttributeError as err:
         raise ConfigurationError(
             f"Failed to load {entrypoint.name} driver because no object "
             f"named {entrypoint.object_name} could be found in the module "
-            f"{entrypoint.module_name}.") from err
+            f"{entrypoint.module_name}."
+        ) from err
 
 
-def _package_scan(path=None, plugin_prefix='intake_'):
+def _package_scan(path=None, plugin_prefix="intake_"):
     """Scan for intake drivers and return a dict of plugins.
 
     This searches path (or sys.path) for packages with names that start with
@@ -204,12 +202,13 @@ def _package_scan(path=None, plugin_prefix='intake_'):
                 if plugin_name in plugins:
                     orig_path = inspect.getfile(plugins[plugin_name])
                     new_path = inspect.getfile(plugin)
-                    warnings.warn('Plugin name collision for "%s" from'
-                                  '\n    %s'
-                                  '\nand'
-                                  '\n    %s'
-                                  '\nKeeping plugin from first location.'
-                                  % (plugin_name, orig_path, new_path))
+                    warnings.warn(
+                        'Plugin name collision for "%s" from'
+                        "\n    %s"
+                        "\nand"
+                        "\n    %s"
+                        "\nKeeping plugin from first location." % (plugin_name, orig_path, new_path)
+                    )
                 else:
                     plugins[plugin_name] = plugin
             logger.debug("Import %s took: %7.2f s" % (name, time.time() - t))
@@ -227,13 +226,14 @@ def load_plugins_from_module(module_name):
     """
     from intake.catalog import Catalog
     from intake.source import DataSource
+
     plugins = {}
 
     try:
         try:
             mod = importlib.import_module(module_name)
         except ImportError as error:
-            if module_name.endswith('.py'):
+            if module_name.endswith(".py"):
                 # Provide a specific error regarding the removal of behavior
                 # that intake formerly supported.
                 raise ImportError(
@@ -241,7 +241,8 @@ def load_plugins_from_module(module_name):
                     "files not on the sys.path. This is no longer supported. "
                     "Drivers must be specific with a module path like "
                     "'package_name.module_name, not a Python filename like "
-                    "'module.py'.") from error
+                    "'module.py'."
+                ) from error
             else:
                 raise
     except Exception as e:
@@ -257,5 +258,3 @@ def load_plugins_from_module(module_name):
 
 class ConfigurationError(Exception):
     pass
-
-
