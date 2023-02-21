@@ -13,6 +13,7 @@ This is a reference API class listing, useful mainly for developers.
    intake.catalog.local.UserParameter
    intake.auth.base.BaseAuth
    intake.source.cache.BaseCache
+   intake.source.derived.AliasSource
    intake.source.base.Schema
    intake.container.persist.PersistStore
 
@@ -39,6 +40,9 @@ This is a reference API class listing, useful mainly for developers.
    :members:
 
 .. autoclass:: intake.source.cache.BaseCache
+   :members:
+
+.. autoclass:: intake.source.derived.AliasSource
    :members:
 
 .. autoclass:: intake.source.base.PatternMixin

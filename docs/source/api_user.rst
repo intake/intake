@@ -7,6 +7,7 @@ These are reference class and function definitions likely to be useful to everyo
    intake.open_catalog
    intake.registry
    intake.register_driver
+   intake.unregister_driver
    intake.upload
    intake.source.csv.CSVSource
    intake.source.textfiles.TextFilesSource
