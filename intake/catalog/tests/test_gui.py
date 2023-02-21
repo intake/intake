@@ -5,12 +5,11 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 import pytest
-import os
 
 
 def panel_importable():
     try:
-        import panel as pn
+        import panel as pn  # noqa
         return True
     except:
         return False

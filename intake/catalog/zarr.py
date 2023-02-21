@@ -1,6 +1,5 @@
 from .base import Catalog
 from .local import LocalCatalogEntry
-from ..source import register_driver
 
 
 class ZarrGroupCatalog(Catalog):

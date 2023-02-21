@@ -6,7 +6,7 @@
 #-----------------------------------------------------------------------------
 
 from . import base
-from .utils import DASK_VERSION, reverse_formats, unique_string
+from .utils import reverse_formats, unique_string
 
 
 class CSVSource(base.DataSource, base.PatternMixin):

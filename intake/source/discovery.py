@@ -5,7 +5,6 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from collections.abc import MutableMapping
 import pkgutil
 import warnings
 import importlib

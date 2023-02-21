@@ -9,7 +9,7 @@ import pytest
 
 def panel_importable():
     try:
-        import panel as pn
+        import panel as pn  # noqa
         return True
     except:
         return False

@@ -6,7 +6,6 @@
 #-----------------------------------------------------------------------------
 
 import ast
-from collections.abc import Iterable
 import functools
 import itertools
 from jinja2 import Environment, meta, Undefined

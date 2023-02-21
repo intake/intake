@@ -5,7 +5,6 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-import intake
 import pytest
 
 pytest.importorskip('panel')

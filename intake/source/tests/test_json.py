@@ -7,8 +7,6 @@
 
 import json
 import os
-from pathlib import Path
-from typing import Dict, Optional
 
 import pytest
 from fsspec import open_files

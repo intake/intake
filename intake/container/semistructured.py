@@ -5,7 +5,6 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-import datetime
 from intake.container.base import RemoteSource, get_partition
 from intake.source.base import Schema
 

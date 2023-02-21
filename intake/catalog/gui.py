@@ -4,11 +4,10 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-from functools import partial
 
 try:
     import panel as pn
-    from ..interface.gui import SourceGUI, MAX_WIDTH, ICONS
+    from ..interface.gui import SourceGUI, ICONS
     css = """
     .scrolling {
         overflow: scroll;

@@ -3,7 +3,6 @@ import shutil
 import os
 import pytest
 from intake.catalog.zarr import ZarrGroupCatalog
-from intake.catalog.local import LocalCatalogEntry
 from intake import open_catalog
 from intake.source.zarr import ZarrArraySource
 from .util import assert_items_equal

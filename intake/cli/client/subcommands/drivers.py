@@ -8,7 +8,6 @@
 CLI for listing, enabling, disabling intake drivers
 """
 
-from intake import __version__
 from intake.cli.util import Subcommand
 from intake.source.discovery import drivers
 

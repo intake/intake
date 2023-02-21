@@ -4,10 +4,9 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-import intake
 import panel as pn
 
-from .base import Base, MAX_WIDTH, ICONS
+from .base import Base, ICONS
 from .catalog.gui import CatGUI
 from .source.gui import SourceGUI
 

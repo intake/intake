@@ -270,7 +270,7 @@ def _download(file_in, file_out, blocksize, output=False):
 
         if is_notebook():
             try:
-                import ipywidgets
+                import ipywidgets  # noqa
             except ImportError:
                 logger.warn(
                     "Cache progress bar in a notebook requires ipywidgets to be installed:"

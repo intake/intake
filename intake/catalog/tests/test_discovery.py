@@ -1,7 +1,4 @@
-import copy
-import glob
 import os
-import pytest
 import sys
 
 from ..local import YAMLFilesCatalog, MergedCatalog, EntrypointsCatalog

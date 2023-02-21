@@ -7,7 +7,6 @@
 
 import datetime
 import os.path
-import posixpath
 import shutil
 import tempfile
 import time
@@ -17,7 +16,6 @@ import pytest
 from intake import open_catalog
 from intake.catalog import exceptions, local
 from intake.catalog.local import LocalCatalogEntry, UserParameter, get_dir
-from intake.tests.test_utils import copy_test_file
 from intake.utils import make_path_posix
 
 from .util import assert_items_equal

@@ -114,7 +114,7 @@ def test_no_imports():
     mods = [mod for mod in sys.modules if mod.startswith('intake')]
     [sys.modules.pop(mod) for mod in mods]
 
-    import intake
+    import intake  # noqa
 
     assert 'intake' in sys.modules
 
