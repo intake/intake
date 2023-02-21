@@ -430,7 +430,6 @@ def test_len(intake_server):
 
 def test_datetime(intake_server):
     catalog = open_catalog(intake_server)
-    info = catalog["datetime"].describe()
     catalog['datetime'].parameters['time'] == pd.Timestamp("1970")
 
 

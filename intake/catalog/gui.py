@@ -113,7 +113,7 @@ except ImportError:
     EntryGUI = GUI
     CatalogGUI = GUI
 
-except Exception as e:
+except Exception:
 
     class GUI(object):
         def __init__(self, *args, **kwargs):

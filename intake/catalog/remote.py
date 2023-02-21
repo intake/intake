@@ -149,7 +149,7 @@ class RemoteCatalog(Catalog):
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         page = {}
         for source in info['sources']:
-            user_parameters = source.get('user_parameters', [])
+            # user_parameters = source.get('user_parameters', [])
             # TODO Do something with self._parameters.
             page[source['name']] = RemoteCatalogEntry(
                 url=self.url,
