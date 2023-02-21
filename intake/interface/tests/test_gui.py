@@ -268,7 +268,7 @@ def test_gui_init_empty():
     gui = GUI(cats=[])
     assert gui.cat.select.items == []
     assert gui.cats == []
-    assert gui.item == None
+    assert gui.item is None
 
     assert not gui.cat.add.watchers
     assert gui.cat.add.visible is False

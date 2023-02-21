@@ -489,7 +489,7 @@ def test_cat_with_no_declared_name_gets_name_from_dir_if_file_named_catalog():
 
     cat = open_catalog(fn)
     assert cat.name == 'tests'
-    assert cat.description == None
+    assert cat.description is None
 
 
 def test_default_expansions():

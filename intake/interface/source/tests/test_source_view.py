@@ -45,7 +45,7 @@ def test_description_set_source_from_list(sources2):
 
 def test_description_set_source_from_empty_list(description):
     description.source = []
-    assert description.source == None
+    assert description.source is None
     assert "⠀" * 30 in description.contents
     assert_panel_matches_contents(description)
 
