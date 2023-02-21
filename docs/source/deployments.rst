@@ -64,7 +64,7 @@ across multiple (of the order ~300,000) netCDF files. Finding, investigating, lo
 such as `xarray` can be a daunting task due to the large number of files a user may be interested in.
 ``Intake-esm`` addresses this issue in three steps:
 
-- `Dataset Catalog Curation`_ in form of YAML files. These YAML files provide information about data locations,
+- `Datasets Catalog Curation`_ in form of YAML files. These YAML files provide information about data locations,
   access pattern,  directory structure, etc. ``intake-esm`` uses these YAML files in conjunction with file name templates
   to construct a local database. Each row in this database consists of a set of metadata such as ``experiment``,
   ``modeling realm``, ``frequency`` corresponding to data contained in one netCDF file.

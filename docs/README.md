@@ -6,8 +6,8 @@ documentation.  Create this with:
 ## First option for environment
 
 ```bash
-conda create -n intake python=3.6 pandas dask python-snappy appdirs -c conda-forge -y
-conda activate intake
+conda create -n intake-docs python=3.8 pandas dask python-snappy appdirs -c conda-forge -y
+conda activate intake-docs
 ```
 
 Additional pip packages are listed in `./requirements.txt` are required to
@@ -23,7 +23,7 @@ A conda environment with pip packages included is in `environment.yml` of the cu
 
 ```bash
 conda env create
-conda activate intake
+conda activate intake-docs
 ```
 
 ## Build docs

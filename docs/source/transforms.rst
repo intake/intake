@@ -164,7 +164,7 @@ Plugin examples
 ```````````````
 
  - call `.sel` on xarray datasets `xarray-plugin-transform`_
- 
+
 .. _xarray-plugin-transform: https://github.com/intake/intake-xarray/blob/master/intake_xarray/derived.py#L38
 
 API
@@ -172,14 +172,12 @@ API
 
 .. autosummary::
    intake.source.derived.DerivedSource
-   intake.source.derived.Alias
+   intake.source.derived.AliasSource
    intake.source.derived.GenericTransform
    intake.source.derived.DataFrameTransform
    intake.source.derived.Columns
 
 .. autoclass:: intake.source.derived.DerivedSource
-   :members: __init__
-.. autoclass:: intake.source.derived.Alias
    :members: __init__
 .. autoclass:: intake.source.derived.GenericTransform
    :members: __init__
