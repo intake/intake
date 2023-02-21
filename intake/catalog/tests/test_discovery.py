@@ -1,7 +1,7 @@
 import os
 import sys
 
-from ..local import YAMLFilesCatalog, MergedCatalog, EntrypointsCatalog
+from ..local import EntrypointsCatalog, MergedCatalog, YAMLFilesCatalog
 
 
 def test_catalog_discovery():

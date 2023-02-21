@@ -6,8 +6,8 @@
 #-----------------------------------------------------------------------------
 from packaging.version import Version
 
+from intake.source.base import DataSource, Schema
 
-from intake.source.base import Schema, DataSource
 from .base import RemoteSource, get_partition
 
 

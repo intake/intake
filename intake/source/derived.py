@@ -1,6 +1,7 @@
 from functools import lru_cache
-from . import import_name
+
 from .. import open_catalog
+from . import import_name
 from .base import DataSource, Schema
 
 

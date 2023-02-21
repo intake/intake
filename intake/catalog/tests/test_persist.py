@@ -8,10 +8,10 @@
 
 import os
 import os.path
+
 import pytest
 
 import intake
-
 
 path = os.path.dirname(__file__)
 

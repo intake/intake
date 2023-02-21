@@ -7,11 +7,10 @@
 
 import os.path
 
-import pytest
 import numpy as np
+import pytest
 
 from intake.container import serializer
-
 
 all_serializers = pytest.mark.parametrize(
     'ser', serializer.format_registry.values())

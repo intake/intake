@@ -26,8 +26,8 @@ class RemoteSequenceSource(RemoteSource):
         super(RemoteSequenceSource, self).__init__(url, headers, **kwargs)
 
     def _load_metadata(self):
-        import dask.bag as db
         import dask
+        import dask.bag as db
         if self.bag is None:
             self.parts = [dask.delayed(get_partition)(
                 self.url, self.headers, self._source_id, self.container, i
@@ -58,8 +58,8 @@ class RemoteSequenceSource(RemoteSource):
         encoder : None or one of str|json|pickle
             None is equivalent to str
         """
-        import pickle
         import json
+        import pickle
         encoder = {None: str, 'str': str, 'json': json.dumps,
                    'pickle': pickle.dumps}[encoder]
         try:
@@ -70,12 +70,14 @@ class RemoteSequenceSource(RemoteSource):
 
     @staticmethod
     def _data_to_source(b, path, encoder=None, storage_options=None, **kwargs):
-        import dask.bag as db
-        import posixpath
-        from fsspec import open_files
-        import dask
-        import pickle
         import json
+        import pickle
+        import posixpath
+
+        import dask
+        import dask.bag as db
+        from fsspec import open_files
+
         from intake.source.textfiles import TextFilesSource
         encoder = {None: str, 'str': str, 'json': json.dumps,
            'pickle': pickle.dumps}.get(encoder, encoder)

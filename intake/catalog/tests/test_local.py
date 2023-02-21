@@ -13,6 +13,7 @@ import time
 
 import pandas
 import pytest
+
 from intake import open_catalog
 from intake.catalog import exceptions, local
 from intake.catalog.local import LocalCatalogEntry, UserParameter, get_dir

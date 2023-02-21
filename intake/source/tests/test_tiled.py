@@ -1,8 +1,11 @@
-import intake
-import pytest
 import shlex
 import subprocess
 import time
+
+import pytest
+
+import intake
+
 pytest.importorskip("tiled")
 
 import httpx  # required by tiled, so will be here

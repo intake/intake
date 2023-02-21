@@ -1,5 +1,7 @@
 import os
+
 import pytest
+
 import intake
 from intake.catalog.local import LocalCatalogEntry, UserParameter
 from intake.source.base import DataSource

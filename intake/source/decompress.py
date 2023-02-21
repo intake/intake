@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 import os
+
 from intake.utils import make_path_posix
 
 

@@ -5,16 +5,16 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from collections import defaultdict
 import pickle
+from collections import defaultdict
 
-import pytest
 import numpy as np
 import pandas as pd
+import pytest
 
+import intake.source
 import intake.source.base as base
 import intake.source.derived as der
-import intake.source
 
 
 def test_datasource_base_method_exceptions():
@@ -87,8 +87,8 @@ class MockDataSourceDataFrame(base.DataSource):
                           for i in range(self.npartitions)])
 
     def to_dask(self):
-        import dask.dataframe as dd
         import dask
+        import dask.dataframe as dd
         return dd.from_delayed([dask.delayed(self._get_partition)(i)
                                 for i in range(self.npartitions)])
 
@@ -250,8 +250,8 @@ class MockDataSourcePython(base.DataSource):
                [])
 
     def to_dask(self):
-        import dask.bag as db
         import dask
+        import dask.bag as db
         return db.from_delayed([dask.delayed(self._get_partition)(i)
                                 for i in range(self.npartitions)])
 

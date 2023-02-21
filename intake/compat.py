@@ -6,8 +6,8 @@
 #-----------------------------------------------------------------------------
 
 import msgpack
-from .utils import encode_datetime, decode_datetime
 
+from .utils import decode_datetime, encode_datetime
 
 if msgpack.version >= (0, 5, 2):
     unpack_kwargs = {'raw': False}

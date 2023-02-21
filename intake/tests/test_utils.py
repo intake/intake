@@ -10,6 +10,7 @@ import shutil
 
 import pytest
 import yaml
+
 from intake.utils import make_path_posix, no_duplicate_yaml
 
 

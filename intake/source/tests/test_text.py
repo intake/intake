@@ -6,11 +6,14 @@
 #-----------------------------------------------------------------------------
 
 import os
+
 import pytest
-import intake
-from intake.source.textfiles import TextFilesSource
-from intake.source import import_name
 from fsspec import open_files
+
+import intake
+from intake.source import import_name
+from intake.source.textfiles import TextFilesSource
+
 here = os.path.abspath(os.path.dirname(__file__))
 
 

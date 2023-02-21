@@ -13,8 +13,9 @@ import time
 
 import pytest
 
-from .util import assert_items_equal
 from intake import open_catalog
+
+from .util import assert_items_equal
 
 TMP_DIR = tempfile.mkdtemp()
 TEST_CATALOG_PATH = [TMP_DIR]

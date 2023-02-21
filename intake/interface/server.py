@@ -13,4 +13,5 @@ panel serve intake/interface/server.py
 """
 
 import intake.interface
+
 intake.interface.instance.servable()

@@ -10,14 +10,15 @@
 # Imports
 #-----------------------------------------------------------------------------
 
+import logging
 # Standard library imports
 import sys
 
-# External imports
-
 # Intake imports
 from . import subcommands
-import logging
+
+# External imports
+
 log = logging.getLogger('intake')
 
 #-----------------------------------------------------------------------------

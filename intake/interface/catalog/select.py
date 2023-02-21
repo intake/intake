@@ -5,9 +5,10 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import panel as pn
+
 import intake
 from intake.utils import remake_instance
-import panel as pn
 
 from ..base import BaseSelector
 

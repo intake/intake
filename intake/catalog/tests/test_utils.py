@@ -4,9 +4,10 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-import pytest
-import intake.catalog.utils as utils
 import pandas as pd
+import pytest
+
+import intake.catalog.utils as utils
 
 
 def test_expand_templates():

@@ -6,14 +6,15 @@
 #-----------------------------------------------------------------------------
 
 import collections
-from collections import OrderedDict
 import collections.abc
 import datetime
-from contextlib import contextmanager
-import warnings
-import yaml
-import sys
 import os
+import sys
+import warnings
+from collections import OrderedDict
+from contextlib import contextmanager
+
+import yaml
 
 
 def make_path_posix(path):

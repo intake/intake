@@ -1,5 +1,6 @@
 from tiled.client import from_uri
 from tiled.client.node import Node
+
 from intake.catalog import Catalog
 from intake.source import DataSource
 

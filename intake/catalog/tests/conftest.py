@@ -1,5 +1,7 @@
 import os.path
+
 import pytest
+
 from intake import open_catalog
 
 

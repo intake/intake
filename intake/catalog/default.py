@@ -5,15 +5,17 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-import appdirs
 import json
 import os
 import subprocess
 import sys
 
+import appdirs
+
 from intake.config import conf
 from intake.utils import make_path_posix
-from .local import YAMLFilesCatalog, Catalog
+
+from .local import Catalog, YAMLFilesCatalog
 
 
 def load_user_catalog():

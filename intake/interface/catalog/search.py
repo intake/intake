@@ -5,7 +5,8 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 import panel as pn
-from ..base import Base, MAX_WIDTH
+
+from ..base import MAX_WIDTH, Base
 
 
 class SearchInputs(Base):

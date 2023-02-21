@@ -5,14 +5,16 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import logging
 import os
-import pytest
 import shutil
 
-from intake.source.cache import FileCache, CacheMetadata
+import pytest
+
 import intake
 import intake.config
-import logging
+from intake.source.cache import CacheMetadata, FileCache
+
 here = os.path.dirname(os.path.abspath(__file__))
 logger = logging.getLogger('intake')
 
@@ -58,6 +60,7 @@ def test_hash(file_cache):
     subdir = file_cache._hash('foo/bar.csv')
 
     import string
+
     # Checking for md5 hash
     assert all(c in string.hexdigits for c in subdir)
 
@@ -190,9 +193,10 @@ def test_compressed_cache_infer(temp_cache):
 @pytest.mark.skipif(os.name == 'nt', reason="No CLI tools on windows")
 @pytest.mark.parametrize('comp', ['tgz', 'tbz', 'tar', 'gz', 'bz'])
 def test_compressions(temp_cache, tempdir, comp):
-    from intake.source.cache import CompressedCache
     import shlex
     import subprocess
+
+    from intake.source.cache import CompressedCache
     data = b'hello'
     fn = os.path.join(tempdir, 'data')
     with open(fn, 'wb') as f:

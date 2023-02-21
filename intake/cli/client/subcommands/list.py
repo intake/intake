@@ -9,6 +9,7 @@
 '''
 
 import logging
+
 log = logging.getLogger(__name__)
 
 #-----------------------------------------------------------------------------
@@ -21,7 +22,7 @@ log = logging.getLogger(__name__)
 
 # Intake imports
 from intake import open_catalog
-from intake.cli.util import print_entry_info, Subcommand
+from intake.cli.util import Subcommand, print_entry_info
 
 #-----------------------------------------------------------------------------
 # API

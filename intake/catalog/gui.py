@@ -7,7 +7,8 @@
 
 try:
     import panel as pn
-    from ..interface.gui import SourceGUI, ICONS
+
+    from ..interface.gui import ICONS, SourceGUI
     css = """
     .scrolling {
         overflow: scroll;

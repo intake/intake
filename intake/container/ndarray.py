@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 import itertools
+
 from .base import RemoteSource, Schema, get_partition
 
 
@@ -91,8 +92,9 @@ class RemoteArray(RemoteSource):
     @staticmethod
     def _data_to_source(arr, path, component=None,  storage_options=None,
                         **kwargs):
+        from dask.array import from_array, to_zarr
         from dask.utils import is_arraylike
-        from dask.array import to_zarr, from_array
+
         from ..source.zarr import ZarrArraySource
         if not is_arraylike(arr):
             raise NotImplementedError

@@ -6,9 +6,11 @@
 #-----------------------------------------------------------------------------
 
 import os
-import pytest
-import intake
 import shutil
+
+import pytest
+
+import intake
 
 here = os.path.abspath(os.path.dirname(__file__))
 

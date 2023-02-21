@@ -6,15 +6,16 @@
 #-----------------------------------------------------------------------------
 
 import os.path
-import posixpath
 import pickle
+import posixpath
 
-import pytest
 import pandas as pd
+import pytest
 
 import intake.source.csv as csv
 from intake.utils import make_path_posix
-from .util import verify_plugin_interface, verify_datasource_interface
+
+from .util import verify_datasource_interface, verify_plugin_interface
 
 
 @pytest.fixture

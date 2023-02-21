@@ -5,16 +5,17 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-import pkgutil
-import warnings
 import importlib
 import inspect
-import time
 import logging
+import pkgutil
+import time
+import warnings
 
 import entrypoints
 
 from ..config import conf
+
 logger = logging.getLogger('intake')
 
 
@@ -224,8 +225,8 @@ def load_plugins_from_module(module_name):
     Plugin classes are instantiated and added to the dictionary, keyed by the
     name attribute of the plugin object.
     """
-    from intake.source import DataSource
     from intake.catalog import Catalog
+    from intake.source import DataSource
     plugins = {}
 
     try:

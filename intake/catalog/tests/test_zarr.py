@@ -1,10 +1,13 @@
-import tempfile
-import shutil
 import os
+import shutil
+import tempfile
+
 import pytest
-from intake.catalog.zarr import ZarrGroupCatalog
+
 from intake import open_catalog
+from intake.catalog.zarr import ZarrGroupCatalog
 from intake.source.zarr import ZarrArraySource
+
 from .util import assert_items_equal
 
 zarr = pytest.importorskip('zarr')

@@ -5,14 +5,17 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import os
+import subprocess
+import sys
+
+import pytest
+
 import intake
 import intake.config
 from intake.source.cache import CacheMetadata
-import os
-import pytest
-import subprocess
-import sys
 from intake.utils import make_path_posix
+
 cpath = make_path_posix(
     os.path.abspath(
         os.path.join(os.path.dirname(__file__),

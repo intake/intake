@@ -2,6 +2,7 @@
 Test saving catalogs.
 """
 import os
+
 import intake
 from intake.catalog import Catalog
 from intake.catalog.local import LocalCatalogEntry

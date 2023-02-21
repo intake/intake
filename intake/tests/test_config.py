@@ -6,14 +6,15 @@
 #-----------------------------------------------------------------------------
 
 import os
+
 import pytest
 import requests
 
 import intake
 from intake import config
-from intake.config import Config, defaults
-from intake.util_tests import temp_conf, server
 from intake.catalog.remote import RemoteCatalog
+from intake.config import Config, defaults
+from intake.util_tests import server, temp_conf
 
 
 @pytest.mark.parametrize('conf', [

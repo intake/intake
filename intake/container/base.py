@@ -8,10 +8,13 @@
 import msgpack
 import requests
 from requests.compat import urljoin
-from intake.source.base import DataSource, Schema
-from . import serializer
-from ..compat import unpack_kwargs, pack_kwargs
+
 from intake import __version__
+from intake.source.base import DataSource, Schema
+
+from ..compat import pack_kwargs, unpack_kwargs
+from . import serializer
+
 
 class RemoteSource(DataSource):
     """Base class for all DataSources living on an Intake server"""

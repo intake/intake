@@ -5,10 +5,12 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-import pytest
 import datetime
-from intake.source.utils import (
-    path_to_glob, path_to_pattern, reverse_format, reverse_formats)
+
+import pytest
+
+from intake.source.utils import (path_to_glob, path_to_pattern, reverse_format,
+                                 reverse_formats)
 
 
 @pytest.mark.parametrize('pattern,expected', [

@@ -5,10 +5,10 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+import logging
 from collections.abc import MappingView
 
 import entrypoints
-import logging
 
 from .base import DataSource
 from .discovery import drivers

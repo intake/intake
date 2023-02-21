@@ -8,20 +8,23 @@
 
 '''
 import logging
+
 log = logging.getLogger(__name__)
 
 #-----------------------------------------------------------------------------
 # Imports
 #-----------------------------------------------------------------------------
 
+import os
+import shutil
 # Standard library imports
 from os.path import dirname, exists, join
-import os, shutil
-
-# External imports
 
 # Intake imports
 from intake.cli.util import Subcommand
+
+# External imports
+
 
 #-----------------------------------------------------------------------------
 # API

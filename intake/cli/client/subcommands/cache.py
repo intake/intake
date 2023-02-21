@@ -5,10 +5,13 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-import os
-import yaml
-from intake.cli.util import Subcommand
 import logging
+import os
+
+import yaml
+
+from intake.cli.util import Subcommand
+
 log = logging.getLogger(__name__)
 
 

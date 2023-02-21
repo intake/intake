@@ -5,14 +5,15 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from contextlib import contextmanager
 import os
-import requests
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
+from contextlib import contextmanager
+
+import requests
 import yaml
 
 from .utils import make_path_posix

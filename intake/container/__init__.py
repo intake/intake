@@ -5,11 +5,11 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+from ..catalog.remote import RemoteCatalog
+from ..utils import ContainerRegistryView
 from .dataframe import RemoteDataFrame
 from .ndarray import RemoteArray
 from .semistructured import RemoteSequenceSource
-from ..catalog.remote import RemoteCatalog
-from ..utils import ContainerRegistryView
 
 # each container type is represented in the remote by one of the classes in
 # this dictionary

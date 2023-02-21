@@ -10,7 +10,7 @@ import logging
 import re
 import time
 
-from ..source.base import DataSource, NoEntry, DataSourceBase
+from ..source.base import DataSource, DataSourceBase, NoEntry
 from .utils import reload_on_change
 
 logger = logging.getLogger('intake')

@@ -6,21 +6,20 @@
 #-----------------------------------------------------------------------------
 
 import os
+import posixpath
 import subprocess
+import tempfile
 import time
 
-import posixpath
 import pytest
 import requests
-import tempfile
 
-from intake import config, open_catalog
+from intake import config, open_catalog, register_driver
 from intake.container import persist
-from intake.util_tests import ex, PY2
-from intake.utils import make_path_posix
 from intake.source.base import DataSource, Schema
-from intake import register_driver
 from intake.tests.test_utils import copy_test_file
+from intake.util_tests import PY2, ex
+from intake.utils import make_path_posix
 
 here = os.path.dirname(__file__)
 
@@ -168,8 +167,8 @@ def http_server():
 
 @pytest.fixture(scope='function')
 def tempdir():
-    import tempfile
     import shutil
+    import tempfile
     d = make_path_posix(str(tempfile.mkdtemp()))
     try:
         yield d

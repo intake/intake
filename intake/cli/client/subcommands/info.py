@@ -9,21 +9,23 @@
 '''
 
 import logging
+
 log = logging.getLogger(__name__)
 
 #-----------------------------------------------------------------------------
 # Imports
 #-----------------------------------------------------------------------------
 
+import sys
 # Standard library imports
 from importlib import import_module
-import sys
-
-# External imports
 
 # Intake imports
 from intake import __version__
 from intake.cli.util import Subcommand
+
+# External imports
+
 
 #-----------------------------------------------------------------------------
 # API

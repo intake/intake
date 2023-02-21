@@ -8,13 +8,14 @@
 import os.path
 import pickle
 
-import pytest
 import pandas as pd
+import pytest
 
-from intake.source.tests.util import verify_datasource_interface
-from .util import assert_items_equal
 from intake import open_catalog
 from intake.catalog.remote import RemoteCatalog
+from intake.source.tests.util import verify_datasource_interface
+
+from .util import assert_items_equal
 
 TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 

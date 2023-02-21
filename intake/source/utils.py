@@ -6,12 +6,14 @@
 #-----------------------------------------------------------------------------
 
 from packaging.version import Version
+
 try:
     import dask
     DASK_VERSION = Version(dask.__version__)
 except:
     DASK_VERSION = None
 from ..utils import make_path_posix
+
 
 def _validate_format_spec(format_spec):
     if not format_spec:
@@ -169,8 +171,8 @@ def reverse_format(format_string, resolved_string):
     str.format : method that this reverses
     reverse_formats : method for reversing a list of strings using one pattern
     """
-    from string import Formatter
     from datetime import datetime
+    from string import Formatter
 
     fmt = Formatter()
     args = {}
@@ -290,7 +292,7 @@ def path_to_pattern(path, metadata=None):
 
 
 def unique_string():
-    from string import ascii_letters, digits
     from random import choice
+    from string import ascii_letters, digits
 
     return ''.join([choice(ascii_letters + digits) for n in range(8)])

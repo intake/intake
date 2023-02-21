@@ -15,13 +15,15 @@ import warnings
 
 import msgpack
 
+from intake.auth.base import AuthenticationFailure, BaseClientAuth
+
+from ..compat import pack_kwargs, unpack_kwargs
 from ..source import registry as plugin_registry
+from ..utils import remake_instance
 from . import Catalog
 from .entry import CatalogEntry
-from .utils import expand_defaults, coerce, RemoteCatalogError
-from ..compat import unpack_kwargs, pack_kwargs
-from ..utils import remake_instance
-from intake.auth.base import BaseClientAuth, AuthenticationFailure
+from .utils import RemoteCatalogError, coerce, expand_defaults
+
 logger = logging.getLogger('intake')
 
 
@@ -296,9 +298,10 @@ class RemoteCatalog(Catalog):
 
     @staticmethod
     def _data_to_source(cat, path, **kwargs):
-        from intake.catalog.local import YAMLFileCatalog
-        from fsspec import open_files
         import yaml
+        from fsspec import open_files
+
+        from intake.catalog.local import YAMLFileCatalog
         if not isinstance(cat, Catalog):
             raise NotImplementedError
         out = {}
@@ -470,10 +473,11 @@ class RemoteCatalogEntry(CatalogEntry):
 def open_remote(url, entry, container, user_parameters, description, http_args,
                 page_size=None, persist_mode=None, auth=None, getenv=None, getshell=None):
     """Create either local direct data source or remote streamed source"""
-    from intake.container import container_map
     import msgpack
     import requests
     from requests.compat import urljoin
+
+    from intake.container import container_map
 
     if url.startswith('intake://'):
         url = url[len('intake://'):]

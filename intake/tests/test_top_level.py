@@ -12,9 +12,10 @@ import tempfile
 import time
 
 import appdirs
+import pytest
+
 import intake
 import intake.catalog.local
-import pytest
 
 from .test_utils import copy_test_file
 

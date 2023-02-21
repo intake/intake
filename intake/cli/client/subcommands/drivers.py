@@ -8,10 +8,11 @@
 CLI for listing, enabling, disabling intake drivers
 """
 
+import logging
+
 from intake.cli.util import Subcommand
 from intake.source.discovery import drivers
 
-import logging
 log = logging.getLogger(__name__)
 
 # -----------------------------------------------------------------------------

@@ -14,9 +14,8 @@ import time
 import pytest
 
 from intake import open_catalog
-
-from intake.auth.secret import SecretClientAuth
 from intake.auth.base import AuthenticationFailure
+from intake.auth.secret import SecretClientAuth
 
 TMP_DIR = tempfile.mkdtemp()
 CONF_DIR = os.path.join(TMP_DIR, 'conf')

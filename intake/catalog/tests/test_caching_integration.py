@@ -6,10 +6,11 @@
 #-----------------------------------------------------------------------------
 
 import os
-import pytest
 import shutil
 import string
 import time
+
+import pytest
 
 import intake
 from intake.config import conf

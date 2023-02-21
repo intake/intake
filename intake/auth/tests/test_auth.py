@@ -6,7 +6,7 @@
 #-----------------------------------------------------------------------------
 
 from intake.auth.base import BaseAuth, BaseClientAuth
-from intake.auth.secret import SecretAuth,SecretClientAuth
+from intake.auth.secret import SecretAuth, SecretClientAuth
 from intake.utils import remake_instance
 
 

@@ -4,10 +4,10 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-from collections import OrderedDict
 import os
-import panel as pn
+from collections import OrderedDict
 
+import panel as pn
 
 MAX_WIDTH = 5000
 

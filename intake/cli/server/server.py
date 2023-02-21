@@ -4,21 +4,22 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
+import itertools
+import logging
 import time
 from uuid import uuid4
 
-import itertools
-import logging
 import msgpack
 import tornado.gen
 import tornado.ioloop
 import tornado.web
 
+from intake import __version__
+from intake.compat import pack_kwargs, unpack_kwargs
 from intake.config import conf
 from intake.container import serializer
 from intake.utils import remake_instance
-from intake import __version__
-from intake.compat import unpack_kwargs, pack_kwargs
+
 logger = logging.getLogger('intake')
 
 

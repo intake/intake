@@ -9,12 +9,13 @@ import ast
 import os
 from functools import partial
 
-import intake
-import panel as pn
-
 import fsspec
+import panel as pn
 from fsspec.registry import known_implementations
-from ..base import Base, MAX_WIDTH, enable_widget, ICONS
+
+import intake
+
+from ..base import ICONS, MAX_WIDTH, Base, enable_widget
 
 
 class FileSelector(Base):

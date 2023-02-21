@@ -11,8 +11,8 @@ gl = globals()
 
 def do_import():
     try:
-        import panel as pn
         import hvplot
+        import panel as pn
         error = (Version(pn.__version__) < Version("0.9.5")
                    or Version(hvplot.__version__) < Version("0.8.1"))
     except ImportError:

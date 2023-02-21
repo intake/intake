@@ -6,13 +6,14 @@
 #-----------------------------------------------------------------------------
 
 import os.path
+import shutil
 import subprocess
 import tempfile
-import shutil
 
 import pytest
 
 from intake.util_tests import ex
+
 TEST_CATALOG_YAML = os.path.join(os.path.dirname(__file__), 'catalog1.yml')
 
 

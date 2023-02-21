@@ -4,8 +4,9 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-from packaging.version import Version
 import pytest
+from packaging.version import Version
+
 pn = pytest.importorskip('panel')
 too_old = Version(pn.__version__) < Version("0.9.5")
 

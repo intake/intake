@@ -10,8 +10,8 @@ Base classes for Data Loader interface
 
 from yaml import dump
 
+from ..utils import DictSerialiseMixin, make_path_posix, pretty_describe
 from .cache import make_caches
-from ..utils import make_path_posix, DictSerialiseMixin, pretty_describe
 
 
 class Schema(dict):
@@ -182,8 +182,9 @@ class PersistMixin:
     """Adds interaction with PersistStore to DataSource"""
 
     def get_persisted(self):
-        from ..container.persist import store
         from dask.base import tokenize
+
+        from ..container.persist import store
         return store[tokenize(self)]()
 
     @staticmethod
@@ -193,8 +194,9 @@ class PersistMixin:
 
     @property
     def has_been_persisted(self):
-        from ..container.persist import store
         from dask.base import tokenize
+
+        from ..container.persist import store
         return tokenize(self) in store
 
     @property
@@ -214,8 +216,9 @@ class PersistMixin:
             version was written.
         kargs: passed to the _persist method on the base container.
         """
-        from ..container.persist import PersistStore
         from dask.base import tokenize
+
+        from ..container.persist import PersistStore
         if 'original_tok' in self.metadata:
             raise ValueError('Cannot persist a source taken from the persist '
                              'store')
@@ -452,9 +455,11 @@ class DataSourceBase(DictSerialiseMixin):
         return self._export(path, **kwargs)
 
     def _export(self, path, **kwargs):
-        from ..container import container_map
         import time
+
         from dask.base import tokenize
+
+        from ..container import container_map
         method = container_map[self.container]._persist
         # may need to create path - access file-system method
         out = method(self, path=path, **kwargs)

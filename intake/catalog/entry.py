@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 import time
+
 from ..utils import DictSerialiseMixin, pretty_describe
 
 
@@ -112,8 +113,9 @@ class CatalogEntry(DictSerialiseMixin):
 
     def _ipython_display_(self):
         """Display the entry as a rich object in an IPython session."""
-        from IPython.display import display
         import json
+
+        from IPython.display import display
         contents = self.describe()
         display({
             'application/json': json.dumps(contents),

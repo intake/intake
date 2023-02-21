@@ -8,12 +8,13 @@
 import ast
 import functools
 import itertools
-from jinja2 import Environment, meta, Undefined
 import os
 import re
 import shlex
 import subprocess
 import sys
+
+from jinja2 import Environment, Undefined, meta
 
 
 def flatten(iterable):

@@ -4,8 +4,8 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
-from packaging.version import Version
 import hvplot
+from packaging.version import Version
 
 try:
     import xrviz
@@ -15,8 +15,9 @@ except ImportError:
     xrviz = False
 
 import panel as pn
-from ..base import BaseView
+
 from ...catalog.local import LocalCatalogEntry, YAMLFileCatalog
+from ..base import BaseView
 
 
 class Event:

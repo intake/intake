@@ -7,11 +7,12 @@
 
 import posixpath
 import time
+
 import yaml
-from ..catalog.local import YAMLFileCatalog, CatalogEntry
-from ..source import DataSource
+
+from ..catalog.local import CatalogEntry, YAMLFileCatalog
 from ..config import conf, logger
-from ..source import import_name
+from ..source import DataSource, import_name
 from ..utils import make_path_posix
 
 

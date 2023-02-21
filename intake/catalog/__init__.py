@@ -6,8 +6,8 @@
 #-----------------------------------------------------------------------------
 
 from .base import Catalog
-from .local import MergedCatalog, EntrypointsCatalog
 from .default import load_combo_catalog
+from .local import EntrypointsCatalog, MergedCatalog
 
 
 def _make_builtin():

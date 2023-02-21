@@ -5,14 +5,15 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from collections import OrderedDict
 import gzip
 import io
 import pickle
+from collections import OrderedDict
 
 import msgpack
 
 from ..compat import pack_kwargs
+
 
 class NoneCompressor(object):
     name = 'none'

@@ -6,10 +6,13 @@
 #-----------------------------------------------------------------------------
 
 import os
-import numpy as np
 import posixpath
+
+import numpy as np
 import pytest
+
 import intake
+
 from ..npy import NPySource
 
 here = os.path.abspath(os.path.dirname(__file__))

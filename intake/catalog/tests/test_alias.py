@@ -5,8 +5,9 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-import intake
 import os
+
+import intake
 
 here = os.path.abspath(os.path.dirname(__file__))
 fn = os.path.join(here, 'catalog_alias.yml')

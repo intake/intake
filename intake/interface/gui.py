@@ -6,7 +6,7 @@
 #-----------------------------------------------------------------------------
 import panel as pn
 
-from .base import Base, ICONS
+from .base import ICONS, Base
 from .catalog.gui import CatGUI
 from .source.gui import SourceGUI
 

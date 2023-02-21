@@ -6,17 +6,18 @@
 #-----------------------------------------------------------------------------
 
 import importlib
-import re
 import logging
 import os
+import re
 import warnings
 
 from ._version import get_versions
+
 __version__ = get_versions()['version']
 del get_versions
 
-from .source import registry
 from .catalog.base import Catalog
+from .source import registry
 
 imports = {
     "DataSource": "intake.source.base:DataSource",

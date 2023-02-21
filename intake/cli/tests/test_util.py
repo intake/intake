@@ -11,6 +11,7 @@ import pytest
 # module under test
 import intake.cli.util as m
 
+
 # TODO
 def test_print_entry_info():
     pass

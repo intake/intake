@@ -53,8 +53,8 @@ class NPySource(DataSource):
         super(NPySource, self).__init__(metadata=metadata)
 
     def _get_schema(self):
-        from fsspec import open_files
         import dask.array as da
+        from fsspec import open_files
         if self._arr is None:
             path = self._get_cache(self.path)[0]
 
@@ -118,8 +118,9 @@ class NumpyAccess(object):
         self.ndim = len(self.shape)
 
     def __getitem__(self, item):
-        import numpy as np
         import copy
+
+        import numpy as np
         if isinstance(item, tuple):
             item = item[0]
         first = (item.stop or self.shape[0]) - (item.start or 0)

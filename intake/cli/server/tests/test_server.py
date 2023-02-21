@@ -7,21 +7,20 @@
 
 import os
 import os.path
-
-import pytest
-import requests
 import shutil
 import subprocess
 import time
 
+import msgpack
+import pytest
+import requests
 from tornado.ioloop import IOLoop
 from tornado.testing import AsyncHTTPTestCase
-import msgpack
 
 from intake import open_catalog
-from intake.container.serializer import MsgPackSerializer, GzipCompressor
 from intake.cli.server.server import IntakeServer
-from intake.compat import unpack_kwargs, pack_kwargs
+from intake.compat import pack_kwargs, unpack_kwargs
+from intake.container.serializer import GzipCompressor, MsgPackSerializer
 from intake.utils import make_path_posix
 
 catalog_file = make_path_posix(

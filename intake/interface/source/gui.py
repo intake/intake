@@ -5,12 +5,13 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 from functools import partial
+
 import panel as pn
 
-from ..base import Base, enable_widget, MAX_WIDTH
-from .select import SourceSelector
+from ..base import MAX_WIDTH, Base, enable_widget
 from .defined_plots import Plots
 from .description import Description
+from .select import SourceSelector
 
 
 class SourceGUI(Base):

@@ -6,8 +6,9 @@
 #-----------------------------------------------------------------------------
 
 import logging
-from .base import BaseAuth, BaseClientAuth
 import uuid
+
+from .base import BaseAuth, BaseClientAuth
 
 logger = logging.getLogger('intake')
 

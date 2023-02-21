@@ -8,8 +8,11 @@
 
 import os
 import posixpath
+
 import pytest
+
 from intake.container.dataframe import GenericDataFrame
+
 here = os.path.abspath(os.path.dirname(__file__))
 
 

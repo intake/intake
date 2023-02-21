@@ -5,14 +5,17 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from os.path import expanduser
 import logging
 import os
 import posixpath
+from os.path import expanduser
+
 import yaml
+
 from intake.utils import yaml_load
 
 from .utils import make_path_posix
+
 logger = logging.getLogger('intake')
 
 confdir = make_path_posix(

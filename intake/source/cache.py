@@ -5,9 +5,6 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-from datetime import datetime
-from hashlib import md5
-
 import collections
 import json
 import logging
@@ -16,6 +13,8 @@ import posixpath
 import re
 import shutil
 import warnings
+from datetime import datetime
+from hashlib import md5
 
 from intake.config import conf
 from intake.utils import is_notebook, make_path_posix
@@ -474,6 +473,7 @@ class DATCache(BaseCache):
 
     def _load(self, _, __, urlpath, meta=True):
         import subprocess
+
         from fsspec import open_files
 
         path = os.path.join(self._cache_dir, self._hash(urlpath))

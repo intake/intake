@@ -8,10 +8,10 @@ from functools import partial
 
 import panel as pn
 
-from ..base import Base, enable_widget, MAX_WIDTH
-from .select import CatSelector
+from ..base import MAX_WIDTH, Base, enable_widget
 from .add import CatAdder
 from .search import Search
+from .select import CatSelector
 
 
 class CatGUI(Base):

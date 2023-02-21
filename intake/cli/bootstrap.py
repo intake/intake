@@ -9,6 +9,7 @@
 '''
 
 import logging
+
 log = logging.getLogger(__name__)
 
 #-----------------------------------------------------------------------------
@@ -18,11 +19,12 @@ log = logging.getLogger(__name__)
 # Standard library imports
 import argparse
 
-# External imports
-
 # Intake imports
 from intake import __version__
 from intake.cli.util import die, nice_join
+
+# External imports
+
 
 #-----------------------------------------------------------------------------
 # API

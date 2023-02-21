@@ -6,12 +6,13 @@
 #-----------------------------------------------------------------------------
 
 import os
-import pytest
 import time
 
+import pytest
+
 from intake.container.persist import store
-from intake.source.textfiles import TextFilesSource
 from intake.source.base import DataSource
+from intake.source.textfiles import TextFilesSource
 
 
 def test_store(temp_cache):
