@@ -215,7 +215,7 @@ class Plots(BaseView):
             self._behavior_callback = self._create
             self.interact_save.name = 'Save'
             self.interact_save.disabled = True
-            self.interact_label.object = f'Name '
+            self.interact_label.object = 'Name '
             self.interact_name.value = ""
             self.interact_name.visible = True
             viz = self.draw()

@@ -115,7 +115,7 @@ class SourceSelector(BaseSelector):
         ``from_state`` to create a new object."""
         sources = state['sources']
         labels = state['labels']
-        self.widget.options = {l: remake_instance(s) for l, s in zip(labels, sources)}
+        self.widget.options = {label: remake_instance(source) for label, source in zip(labels, sources)}
         self.selected = state.get('selected', [])
         self.visible = state.get('visible', True)
         return self
