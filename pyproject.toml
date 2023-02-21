@@ -1,0 +1,14 @@
+[tool.black]
+line-length = 165
+
+[tool.ruff]
+line-length = 165
+ignore = ["E402"]  # top of file imports
+
+[tool.ruff.per-file-ignores]
+"*/tests/*" = ["E722"]  # bare `except`
+"intake/util_tests.py" = ["E722"]  # bare `except`
+"__init__.py" = ["F401"]  # imported but unused
+
+[tool.isort]
+profile = "black"
