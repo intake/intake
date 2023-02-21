@@ -164,7 +164,7 @@ Plugin examples
 ```````````````
 
  - call `.sel` on xarray datasets `xarray-plugin-transform`_
- 
+
 .. _xarray-plugin-transform: https://github.com/intake/intake-xarray/blob/master/intake_xarray/derived.py#L38
 
 API

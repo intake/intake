@@ -272,7 +272,7 @@ graphical data browser, for searching, selecting and visualising data-sets.
 Modern visualisations for all data-sets
 ---------------------------------------
 
-Intake is integrated with the comprehensive ``holoviz`` suite, particularly ``hvplot``, to 
+Intake is integrated with the comprehensive ``holoviz`` suite, particularly ``hvplot``, to
 bring simple yet powerful data visualisations to any Intake data source by using just one
 single method for everything. These plots are interactive, and can include server-side
 dynamic aggregation of very large data-sets to display more data points than the

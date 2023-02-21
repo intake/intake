@@ -142,4 +142,3 @@ GUI
 
 .. autoclass:: intake.interface.source.select.SourceSelector
    :members:
-

@@ -3,21 +3,21 @@ sources:
     args:
         urlpath: "{{ CATALOG_DIR }}/files*"
     description: "short form"
-    driver: 
+    driver:
       - csv
     metadata: {}
   tables1:
     args:
         urlpath: "{{ CATALOG_DIR }}/files*"
     description: "long form"
-    driver: 
+    driver:
       - intake.source.csv.CSVSource
     metadata: {}
   tables2:
     args:
         urlpath: "{{ CATALOG_DIR }}/files*"
     description: "same plugin twice"
-    driver: 
+    driver:
       - csv
       - intake.source.csv.CSVSource
     metadata: {}
@@ -25,7 +25,7 @@ sources:
     args:
         urlpath: "{{ CATALOG_DIR }}/files*"
     description: "user's choice with extra param"
-    driver: 
+    driver:
       myplug:
           class: intake.source.csv.CSVSource
       myplug2:
@@ -37,7 +37,7 @@ sources:
     args:
         urlpath: "{{ CATALOG_DIR }}/files*"
     description: "neither plugins exist"
-    driver: 
+    driver:
       myplug:
           class: doesnotexist
       myplug2:
@@ -47,7 +47,7 @@ sources:
     args:
         urlpath: "{{ CATALOG_DIR }}/files*"
     description: "only second plugin exists"
-    driver: 
+    driver:
       myplug:
           class: doesnotexist
       myplug2:
@@ -67,4 +67,3 @@ sources:
     description: "no valid plugin"
     driver: doesnotexist
     metadata: {}
-

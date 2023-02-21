@@ -182,7 +182,7 @@ class GenericTransform(DerivedSource):
     optional_params = {"allow_dask": True}
     """
     Perform an arbitrary function to transform an input
-    
+
         transform: function to perform transform
             function(container_object) -> output, or a fully-qualified dotted string pointing
             to it

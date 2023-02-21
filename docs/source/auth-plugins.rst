@@ -42,14 +42,14 @@ The actual implementation of a plugin is very short.  Here is a simplified versi
         def __init__(self, secret, key='intake-secret'):
             self.secret = secret
             self.key = key
-    
+
         def allow_connect(self, header):
             try:
                 return self.get_case_insensitive(header, self.key, '') \
                             == self.secret
             except:
                 return False
-    
+
         def allow_access(self, header, source, catalog):
             try:
                 return self.get_case_insensitive(header, self.key, '') \
@@ -84,7 +84,7 @@ The corresponding client plugin for the shared secret use case describe above lo
         def __init__(self, secret, key='intake-secret'):
             self.secret = secret
             self.key = key
-    
+
         def get_headers(self):
             return {self.key: self.secret}
 
