@@ -95,7 +95,7 @@ class Base(object):
         """Display in a notebook or a server"""
         try:
             return self.panel._repr_mimebundle_(*args, **kwargs)
-        except:
+        except Exception:
             raise NotImplementedError("Panel does not seem to be set "
                                       "up properly")
 

@@ -34,7 +34,7 @@ def flatten(iterable):
         try:
             data = iter(item)
             iterable = itertools.chain(data, iterable)
-        except:
+        except Exception:
             yield item
 
 

@@ -10,7 +10,7 @@ from packaging.version import Version
 try:
     import dask
     DASK_VERSION = Version(dask.__version__)
-except:
+except ImportError:
     DASK_VERSION = None
 from ..utils import make_path_posix
 
@@ -53,7 +53,7 @@ def _get_parts_of_format_string(resolved_string, literal_texts, format_specs):
                 format_spec = _validate_format_spec(format_specs[i-1])
                 bits.append(_text[0:format_spec])
                 _text = _text[format_spec:]
-            except:
+            except Exception:
                 if i == len(format_specs) - 1:
                     format_spec = _validate_format_spec(format_specs[i])
                     bits.append(_text[:-format_spec])
@@ -209,7 +209,7 @@ def reverse_format(format_string, resolved_string):
                     args[field_name] = float(bits[i][:-1])/100
                 else:
                     args[field_name] = fmt.format_field(bits[i], format_spec)
-            except:
+            except Exception:
                 args[field_name] = bits[i]
 
     return args

@@ -133,7 +133,7 @@ def intake_server(request):
             try:
                 env.pop('INTAKE_CONF_FILE', None)
                 os.remove(server_conf)
-            except:
+            except Exception:
                 pass
         p.terminate()
         time.sleep(1)
@@ -154,7 +154,7 @@ def http_server():
         try:
             requests.get(url)
             break
-        except:
+        except Exception:
             time.sleep(0.1)
             timeout -= 0.1
             assert timeout > 0, "timeout waiting for http server"

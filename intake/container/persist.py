@@ -48,7 +48,7 @@ class PersistStore(YAMLFileCatalog):
             pass
         try:
             super(PersistStore, self)._load()
-        except:
+        except Exception:
             # if destination doesn't load, we have no entries
             # likely will get exceptions if try to persist
             self._entries = {}
