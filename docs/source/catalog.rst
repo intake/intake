@@ -382,7 +382,7 @@ to the constructor takes the same form as ``parameters`` above: a dict of user p
 either as ``UserParameter`` instances or as a dictionary spec for each one.
 
 Templating parameters
-''''''''''''''''''
+'''''''''''''''''''''
 
 Template functions can also be used in parameters (see `Templating`_, above), but you can use the available functions directly without the extra `{{...}}`.
 

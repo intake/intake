@@ -9,7 +9,6 @@ These are reference class and function definitions likely to be useful to everyo
    intake.register_driver
    intake.unregister_driver
    intake.upload
-   intake.open_
    intake.source.csv.CSVSource
    intake.source.textfiles.TextFilesSource
    intake.source.jsonfiles.JSONFileSource

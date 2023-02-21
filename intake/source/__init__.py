@@ -54,6 +54,7 @@ class DriverRegistry(MappingView):
 
 registry = DriverRegistry()
 register_driver = drivers.register_driver
+unregister_driver = drivers.unregister_driver
 
 # A set of fully-qualified package.module.Class mappings
 classes = {}
