@@ -1,19 +1,20 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
-''' Provide a ``main`` function to run intake commands.
+# -----------------------------------------------------------------------------
+""" Provide a ``main`` function to run intake commands.
 
-'''
+"""
 
 import logging
+
 log = logging.getLogger(__name__)
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Imports
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 # Standard library imports
 import sys
@@ -23,12 +24,13 @@ import sys
 # Intake imports
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # API
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 
 def die(message, status=1):
-    ''' Print an error message and exit.
+    """Print an error message and exit.
     This function will call ``sys.exit`` with the given ``status`` and the
     process will terminate.
 
@@ -37,12 +39,13 @@ def die(message, status=1):
 
         status (int) : the exit status to pass to ``sys.exit``
 
-    '''
+    """
     print(message, file=sys.stderr)
     sys.exit(status)
 
+
 def nice_join(seq, sep=", ", conjunction="or"):
-    ''' Join together sequences of strings into English-friendly phrases using
+    """Join together sequences of strings into English-friendly phrases using
     a conjunction when appropriate.
 
     Args:
@@ -60,7 +63,7 @@ def nice_join(seq, sep=", ", conjunction="or"):
         >>> nice_join(["a", "b", "c"])
         'a, b or c'
 
-    '''
+    """
     seq = [str(x) for x in seq]
 
     if len(seq) <= 1 or conjunction is None:
@@ -68,16 +71,16 @@ def nice_join(seq, sep=", ", conjunction="or"):
     else:
         return "%s %s %s" % (sep.join(seq[:-1]), conjunction, seq[-1])
 
-def print_entry_info(catalog, name):
-    '''
 
-    '''
+def print_entry_info(catalog, name):
+    """ """
     info = catalog[name].describe()
     for key in sorted(info.keys()):
         print("[{}] {}={}".format(name, key, info[key]))
 
+
 class Subcommand(object):
-    ''' Abstract base class for subcommands
+    """Abstract base class for subcommands
 
     Subclasses should define a class variable ``name`` that will be used as the
     subparser name, and a docstring, that will be used as the subparser help.
@@ -91,24 +94,20 @@ class Subcommand(object):
     * an ``invoke(self, args)`` method that accepts a set of argparse
       processed arguments as input.
 
-    '''
+    """
 
     def __init__(self, parser):
-        ''' Configure a parser for this command.
-
-        '''
+        """Configure a parser for this command."""
         self.parser = parser
         self.initialize()
 
     def initialize(self):
-        ''' Implement in subclasses to configure self.parser with any arguments
+        """Implement in subclasses to configure self.parser with any arguments
         or additional sub-parsers.
 
-        '''
+        """
         raise NotImplementedError("Subclasses must implement initialize()")
 
     def invoke(self, args):
-        ''' Implement in subclasses to perform the actual work of the command
-
-        '''
+        """Implement in subclasses to perform the actual work of the command"""
         raise NotImplementedError("Subclasses must implement invoke()")

@@ -82,7 +82,7 @@ Parameters
   the root catalog, but a subcatalog on the server, this is its unique
   identifier. If the catalog being searched is the root Catalog, this parameter
   should be omitted. This is passed as an HTTP header.
-- ``query``: tuple of ``(args, kwargs)``: These will be unpacked into 
+- ``query``: tuple of ``(args, kwargs)``: These will be unpacked into
   ``Catalog.search`` on the server to create the "results" Catalog. This is passed in the body of the message.
 
 Returns

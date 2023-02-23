@@ -1,4 +1,5 @@
 import pytest
+
 from intake.catalog.base import Catalog
 
 

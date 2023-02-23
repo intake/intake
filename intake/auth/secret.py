@@ -1,15 +1,16 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import logging
-from .base import BaseAuth, BaseClientAuth
 import uuid
 
-logger = logging.getLogger('intake')
+from .base import BaseAuth, BaseClientAuth
+
+logger = logging.getLogger("intake")
 
 
 class SecretAuth(BaseAuth):
@@ -24,25 +25,23 @@ class SecretAuth(BaseAuth):
         Header entry in which to seek the secret
     """
 
-    def __init__(self, secret=None, key='intake-secret'):
+    def __init__(self, secret=None, key="intake-secret"):
         if secret is None:
             secret = uuid.uuid1().hex
-            logger.info('Random server secret: %s' % secret)
+            logger.info("Random server secret: %s" % secret)
         self.secret = secret
         self.key = key
 
     def allow_connect(self, header):
         try:
-            return self.get_case_insensitive(header, self.key, '') \
-                        == self.secret
-        except:
+            return self.get_case_insensitive(header, self.key, "") == self.secret
+        except Exception:
             return False
 
     def allow_access(self, header, source, catalog):
         try:
-            return self.get_case_insensitive(header, self.key, '') \
-                        == self.secret
-        except:
+            return self.get_case_insensitive(header, self.key, "") == self.secret
+        except Exception:
             return False
 
 
@@ -57,7 +56,7 @@ class SecretClientAuth(BaseClientAuth):
         HTTP Header key for the shared secret
     """
 
-    def __init__(self, secret, key='intake-secret'):
+    def __init__(self, secret, key="intake-secret"):
         self.secret = secret
         self.key = key
         super(SecretClientAuth, self).__init__()

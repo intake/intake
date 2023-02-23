@@ -1,23 +1,25 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import os
-import pytest
 import time
 
+import pytest
+
 from intake.container.persist import store
-from intake.source.textfiles import TextFilesSource
 from intake.source.base import DataSource
+from intake.source.textfiles import TextFilesSource
 
 
 def test_store(temp_cache):
     from dask.base import tokenize
+
     assert list(store) == []
-    s = DataSource(metadata={'original_name': 'blah'})
+    s = DataSource(metadata={"original_name": "blah"})
     token = tokenize(s)
     store.add(token, s)
     time.sleep(0.2)
@@ -49,23 +51,24 @@ def test_backtrack(temp_cache):
 def test_persist_with_nonnumeric_ttl_raises_error(temp_cache):
     s = TextFilesSource("*.py")
     with pytest.raises(ValueError, match="User-provided ttl was a string"):
-        s.persist(ttl='a string')
+        s.persist(ttl="a string")
 
 
 class DummyDataframe(DataSource):
-    name = 'dummy'
-    container = 'dataframe'
+    name = "dummy"
+    container = "dataframe"
 
     def __init__(self, *args):
         DataSource.__init__(self)
 
     def read(self):
         import pandas as pd
-        return pd.DataFrame({'a': [0]})
+
+        return pd.DataFrame({"a": [0]})
 
 
 def test_undask_persist(temp_cache):
-    pytest.importorskip('intake_parquet')
+    pytest.importorskip("intake_parquet")
     s = DummyDataframe()
     s2 = s.persist()
     assert s.read().to_dict() == s2.read().to_dict()

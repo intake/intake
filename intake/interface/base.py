@@ -1,20 +1,20 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
-from collections import OrderedDict
+# -----------------------------------------------------------------------------
 import os
-import panel as pn
+from collections import OrderedDict
 
+import panel as pn
 
 MAX_WIDTH = 5000
 
 here = os.path.abspath(os.path.dirname(__file__))
 ICONS = {
-    'logo': os.path.join(here, 'icons', 'logo.png'),
-    'error': os.path.join(here, 'icons', 'baseline-error-24px.svg'),
+    "logo": os.path.join(here, "icons", "logo.png"),
+    "error": os.path.join(here, "icons", "baseline-error-24px.svg"),
 }
 
 
@@ -56,12 +56,12 @@ class Base(object):
         whether to show the intake logo in a panel to the left of the main
         panel. Default is False
     """
+
     children = None
     panel = None
     watchers = None
     visible_callback = None
-    logo_panel = pn.Column(
-        pn.pane.PNG(ICONS['logo'], align='center'), margin=(25, 0, 0, 0), width=50)
+    logo_panel = pn.Column(pn.pane.PNG(ICONS["logo"], align="center"), margin=(25, 0, 0, 0), width=50)
     logo = False
 
     def __init__(self, visible=True, visible_callback=None, logo=False):
@@ -73,9 +73,7 @@ class Base(object):
     def panel(self):
         if not self.logo:
             return self._panel
-        return pn.Row(self.logo_panel,
-                      self._panel,
-                      margin=0)
+        return pn.Row(self.logo_panel, self._panel, margin=0)
 
     @panel.setter
     def panel(self, panel):
@@ -95,9 +93,8 @@ class Base(object):
         """Display in a notebook or a server"""
         try:
             return self.panel._repr_mimebundle_(*args, **kwargs)
-        except:
-            raise NotImplementedError("Panel does not seem to be set "
-                                      "up properly")
+        except Exception:
+            raise NotImplementedError("Panel does not seem to be set " "up properly")
 
     def setup(self):
         """Should instantiate widgets, set ``children``, and set watchers"""
@@ -112,7 +109,7 @@ class Base(object):
     def visible(self, visible):
         """When visible changed, do setup or unwatch and call visible_callback"""
         self._visible = visible
-        pan = getattr(self._panel, '_layout', self._panel)
+        pan = getattr(self._panel, "_layout", self._panel)
         if visible and len(pan.objects) == 0:
             self.setup()
             self._panel.extend(self.children)
@@ -133,13 +130,13 @@ class Base(object):
 
     def __getstate__(self):
         """Serialize the current state of the object"""
-        return {'visible': self.visible}
+        return {"visible": self.visible}
 
     def __setstate__(self, state):
         """Set the current state of the object from the serialized version.
         Works inplace. See ``__getstate__`` to get serialized version and
         ``from_state`` to create a new object."""
-        self.visible = state.get('visible', True)
+        self.visible = state.get("visible", True)
         return self
 
     @classmethod
@@ -164,6 +161,7 @@ class BaseSelector(Base):
     widget: panel widget
         selector widget which this class keeps uptodate with class properties
     """
+
     preprocess = None
     widget = None
 
@@ -189,8 +187,7 @@ class BaseSelector(Base):
         Applies preprocess method if available to create a uniform
         output
         """
-        return OrderedDict(map(lambda x: (x.name, x),
-                           coerce_to_list(items, self.preprocess)))
+        return OrderedDict(map(lambda x: (x.name, x), coerce_to_list(items, self.preprocess)))
 
     @property
     def options(self):
@@ -217,11 +214,11 @@ class BaseSelector(Base):
             if k in self.labels and v not in self.items:
                 options.pop(k)
                 count = 0
-                while f'{k}_{count}' in self.labels:
+                while f"{k}_{count}" in self.labels:
                     count += 1
-                options[f'{k}_{count}'] = v
+                options[f"{k}_{count}"] = v
         self.widget.options.update(options)
-        self.widget.param.trigger('options')
+        self.widget.param.trigger("options")
         self.widget.value = list(options.values())[:1]
 
     def remove(self, items):
@@ -229,7 +226,7 @@ class BaseSelector(Base):
         items = coerce_to_list(items)
         new_options = {k: v for k, v in self.options.items() if v not in items}
         self.widget.options = new_options
-        self.widget.param.trigger('options')
+        self.widget.param.trigger("options")
 
     @property
     def selected(self):
@@ -242,10 +239,12 @@ class BaseSelector(Base):
 
         Over-writes existing selection
         """
+
         def preprocess(item):
             if isinstance(item, str):
                 return self.options[item]
             return item
+
         items = coerce_to_list(new, preprocess)
         self.widget.value = items
 
@@ -256,20 +255,20 @@ class BaseView(Base):
         to False when using with another panel that will include source."""
         if include_source:
             return {
-                'visible': self.visible,
-                'label': self.source._name,
-                'source': self.source.__getstate__(),
+                "visible": self.visible,
+                "label": self.source._name,
+                "source": self.source.__getstate__(),
             }
         else:
-            return {'visible': self.visible}
+            return {"visible": self.visible}
 
     def __setstate__(self, state):
         """Set the current state of the object from the serialized version.
         Works inplace. See ``__getstate__`` to get serialized version and
         ``from_state`` to create a new object."""
-        if 'source' in state:
-            self.source = state['source']
-        self.visible = state.get('visible', True)
+        if "source" in state:
+            self.source = state["source"]
+        self.visible = state.get("visible", True)
 
     @property
     def source(self):

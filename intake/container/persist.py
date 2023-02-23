@@ -1,17 +1,18 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import posixpath
 import time
+
 import yaml
-from ..catalog.local import YAMLFileCatalog, CatalogEntry
-from ..source import DataSource
+
+from ..catalog.local import CatalogEntry, YAMLFileCatalog
 from ..config import conf, logger
-from ..source import import_name
+from ..source import DataSource, import_name
 from ..utils import make_path_posix
 
 
@@ -19,6 +20,7 @@ class PersistStore(YAMLFileCatalog):
     """
     Specialised catalog for persisted data-sources
     """
+
     _singleton = [None]
 
     def __new__(cls, *args, **kwargs):
@@ -33,9 +35,10 @@ class PersistStore(YAMLFileCatalog):
     def __init__(self, path=None, **storage_options):
         from fsspec import filesystem
         from fsspec.core import split_protocol
-        self.pdir = make_path_posix(path or conf.get('persist_path'))
+
+        self.pdir = make_path_posix(path or conf.get("persist_path"))
         protocol, _ = split_protocol(self.pdir)
-        path = posixpath.join(self.pdir, 'cat.yaml')
+        path = posixpath.join(self.pdir, "cat.yaml")
         self.fs = filesystem(protocol, **storage_options)
         super(PersistStore, self).__init__(path)
 
@@ -47,7 +50,7 @@ class PersistStore(YAMLFileCatalog):
             pass
         try:
             super(PersistStore, self)._load()
-        except:
+        except Exception:
             # if destination doesn't load, we have no entries
             # likely will get exceptions if try to persist
             self._entries = {}
@@ -55,6 +58,7 @@ class PersistStore(YAMLFileCatalog):
     def getdir(self, source):
         """Clear/create a directory to store a persisted dataset into"""
         from dask.base import tokenize
+
         subdir = posixpath.join(self.pdir, tokenize(source))
         try:
             self.fs.rm(subdir, True)
@@ -73,22 +77,19 @@ class PersistStore(YAMLFileCatalog):
             data
         """
         from intake.catalog.local import LocalCatalogEntry
+
         try:
-            with self.fs.open(self.path, 'rb') as f:
+            with self.fs.open(self.path, "rb") as f:
                 data = yaml.safe_load(f)
         except IOError:
-            data = {'sources': {}}
-        ds = source._yaml()['sources'][source.name]
-        data['sources'][key] = ds
-        with self.fs.open(self.path, 'wb') as fo:
+            data = {"sources": {}}
+        ds = source._yaml()["sources"][source.name]
+        data["sources"][key] = ds
+        with self.fs.open(self.path, "wb") as fo:
             fo.write(yaml.dump(data, default_flow_style=False).encode())
         self._entries[key] = LocalCatalogEntry(
-            name=ds['metadata']['original_name'],
-            direct_access=True,
-            cache=[],
-            parameters=[],
-            catalog_dir=None,
-            **data['sources'][key])
+            name=ds["metadata"]["original_name"], direct_access=True, cache=[], parameters=[], catalog_dir=None, **data["sources"][key]
+        )
 
     def get_tok(self, source):
         """Get string token from object
@@ -103,10 +104,10 @@ class PersistStore(YAMLFileCatalog):
             return source
 
         if isinstance(source, CatalogEntry):
-            return source._metadata.get('original_tok', tokenize(source))
+            return source._metadata.get("original_tok", tokenize(source))
 
         if isinstance(source, DataSource):
-            return source.metadata.get('original_tok', tokenize(source))
+            return source.metadata.get("original_tok", tokenize(source))
         raise IndexError
 
     def remove(self, source, delfiles=True):
@@ -120,10 +121,10 @@ class PersistStore(YAMLFileCatalog):
             Whether to remove the on-disc artifact
         """
         source = self.get_tok(source)
-        with self.fs.open(self.path, 'rb') as f:
+        with self.fs.open(self.path, "rb") as f:
             data = yaml.safe_load(f.read().decode())
-        data['sources'].pop(source, None)
-        with self.fs.open(self.path, 'wb') as fo:
+        data["sources"].pop(source, None)
+        with self.fs.open(self.path, "wb") as fo:
             fo.write(yaml.dump(data, default_flow_style=False).encode())
         if delfiles:
             path = posixpath.join(self.pdir, source)
@@ -141,21 +142,21 @@ class PersistStore(YAMLFileCatalog):
         """Given a unique key in the store, recreate original source"""
         key = self.get_tok(source)
         s = self[key]()
-        meta = s.metadata['original_source']
-        cls = meta['cls']
-        args = meta['args']
-        kwargs = meta['kwargs']
+        meta = s.metadata["original_source"]
+        cls = meta["cls"]
+        args = meta["args"]
+        kwargs = meta["kwargs"]
         cls = import_name(cls)
         sout = cls(*args, **kwargs)
-        sout.metadata = s.metadata['original_metadata']
-        sout.name = s.metadata['original_name']
+        sout.metadata = s.metadata["original_metadata"]
+        sout.name = s.metadata["original_name"]
         return sout
 
     def refresh(self, key):
         """Recreate and re-persist the source for the given unique ID"""
         s0 = self[key]
         s = self.backtrack(key)
-        s.persist(**s0.metadata['persist_kwargs'])
+        s.persist(**s0.metadata["persist_kwargs"])
 
     def needs_refresh(self, source):
         """Has the (persisted) source expired in the store
@@ -164,13 +165,14 @@ class PersistStore(YAMLFileCatalog):
         TTL is set to None, or if more seconds have passed than the TTL.
         """
         from dask.base import tokenize
+
         now = time.time()
         token = tokenize(source)
         if token in self:
             s0 = self[token]
-            if self[token].metadata.get('ttl', None):
-                then = s0.metadata['timestamp']
-                if s0.metadata['ttl'] < then - now:
+            if self[token].metadata.get("ttl", None):
+                then = s0.metadata["timestamp"]
+                if s0.metadata["ttl"] < then - now:
                     return True
             return False
         return True

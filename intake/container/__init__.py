@@ -1,28 +1,22 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
+from ..catalog.remote import RemoteCatalog
+from ..utils import ContainerRegistryView
 from .dataframe import RemoteDataFrame
 from .ndarray import RemoteArray
 from .semistructured import RemoteSequenceSource
-from ..catalog.remote import RemoteCatalog
-from ..utils import ContainerRegistryView
 
 # each container type is represented in the remote by one of the classes in
 # this dictionary
-_container_map = {
-    'dataframe': RemoteDataFrame,
-    'python': RemoteSequenceSource,
-    'ndarray': RemoteArray,
-    'numpy': RemoteArray,
-    'catalog': RemoteCatalog
-}
+_container_map = {"dataframe": RemoteDataFrame, "python": RemoteSequenceSource, "ndarray": RemoteArray, "numpy": RemoteArray, "catalog": RemoteCatalog}
 container_map = ContainerRegistryView(_container_map)  # public, read-only view
 
-__all__ = ['container_map', 'register_container', 'unregister_container']
+__all__ = ["container_map", "register_container", "unregister_container"]
 
 
 def register_container(name, container, overwrite=False):
@@ -50,7 +44,8 @@ def register_container(name, container, overwrite=False):
         raise ValueError(
             f"The container {container} could not be registered for the "
             f"name {name} because {_container_map[name]} is already "
-            f"registered for that name. Use overwrite=True to force it.")
+            f"registered for that name. Use overwrite=True to force it."
+        )
     _container_map[name] = container
 
 
@@ -72,7 +67,6 @@ def unregister_container(name):
         Whatever was registered for ``name``, or ``None``
     """
     return _container_map.pop(name, None)
-
 
 
 def upload(data, path, **kwargs):
@@ -109,4 +103,4 @@ def upload(data, path, **kwargs):
                 return s
         except NotImplementedError:
             pass
-    raise TypeError('No class found to handle given data')
+    raise TypeError("No class found to handle given data")

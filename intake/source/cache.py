@@ -1,12 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
-
-from datetime import datetime
-from hashlib import md5
+# -----------------------------------------------------------------------------
 
 import collections
 import json
@@ -16,11 +13,13 @@ import posixpath
 import re
 import shutil
 import warnings
+from datetime import datetime
+from hashlib import md5
 
 from intake.config import conf
 from intake.utils import is_notebook, make_path_posix
 
-logger = logging.getLogger('intake')
+logger = logging.getLogger("intake")
 
 
 def sanitize_path(path):
@@ -29,16 +28,16 @@ def sanitize_path(path):
 
     storage_option = infer_storage_options(path)
 
-    protocol = storage_option['protocol']
-    if protocol in ('http', 'https'):
+    protocol = storage_option["protocol"]
+    if protocol in ("http", "https"):
         # Most FSs remove the protocol but not HTTPFS. We need to strip
         # it to match properly.
-        path = os.path.normpath(path.replace("{}://".format(protocol), ''))
-    elif protocol == 'file':
+        path = os.path.normpath(path.replace("{}://".format(protocol), ""))
+    elif protocol == "file":
         # Remove trailing slashes from file paths.
         path = os.path.normpath(path)
         # Remove colons
-        path = path.replace(':', '')
+        path = path.replace(":", "")
     # Otherwise we just make sure that path is posix
     return make_path_posix(path)
 
@@ -54,11 +53,11 @@ class BaseCache(object):
     as entries in ``registry``. The principle methods to override are
     ``_make_files()`` and ``_load()`` and ``_from_metadata()``.
     """
+
     # download block size in bytes
     blocksize = 5000000
 
-    def __init__(self, driver, spec, catdir=None, cache_dir=None,
-                 storage_options={}):
+    def __init__(self, driver, spec, catdir=None, cache_dir=None, storage_options={}):
         """
         Parameters
         ----------
@@ -73,12 +72,11 @@ class BaseCache(object):
         """
         self._driver = driver
         self._spec = spec
-        cd = make_path_posix(cache_dir or conf['cache_dir'])
-        if cd == 'catdir':
+        cd = make_path_posix(cache_dir or conf["cache_dir"])
+        if cd == "catdir":
             if catdir is None:
-                raise TypeError('cache_dir="catdir" only allowed when loaded'
-                                'from a catalog file.')
-            cd = posixpath.join(catdir, 'intake_cache')
+                raise TypeError('cache_dir="catdir" only allowed when loaded' "from a catalog file.")
+            cd = posixpath.join(catdir, "intake_cache")
         self._cache_dir = cd
 
         self._storage_options = storage_options
@@ -88,26 +86,21 @@ class BaseCache(object):
         if not os.path.exists(self._cache_dir):
             os.makedirs(self._cache_dir)
         if os.path.isfile(self._cache_dir):
-            raise Exception("Path for cache directory exists as a file: {}"
-                            "".format(self._cache_dir))
+            raise Exception("Path for cache directory exists as a file: {}" "".format(self._cache_dir))
 
     def _munge_path(self, cache_subdir, urlpath):
         import re
 
         path = sanitize_path(urlpath)
 
-        if 'regex' in self._spec:
-            regex = r'%s' % sanitize_path(self._spec['regex'])
-            path = re.sub(regex, '', path)
+        if "regex" in self._spec:
+            regex = r"%s" % sanitize_path(self._spec["regex"])
+            path = re.sub(regex, "", path)
 
-        return posixpath.join(self._cache_dir, cache_subdir, path.lstrip('/\\'))
+        return posixpath.join(self._cache_dir, cache_subdir, path.lstrip("/\\"))
 
     def _hash(self, urlpath):
-        return md5(
-                str((os.path.basename(urlpath),
-                     self._spec.get('regex', ''),
-                     self._driver)).encode()
-            ).hexdigest()
+        return md5(str((os.path.basename(urlpath), self._spec.get("regex", ""), self._driver)).encode()).hexdigest()
 
     def _path(self, urlpath, subdir=None):
         if subdir is None:
@@ -116,18 +109,13 @@ class BaseCache(object):
 
         dirname = os.path.dirname(cache_path)
         if not os.path.exists(dirname):
-            if not (dirname.startswith('https://') or
-                    dirname.startswith('http://')):
+            if not (dirname.startswith("https://") or dirname.startswith("http://")):
                 os.makedirs(dirname)
 
         return cache_path
 
     def _log_metadata(self, urlpath, original_path, cache_path):
-        metadata = {
-            'created': datetime.now().isoformat(),
-            'original_path': original_path,
-            'cache_path': cache_path
-            }
+        metadata = {"created": datetime.now().isoformat(), "original_path": original_path, "cache_path": cache_path}
         self._metadata.update(urlpath, metadata)
 
     def load(self, urlpath, output=None, **kwargs):
@@ -149,10 +137,9 @@ class BaseCache(object):
         List of local cache_paths to be opened instead of the remote file(s). If
         caching is disable, the urlpath is returned.
         """
-        if conf.get('cache_disabled', False):
+        if conf.get("cache_disabled", False):
             return [urlpath]
-        self.output = output if output is not None else conf.get(
-            'cache_download_progress', True)
+        self.output = output if output is not None else conf.get("cache_download_progress", True)
 
         cache_paths = self._from_metadata(urlpath)
         if cache_paths is None or any(not os.path.exists(c) for c in cache_paths):
@@ -165,11 +152,12 @@ class BaseCache(object):
         """Return set of local URLs if files already exist"""
         md = self.get_metadata(urlpath)
         if md is not None:
-            return [e['cache_path'] for e in md]
+            return [e["cache_path"] for e in md]
 
     def _load(self, files_in, files_out, urlpath, meta=True):
         """Download a set of files"""
         import dask
+
         out = []
         outnames = []
         for file_in, file_out in zip(files_in, files_out):
@@ -188,8 +176,7 @@ class BaseCache(object):
                 if meta:
                     self._log_metadata(urlpath, file_in.path, cache_path)
                 ddown = dask.delayed(_download)
-                out.append(ddown(file_in, file_out, self.blocksize,
-                                 self.output))
+                out.append(ddown(file_in, file_out, self.blocksize, self.output))
         dask.compute(*out)
         return outnames
 
@@ -226,11 +213,11 @@ class BaseCache(object):
         cache_entries = self._metadata.pop(urlpath, [])  # ignore if missing
         for cache_entry in cache_entries:
             try:
-                os.remove(cache_entry['cache_path'])
+                os.remove(cache_entry["cache_path"])
             except (OSError, IOError):
                 pass
         try:
-            fn = os.path.dirname(cache_entry['cache_path'])
+            fn = os.path.dirname(cache_entry["cache_path"])
             os.rmdir(fn)
         except (OSError, IOError):
             logger.debug("Failed to remove cache directory: %s" % fn)
@@ -259,22 +246,19 @@ class BaseCache(object):
 def _download(file_in, file_out, blocksize, output=False):
     """Read from input and write to output file in blocks"""
     with warnings.catch_warnings():
-        warnings.filterwarnings('ignore')
+        warnings.filterwarnings("ignore")
         if output:
             try:
                 from tqdm.autonotebook import tqdm
             except ImportError:
-                logger.warn("Cache progress bar requires tqdm to be installed:"
-                            " conda/pip install tqdm")
+                logger.warn("Cache progress bar requires tqdm to be installed:" " conda/pip install tqdm")
                 output = False
 
         if is_notebook():
             try:
-                import ipywidgets
+                import ipywidgets  # noqa
             except ImportError:
-                logger.warn(
-                    "Cache progress bar in a notebook requires ipywidgets to be installed:"
-                    " conda/pip install ipywidgets")
+                logger.warn("Cache progress bar in a notebook requires ipywidgets to be installed:" " conda/pip install ipywidgets")
                 output = False
 
         try:
@@ -291,11 +275,15 @@ def _download(file_in, file_out, blocksize, output=False):
                         display.add(i)
                         out = i
                         break
-                pbar = tqdm(total=file_size // 2 ** 20, leave=False,
-                            disable=pbar_disabled,
-                            position=out, desc=os.path.basename(file_out.path),
-                            mininterval=0.1,
-                            bar_format=r'{n}/|/{l_bar}')
+                pbar = tqdm(
+                    total=file_size // 2**20,
+                    leave=False,
+                    disable=pbar_disabled,
+                    position=out,
+                    desc=os.path.basename(file_out.path),
+                    mininterval=0.1,
+                    bar_format=r"{n}/|/{l_bar}",
+                )
             else:
                 output = False
 
@@ -313,7 +301,7 @@ def _download(file_in, file_out, blocksize, output=False):
                 pbar.update(pbar.total - pbar.n)  # force to full
                 pbar.close()
             except Exception as e:
-                logger.debug('tqdm exception: %s' % e)
+                logger.debug("tqdm exception: %s" % e)
             finally:
                 display.remove(out)
 
@@ -333,10 +321,8 @@ class FileCache(BaseCache):
             subdir = self._hash(":".join(urlpath))
         else:
             subdir = self._hash(urlpath)
-        files_in = open_files(urlpath, 'rb', **self._storage_options)
-        files_out = [open_files([self._path(f.path, subdir)], 'wb',
-                                **self._storage_options)[0]
-                     for f in files_in]
+        files_in = open_files(urlpath, "rb", **self._storage_options)
+        files_out = [open_files([self._path(f.path, subdir)], "wb", **self._storage_options)[0] for f in files_in]
         return files_in, files_out
 
     def _from_metadata(self, urlpath):
@@ -356,13 +342,11 @@ class DirCache(BaseCache):
 
         self._ensure_cache_dir()
         subdir = self._hash(urlpath)
-        depth = self._spec['depth']
+        depth = self._spec["depth"]
         files_in = []
         for i in range(1, depth + 1):
-            files_in.extend(open_files('/'.join([urlpath] + ['*']*i)))
-        files_out = [open_files([self._path(f.path, subdir)], 'wb',
-                                **self._storage_options)[0]
-                     for f in files_in]
+            files_in.extend(open_files("/".join([urlpath] + ["*"] * i)))
+        files_out = [open_files([self._path(f.path, subdir)], "wb", **self._storage_options)[0] for f in files_in]
         files_in2, files_out2 = [], []
         paths = set(os.path.dirname(f.path) for f in files_in)
         for fin, fout in zip(files_in, files_out):
@@ -397,23 +381,20 @@ class CompressedCache(BaseCache):
 
     def _make_files(self, urlpath, **kwargs):
         import tempfile
+
         d = tempfile.mkdtemp()
         from fsspec import open_files
 
         self._ensure_cache_dir()
         self._urlpath = urlpath
-        files_in = open_files(urlpath, 'rb', **self._storage_options)
-        files_out = [open_files(
-            [make_path_posix(os.path.join(d, os.path.basename(f.path)))],
-            'wb')[0]
-            for f in files_in
-        ]
-        super(CompressedCache, self)._load(files_in, files_out, urlpath,
-                                           meta=False)
+        files_in = open_files(urlpath, "rb", **self._storage_options)
+        files_out = [open_files([make_path_posix(os.path.join(d, os.path.basename(f.path)))], "wb")[0] for f in files_in]
+        super(CompressedCache, self)._load(files_in, files_out, urlpath, meta=False)
         return files_in, files_out
 
     def _load(self, files_in, files_out, urlpath, meta=True):
         from .decompress import decomp
+
         subdir = self._path(urlpath)
         try:
             os.makedirs(subdir)
@@ -423,24 +404,24 @@ class CompressedCache(BaseCache):
         out = []
         for f, orig in zip(files, files_in):
             # TODO: add snappy, brotli, lzo, lz4, xz... ?
-            if 'decomp' in self._spec and self._spec['decomp'] != 'infer':
-                d = self._spec['decomp']
-            elif f.endswith('.zip'):
-                d = 'zip'
-            elif f.endswith(".tar.gz") or f.endswith('.tgz'):
-                d = 'tgz'
-            elif f.endswith(".tar.bz2") or f.endswith('.tbz'):
-                d = 'tbz'
+            if "decomp" in self._spec and self._spec["decomp"] != "infer":
+                d = self._spec["decomp"]
+            elif f.endswith(".zip"):
+                d = "zip"
+            elif f.endswith(".tar.gz") or f.endswith(".tgz"):
+                d = "tgz"
+            elif f.endswith(".tar.bz2") or f.endswith(".tbz"):
+                d = "tbz"
             elif f.endswith(".tar"):
-                d = 'tar'
-            elif f.endswith('.gz'):
-                d = 'gz'
-            elif f.endswith('.bz2'):
-                d = 'bz'
+                d = "tar"
+            elif f.endswith(".gz"):
+                d = "gz"
+            elif f.endswith(".bz2"):
+                d = "bz"
             if d not in decomp:
                 raise ValueError('Unknown compression for "%s"' % f)
             out2 = decomp[d](f, subdir)
-            out3 = filter(re.compile(self._spec.get('regex_filter', '.*')).search, out2)
+            out3 = filter(re.compile(self._spec.get("regex_filter", ".*")).search, out2)
             for fn in out3:
                 logger.debug("Caching file: {}".format(f))
                 logger.debug("Original path: {}".format(orig.path))
@@ -474,15 +455,16 @@ class DATCache(BaseCache):
 
     def _load(self, _, __, urlpath, meta=True):
         import subprocess
+
         from fsspec import open_files
 
         path = os.path.join(self._cache_dir, self._hash(urlpath))
         dat, part = os.path.split(urlpath)
-        cmd = ['dat', 'clone', dat, path, '--no-watch']
+        cmd = ["dat", "clone", dat, path, "--no-watch"]
         try:
             subprocess.call(cmd, stdout=subprocess.PIPE)
         except (IOError, OSError):  # pragma: no cover
-            logger.info('Calling DAT failed')
+            logger.info("Calling DAT failed")
             raise
         newpath = os.path.join(path, part)
 
@@ -495,11 +477,11 @@ class CacheMetadata(collections.abc.MutableMapping):
     """
     Utility class for managing persistent metadata stored in the Intake config directory.
     """
+
     def __init__(self, *args, **kwargs):
         from intake import config
 
-        self._path = posixpath.join(make_path_posix(config.confdir),
-                                    'cache_metadata.json')
+        self._path = posixpath.join(make_path_posix(config.confdir), "cache_metadata.json")
         d = os.path.dirname(self._path)
         if not os.path.exists(d):
             os.makedirs(d)
@@ -540,7 +522,7 @@ class CacheMetadata(collections.abc.MutableMapping):
         self._save()
 
     def _save(self):
-        with open(self._path, 'w') as f:
+        with open(self._path, "w") as f:
             json.dump(self._metadata, f)
 
     def pop(self, key, default=None):
@@ -552,12 +534,7 @@ class CacheMetadata(collections.abc.MutableMapping):
         return list(self._metadata.keys())
 
 
-registry = {
-    'file': FileCache,
-    'dir': DirCache,
-    'compressed': CompressedCache,
-    'dat': DATCache
-}
+registry = {"file": FileCache, "dir": DirCache, "compressed": CompressedCache, "dat": DATCache}
 
 
 def make_caches(driver, specs, catdir=None, cache_dir=None, storage_options={}):
@@ -576,9 +553,7 @@ def make_caches(driver, specs, catdir=None, cache_dir=None, storage_options={}):
         return []
     out = []
     for spec in specs:
-        if 'type' in spec and spec['type'] not in registry:
-            raise IndexError(spec['type'])
-        out.append(registry.get(spec['type'], FileCache)(
-            driver, spec, catdir=catdir, cache_dir=cache_dir,
-            storage_options=storage_options))
+        if "type" in spec and spec["type"] not in registry:
+            raise IndexError(spec["type"])
+        out.append(registry.get(spec["type"], FileCache)(driver, spec, catdir=catdir, cache_dir=cache_dir, storage_options=storage_options))
     return out

@@ -18,4 +18,3 @@ prune **/tests/**
 prune docs
 recursive-include intake/source/tests/plugin_searchpath *.py
 recursive-include intake/catalog/tests/catalog_search *
-

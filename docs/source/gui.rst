@@ -175,4 +175,3 @@ as with any catalog entry:
 
    In [ ]: source_entry.plot()  # or skip data source step
    Out   : < graphics>
-

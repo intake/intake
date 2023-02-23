@@ -1,12 +1,13 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 import panel as pn
-from ..base import BaseView
+
 from ...utils import pretty_describe
+from ..base import BaseView
 
 
 class Description(BaseView):
@@ -33,13 +34,12 @@ class Description(BaseView):
         watchers that are set on children - cleaned up when visible
         is set to false.
     """
+
     main_pane = None
 
     def __init__(self, source=None, **kwargs):
         self.source = source
-        self.panel = pn.Column(name='Description', width_policy='max',
-                               margin=0, height=240, sizing_mode='stretch_width',
-                               scroll=True)
+        self.panel = pn.Column(name="Description", width_policy="max", margin=0, height=240, sizing_mode="stretch_width", scroll=True)
         super().__init__(**kwargs)
 
     def setup(self):
@@ -57,6 +57,6 @@ class Description(BaseView):
     def contents(self):
         """String representation of the source's description"""
         if not self._source:
-            return 'name: ' + "⠀" * 30
+            return "name: " + "⠀" * 30
         contents = self.source.describe()
         return pretty_describe(contents)

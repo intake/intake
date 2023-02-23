@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import os
 import os.path
@@ -20,7 +20,7 @@ from intake.source import discovery
 @pytest.fixture
 def extra_pythonpath():
     basedir = os.path.dirname(__file__)
-    extra_path = os.path.join(basedir, 'plugin_searchpath')
+    extra_path = os.path.join(basedir, "plugin_searchpath")
 
     # Put extra directory on the python path
     sys.path.append(extra_path)
@@ -35,39 +35,31 @@ def test_package_scan(extra_pythonpath, tmp_config_path):
     "This tests a non-public function."
     # Default path (sys.path)
     results = discovery._package_scan()
-    assert 'foo' in results
+    assert "foo" in results
 
     # Explicit path
     results = discovery._package_scan(path=[extra_pythonpath])
-    assert 'foo' in results
+    assert "foo" in results
 
 
 def test_discover_cli(extra_pythonpath, tmp_config_path):
     env = os.environ.copy()
     env["INTAKE_CONF_FILE"] = tmp_config_path
-    env['PYTHONPATH'] = extra_pythonpath
+    env["PYTHONPATH"] = extra_pythonpath
 
     # directory is not automatically scanned any more
-    subprocess.call(shlex.split(
-        "intake drivers enable foo intake_foo.FooPlugin"
-    ), stderr=subprocess.STDOUT, stdout=subprocess.PIPE, env=env)
+    subprocess.call(shlex.split("intake drivers enable foo intake_foo.FooPlugin"), stderr=subprocess.STDOUT, stdout=subprocess.PIPE, env=env)
 
-    out = subprocess.check_output(shlex.split(
-        "intake drivers list"
-    ), stderr=subprocess.STDOUT, env=env)
+    out = subprocess.check_output(shlex.split("intake drivers list"), stderr=subprocess.STDOUT, env=env)
 
-    assert b'foo' in out
-    assert out.index(b'Disabled') > out.index(b'foo')
+    assert b"foo" in out
+    assert out.index(b"Disabled") > out.index(b"foo")
 
-    subprocess.check_output(shlex.split(
-        "intake drivers disable foo"
-    ), stderr=subprocess.STDOUT, env=env)
+    subprocess.check_output(shlex.split("intake drivers disable foo"), stderr=subprocess.STDOUT, env=env)
 
-    out = subprocess.check_output(shlex.split(
-        "intake drivers list"
-    ), stderr=subprocess.STDOUT, env=env)
-    assert b'foo' in out
-    assert out.index(b'Disabled') < out.index(b'foo')
+    out = subprocess.check_output(shlex.split("intake drivers list"), stderr=subprocess.STDOUT, env=env)
+    assert b"foo" in out
+    assert out.index(b"Disabled") < out.index(b"foo")
 
 
 def test_discover(extra_pythonpath, tmp_config_path):
@@ -77,11 +69,11 @@ def test_discover(extra_pythonpath, tmp_config_path):
 
     registry = intake.source.DriverRegistry(drivers)
     # Check that package scan (name-based) discovery worked.
-    assert 'foo' in registry
-    registry['foo']()
+    assert "foo" in registry
+    registry["foo"]()
     # Check that entrypoints-based discovery worked.
-    assert 'some_test_driver' in registry
-    registry['some_test_driver']()
+    assert "some_test_driver" in registry
+    registry["some_test_driver"]()
 
     # Now again, turning off the package scan.
 
@@ -89,10 +81,10 @@ def test_discover(extra_pythonpath, tmp_config_path):
     registry = intake.source.DriverRegistry(drivers)
 
     # Check that package scan (name-based) discovery did *not* happen.
-    assert 'foo' not in registry
+    assert "foo" not in registry
     # Check that entrypoints-based discovery worked.
-    assert 'some_test_driver' in registry
-    registry['some_test_driver']()
+    assert "some_test_driver" in registry
+    registry["some_test_driver"]()
 
 
 def test_enable_and_disable(extra_pythonpath, tmp_config_path):
@@ -100,33 +92,29 @@ def test_enable_and_disable(extra_pythonpath, tmp_config_path):
 
     try:
         drivers = intake.source.discovery.DriverSouces(do_scan=True)
-        drivers.disable('foo')
+        drivers.disable("foo")
         registry = intake.source.DriverRegistry(drivers)
         with pytest.warns(PendingDeprecationWarning):
-            assert 'foo' in discovery.drivers.scanned
-        assert 'foo' not in registry
+            assert "foo" in discovery.drivers.scanned
+        assert "foo" not in registry
 
-        drivers.enable('foo', 'intake_foo.FooPlugin')
-        assert 'foo' in registry
+        drivers.enable("foo", "intake_foo.FooPlugin")
+        assert "foo" in registry
     finally:
-        drivers.enable('foo', 'intake_foo.FooPlugin')
+        drivers.enable("foo", "intake_foo.FooPlugin")
 
     # Disable and then enable an entrypoint result.
 
     try:
-        drivers.disable('some_test_driver')
-        assert 'some_test_driver' not in registry
+        drivers.disable("some_test_driver")
+        assert "some_test_driver" not in registry
 
-        drivers.enable(
-            'some_test_driver',
-            'driver_with_entrypoints.SomeTestDriver')
-        assert 'some_test_driver' in registry
+        drivers.enable("some_test_driver", "driver_with_entrypoints.SomeTestDriver")
+        assert "some_test_driver" in registry
     finally:
-        drivers.enable(
-            'some_test_driver',
-            'driver_with_entrypoints.SomeTestDriver')
+        drivers.enable("some_test_driver", "driver_with_entrypoints.SomeTestDriver")
 
 
 def test_discover_collision(extra_pythonpath, tmp_config_path):
     with pytest.warns(UserWarning):
-        discovery._package_scan(plugin_prefix='collision_')
+        discovery._package_scan(plugin_prefix="collision_")

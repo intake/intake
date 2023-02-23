@@ -1,17 +1,17 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 """
 Base classes for Data Loader interface
 """
 
 from yaml import dump
 
+from ..utils import DictSerialiseMixin, make_path_posix, pretty_describe
 from .cache import make_caches
-from ..utils import make_path_posix, DictSerialiseMixin, pretty_describe
 
 
 class Schema(dict):
@@ -29,21 +29,17 @@ class Schema(dict):
         kwargs: typically include dtype, shape
         """
         super(Schema, self).__init__(**kwargs)
-        for field in ['dtype', 'shape']:
+        for field in ["dtype", "shape"]:
             # maybe a default-dict
             if field not in self:
                 self[field] = None
-        if 'npartitions' not in self:
-            self['npartitions'] = 1
-        if 'extra_metadata' not in self:
-            self['extra_metadata'] = {}
+        if "npartitions" not in self:
+            self["npartitions"] = 1
+        if "extra_metadata" not in self:
+            self["extra_metadata"] = {}
 
     def __repr__(self):
-        return ("<Schema instance>\n"
-                "dtype: {}\n"
-                "shape: {}\n"
-                "metadata: {}"
-                "".format(self.dtype, self.shape, self.extra_metadata))
+        return "<Schema instance>\n" "dtype: {}\n" "shape: {}\n" "metadata: {}" "".format(self.dtype, self.shape, self.extra_metadata)
 
     def __getattr__(self, item):
         return self[item]
@@ -55,6 +51,7 @@ class NoEntry(AttributeError):
 
 class CacheMixin:
     """Allows "old style" caching for Data Source"""
+
     _cache = None
 
     @property
@@ -68,10 +65,7 @@ class CacheMixin:
     @property
     def cache(self):
         if self._cache is None:
-            self._cache = make_caches(self.name, self.metadata.get('cache'),
-                                      catdir=self.metadata.get('catalog_dir',
-                                                             None),
-                                      storage_options=self.storage_options)
+            self._cache = make_caches(self.name, self.metadata.get("cache"), catdir=self.metadata.get("catalog_dir", None), storage_options=self.storage_options)
         return self._cache
 
     @cache.setter
@@ -95,8 +89,8 @@ class HoloviewsMixin:
 
     @property
     def plots(self):
-        """List custom associated quick-plots """
-        return list(self.metadata.get('plots', {}))
+        """List custom associated quick-plots"""
+        return list(self.metadata.get("plots", {}))
 
     @property
     def gui(self):
@@ -144,17 +138,16 @@ class HoloviewsMixin:
 
         """
         if hvPlot is object:
-            raise ImportError("The intake plotting API requires hvplot."
-                              "hvplot may be installed with:\n\n"
-                              "`conda install -c pyviz hvplot` or "
-                              "`pip install hvplot`.")
-        metadata = self.metadata.get('plot', {})
-        fields = self.metadata.get('fields', {})
+            raise ImportError(
+                "The intake plotting API requires hvplot." "hvplot may be installed with:\n\n" "`conda install -c pyviz hvplot` or " "`pip install hvplot`."
+            )
+        metadata = self.metadata.get("plot", {})
+        fields = self.metadata.get("fields", {})
         for attrs in fields.values():
-            if 'range' in attrs:
-                attrs['range'] = tuple(attrs['range'])
-        metadata['fields'] = fields
-        plots = self.metadata.get('plots', {})
+            if "range" in attrs:
+                attrs["range"] = tuple(attrs["range"])
+        metadata["fields"] = fields
+        plots = self.metadata.get("plots", {})
         return HVplotCapture(self, custom_plots=plots, **metadata)
 
     @property
@@ -182,8 +175,10 @@ class PersistMixin:
     """Adds interaction with PersistStore to DataSource"""
 
     def get_persisted(self):
-        from ..container.persist import store
         from dask.base import tokenize
+
+        from ..container.persist import store
+
         return store[tokenize(self)]()
 
     @staticmethod
@@ -193,14 +188,17 @@ class PersistMixin:
 
     @property
     def has_been_persisted(self):
-        from ..container.persist import store
         from dask.base import tokenize
+
+        from ..container.persist import store
+
         return tokenize(self) in store
 
     @property
     def is_persisted(self):
         from ..container.persist import store
-        return self.metadata.get('original_tok', None) in store
+
+        return self.metadata.get("original_tok", None) in store
 
     def persist(self, ttl=None, **kwargs):
         """Save data from this source to local persistent storage
@@ -214,20 +212,17 @@ class PersistMixin:
             version was written.
         kargs: passed to the _persist method on the base container.
         """
-        from ..container.persist import PersistStore
         from dask.base import tokenize
-        if 'original_tok' in self.metadata:
-            raise ValueError('Cannot persist a source taken from the persist '
-                             'store')
+
+        from ..container.persist import PersistStore
+
+        if "original_tok" in self.metadata:
+            raise ValueError("Cannot persist a source taken from the persist " "store")
         if ttl is not None and not isinstance(ttl, (int, float)):
-            raise ValueError('Cannot persist using a time to live that is '
-                             f'non-numeric. User-provided ttl was {ttl}')
+            raise ValueError("Cannot persist using a time to live that is " f"non-numeric. User-provided ttl was {ttl}")
         store = PersistStore()
         out = self._export(store.getdir(self), **kwargs)
-        out.metadata.update({
-            'ttl': ttl,
-            'cat': {} if self.cat is None else self.cat.__getstate__()
-        })
+        out.metadata.update({"ttl": ttl, "cat": {} if self.cat is None else self.cat.__getstate__()})
         out.name = self.name
         store.add(tokenize(self), out)
         return out
@@ -260,8 +255,7 @@ class DataSourceBase(DictSerialiseMixin):
         # default data
         self.metadata = metadata or {}
         if isinstance(self.metadata, dict) and storage_options is None:
-            storage_options = self._captured_init_kwargs.get('storage_options',
-                                                             {})
+            storage_options = self._captured_init_kwargs.get("storage_options", {})
         self.storage_options = storage_options
 
     def _get_schema(self):
@@ -290,18 +284,11 @@ class DataSourceBase(DictSerialiseMixin):
 
     def _yaml(self):
         import inspect
+
         kwargs = self._captured_init_kwargs.copy()
-        meta = kwargs.pop('metadata', self.metadata) or {}
-        kwargs.update(dict(zip(inspect.signature(self.__init__).parameters,
-                           self._captured_init_args)))
-        data = {
-            'sources':
-                {self.name: {
-                   'driver': self.classname,
-                   'description': self.description or "",
-                   'metadata': meta,
-                   'args': kwargs
-                }}}
+        meta = kwargs.pop("metadata", self.metadata) or {}
+        kwargs.update(dict(zip(inspect.signature(self.__init__).parameters, self._captured_init_args)))
+        data = {"sources": {self.name: {"driver": self.classname, "description": self.description or "", "metadata": meta, "args": kwargs}}}
         return data
 
     def yaml(self):
@@ -316,14 +303,10 @@ class DataSourceBase(DictSerialiseMixin):
     def _ipython_display_(self):
         """Display the entry as a rich object in an IPython session."""
         from IPython.display import display
-        data = self._yaml()['sources']
+
+        data = self._yaml()["sources"]
         contents = dump(data, default_flow_style=False)
-        display({
-            'application/yaml': contents,
-            'text/plain': pretty_describe(contents)
-        }, metadata={
-            'application/json': {'root': self.name}
-        }, raw=True)
+        display({"application/yaml": contents, "text/plain": pretty_describe(contents)}, metadata={"application/json": {"root": self.name}}, raw=True)
 
     def __repr__(self):
         return self.yaml()
@@ -346,10 +329,7 @@ class DataSourceBase(DictSerialiseMixin):
         """Open resource and populate the source attributes."""
         self._load_metadata()
 
-        return dict(dtype=self.dtype,
-                    shape=self.shape,
-                    npartitions=self.npartitions,
-                    metadata=self.metadata)
+        return dict(dtype=self.dtype, shape=self.shape, npartitions=self.npartitions, metadata=self.metadata)
 
     def read(self):
         """Load entire dataset into a container and return it"""
@@ -372,7 +352,7 @@ class DataSourceBase(DictSerialiseMixin):
         """
         self._load_metadata()
         if i < 0 or i >= self.npartitions:
-            raise IndexError('%d is out of range' % i)
+            raise IndexError("%d is out of range" % i)
 
         return self._get_partition(i)
 
@@ -410,8 +390,7 @@ class DataSourceBase(DictSerialiseMixin):
         created from a catalog.
         """
         if self._entry is not None:
-            kw = {k: v for k, v in self._captured_init_kwargs.items()
-                  if k in self._passed_kwargs}
+            kw = {k: v for k, v in self._captured_init_kwargs.items() if k in self._passed_kwargs}
             kw.update(kwargs)
             obj = self._entry(**kw)
             obj._entry = self._entry
@@ -452,19 +431,24 @@ class DataSourceBase(DictSerialiseMixin):
         return self._export(path, **kwargs)
 
     def _export(self, path, **kwargs):
-        from ..container import container_map
         import time
+
         from dask.base import tokenize
+
+        from ..container import container_map
+
         method = container_map[self.container]._persist
         # may need to create path - access file-system method
         out = method(self, path=path, **kwargs)
         out.description = self.description
-        metadata = {'timestamp': time.time(),
-                    'original_metadata': self.metadata,
-                    'original_source': self.__getstate__(),
-                    'original_name': self.name,
-                    'original_tok': tokenize(self),
-                    'persist_kwargs': kwargs}
+        metadata = {
+            "timestamp": time.time(),
+            "original_metadata": self.metadata,
+            "original_source": self.__getstate__(),
+            "original_name": self.name,
+            "original_tok": tokenize(self),
+            "persist_kwargs": kwargs,
+        }
         out.metadata = metadata
         out.name = self.name
         return out
@@ -476,17 +460,18 @@ class DataSource(CacheMixin, HoloviewsMixin, PersistMixin, DataSourceBase):
     When subclassed, child classes will have the base data source functionality,
     plus caching, plotting and persistence abilities.
     """
+
     pass
 
 
 class PatternMixin(object):
     """Helper class to provide file-name parsing abilities to a driver class"""
+
     @property
     def path_as_pattern(self):
-        if hasattr(self, '_path_as_pattern'):
+        if hasattr(self, "_path_as_pattern"):
             return self._path_as_pattern
-        raise KeyError('Plugin needs to set `path_as_pattern`'
-                       ' before setting urlpath')
+        raise KeyError("Plugin needs to set `path_as_pattern`" " before setting urlpath")
 
     @path_as_pattern.setter
     def path_as_pattern(self, path_as_pattern):
@@ -500,7 +485,7 @@ class PatternMixin(object):
     def urlpath(self, urlpath):
         from .utils import path_to_glob
 
-        if hasattr(self, '_original_urlpath'):
+        if hasattr(self, "_original_urlpath"):
             self._urlpath = urlpath
             return
 

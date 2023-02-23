@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import collections
 import copy
@@ -15,24 +15,39 @@ import warnings
 
 import msgpack
 
+from intake.auth.base import AuthenticationFailure, BaseClientAuth
+
+from ..compat import pack_kwargs, unpack_kwargs
 from ..source import registry as plugin_registry
+from ..utils import remake_instance
 from . import Catalog
 from .entry import CatalogEntry
-from .utils import expand_defaults, coerce, RemoteCatalogError
-from ..compat import unpack_kwargs, pack_kwargs
-from ..utils import remake_instance
-from intake.auth.base import BaseClientAuth, AuthenticationFailure
-logger = logging.getLogger('intake')
+from .utils import RemoteCatalogError, coerce, expand_defaults
+
+logger = logging.getLogger("intake")
 
 
 class RemoteCatalog(Catalog):
     """The state of a remote Intake server"""
-    name = 'intake_remote'
 
-    def __init__(self, url, http_args=None, page_size=None,
-                 name=None, source_id=None, metadata=None, auth=None, ttl=1,
-                 getenv=True, getshell=True,
-                 storage_options=None, parameters=None, persist_mode="default"):
+    name = "intake_remote"
+
+    def __init__(
+        self,
+        url,
+        http_args=None,
+        page_size=None,
+        name=None,
+        source_id=None,
+        metadata=None,
+        auth=None,
+        ttl=1,
+        getenv=True,
+        getshell=True,
+        storage_options=None,
+        parameters=None,
+        persist_mode="default",
+    ):
         """Connect to remote Intake Server as a catalog
 
         Parameters
@@ -70,22 +85,23 @@ class RemoteCatalog(Catalog):
             To pass to the server when it instantiates the data source
         """
         from requests.compat import urljoin, urlparse
+
         if http_args is None:
             http_args = {}
         else:
             # Make a deep copy to avoid mutating input.
             http_args = copy.deepcopy(http_args)
-        secure = http_args.pop('ssl', False)
-        scheme = 'https' if secure else 'http'
-        url = url.replace('intake', scheme, 1)
-        if not url.endswith('/'):
-            url = url + '/'
+        secure = http_args.pop("ssl", False)
+        scheme = "https" if secure else "http"
+        url = url.replace("intake", scheme, 1)
+        if not url.endswith("/"):
+            url = url + "/"
         self.url = url
-        self.info_url = urljoin(url, 'v1/info')
-        self.source_url = urljoin(url, 'v1/source')
+        self.info_url = urljoin(url, "v1/info")
+        self.source_url = urljoin(url, "v1/source")
         self.http_args = http_args
         self.http_args.update(storage_options or {})
-        self.http_args['headers'] = self.http_args.get('headers', {})
+        self.http_args["headers"] = self.http_args.get("headers", {})
         self._page_size = page_size
         self._source_id = source_id
         self._parameters = parameters
@@ -93,22 +109,21 @@ class RemoteCatalog(Catalog):
         self.auth = auth or BaseClientAuth()
 
         if self._source_id is None:
-            name = urlparse(url).netloc.replace(
-                '.', '_').replace(':', '_')
+            name = urlparse(url).netloc.replace(".", "_").replace(":", "_")
         super(RemoteCatalog, self).__init__(
-            name=name, metadata=name, ttl=ttl, getenv=getenv,
-            getshell=getshell, storage_options=storage_options, persist_mode=persist_mode)
+            name=name, metadata=name, ttl=ttl, getenv=getenv, getshell=getshell, storage_options=storage_options, persist_mode=persist_mode
+        )
 
     def _make_entries_container(self):
         return Entries(self)
 
     def __dir__(self):
         # Include (cached) tab-completable entries and normal attributes.
-        return (
-            [key for key in self._ipython_key_completions_() if
-             re.match("[_A-Za-z][_a-zA-Z0-9]*$", key)  # valid Python identifier
-             and not keyword.iskeyword(key)]  # not a Python keyword
-            + list(self.__dict__.keys()))
+        return [
+            key for key in self._ipython_key_completions_() if re.match("[_A-Za-z][_a-zA-Z0-9]*$", key) and not keyword.iskeyword(key)  # valid Python identifier
+        ] + list(  # not a Python keyword
+            self.__dict__.keys()
+        )
 
     def _ipython_key_completions_(self):
         if not self._entries.complete:
@@ -116,9 +131,7 @@ class RemoteCatalog(Catalog):
             # *some* entries are included.
             next(iter(self))
         if not self._entries.complete:
-            warnings.warn(
-                "Tab-complete and dir() on RemoteCatalog may include only a "
-                "subset of the available entries.")
+            warnings.warn("Tab-complete and dir() on RemoteCatalog may include only a " "subset of the available entries.")
         # Loop through the cached entries, but do not trigger iteration over
         # the full set.
         # Intentionally access _entries directly to avoid paying for a reload.
@@ -130,10 +143,9 @@ class RemoteCatalog(Catalog):
 
     def fetch_page(self, page_offset):
         import requests
-        logger.debug("Request page entries %d-%d",
-                     page_offset, page_offset + self._page_size)
-        params = {'page_offset': page_offset,
-                  'page_size': self._page_size}
+
+        logger.debug("Request page entries %d-%d", page_offset, page_offset + self._page_size)
+        params = {"page_offset": page_offset, "page_size": self._page_size}
         http_args = self._get_http_args(params)
         response = requests.get(self.info_url, **http_args)
         # Produce a chained exception with both the underlying HTTPError
@@ -141,15 +153,13 @@ class RemoteCatalog(Catalog):
         try:
             response.raise_for_status()
         except requests.HTTPError as err:
-            raise RemoteCatalogError(
-                "Failed to fetch page of entries {}-{}."
-                "".format(page_offset, page_offset + self._page_size)) from err
+            raise RemoteCatalogError("Failed to fetch page of entries {}-{}." "".format(page_offset, page_offset + self._page_size)) from err
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         page = {}
-        for source in info['sources']:
-            user_parameters = source.get('user_parameters', [])
+        for source in info["sources"]:
+            # user_parameters = source.get('user_parameters', [])
             # TODO Do something with self._parameters.
-            page[source['name']] = RemoteCatalogEntry(
+            page[source["name"]] = RemoteCatalogEntry(
                 url=self.url,
                 getenv=self.getenv,
                 getshell=self.getshell,
@@ -158,13 +168,15 @@ class RemoteCatalog(Catalog):
                 page_size=self._page_size,
                 persist_mode=self.pmode,
                 # user_parameters=user_parameters,
-                **source)
+                **source
+            )
         return page
 
     def fetch_by_name(self, name):
         import requests
+
         logger.debug("Requesting info about entry named '%s'", name)
-        params = {'name': name}
+        params = {"name": name}
         http_args = self._get_http_args(params)
         response = requests.get(self.source_url, **http_args)
         if response.status_code == 404:
@@ -172,8 +184,7 @@ class RemoteCatalog(Catalog):
         try:
             response.raise_for_status()
         except requests.HTTPError as err:
-            raise RemoteCatalogError(
-                "Failed to fetch entry {!r}.".format(name)) from err
+            raise RemoteCatalogError("Failed to fetch entry {!r}.".format(name)) from err
         info = msgpack.unpackb(response.content, **unpack_kwargs)
         return RemoteCatalogEntry(
             url=self.url,
@@ -183,7 +194,8 @@ class RemoteCatalog(Catalog):
             http_args=self.http_args,
             page_size=self._page_size,
             persist_mode=self.pmode,
-            **info['source'])
+            **info["source"]
+        )
 
     def _get_http_args(self, params):
         """
@@ -192,7 +204,7 @@ class RemoteCatalog(Catalog):
         Adds auth headers and 'source-id', merges in params.
         """
         # Add the auth headers to any other headers
-        headers = self.http_args.get('headers', {})
+        headers = self.http_args.get("headers", {})
         if self.auth is not None:
             auth_headers = self.auth.get_headers()
             headers.update(auth_headers)
@@ -200,13 +212,13 @@ class RemoteCatalog(Catalog):
         # build new http args with these headers
         http_args = self.http_args.copy()
         if self._source_id is not None:
-            headers['source-id'] = self._source_id
-        http_args['headers'] = headers
+            headers["source-id"] = self._source_id
+        http_args["headers"] = headers
 
         # Merge in any params specified by the caller.
-        merged_params = http_args.get('params', {})
+        merged_params = http_args.get("params", {})
         merged_params.update(params)
-        http_args['params'] = merged_params
+        http_args["params"] = merged_params
         return http_args
 
     def _load(self):
@@ -222,62 +234,52 @@ class RemoteCatalog(Catalog):
             params = {}
         else:
             # Just fetch the metadata now; fetch source info later in pages.
-            params = {'page_offset': 0, 'page_size': 0}
+            params = {"page_offset": 0, "page_size": 0}
         http_args = self._get_http_args(params)
         response = requests.get(self.info_url, **http_args)
         try:
             response.raise_for_status()
             error = False
         except requests.HTTPError as err:
-            if '403' in err.args[0]:
+            if "403" in err.args[0]:
                 error = "Your current level of authentication does not have access"
             else:
-                raise RemoteCatalogError(
-                    "Failed to fetch metadata.") from err
+                raise RemoteCatalogError("Failed to fetch metadata.") from err
         if error:
             raise AuthenticationFailure(error)
         info = msgpack.unpackb(response.content, **unpack_kwargs)
-        self.metadata = info['metadata']
+        self.metadata = info["metadata"]
         # The intake server now always provides a length, but the server may be
         # running an older version of intake.
-        self._len = info.get('length')
+        self._len = info.get("length")
         self._entries.reset()
         # If we are paginating (page_size is not None) and the server we are
         # working with is new enough to support pagination, info['sources']
         # should be empty. If either of those things is not true,
         # info['sources'] will contain all the entries and we should cache them
         # now.
-        if info['sources']:
+        if info["sources"]:
             # Signal that we are not paginating, even if we were asked to.
             self._page_size = None
             self._entries._page_cache.update(
-                {source['name']: RemoteCatalogEntry(
-                    url=self.url,
-                    getenv=self.getenv,
-                    getshell=self.getshell,
-                    auth=self.auth,
-                    http_args=self.http_args, **source)
-                 for source in info['sources']})
+                {
+                    source["name"]: RemoteCatalogEntry(url=self.url, getenv=self.getenv, getshell=self.getshell, auth=self.auth, http_args=self.http_args, **source)
+                    for source in info["sources"]
+                }
+            )
 
     def search(self, *args, **kwargs):
         import requests
-        request = {'action': 'search', 'query': (args, kwargs),
-                   'source_id': self._source_id}
-        response = requests.post(
-            url=self.source_url, **self._get_http_args({}),
-            data=msgpack.packb(request, **pack_kwargs))
+
+        request = {"action": "search", "query": (args, kwargs), "source_id": self._source_id}
+        response = requests.post(url=self.source_url, **self._get_http_args({}), data=msgpack.packb(request, **pack_kwargs))
         try:
             response.raise_for_status()
         except requests.HTTPError as err:
             raise RemoteCatalogError("Failed search query.") from err
         source = msgpack.unpackb(response.content, **unpack_kwargs)
-        source_id = source['source_id']
-        cat = RemoteCatalog(
-            url=self.url,
-            http_args=self.http_args,
-            source_id=source_id,
-            persist_mode=self.pmode,
-            name="")
+        source_id = source["source_id"]
+        cat = RemoteCatalog(url=self.url, http_args=self.http_args, source_id=source_id, persist_mode=self.pmode, name="")
         cat.cat = self
         return cat
 
@@ -296,9 +298,11 @@ class RemoteCatalog(Catalog):
 
     @staticmethod
     def _data_to_source(cat, path, **kwargs):
-        from intake.catalog.local import YAMLFileCatalog
-        from fsspec import open_files
         import yaml
+        from fsspec import open_files
+
+        from intake.catalog.local import YAMLFileCatalog
+
         if not isinstance(cat, Catalog):
             raise NotImplementedError
         out = {}
@@ -306,12 +310,11 @@ class RemoteCatalog(Catalog):
         # Entry here rather than the public facing DataSource objects.
         for name, entry in cat._entries.items():
             out[name] = entry.__getstate__()
-            out[name]['parameters'] = [up._captured_init_kwargs for up
-                                       in entry._user_parameters]
-            out[name]['kwargs'].pop('parameters')
-        fn = posixpath.join(path, 'cat.yaml')
-        with open_files([fn], 'wt')[0] as f:
-            yaml.dump({'sources': out}, f)
+            out[name]["parameters"] = [up._captured_init_kwargs for up in entry._user_parameters]
+            out[name]["kwargs"].pop("parameters")
+        fn = posixpath.join(path, "cat.yaml")
+        with open_files([fn], "wt")[0] as f:
+            yaml.dump({"sources": out}, f)
         return YAMLFileCatalog(fn)
 
 
@@ -322,6 +325,7 @@ class Entries(collections.abc.Mapping):
     caches them. On __getitem__ it fetches the specific entry from the
     server.
     """
+
     # This has PY3-style lazy methods (keys, values, items). Since it's
     # internal we should not need the PY2-only iter* variants.
     def __init__(self, catalog):
@@ -390,10 +394,24 @@ class Entries(collections.abc.Mapping):
 
 class RemoteCatalogEntry(CatalogEntry):
     """An entry referring to a remote data definition"""
-    def __init__(self, url, auth, name=None, user_parameters=None,
-                 container=None, description='', metadata=None,
-                 http_args=None, page_size=None, persist_mode="default", direct_access=False,
-                 getenv=True, getshell=True, **kwargs):
+
+    def __init__(
+        self,
+        url,
+        auth,
+        name=None,
+        user_parameters=None,
+        container=None,
+        description="",
+        metadata=None,
+        http_args=None,
+        page_size=None,
+        persist_mode="default",
+        direct_access=False,
+        getenv=True,
+        getshell=True,
+        **kwargs
+    ):
         """
 
         Parameters
@@ -417,83 +435,77 @@ class RemoteCatalogEntry(CatalogEntry):
         self._page_size = page_size
         # Persist mode describing a nested RemoteCatalog
         self.catalog_pmode = persist_mode
-        self._user_parameters = [remake_instance(up)
-                                 if (isinstance(up, dict) and 'cls' in up)
-                                 else up
-                                 for up in user_parameters or []]
+        self._user_parameters = [remake_instance(up) if (isinstance(up, dict) and "cls" in up) else up for up in user_parameters or []]
         self._direct_access = direct_access
         self.http_args = (http_args or {}).copy()
-        if 'headers' not in self.http_args:
-            self.http_args['headers'] = {}
-        
-        super(RemoteCatalogEntry, self).__init__(getenv=getenv,
-                                                 getshell=getshell)
+        if "headers" not in self.http_args:
+            self.http_args["headers"] = {}
+
+        super(RemoteCatalogEntry, self).__init__(getenv=getenv, getshell=getshell)
 
         # Persist mode for the RemoteCatalogEntry
         self._pmode = "never"
 
     def describe(self):
         return {
-            'name': self.name,
-            'container': self.container,
-            'plugin': "remote",
-            'description': self.description,
-            'direct_access': self._direct_access,
-            'metadata': self._metadata,
-            'user_parameters': self._user_parameters,
-            'args': (self.url, )
+            "name": self.name,
+            "container": self.container,
+            "plugin": "remote",
+            "description": self.description,
+            "direct_access": self._direct_access,
+            "metadata": self._metadata,
+            "user_parameters": self._user_parameters,
+            "args": (self.url,),
         }
 
     def get(self, **user_parameters):
         for par in self._user_parameters:
-            if par['name'] not in user_parameters:
-                default = par['default']
+            if par["name"] not in user_parameters:
+                default = par["default"]
                 if isinstance(default, str):
-                    default = coerce(par['type'], expand_defaults(
-                        par['default'], True, self.getenv, self.getshell))
-                user_parameters[par['name']] = default
+                    default = coerce(par["type"], expand_defaults(par["default"], True, self.getenv, self.getshell))
+                user_parameters[par["name"]] = default
 
         http_args = self.http_args.copy()
-        http_args['headers'] = self.http_args['headers'].copy()
-        http_args['headers'].update(self.auth.get_headers())
+        http_args["headers"] = self.http_args["headers"].copy()
+        http_args["headers"].update(self.auth.get_headers())
         return open_remote(
-            self.url, self.name, container=self.container,
-            user_parameters=user_parameters, description=self.description,
+            self.url,
+            self.name,
+            container=self.container,
+            user_parameters=user_parameters,
+            description=self.description,
             http_args=http_args,
             page_size=self._page_size,
             auth=self.auth,
             getenv=self.getenv,
             persist_mode=self.catalog_pmode,
-            getshell=self.getshell)
+            getshell=self.getshell,
+        )
 
 
-def open_remote(url, entry, container, user_parameters, description, http_args,
-                page_size=None, persist_mode=None, auth=None, getenv=None, getshell=None):
+def open_remote(url, entry, container, user_parameters, description, http_args, page_size=None, persist_mode=None, auth=None, getenv=None, getshell=None):
     """Create either local direct data source or remote streamed source"""
-    from intake.container import container_map
     import msgpack
     import requests
     from requests.compat import urljoin
 
-    if url.startswith('intake://'):
-        url = url[len('intake://'):]
-    payload = dict(action='open',
-                   name=entry,
-                   parameters=user_parameters,
-                   available_plugins=list(plugin_registry))
-    req = requests.post(urljoin(url, 'v1/source'),
-                        data=msgpack.packb(payload, **pack_kwargs),
-                        **http_args)
+    from intake.container import container_map
+
+    if url.startswith("intake://"):
+        url = url[len("intake://") :]
+    payload = dict(action="open", name=entry, parameters=user_parameters, available_plugins=list(plugin_registry))
+    req = requests.post(urljoin(url, "v1/source"), data=msgpack.packb(payload, **pack_kwargs), **http_args)
     if req.ok:
         response = msgpack.unpackb(req.content, **unpack_kwargs)
 
-        if 'plugin' in response:
-            pl = response['plugin']
+        if "plugin" in response:
+            pl = response["plugin"]
             pl = [pl] if isinstance(pl, str) else pl
             # Direct access
             for p in pl:
                 if p in plugin_registry:
-                    source = plugin_registry[p](**response['args'])
+                    source = plugin_registry[p](**response["args"])
                     proxy = False
                     break
             else:
@@ -501,20 +513,22 @@ def open_remote(url, entry, container, user_parameters, description, http_args,
         else:
             proxy = True
         if proxy:
-            response.pop('container')
-            response.update({'name': entry, 'parameters': user_parameters})
-            if container == 'catalog':
-                response.update({'auth': auth,
-                                 'getenv': getenv,
-                                 'getshell': getshell,
-                                 'page_size': page_size,
-                                 'persist_mode': persist_mode
-                                 # TODO ttl?
-                                 # TODO storage_options?
-                                 })
+            response.pop("container")
+            response.update({"name": entry, "parameters": user_parameters})
+            if container == "catalog":
+                response.update(
+                    {
+                        "auth": auth,
+                        "getenv": getenv,
+                        "getshell": getshell,
+                        "page_size": page_size,
+                        "persist_mode": persist_mode
+                        # TODO ttl?
+                        # TODO storage_options?
+                    }
+                )
             source = container_map[container](url, http_args, **response)
         source.description = description
         return source
     else:
-        raise Exception('Server error: %d, %s' % (req.status_code, req.reason))
-
+        raise Exception("Server error: %d, %s" % (req.status_code, req.reason))

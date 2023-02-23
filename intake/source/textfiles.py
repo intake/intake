@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 from . import base, import_name
 
@@ -17,14 +17,13 @@ class TextFilesSource(base.DataSource):
     The files can be local or remote. Extra parameters for encoding, etc.,
     go into ``storage_options``.
     """
-    name = 'textfiles'
-    version = '0.0.1'
-    container = 'python'
+
+    name = "textfiles"
+    version = "0.0.1"
+    container = "python"
     partition_access = True
 
-    def __init__(self, urlpath, text_mode=True, text_encoding='utf8',
-                 compression=None, decoder=None, read=True, metadata=None,
-                 storage_options=None):
+    def __init__(self, urlpath, text_mode=True, text_encoding="utf8", compression=None, decoder=None, read=True, metadata=None, storage_options=None):
         """
 
         Parameters
@@ -64,7 +63,7 @@ class TextFilesSource(base.DataSource):
             decoder = import_name(decoder)
         self.decoder = decoder
         self.compression = compression
-        self.mode = 'rt' if text_mode else 'rb'
+        self.mode = "rt" if text_mode else "rb"
         self.encoding = text_encoding
         self._read = read
 
@@ -72,19 +71,13 @@ class TextFilesSource(base.DataSource):
 
     def _get_schema(self):
         from fsspec import open_files
-        if self._files is None:
 
+        if self._files is None:
             urlpath = self._get_cache(self._urlpath)[0]
 
-            self._files = open_files(
-                urlpath, mode=self.mode, encoding=self.encoding,
-                compression=self.compression,
-                **self._storage_options)
+            self._files = open_files(urlpath, mode=self.mode, encoding=self.encoding, compression=self.compression, **self._storage_options)
             self.npartitions = len(self._files)
-        return base.Schema(dtype=None,
-                           shape=(None, ),
-                           npartitions=self.npartitions,
-                           extra_metadata=self.metadata)
+        return base.Schema(dtype=None, shape=(None,), npartitions=self.npartitions, extra_metadata=self.metadata)
 
     def _get_partition(self, i):
         return get_file(self._files[i], self.decoder, self._read)
@@ -95,18 +88,17 @@ class TextFilesSource(base.DataSource):
 
     def to_spark(self):
         from intake_spark.base import SparkHolder
-        h = SparkHolder(False, [
-            ('textFile', (self._urlpath, ))
-        ], {})
+
+        h = SparkHolder(False, [("textFile", (self._urlpath,))], {})
         return h.setup()
 
     def to_dask(self):
         import dask.bag as db
         from dask import delayed
+
         self._get_schema()
         dfile = delayed(get_file)
-        return db.from_delayed([dfile(f, self.decoder, self._read)
-                                for f in self._files])
+        return db.from_delayed([dfile(f, self.decoder, self._read) for f in self._files])
 
 
 def get_file(f, decoder, read):

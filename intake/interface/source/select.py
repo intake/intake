@@ -1,15 +1,13 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-from collections import OrderedDict
-
-import intake
-from intake.utils import remake_instance
 import panel as pn
+
+from intake.utils import remake_instance
 
 from ..base import BaseSelector, coerce_to_list
 
@@ -52,6 +50,7 @@ class SourceSelector(BaseSelector):
         watchers that are set on children - cleaned up when visible
         is set to false.
     """
+
     preprocess = None
     children = []
 
@@ -62,8 +61,8 @@ class SourceSelector(BaseSelector):
         from the order in other panel init methods because the top level
         gui class needs to be able to watch these widgets.
         """
-        self.panel = pn.Column(name='Select Data Source', margin=0)
-        self.widget = pn.widgets.MultiSelect(size=9, min_width=200, width_policy='min')
+        self.panel = pn.Column(name="Select Data Source", margin=0)
+        self.widget = pn.widgets.MultiSelect(size=9, min_width=200, width_policy="min")
         self.done_callback = done_callback
         super().__init__(**kwargs)
 
@@ -73,9 +72,9 @@ class SourceSelector(BaseSelector):
             self.cats = cats
 
     def setup(self):
-        label = pn.pane.Markdown('#### Sources', max_height=40)
+        label = pn.pane.Markdown("#### Sources", max_height=40)
         self.watchers = [
-            self.widget.param.watch(self.callback, 'value'),
+            self.widget.param.watch(self.callback, "value"),
         ]
         self.children = [label, self.widget]
 
@@ -91,7 +90,7 @@ class SourceSelector(BaseSelector):
         for cat in coerce_to_list(cats):
             for k, entry in cat._entries.items():
                 try:
-                    if entry.describe()['container'] != 'catalog':
+                    if entry.describe()["container"] != "catalog":
                         sources.append(entry)
                 except IOError:
                     # loading cat might fail here
@@ -105,19 +104,19 @@ class SourceSelector(BaseSelector):
     def __getstate__(self):
         """Serialize the current state of the object"""
         return {
-            'visible': self.visible,
-            'labels': self.labels,
-            'sources': [source.__getstate__() for source in self.items],
-            'selected': [k for k, v in self.options.items() if v in self.selected],
+            "visible": self.visible,
+            "labels": self.labels,
+            "sources": [source.__getstate__() for source in self.items],
+            "selected": [k for k, v in self.options.items() if v in self.selected],
         }
 
     def __setstate__(self, state):
         """Set the current state of the object from the serialized version.
         Works inplace. See ``__getstate__`` to get serialized version and
         ``from_state`` to create a new object."""
-        sources = state['sources']
-        labels = state['labels']
-        self.widget.options = {l: remake_instance(s) for l, s in zip(labels, sources)}
-        self.selected = state.get('selected', [])
-        self.visible = state.get('visible', True)
+        sources = state["sources"]
+        labels = state["labels"]
+        self.widget.options = {label: remake_instance(source) for label, source in zip(labels, sources)}
+        self.selected = state.get("selected", [])
+        self.visible = state.get("visible", True)
         return self

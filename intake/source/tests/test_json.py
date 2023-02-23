@@ -7,8 +7,6 @@
 
 import json
 import os
-from pathlib import Path
-from typing import Dict, Optional
 
 import pytest
 from fsspec import open_files
@@ -18,9 +16,7 @@ from intake.source.jsonfiles import JSONFileSource, JSONLinesFileSource
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-EXTENSIONS = {
-    compression: f".{extension}" for extension, compression in compressions.items()
-}
+EXTENSIONS = {compression: f".{extension}" for extension, compression in compressions.items()}
 
 
 @pytest.fixture(params=[None, "gzip", "bz2"])
@@ -67,7 +63,7 @@ def test_jsonfile_none(json_file: str):
 def test_jsonfile_discover(json_file: str):
     j = JSONFileSource(json_file, text_mode=True, compression=None)
     schema = j.discover()
-    assert schema == {'dtype': None, 'shape': None, 'npartitions': 0, 'metadata': {}}
+    assert schema == {"dtype": None, "shape": None, "npartitions": 0, "metadata": {}}
 
 
 def test_jsonlfile(jsonl_file: str):
@@ -104,7 +100,7 @@ def test_jsonfilel_none(jsonl_file: str):
 def test_jsonfilel_discover(json_file: str):
     j = JSONLinesFileSource(jsonl_file, compression=None)
     schema = j.discover()
-    assert schema == {'dtype': None, 'shape': None, 'npartitions': 0, 'metadata': {}}
+    assert schema == {"dtype": None, "shape": None, "npartitions": 0, "metadata": {}}
 
 
 def test_jsonl_head(jsonl_file: str):

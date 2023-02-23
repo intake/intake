@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 from .base import DataSource, Schema
 
@@ -15,13 +15,13 @@ class ZarrArraySource(DataSource):
     with remote and parallel access.
     For specifics of the format, see https://zarr.readthedocs.io/en/stable/
     """
-    container = 'ndarray'
-    name = 'ndzarr'
-    version = '0.0.1'
+
+    container = "ndarray"
+    name = "ndzarr"
+    version = "0.0.1"
     partition_access = True
 
-    def __init__(self, urlpath, storage_options=None, component=None,
-                 metadata=None, **kwargs):
+    def __init__(self, urlpath, storage_options=None, component=None, metadata=None, **kwargs):
         """
         The parameters dtype and shape will be determined from the first
         file, if not given.
@@ -49,18 +49,14 @@ class ZarrArraySource(DataSource):
 
     def _get_schema(self):
         import dask.array as da
+
         if self._arr is None:
-            self._arr = da.from_zarr(self.urlpath, component=self.component,
-                                     storage_options=self.storage_options,
-                                     **self.kwargs)
+            self._arr = da.from_zarr(self.urlpath, component=self.component, storage_options=self.storage_options, **self.kwargs)
             self.chunks = self._arr.chunks
             self.shape = self._arr.shape
             self.dtype = self._arr.dtype
             self.npartitions = self._arr.npartitions
-        return Schema(dtype=str(self.dtype), shape=self.shape,
-                      extra_metadata=self.metadata,
-                      npartitions=self.npartitions,
-                      chunks=self.chunks)
+        return Schema(dtype=str(self.dtype), shape=self.shape, extra_metadata=self.metadata, npartitions=self.npartitions, chunks=self.chunks)
 
     def _get_partition(self, i):
         if isinstance(i, list):

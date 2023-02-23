@@ -1,26 +1,25 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import os
+import posixpath
 import subprocess
+import tempfile
 import time
 
-import posixpath
 import pytest
 import requests
-import tempfile
 
-from intake import config, open_catalog
+from intake import config, open_catalog, register_driver
 from intake.container import persist
-from intake.util_tests import ex, PY2
-from intake.utils import make_path_posix
 from intake.source.base import DataSource, Schema
-from intake import register_driver
 from intake.tests.test_utils import copy_test_file
+from intake.util_tests import PY2, ex
+from intake.utils import make_path_posix
 
 here = os.path.dirname(__file__)
 
@@ -31,8 +30,8 @@ PORT = MIN_PORT
 
 
 class TestSource(DataSource):
-    name = 'test'
-    container = 'python'
+    name = "test"
+    container = "python"
 
     def __init__(self, **kwargs):
         self.test_kwargs = kwargs
@@ -47,9 +46,9 @@ register_driver("test", TestSource)
 
 @pytest.fixture
 def tmp_config_path(tmp_path):
-    key = 'INTAKE_CONF_FILE'
+    key = "INTAKE_CONF_FILE"
     original = os.getenv(key)
-    temp_config_path = os.path.join(tmp_path, 'test_config.yml')
+    temp_config_path = os.path.join(tmp_path, "test_config.yml")
     os.environ[key] = temp_config_path
     assert config.cfile() == temp_config_path
     yield temp_config_path
@@ -87,34 +86,32 @@ def pick_port():
 @pytest.fixture(scope="module")
 def intake_server(request):
     persist.PersistStore().clear()
-    os.environ['INTAKE_DEBUG'] = 'true'
+    os.environ["INTAKE_DEBUG"] = "true"
     # Catalog path comes from the test module
     path = request.module.TEST_CATALOG_PATH
     if isinstance(path, list):
-        catalog_path = [p + '/*' for p in path]
-    elif isinstance(path, str) and not path.endswith(
-            '.yml') and not path.endswith('.yaml'):
-        catalog_path = path + '/*'
+        catalog_path = [p + "/*" for p in path]
+    elif isinstance(path, str) and not path.endswith(".yml") and not path.endswith(".yaml"):
+        catalog_path = path + "/*"
     else:
         catalog_path = path
-    server_conf = getattr(request.module, 'TEST_SERVER_CONF', None)
+    server_conf = getattr(request.module, "TEST_SERVER_CONF", None)
 
     # Start a catalog server on nonstandard port
 
     env = dict(os.environ)
-    env['INTAKE_TEST'] = 'server'
+    env["INTAKE_TEST"] = "server"
     if server_conf is not None:
-        env['INTAKE_CONF_FILE'] = server_conf
+        env["INTAKE_CONF_FILE"] = server_conf
     port = pick_port()
-    cmd = [ex, '-m', 'intake.cli.server', '--sys-exit-on-sigterm',
-           '--port', str(port), '--ttl', '1']
+    cmd = [ex, "-m", "intake.cli.server", "--sys-exit-on-sigterm", "--port", str(port), "--ttl", "1"]
     if isinstance(catalog_path, list):
         cmd.extend(catalog_path)
     else:
         cmd.append(catalog_path)
     try:
         p = subprocess.Popen(cmd, env=env)
-        url = 'http://localhost:%d/v1/info' % port
+        url = "http://localhost:%d/v1/info" % port
 
         # wait for server to finish initalizing, but let the exception through
         # on last retry
@@ -128,34 +125,34 @@ def intake_server(request):
             raise
         assert retries > 0, "Server never appeared"
 
-        yield 'intake://localhost:%d' % port
+        yield "intake://localhost:%d" % port
     finally:
         if server_conf:
             try:
-                env.pop('INTAKE_CONF_FILE', None)
+                env.pop("INTAKE_CONF_FILE", None)
                 os.remove(server_conf)
-            except:
+            except Exception:
                 pass
         p.terminate()
         time.sleep(1)
         p.kill()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def http_server():
     port_as_str = str(pick_port())
     if PY2:
-        cmd = ['python', '-m', 'SimpleHTTPServer', port_as_str]
+        cmd = ["python", "-m", "SimpleHTTPServer", port_as_str]
     else:
-        cmd = ['python', '-m', 'http.server', port_as_str]
-    p = subprocess.Popen(cmd, cwd=os.path.join(here, 'catalog', 'tests'))
-    url = 'http://localhost:{}/'.format(port_as_str)
+        cmd = ["python", "-m", "http.server", port_as_str]
+    p = subprocess.Popen(cmd, cwd=os.path.join(here, "catalog", "tests"))
+    url = "http://localhost:{}/".format(port_as_str)
     timeout = 5
     while True:
         try:
             requests.get(url)
             break
-        except:
+        except Exception:
             time.sleep(0.1)
             timeout -= 0.1
             assert timeout > 0, "timeout waiting for http server"
@@ -166,10 +163,11 @@ def http_server():
         p.communicate()
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def tempdir():
-    import tempfile
     import shutil
+    import tempfile
+
     d = make_path_posix(str(tempfile.mkdtemp()))
     try:
         yield d
@@ -177,18 +175,17 @@ def tempdir():
         shutil.rmtree(d)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def temp_cache(tempdir):
     import intake
     from intake.container.persist import store
+
     old = intake.config.conf.copy()
     olddir = intake.config.confdir
     intake.config.confdir = tempdir
-    intake.config.conf.update({'cache_dir': make_path_posix(str(tempdir)),
-                               'cache_download_progress': False,
-                               'cache_disabled': False})
+    intake.config.conf.update({"cache_dir": make_path_posix(str(tempdir)), "cache_download_progress": False, "cache_disabled": False})
     intake.config.conf.save()
-    store.__init__(os.path.join(tempdir, 'persist'))
+    store.__init__(os.path.join(tempdir, "persist"))
     try:
         yield
     finally:
@@ -197,12 +194,13 @@ def temp_cache(tempdir):
         intake.config.save_conf()
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def env(temp_cache, tempdir):
     import intake
+
     env = os.environ.copy()
     env["INTAKE_CONF_DIR"] = intake.config.confdir
-    env['INTAKE_CACHE_DIR'] = intake.config.conf['cache_dir']
+    env["INTAKE_CACHE_DIR"] = intake.config.conf["cache_dir"]
     return env
 
 

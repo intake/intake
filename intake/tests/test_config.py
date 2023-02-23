@@ -1,26 +1,23 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import os
+
 import pytest
 import requests
 
 import intake
 from intake import config
-from intake.config import Config, defaults
-from intake.util_tests import temp_conf, server
 from intake.catalog.remote import RemoteCatalog
+from intake.config import Config, defaults
+from intake.util_tests import server, temp_conf
 
 
-@pytest.mark.parametrize('conf', [
-    {},
-    {'port': 5000},
-    {'other': True}
-])
+@pytest.mark.parametrize("conf", [{}, {"port": 5000}, {"other": True}])
 def test_load_conf(conf):
     # This test will only work if your config is set to default
     inconf = defaults.copy()
@@ -40,30 +37,30 @@ def test_load_conf(conf):
 def test_basic():
     with temp_conf({}) as fn:
         env = os.environ.copy()
-        env['INTAKE_CONF_FILE'] = fn
+        env["INTAKE_CONF_FILE"] = fn
         with server(env=env, wait=5000):
-            r = requests.get('http://localhost:5000/v1/info')
+            r = requests.get("http://localhost:5000/v1/info")
             assert r.ok
     with temp_conf({}) as fn:
         env = os.environ.copy()
-        env['INTAKE_CONF'] = os.path.dirname(fn)
+        env["INTAKE_CONF"] = os.path.dirname(fn)
         with server(env=env, wait=5000):
-            r = requests.get('http://localhost:5000/v1/info')
+            r = requests.get("http://localhost:5000/v1/info")
             assert r.ok
     with temp_conf({}) as fn:
         env = os.environ.copy()
-        env['INTAKE_CONF'] = os.path.dirname(fn) + ":/nonexistent"
+        env["INTAKE_CONF"] = os.path.dirname(fn) + ":/nonexistent"
         with server(env=env, wait=5000):
-            r = requests.get('http://localhost:5000/v1/info')
+            r = requests.get("http://localhost:5000/v1/info")
             assert r.ok
 
 
 def test_cli():
     with temp_conf({}) as fn:
         env = os.environ.copy()
-        env['INTAKE_CONF_FILE'] = fn
-        with server(args=('-p', '5555'), env=env, wait=5555):
-            r = requests.get('http://localhost:5555/v1/info')
+        env["INTAKE_CONF_FILE"] = fn
+        with server(args=("-p", "5555"), env=env, wait=5555):
+            r = requests.get("http://localhost:5555/v1/info")
             assert r.ok
 
 
@@ -81,44 +78,39 @@ def test_persist_modes():
             cat_default = RemoteCatalog("intake://localhost:5555")
             assert cat_default.pmode == expected_default
 
+
 def test_conf():
-    with temp_conf({'port': 5555}) as fn:
+    with temp_conf({"port": 5555}) as fn:
         env = os.environ.copy()
-        env['INTAKE_CONF_FILE'] = fn
+        env["INTAKE_CONF_FILE"] = fn
         with server(env=env, wait=5555):
-            r = requests.get('http://localhost:5555/v1/info')
+            r = requests.get("http://localhost:5555/v1/info")
             assert r.ok
 
 
 def test_conf_auth():
-    with temp_conf({'port': 5556,
-                    'auth': {'cls': 'intake.auth.secret.SecretAuth',
-                             'kwargs': {'secret': 'test'}}}) as fn:
+    with temp_conf({"port": 5556, "auth": {"cls": "intake.auth.secret.SecretAuth", "kwargs": {"secret": "test"}}}) as fn:
         env = os.environ.copy()
-        env['INTAKE_CONF_FILE'] = fn
+        env["INTAKE_CONF_FILE"] = fn
         with server(env=env, wait=5556):
             # raw request
-            r = requests.get('http://localhost:5556/v1/info')
+            r = requests.get("http://localhost:5556/v1/info")
             assert r.status_code == 403
-            r = requests.get('http://localhost:5556/v1/info',
-                             headers={'intake-secret': 'test'})
+            r = requests.get("http://localhost:5556/v1/info", headers={"intake-secret": "test"})
             assert r.ok
 
             # with cat
             with pytest.raises(Exception):
-                intake.open_catalog('intake://localhost:5556')
+                intake.open_catalog("intake://localhost:5556")
 
-            cat = intake.open_catalog('intake://localhost:5556',
-                                      storage_options={'headers':
-                                                       {'intake-secret': 'test'}})
-            assert 'entry1' in cat
+            cat = intake.open_catalog("intake://localhost:5556", storage_options={"headers": {"intake-secret": "test"}})
+            assert "entry1" in cat
 
 
-@pytest.mark.skipif(os.name == 'nt', reason="Paths are different on win")
+@pytest.mark.skipif(os.name == "nt", reason="Paths are different on win")
 def test_pathdirs():
     assert config.intake_path_dirs([]) == []
-    assert config.intake_path_dirs(['paths']) == ['paths']
+    assert config.intake_path_dirs(["paths"]) == ["paths"]
     assert config.intake_path_dirs("") == [""]
-    assert config.intake_path_dirs("path1:path2") == ['path1', 'path2']
-    assert config.intake_path_dirs("memory://path1:memory://path2") == [
-        'memory://path1', 'memory://path2']
+    assert config.intake_path_dirs("path1:path2") == ["path1", "path2"]
+    assert config.intake_path_dirs("memory://path1:memory://path2") == ["memory://path1", "memory://path2"]

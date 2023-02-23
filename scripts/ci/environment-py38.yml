@@ -37,3 +37,4 @@ dependencies:
   - zarr
   - moto
   - rangehttpserver
+  - pre-commit

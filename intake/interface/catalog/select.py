@@ -1,15 +1,14 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-from collections import OrderedDict
+import panel as pn
 
 import intake
 from intake.utils import remake_instance
-import panel as pn
 
 from ..base import BaseSelector
 
@@ -51,6 +50,7 @@ class CatSelector(BaseSelector):
         watchers that are set on children - cleaned up when visible
         is set to false.
     """
+
     children = []
 
     @classmethod
@@ -67,17 +67,17 @@ class CatSelector(BaseSelector):
         from the order in other panel init methods because the top level
         gui class needs to be able to watch these widgets.
         """
-        self.panel = pn.Column(name='Select Catalog', margin=0)
-        self.widget = pn.widgets.MultiSelect(size=9, min_width=200, width_policy='min')
+        self.panel = pn.Column(name="Select Catalog", margin=0)
+        self.widget = pn.widgets.MultiSelect(size=9, min_width=200, width_policy="min")
         self.done_callback = done_callback
         super().__init__(**kwargs)
 
         self.items = cats if cats is not None else [intake.cat]
 
     def setup(self):
-        label = pn.pane.Markdown('#### Catalogs', max_height=40)
+        label = pn.pane.Markdown("#### Catalogs", max_height=40)
         self.watchers = [
-            self.widget.param.watch(self.callback, 'value'),
+            self.widget.param.watch(self.callback, "value"),
         ]
 
         self.children = [label, self.widget]
@@ -89,20 +89,19 @@ class CatSelector(BaseSelector):
 
     def expand_nested(self, cats):
         """Populate widget with nested catalogs"""
-        down = '│'
-        right = '└──'
+        down = "│"
+        right = "└──"
 
         def get_children(parent):
             out = []
             for k, e in parent._entries.items():
                 try:
-                    if e.describe()['container'] == 'catalog':
+                    if e.describe()["container"] == "catalog":
                         out.append(e())
                 except IOError:
                     # may fail to load
                     pass
             return out
-
 
         if len(cats) == 0:
             return
@@ -112,13 +111,13 @@ class CatSelector(BaseSelector):
         name = next(k for k, v in old if v == cat)
         index = next(i for i, (k, v) in enumerate(old) if v == cat)
         if right in name:
-            prefix = f'{name.split(right)[0]}{down} {right}'
+            prefix = f"{name.split(right)[0]}{down} {right}"
         else:
             prefix = right
 
         children = get_children(cat)
         for i, child in enumerate(children):
-            old.insert(index+i+1, (f'{prefix} {child.name}', child))
+            old.insert(index + i + 1, (f"{prefix} {child.name}", child))
         self.widget.options = dict(old)
 
     def collapse_nested(self, cats, max_nestedness=10):
@@ -131,7 +130,7 @@ class CatSelector(BaseSelector):
         nestedness = max_nestedness
 
         old = list(self.widget.options.values())
-        nested = [cat for cat in old if getattr(cat, 'cat') is not None]
+        nested = [cat for cat in old if getattr(cat, "cat") is not None]
         parents = {cat.cat for cat in nested}
         parents_to_remove = cats
         while len(parents_to_remove) > 0 and nestedness > 0:
@@ -153,18 +152,18 @@ class CatSelector(BaseSelector):
     def __getstate__(self):
         """Serialize the current state of the object"""
         return {
-            'visible': self.visible,
-            'labels': self.labels,
-            'cats': [cat.__getstate__() for cat in self.items],
-            'selected': [k for k, v in self.options.items() if v in self.selected],
+            "visible": self.visible,
+            "labels": self.labels,
+            "cats": [cat.__getstate__() for cat in self.items],
+            "selected": [k for k, v in self.options.items() if v in self.selected],
         }
 
     def __setstate__(self, state):
         """Set the current state of the object from the serialized version.
         Works inplace. See ``__getstate__`` to get serialized version and
         ``from_state`` to create a new object."""
-        cats, labels = state['cats'], state['labels']
-        self.widget.options = {l: remake_instance(cat) for l, cat in zip(labels, cats)}
-        self.selected = state.get('selected', [])
-        self.visible = state.get('visible', True)
+        cats, labels = state["cats"], state["labels"]
+        self.widget.options = {label: remake_instance(cat) for label, cat in zip(labels, cats)}
+        self.selected = state.get("selected", [])
+        self.visible = state.get("visible", True)
         return self

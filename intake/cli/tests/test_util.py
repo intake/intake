@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 import pytest
@@ -11,9 +11,11 @@ import pytest
 # module under test
 import intake.cli.util as m
 
+
 # TODO
 def test_print_entry_info():
     pass
+
 
 def test_die(capsys):
     with pytest.raises(SystemExit):
@@ -22,8 +24,8 @@ def test_die(capsys):
     assert err == "foo\n"
     assert out == ""
 
-class Test_nice_join(object):
 
+class Test_nice_join(object):
     def test_default(self):
         assert m.nice_join(["one"]) == "one"
         assert m.nice_join(["one", "two"]) == "one or two"
@@ -43,13 +45,13 @@ class Test_nice_join(object):
         assert m.nice_join(["one", "two", "three", "four"], conjunction=None) == "one, two, three, four"
 
     def test_sep(self):
-        assert m.nice_join(["one"], sep='; ') == "one"
-        assert m.nice_join(["one", "two"], sep='; ') == "one or two"
-        assert m.nice_join(["one", "two", "three"], sep='; ') == "one; two or three"
+        assert m.nice_join(["one"], sep="; ") == "one"
+        assert m.nice_join(["one", "two"], sep="; ") == "one or two"
+        assert m.nice_join(["one", "two", "three"], sep="; ") == "one; two or three"
         assert m.nice_join(["one", "two", "three", "four"], sep="; ") == "one; two; three or four"
 
-class TestSubcommand(object):
 
+class TestSubcommand(object):
     def test_initialize_abstract(self):
         with pytest.raises(NotImplementedError):
             obj = m.Subcommand("parser")

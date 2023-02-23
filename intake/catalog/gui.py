@@ -1,14 +1,15 @@
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2019, Anaconda, Inc. and Intake contributors
 # All rights reserved.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
-from functools import partial
+# -----------------------------------------------------------------------------
 
 try:
     import panel as pn
-    from ..interface.gui import SourceGUI, MAX_WIDTH, ICONS
+
+    from ..interface.gui import ICONS, SourceGUI
+
     css = """
     .scrolling {
         overflow: scroll;
@@ -21,11 +22,7 @@ try:
         def __init__(self, source=None, **kwargs):
             self.source = source
             super().__init__(sources=[self.source], **kwargs)
-            self.panel = pn.Column(
-                pn.Row(ICONS['logo'], pn.Column(*self.controls)),
-                self.description.panel,
-                self.plot.panel
-            )
+            self.panel = pn.Column(pn.Row(ICONS["logo"], pn.Column(*self.controls)), self.description.panel, self.plot.panel)
 
         def setup(self):
             self._setup_watchers()
@@ -57,18 +54,10 @@ try:
             super().__init__(cats=[self.cat], **kwargs)
             self.panel = pn.Column(
                 pn.Row(
-                    pn.panel(ICONS['logo']),
-                    pn.Row(
-                        pn.Column(
-                            self.select.panel,
-                            self.control_panel,
-                            margin=0
-                        ),
-                        self.description.panel,
-                        margin=0
-                    ),
+                    pn.panel(ICONS["logo"]),
+                    pn.Row(pn.Column(self.select.panel, self.control_panel, margin=0), self.description.panel, margin=0),
                 ),
-                self.plot.panel
+                self.plot.panel,
             )
 
         def setup(self):
@@ -106,23 +95,26 @@ except ImportError:
     class GUI(object):
         def __init__(self, *args, **kwargs):
             pass
+
         def __repr__(self):
-            raise RuntimeError("Please install panel to use the GUI (`conda "
-                               "install -c conda-forge panel>0.8.0`)")
+            raise RuntimeError("Please install panel to use the GUI (`conda " "install -c conda-forge panel>0.8.0`)")
 
     EntryGUI = GUI
     CatalogGUI = GUI
 
-except Exception as e:
+except Exception:
 
     class GUI(object):
         def __init__(self, *args, **kwargs):
             pass
 
         def __repr__(self):
-            raise RuntimeError("Initialization of GUI failed, even though "
-                               "panel is installed. Please update it "
-                               "to a more recent version (`conda install -c "
-                               "conda-forge panel==0.5.1`).")
+            raise RuntimeError(
+                "Initialization of GUI failed, even though "
+                "panel is installed. Please update it "
+                "to a more recent version (`conda install -c "
+                "conda-forge panel==0.5.1`)."
+            )
+
     EntryGUI = GUI
     CatalogGUI = GUI

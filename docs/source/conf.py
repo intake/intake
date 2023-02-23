@@ -19,7 +19,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../..'))
+
+sys.path.insert(0, os.path.abspath("../.."))
 import intake
 
 # -- General configuration ------------------------------------------------
@@ -32,28 +33,28 @@ import intake
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'numpydoc',
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "numpydoc",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ".rst"
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # General information about the project.
-project = 'intake'
-copyright = '2018, Anaconda'
-author = 'Anaconda'
+project = "intake"
+copyright = "2018, Anaconda"
+author = "Anaconda"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -69,15 +70,15 @@ release = intake.__version__
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = 'en'
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['**.ipynb_checkpoints']
+exclude_patterns = ["**.ipynb_checkpoints"]
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = "sphinx"
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
@@ -89,16 +90,17 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # on_rtd is whether we are on readthedocs.org
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
 if not on_rtd:
     # only import and set the theme if we're building docs locally
     # otherwise, readthedocs.org uses their theme by default, so no need to specify it
     import sphinx_rtd_theme
-    html_theme = 'sphinx_rtd_theme'
+
+    html_theme = "sphinx_rtd_theme"
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 
@@ -111,13 +113,13 @@ if not on_rtd:
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'intakedoc'
+htmlhelp_basename = "intakedoc"
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -126,15 +128,12 @@ latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
-
     # The font size ('10pt', '11pt' or '12pt').
     #
     # 'pointsize': '10pt',
-
     # Additional stuff for the LaTeX preamble.
     #
     # 'preamble': '',
-
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
@@ -144,8 +143,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'intake.tex', 'Intake Documentation',
-     'Anaconda', 'manual'),
+    (master_doc, "intake.tex", "Intake Documentation", "Anaconda", "manual"),
 ]
 
 
@@ -153,10 +151,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'intake', 'Intake Documentation',
-     [author], 1)
-]
+man_pages = [(master_doc, "intake", "Intake Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -165,17 +160,12 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'intake', 'Intake Documentation',
-     author, 'intake', 'Fast data ingestion for Python.',
-     'Miscellaneous'),
+    (master_doc, "intake", "Intake Documentation", author, "intake", "Fast data ingestion for Python.", "Miscellaneous"),
 ]
 
 
-
-
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
-
+intersphinx_mapping = {"https://docs.python.org/": None}
 
 
 # Config numpydoc
