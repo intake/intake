@@ -7,6 +7,7 @@
   repo: intake/intake-astro
   description: Table and array loading of FITS astronomical data
   drivers: fits_array, fits_table
+  conda_channel: intake
 
 - name: intake-accumulo
   repo: intake/intake-accumulo
@@ -36,6 +37,8 @@
   repo: informatics-lab/intake-dynamodb>
   description: Link to Amazon DynamoDB
   drivers: dynamodb
+  conda_channel: informaticslab
+  conda_package: intake_dynamodb
 
 - name: intake-elasticsearch
   repo: intake/intake-elasticsearch
@@ -50,6 +53,7 @@
   repo: informatics-lab/intake_geopandas
   description: Load from ESRI Shape Files, GeoJSON, and geospatial databases with geopandas
   drivers: geojson, postgis, shapefile, spatialite, regionmask
+  conda_channel: informaticslab
 
 - name: intake-google-analytics
   repo: intake/intake-google-analytics
@@ -60,11 +64,14 @@
   repo: intake/intake-hbase
   description: Apache HBase database
   drivers: hbase
+  conda_channel: intake
 
 - name: intake-iris
   repo: informatics-lab/intake-iris
   description: Load netCDF and GRIB files with IRIS
   drivers: grib, netcdf
+  conda_channel: informaticslab
+  conda_package: intake_iris
 
 - name: intake-metabase
   repo: continuumio/intake-metabase
@@ -75,6 +82,7 @@
   repo: intake/intake-mongo
   description: MongoDB noSQL query
   drivers: mongo
+  conda_channel: intake
 
 - name: intake-nested-yaml-catalog
   repo: zillow/intake-nested-yaml-catalog
@@ -85,16 +93,19 @@
   repo: intake/intake-netflow
   description: Netflow packet format
   drivers: netflow
+  conda_channel: intake
 
 - name: intake-notebook
   repo: informatics-lab/intake-notebook
   description: Experimental plugin to access parameterised notebooks through intake and executed via papermill
   drivers: ipynb
+  conda_channel: informaticslab
 
 - name: intake-odbc
   repo: intake/intake-odbc
   description: ODBC database
   drivers: odbc
+  conda_channel: intake
 
 - name: intake-parquet
   repo: intake/intake-parquet
@@ -115,10 +126,13 @@
   repo: intake/intake-postgres
   description: PostgreSQL database
   drivers: postgres
+  conda_channel: intake
 
 - name: intake-s3-manifests
   repo: informatics-lab/intake-s3-manifests
   drivers: s3_manifest
+  conda_channel: informaticslab
+  conda_package: intake_s3_manifests
 
 - name: intake-salesforce
   repo: sophiamyang/intake-salesforce
@@ -134,6 +148,7 @@
   repo: intake/intake-solr
   description: Apache Solr search platform
   drivers: solr
+  conda_channel: intake
 
 - name: intake-stac
   repo: intake/intake-stac
@@ -163,6 +178,7 @@
   repo: intake/intake-splunk
   description: Splunk machine data query
   drivers: splunk
+  conda_channel: intake
 
 - name: intake-streamz
   repo: intake/intake-streamz

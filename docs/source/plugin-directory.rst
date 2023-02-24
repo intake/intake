@@ -9,7 +9,7 @@ contains:
 .. raw:: html
    :file: plugin-list.html
 
-The status of these projects is available at `Status Dashboard <https://intake.github.io/status/>`_.
+
 
 Don't see your favorite format?  See :doc:`making-plugins` for how to create new plugins.
 

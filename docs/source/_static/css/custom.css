@@ -5,3 +5,16 @@ div.prompt {
 div.logo-block img {
   display: none !important
 }
+
+.table_wrapper{
+  display: block;
+  overflow-x: auto;
+}
+
+.table_wrapper td, th {
+  padding: 2px;
+}
+
+.table_wrapper tr:nth-child(even) {
+  background: #E0E0E0;
+}
