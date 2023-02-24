@@ -1,0 +1,196 @@
+- name: intake
+  repo: intake/intake
+  description: Builtin to Intake
+  drivers: catalog, csv, intake_remote, ndzarr, numpy, textfiles, yaml_file_cat, yaml_files_cat, zarr_cat, json, jsonl
+
+- name: intake-astro
+  repo: intake/intake-astro
+  description: Table and array loading of FITS astronomical data
+  drivers: fits_array, fits_table
+  conda_channel: intake
+
+- name: intake-accumulo
+  repo: intake/intake-accumulo
+  description: Apache Accumulo clustered data storage
+  drivers: accumulo
+
+- name: intake-avro
+  repo: intake/intake-avro
+  description: Apache Avro data serialization format
+  drivers: avro_table, avro_sequence
+
+- name: intake-bluesky
+  repo: nsls-ii/intake-bluesky
+  description: Search and retrieve data in the <a href="https://nsls-ii.github.io/bluesky">bluesky</a> data model
+
+- name: intake-dcat
+  repo: CityOfLosAngeles/intake-dcat
+  description: Browse and load data from <a href="https://www.w3.org/TR/vocab-dcat">DCAT</a> catalogs
+  drivers: dcat
+
+- name: intake-dremio
+  repo: intake/intake-dremio
+  description: Scan tables and send SQL queries to a <a href="https://docs.dremio.com/"> Dremio </a> server
+  drivers: dremio
+
+- name: intake-dynamodb
+  repo: informatics-lab/intake-dynamodb>
+  description: Link to Amazon DynamoDB
+  drivers: dynamodb
+  conda_channel: informaticslab
+  conda_package: intake_dynamodb
+
+- name: intake-elasticsearch
+  repo: intake/intake-elasticsearch
+  description: Elasticsearch search and analytics engine
+  drivers: elasticsearch_seq, elasticsearch_table
+
+- name: intake-esm
+  repo: NCAR/intake-esm
+  description: Plugin for building and loading intake catalogs for earth system data sets holdings, such as <a href="https://cmip.llnl.gov/">CMIP</a> (Coupled Model Intercomparison Project) and CESM Large Ensemble datasets
+
+- name: intake-geopandas
+  repo: informatics-lab/intake_geopandas
+  description: Load from ESRI Shape Files, GeoJSON, and geospatial databases with geopandas
+  drivers: geojson, postgis, shapefile, spatialite, regionmask
+  conda_channel: informaticslab
+
+- name: intake-google-analytics
+  repo: intake/intake-google-analytics
+  description: Run Google Analytics queries and load data as a DataFrame
+  drivers: google_analytics_query
+
+- name: intake-hbase
+  repo: intake/intake-hbase
+  description: Apache HBase database
+  drivers: hbase
+  conda_channel: intake
+
+- name: intake-iris
+  repo: informatics-lab/intake-iris
+  description: Load netCDF and GRIB files with IRIS
+  drivers: grib, netcdf
+  conda_channel: informaticslab
+  conda_package: intake_iris
+
+- name: intake-metabase
+  repo: continuumio/intake-metabase
+  description: Generate catalogs and load tables as DataFrames from Metabase
+  drivers: metabase_catalog, metabase_table
+
+- name: intake-mongo
+  repo: intake/intake-mongo
+  description: MongoDB noSQL query
+  drivers: mongo
+  conda_channel: intake
+
+- name: intake-nested-yaml-catalog
+  repo: zillow/intake-nested-yaml-catalog
+  description: Plugin supporting a single YAML hierarchical catalog to organize datasets and avoid a data swamp
+  drivers: nested_yaml_cat
+
+- name: intake-netflow
+  repo: intake/intake-netflow
+  description: Netflow packet format
+  drivers: netflow
+  conda_channel: intake
+
+- name: intake-notebook
+  repo: informatics-lab/intake-notebook
+  description: Experimental plugin to access parameterised notebooks through intake and executed via papermill
+  drivers: ipynb
+  conda_channel: informaticslab
+
+- name: intake-odbc
+  repo: intake/intake-odbc
+  description: ODBC database
+  drivers: odbc
+  conda_channel: intake
+
+- name: intake-parquet
+  repo: intake/intake-parquet
+  description: Apache Parquet file format
+  drivers: parquet
+
+- name: intake-pattern-catalog
+  repo: https://bitbucket.org/dtnse/intake_pattern_catalog
+  description: Plugin for specifying a file-path pattern which can represent a number of different entries
+  drivers: pattern_cat
+
+- name: intake-pcap
+  repo: intake/intake-pcap
+  description: PCAP network packet format
+  drivers: pcap
+
+- name: intake-postgres
+  repo: intake/intake-postgres
+  description: PostgreSQL database
+  drivers: postgres
+  conda_channel: intake
+
+- name: intake-s3-manifests
+  repo: informatics-lab/intake-s3-manifests
+  drivers: s3_manifest
+  conda_channel: informaticslab
+  conda_package: intake_s3_manifests
+
+- name: intake-salesforce
+  repo: sophiamyang/intake-salesforce
+  description: Generate catalogs and load tables as DataFrames from Salesforce
+  drivers: salesforce_catalog, salesforce_table
+
+- name: intake-sklearn
+  repo: AlbertDeFusco/intake-sklearn
+  description: Load scikit-learn models from Pickle files
+  drivers: sklearn
+
+- name: intake-solr
+  repo: intake/intake-solr
+  description: Apache Solr search platform
+  drivers: solr
+  conda_channel: intake
+
+- name: intake-stac
+  repo: intake/intake-stac
+  description: Intake Driver for <a href="https://stacspec.org/">SpatioTemporal Asset Catalogs (STAC)</a>
+
+- name: intake-stripe
+  repo: sophiamyang/intake-stripe
+  description: Generate catalogs and load tables as DataFrames from Stripe
+  drivers: stripe_catalog, stripe_table
+
+- name: intake-spark
+  repo: intake/intake-spark
+  description: Data processed by Apache Spark
+  drivers: spark_cat, spark_rdd, spark_dataframe
+
+- name: intake-sql
+  repo: intake/intake-sql
+  description: Generic SQL queries via SQLAlchemy
+  drivers: sql_cat, sql, sql_auto, sql_manual
+
+- name: intake-sqlite
+  repo: catalyst-cooperative/intake-sqlite
+  description: Local caching of remote SQLite DBs and queries via SQLAlchemy
+  drivers: sqlite_cat, sqlite, sqlite_auto, sqlite_manual
+
+- name: intake-splunk
+  repo: intake/intake-splunk
+  description: Splunk machine data query
+  drivers: splunk
+  conda_channel: intake
+
+- name: intake-streamz
+  repo: intake/intake-streamz
+  description: Real-time event processing using Streamz
+  drivers: streamz
+
+- name: intake-thredds
+  repo: NCAR/intake-thredds
+  description: Intake interface to THREDDS data catalogs
+  drivers: thredds_cat, thredds_merged_source
+
+- name: intake-xarray
+  repo: intake/intake-xarray
+  description: Load netCDF, Zarr and other multi-dimensional data
+  drivers: xarray_image, netcdf, grib, opendap, rasterio, remote-xarray, zarr
