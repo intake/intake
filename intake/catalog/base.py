@@ -484,8 +484,9 @@ class Catalog(DataSource):
     @property
     def gui(self):
         if not hasattr(self, "_gui"):
-            from ..interface.gui import GUI
             from ..interface import output_notebook
+            from ..interface.gui import GUI
+
             output_notebook()
             self._gui = GUI(self)
         else:
