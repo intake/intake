@@ -61,7 +61,7 @@ author = "Anaconda"
 # built documents.
 #
 # The short X.Y version.
-version = intake.__version__
+version = intake.__version__.split("+")[0]
 # The full version, including alpha/beta/rc tags.
 release = intake.__version__
 
@@ -109,6 +109,9 @@ if not on_rtd:
 # documentation.
 #
 # html_theme_options = {}
+
+# Default title is "<project> v<release> documentation"
+html_title = "Intake documentation"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
