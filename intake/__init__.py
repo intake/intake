@@ -31,7 +31,6 @@ imports = {
     "register_driver": "intake.source:register_driver",
     "unregister_driver": "intake.source:unregister_driver",
 }
-openers = set()
 logger = logging.getLogger("intake")
 
 
@@ -45,50 +44,32 @@ def __getattr__(attr):
     must start with "open_", else they will be ignored.
     """
     gl = globals()
-    if attr in openers and attr[:5] == "open_":
-        driver = registry[attr[5:]]  # "open_..."
-        gl[attr] = driver
-    else:
-        if attr in gl:
-            return gl[attr]
-        elif attr in imports:
-            dest = imports[attr]
-            modname = dest.split(":", 1)[0]
-            logger.debug("Importing: %s" % modname)
-            mod = importlib.import_module(modname)
-            if ":" in dest:
-                gl[attr] = getattr(mod, dest.split(":")[1])
-            else:
-                gl[attr] = mod
+
     if attr == "__all__":
         return __dir__()
-    try:
+
+    if attr in gl:
         return gl[attr]
-    except KeyError:
-        raise AttributeError(attr)
+
+    if attr in imports:
+        dest = imports[attr]
+        modname = dest.split(":", 1)[0]
+        logger.debug("Importing: %s" % modname)
+        mod = importlib.import_module(modname)
+        if ":" in dest:
+            mod = getattr(mod, dest.split(":")[1])
+        gl[attr] = mod
+        return mod
+
+    if attr in registry.drivers.openers() and attr[:5] == "open_":
+        driver = registry[attr[5:]]  # "open_..."
+        return driver
+
+    raise AttributeError(attr)
 
 
 def __dir__(*_, **__):
-    return sorted(list(globals()) + list(openers) + list(imports))
-
-
-def make_open_functions():
-    """From the current state of ``registry``, create open_* functions"""
-    from .source.discovery import drivers
-
-    for name in drivers.enabled_plugins():
-        func_name = "open_" + name
-        if not func_name.isidentifier():
-            # primitive name normalization
-            func_name = re.sub("[-=~^&|@+]", "_", func_name)
-        if func_name.isidentifier():
-            # stash name for dir() and later fetch
-            openers.add(func_name)
-        else:
-            warnings.warn('Invalid Intake plugin name "%s" found.', name, stacklevel=2)
-
-
-make_open_functions()
+    return sorted(list(globals()) + list(registry.drivers.openers()) + list(imports))
 
 
 def open_catalog(uri=None, **kwargs):

@@ -9,6 +9,7 @@ import importlib
 import inspect
 import logging
 import pkgutil
+import re
 import time
 import warnings
 
@@ -96,6 +97,22 @@ class DriverSouces:
         out.update(self.registered)
         out = {k: v for k, v in out.items() if k not in self.disabled()}
         return out
+
+    def openers(self):
+        """From the current state of ``registry``, create open_* functions"""
+
+        openers = set()
+        for name in self.enabled_plugins():
+            func_name = "open_" + name
+            if not func_name.isidentifier():
+                # primitive name normalization
+                func_name = re.sub("[-=~^&|@+]", "_", func_name)
+            if func_name.isidentifier():
+                # stash name for dir() and later fetch
+                openers.add(func_name)
+            else:
+                warnings.warn('Invalid Intake plugin name "%s" found.', name, stacklevel=2)
+        return openers
 
     def register_driver(self, name, value, clobber=False, do_enable=False):
         """Add runtime driver definition
