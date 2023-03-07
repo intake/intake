@@ -17,8 +17,6 @@ Intake helps you:
 
 Documentation is available at [Read the Docs](http://intake.readthedocs.io/en/latest).
 
-Status of intake and related packages is available at [Status Dashboard](https://intake.github.io/status)
-
 Weekly news about this repo and other related projects can be found on the
 [wiki](https://github.com/intake/intake/wiki/Community-News)
 
