@@ -29,7 +29,7 @@ Consider the following *target* dataset, which loads some simple facts
 about US states from a CSV file. This  example is taken from the Intake
 test suite.
 
-.. code-block::yaml
+.. code-block:: yaml
 
     sources:
       input_data:
@@ -50,7 +50,7 @@ data source class, and the parameters passed are specific to the transform type.
 Note that the driver is referred to by it's fully-qualified name in the
 Intake package.
 
-.. code-block::yaml
+.. code-block:: yaml
 
       derive_cols:
         driver: intake.source.derived.Columns
