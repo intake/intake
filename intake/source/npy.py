@@ -66,9 +66,15 @@ class NPySource(DataSource):
             self.chunks = self._chunks or self.shape[0]
         shape = list(self.shape)
         parts_per_file = (shape[0] // self.chunks) + (shape[0] % self.chunks > 0)
-        shape = [len(self.files)] + shape
+        if len(self.files) > 1:
+            shape = [len(self.files)] + shape
+            chunks = ((1,) * len(self.files),) + ((self.chunks,) * parts_per_file,) + tuple((s,) for s in self.shape[1:])
+        else:
+            shape = shape
+            chunks = ((self.chunks,) * parts_per_file,) + tuple((s,) for s in self.shape[1:])
 
-        return Schema(dtype=str(self.dtype), shape=tuple(shape), extra_metadata=self.metadata, npartitions=parts_per_file * len(self.files))
+        print()
+        return Schema(dtype=str(self.dtype), shape=tuple(shape), extra_metadata=self.metadata, npartitions=parts_per_file * len(self.files), chunks=chunks)
 
     def _get_partition(self, i):
         if isinstance(i, (list, tuple)):
@@ -88,7 +94,10 @@ class NPySource(DataSource):
         self._get_schema()
         arrs = [NumpyAccess(f, self.shape, self.dtype) for f in self.files]
 
-        chunks = (self._chunks or -1,) + (-1,) * (len(self.shape) - 1)
+        if len(arrs) > 1:
+            chunks = (self._chunks or -1,) + (-1,) * (len(self.shape) - 1)
+        else:
+            chunks = (self._chunks or -1,) + (-1,) * (len(self.shape) - 2)
         self._arrs = [da.from_array(arr, chunks) for arr in arrs]
 
         self._arr = da.stack(self._arrs)
