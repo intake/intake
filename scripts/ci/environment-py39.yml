@@ -21,7 +21,6 @@ dependencies:
   - panel
   - hvplot
   - bokeh
-  - dask
   - intake
   - pip
   - pytest
