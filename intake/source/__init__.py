@@ -27,7 +27,7 @@ class DriverRegistry(MappingView):
         self.drivers = drivers_source
 
     def __getitem__(self, item):
-        it = self.drivers.enabled_plugins()[item]
+        it = self.drivers.enabled_plugins[item]
         if isinstance(it, entrypoints.EntryPoint):
             return it.load()
         elif isinstance(it, str):
@@ -37,13 +37,13 @@ class DriverRegistry(MappingView):
         raise ValueError
 
     def __iter__(self):
-        return iter(self.drivers.enabled_plugins())
+        return iter(self.drivers.enabled_plugins)
 
     def keys(self):
         return list(self)
 
     def __len__(self):
-        return len(self.drivers.enabled_plugins())
+        return len(self.drivers.enabled_plugins)
 
     def __repr__(self):
         return """<Intake driver registry>"""

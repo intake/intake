@@ -41,7 +41,8 @@ class DriverSouces:
         self.do_scan = do_scan
         self._scanned = None
         self._entrypoints = None
-        self.registered = {}
+        self._registered = None
+        self._disabled = None
 
     @property
     def package_scan(self):
@@ -66,9 +67,6 @@ class DriverSouces:
             if v
         ]
 
-    def disabled(self):
-        return [k for k, v in self.conf.get("drivers", {}).items() if v is False]
-
     def __setitem__(self, key, value):
         super(DriverSouces, self).__setitem__(key, value)
         self.save()
@@ -85,37 +83,34 @@ class DriverSouces:
             self._scanned = _package_scan()
         return self._scanned
 
-    def enabled_plugins(self):
+    @property
+    def disabled(self):
+        if self._disabled is None:
+            self._disabled = [k for k, v in self.conf.get("drivers", {}).items() if v is False]
+
+        return self._disabled
+
+    @property
+    def registered(self):
         # priority order (decreasing): runtime, config, entrypoints, package scan
-        out = {}
-        if self.package_scan:
-            out.update(self.scanned)
+        if self._registered is None:
+            out = {}
+            if self.package_scan:
+                out.update(self.scanned)
 
-        for ep in self.from_entrypoints() + self.from_conf():
-            out[ep.name] = ep
+            for ep in self.from_entrypoints() + self.from_conf():
+                out[ep.name] = ep
 
-        out.update(self.registered)
-        out = {k: v for k, v in out.items() if k not in self.disabled()}
-        return out
+            self._registered = out
 
-    def openers(self):
-        """From the current state of ``registry``, create open_* functions"""
+        return self._registered
 
-        openers = set()
-        for name in self.enabled_plugins():
-            func_name = "open_" + name
-            if not func_name.isidentifier():
-                # primitive name normalization
-                func_name = re.sub("[-=~^&|@+]", "_", func_name)
-            if func_name.isidentifier():
-                # stash name for dir() and later fetch
-                openers.add(func_name)
-            else:
-                warnings.warn('Invalid Intake plugin name "%s" found.', name, stacklevel=2)
-        return openers
+    @property
+    def enabled_plugins(self):
+        return {k: v for k, v in self.registered.items() if k not in self.disabled}
 
     def register_driver(self, name, value, clobber=False, do_enable=False):
-        """Add runtime driver definition
+        """Add runtime driver definition to list of registered drivers (drivers in global scope with corresponding ``intake.open_*`` function)
 
         Parameters
         ----------
@@ -128,11 +123,12 @@ class DriverSouces:
         do_enable: bool
             If True, unset the disabled flag for this driver
         """
-        if not clobber and name in self.enabled_plugins():
+        name = _normalize(name)
+        if name in self.registered and not clobber:
             raise ValueError(f"Driver {name} already enabled")
-        if name in self.disabled():
+        if name in self.disabled:
             if do_enable:
-                self.enable(name)
+                self.disabled.remove(name)
             else:
                 logger.warning(f"Adding driver {name}, but it is disabled")
 
@@ -140,6 +136,7 @@ class DriverSouces:
 
     def unregister_driver(self, name):
         """Remove runtime registered driver"""
+        name = _normalize(name)
         self.registered.pop(name)
 
     def enable(self, name, driver=None):
@@ -156,14 +153,7 @@ class DriverSouces:
             Dotted object name, as in ``'intake_xarray.xzarr.ZarrSource'``.
             If None, simply remove driver disable flag, if it is found
         """
-        config = self.conf
-        if "drivers" not in config:
-            config["drivers"] = {}
-        if driver:
-            config["drivers"][name] = driver
-        elif config["drivers"].get(name) is False:
-            del config["drivers"][name]
-        config.save()
+        self.register_driver(name, driver, clobber=True, do_enable=True)
 
     def disable(self, name):
         """Disable a driver by name.
@@ -175,11 +165,11 @@ class DriverSouces:
         name : string
             As in ``'zarr'``
         """
-        config = self.conf
-        if "drivers" not in config:
-            config["drivers"] = {}
-        config["drivers"][name] = False
-        config.save()
+        name = _normalize(name)
+        self.disabled.append(name)
+
+
+drivers = DriverSouces()
 
 
 def _load_entrypoint(entrypoint):
@@ -232,7 +222,14 @@ def _package_scan(path=None, plugin_prefix="intake_"):
     return plugins
 
 
-drivers = DriverSouces()
+def _normalize(name):
+    if not name.isidentifier():
+        # primitive name normalization
+        name = re.sub("[-=~^&|@+]", "_", name)
+    if not name.isidentifier():
+        warnings.warn('Invalid Intake plugin name "%s" found.', name, stacklevel=2)
+
+    return name
 
 
 def load_plugins_from_module(module_name):
