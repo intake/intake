@@ -50,18 +50,30 @@ def test_multi_file(tempdir, shape):
     np.save(fn1, data1)
     data = np.stack([data0, data1])
     fn = [fn0, fn1]
+
     s = NPySource(fn)
     out = s.read()
     assert (out == data).all()
+    assert (s.to_dask().compute() == data).all()
+
     s = NPySource(fn, chunks=1)
     out = s.read()
     assert (out == data).all()
+    assert (s.to_dask().compute() == data).all()
+
     s = NPySource(fn, shape=shape, dtype="int", chunks=1)
     out = s.read()
     assert (out == data).all()
+    da = s.to_dask()
+    assert (da.compute() == data).all()
+    schema = s.discover()
+    assert schema["shape"] == data.shape
+    assert schema["npartitions"] == da.npartitions
+
     s = NPySource(os.path.join(tempdir, "out*.npy"))
     out = s.read()
     assert (out == data).all()
+    assert (s.to_dask().compute() == data).all()
 
 
 def test_zarr_minimal():

@@ -37,8 +37,8 @@ class NPySource(DataSource):
         shape: tuple of int
             If known, the length of each axis
         chunks: int
-            Size of chunks within a file along biggest dimension - need not
-            be an exact factor of the length of that dimension
+            Size of chunks within a file along biggest dimension - must exactly divide
+            each file, or None for one partition per file.
         storage_options: dict
             Passed to file-system backend.
         """
@@ -46,53 +46,70 @@ class NPySource(DataSource):
         self.shape = shape
         self.dtype = dtype
         self.storage = storage_options or {}
-        self._chunks = chunks if chunks is not None else -1
-        self.chunks = None
+        self.files = None
+        self._chunks = chunks
         self._arrs = None
         self._arr = None
         super(NPySource, self).__init__(metadata=metadata)
 
     def _get_schema(self):
-        import dask.array as da
         from fsspec import open_files
 
-        if self._arr is None:
+        if self.files is None:
             path = self._get_cache(self.path)[0]
 
-            files = open_files(path, "rb", compression=None, **self.storage)
-            if self.shape is None:
-                arr = NumpyAccess(files[0])
+            self.files = open_files(path, "rb", compression=None, **self.storage)
+            if self.dtype is None or self.shape is None:
+                arr = NumpyAccess(self.files[0])
                 self.shape = arr.shape
                 self.dtype = arr.dtype
-                arrs = [arr] + [NumpyAccess(f, self.shape, self.dtype, offset=arr.offset) for f in files[1:]]
-            else:
-                arrs = [NumpyAccess(f, self.shape, self.dtype) for f in files]
-            self.chunks = (self._chunks,) + (-1,) * (len(self.shape) - 1)
-            self._arrs = [da.from_array(arr, self.chunks) for arr in arrs]
+            self.chunks = self._chunks or self.shape[0]
+        shape = list(self.shape)
+        parts_per_file = (shape[0] // self.chunks) + (shape[0] % self.chunks > 0)
+        if len(self.files) > 1:
+            shape = [len(self.files)] + shape
+            chunks = ((1,) * len(self.files),) + ((self.chunks,) * parts_per_file,) + tuple((s,) for s in self.shape[1:])
+        else:
+            shape = shape
+            chunks = ((self.chunks,) * parts_per_file,) + tuple((s,) for s in self.shape[1:])
 
-            if len(self._arrs) > 1:
-                self._arr = da.stack(self._arrs)
-            else:
-                self._arr = self._arrs[0]
-            self.chunks = self._arr.chunks
-        return Schema(dtype=str(self.dtype), shape=self.shape, extra_metadata=self.metadata, npartitions=self._arr.npartitions, chunks=self.chunks)
+        print()
+        return Schema(dtype=str(self.dtype), shape=tuple(shape), extra_metadata=self.metadata, npartitions=parts_per_file * len(self.files), chunks=chunks)
 
     def _get_partition(self, i):
-        if isinstance(i, list):
-            i = tuple(i)
-        return self._arr.blocks[i].compute()
+        if isinstance(i, (list, tuple)):
+            i = i[0]
+        parts_per_file = (self.shape[0] // self.chunks) + (self.shape[0] % self.chunks > 0)
+        nfile = i // parts_per_file
+        arr = NumpyAccess(self.files[nfile])
+        infile = i % parts_per_file
+        return arr[self.chunks * infile : self.chunks * (infile + 1)]
 
     def read_partition(self, i):
-        self._get_schema()
         return self._get_partition(i)
 
     def to_dask(self):
+        import dask.array as da
+
         self._get_schema()
+        arrs = [NumpyAccess(f, self.shape, self.dtype) for f in self.files]
+
+        if len(arrs) > 1:
+            chunks = (self._chunks or -1,) + (-1,) * (len(self.shape) - 1)
+        else:
+            chunks = (self._chunks or -1,) + (-1,) * (len(self.shape) - 2)
+        self._arrs = [da.from_array(arr, chunks) for arr in arrs]
+
+        self._arr = da.stack(self._arrs)
         return self._arr
 
     def read(self):
+        import numpy as np
+
         self._get_schema()
-        return self._arr.compute()
+        with self.files as ff:
+            arrs = [np.load(f) for f in ff]
+        return np.stack(arrs)
 
     def _close(self):
         self._arrs = None
