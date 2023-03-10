@@ -85,7 +85,7 @@ class DriverSouces:
 
     def disabled(self):
         if self._disabled is None:
-            self._disabled = [k for k, v in self.conf.get("drivers", {}).items() if v is False]
+            self._disabled = {k for k, v in self.conf.get("drivers", {}).items() if v is False}
 
         return self._disabled
 
@@ -177,7 +177,7 @@ class DriverSouces:
             config["drivers"] = {}
         config["drivers"][name] = False
         config.save()
-        self.disabled().append(name)
+        self.disabled().add(name)
 
 
 drivers = DriverSouces()
