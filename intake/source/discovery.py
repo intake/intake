@@ -9,6 +9,7 @@ import importlib
 import inspect
 import logging
 import pkgutil
+import re
 import time
 import warnings
 
@@ -40,7 +41,8 @@ class DriverSouces:
         self.do_scan = do_scan
         self._scanned = None
         self._entrypoints = None
-        self.registered = {}
+        self._registered = None
+        self._disabled = None
 
     @property
     def package_scan(self):
@@ -65,9 +67,6 @@ class DriverSouces:
             if v
         ]
 
-    def disabled(self):
-        return [k for k, v in self.conf.get("drivers", {}).items() if v is False]
-
     def __setitem__(self, key, value):
         super(DriverSouces, self).__setitem__(key, value)
         self.save()
@@ -84,21 +83,31 @@ class DriverSouces:
             self._scanned = _package_scan()
         return self._scanned
 
-    def enabled_plugins(self):
+    def disabled(self):
+        if self._disabled is None:
+            self._disabled = {k for k, v in self.conf.get("drivers", {}).items() if v is False}
+
+        return self._disabled
+
+    def registered(self):
         # priority order (decreasing): runtime, config, entrypoints, package scan
-        out = {}
-        if self.package_scan:
-            out.update(self.scanned)
+        if self._registered is None:
+            out = {}
+            if self.package_scan:
+                out.update(self.scanned)
 
-        for ep in self.from_entrypoints() + self.from_conf():
-            out[ep.name] = ep
+            for ep in self.from_entrypoints() + self.from_conf():
+                out[ep.name] = ep
 
-        out.update(self.registered)
-        out = {k: v for k, v in out.items() if k not in self.disabled()}
-        return out
+            self._registered = out
+
+        return self._registered
+
+    def enabled_plugins(self):
+        return {k: v for k, v in self.registered().items() if k not in self.disabled()}
 
     def register_driver(self, name, value, clobber=False, do_enable=False):
-        """Add runtime driver definition
+        """Add runtime driver definition to list of registered drivers (drivers in global scope with corresponding ``intake.open_*`` function)
 
         Parameters
         ----------
@@ -111,19 +120,21 @@ class DriverSouces:
         do_enable: bool
             If True, unset the disabled flag for this driver
         """
-        if not clobber and name in self.enabled_plugins():
+        name = _normalize(name)
+        if name in self.registered() and not clobber:
             raise ValueError(f"Driver {name} already enabled")
         if name in self.disabled():
             if do_enable:
-                self.enable(name)
+                self.enable(name, value)
             else:
                 logger.warning(f"Adding driver {name}, but it is disabled")
 
-        self.registered[name] = value
+        self.registered()[name] = value
 
     def unregister_driver(self, name):
         """Remove runtime registered driver"""
-        self.registered.pop(name)
+        name = _normalize(name)
+        self.registered().pop(name)
 
     def enable(self, name, driver=None):
         """
@@ -146,6 +157,8 @@ class DriverSouces:
             config["drivers"][name] = driver
         elif config["drivers"].get(name) is False:
             del config["drivers"][name]
+        if name in self.disabled():
+            self.disabled().remove(name)
         config.save()
 
     def disable(self, name):
@@ -158,11 +171,16 @@ class DriverSouces:
         name : string
             As in ``'zarr'``
         """
+        name = _normalize(name)
         config = self.conf
         if "drivers" not in config:
             config["drivers"] = {}
         config["drivers"][name] = False
         config.save()
+        self.disabled().add(name)
+
+
+drivers = DriverSouces()
 
 
 def _load_entrypoint(entrypoint):
@@ -215,7 +233,14 @@ def _package_scan(path=None, plugin_prefix="intake_"):
     return plugins
 
 
-drivers = DriverSouces()
+def _normalize(name):
+    if not name.isidentifier():
+        # primitive name normalization
+        name = re.sub("[-=~^&|@+]", "_", name)
+    if not name.isidentifier():
+        warnings.warn('Invalid Intake plugin name "%s" found.', name, stacklevel=2)
+
+    return name
 
 
 def load_plugins_from_module(module_name):

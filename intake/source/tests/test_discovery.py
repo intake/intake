@@ -92,8 +92,10 @@ def test_enable_and_disable(extra_pythonpath, tmp_config_path):
 
     try:
         drivers = intake.source.discovery.DriverSouces(do_scan=True)
-        drivers.disable("foo")
         registry = intake.source.DriverRegistry(drivers)
+        assert "foo" in registry
+
+        drivers.disable("foo")
         with pytest.warns(PendingDeprecationWarning):
             assert "foo" in discovery.drivers.scanned
         assert "foo" not in registry
@@ -113,6 +115,23 @@ def test_enable_and_disable(extra_pythonpath, tmp_config_path):
         assert "some_test_driver" in registry
     finally:
         drivers.enable("some_test_driver", "driver_with_entrypoints.SomeTestDriver")
+
+
+def test_register_and_unregister(extra_pythonpath, tmp_config_path):
+    registry = intake.source.registry
+    assert "bar" not in registry
+    with pytest.raises(ImportError):
+        from intake import open_bar
+
+    intake.register_driver("bar", "intake_foo.FooPlugin")
+    assert "bar" in registry
+    from intake import open_bar  # noqa
+
+    intake.unregister_driver("bar")
+    assert "bar" not in registry
+
+    with pytest.raises(ImportError):
+        from intake import open_bar  # noqa
 
 
 def test_discover_collision(extra_pythonpath, tmp_config_path):
