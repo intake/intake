@@ -48,7 +48,22 @@ def test_flatten():
 
 @pytest.mark.parametrize(
     "value,dtype,expected",
-    [(1, "int", 1), ("1", "int", 1), (1, "str", "1"), ((), "list", []), ((1,), "list", [1]), ((1,), "list[str]", ["1"])],
+    [
+        (1, "int", 1),
+        ("1", "int", 1),
+        (1, "str", "1"),
+        ((), "list", []),
+        ((1,), "list", [1]),
+        ((1,), "list[str]", ["1"]),
+        ("{'a': 1}", "dict", {"a": 1}),
+        ("{'a': '1'}", "dict", {"a": "1"}),
+        ("[1, 2]", "list", [1, 2]),
+        ("['1', '2']", "list", ["1", "2"]),
+        ("[{'a': '1'}]", "list", [{"a": "1"}]),
+        ("{'a': [1, 2]}", "dict", {"a": [1, 2]}),
+        ("{'a': ['1', '2']}", "dict", {"a": ["1", "2"]}),
+        ("1988-02-24T13:37+0100", "datetime", pd.Timestamp("1988-02-24 13:37+0100")),
+    ],
 )
 def test_coerce(value, dtype, expected):
     out = utils.coerce(dtype, value)

@@ -271,12 +271,13 @@ def coerce_datetime(v=None):
 def with_str_parse(value, rule):
     import ast
 
-    if isinstance(value, str) and type != str:
+    if isinstance(value, str) and rule not in [str, coerce_datetime]:
         try:
             value = ast.literal_eval(value)
-            return rule(value)
         except (ValueError, TypeError, RuntimeError):
-            return rule(value)
+            pass
+
+    return rule(value)
 
 
 COERCION_RULES = {
