@@ -268,6 +268,17 @@ def coerce_datetime(v=None):
     return pandas.to_datetime(v)
 
 
+def with_str_parse(value, rule):
+    import ast
+
+    if isinstance(value, str) and type != str:
+        try:
+            value = ast.literal_eval(value)
+            return rule(value)
+        except (ValueError, TypeError, RuntimeError):
+            return rule(value)
+
+
 COERCION_RULES = {
     "bool": bool,
     "datetime": coerce_datetime,
@@ -312,7 +323,7 @@ def coerce(dtype, value):
                 raise ValueError("Failed to coerce string to list") from e
         return value
     op = COERCION_RULES[dtype]
-    out = op() if value is None else op(value)
+    out = op() if value is None else with_str_parse(value, op)
     if isinstance(out, dict) and inner is not None:
         # TODO: recurse into coerce here, to allow list[list[str]] and such?
         out = {k: COERCION_RULES[inner](v) for k, v in out.items()}
