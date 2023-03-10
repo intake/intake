@@ -54,7 +54,7 @@ class Drivers(Subcommand):
             print()
 
         print("Entrypoints:")
-        eps = [ep for ep in drivers.from_entrypoints() if ep.name not in drivers.disabled]
+        eps = [ep for ep in drivers.from_entrypoints() if ep.name not in drivers.disabled()]
         if eps:
             for v in eps:
                 print(f"{v.name:<30}{v.module_name}:{v.object_name}")
@@ -63,31 +63,20 @@ class Drivers(Subcommand):
         print()
 
         print("From Config:")
-        eps = [ep for ep in drivers.from_conf() if ep.name not in drivers.disabled]
+        eps = [ep for ep in drivers.from_conf() if ep.name not in drivers.disabled()]
         if eps:
             for v in eps:
-                if v.name not in drivers.disabled:
+                if v.name not in drivers.disabled():
                     print(f"{v.name:<30}{v.module_name}:{v.object_name}")
         else:
             print("<none>")
         print()
 
-        print("Disabled: ", drivers.disabled or "<none>")
+        print("Disabled: ", drivers.disabled() or "<none>")
 
     def _enable(self, args):
-        config = drivers.conf
-        if "drivers" not in config:
-            config["drivers"] = {}
-        if args.driver:
-            config["drivers"][args.name] = args.driver
-        elif not config["drivers"].get(args.name, True):
-            del config["drivers"][args.name]
-        config.save()
+        drivers.enable(args.name, args.driver)
 
     def _disable(self, args):
-        config = drivers.conf
         for name in args.names:
-            if "drivers" not in config:
-                config["drivers"] = {}
-            config["drivers"][name] = False
-        config.save()
+            drivers.disable(name)

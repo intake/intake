@@ -92,8 +92,10 @@ def test_enable_and_disable(extra_pythonpath, tmp_config_path):
 
     try:
         drivers = intake.source.discovery.DriverSouces(do_scan=True)
-        drivers.disable("foo")
         registry = intake.source.DriverRegistry(drivers)
+        assert "foo" in registry
+
+        drivers.disable("foo")
         with pytest.warns(PendingDeprecationWarning):
             assert "foo" in discovery.drivers.scanned
         assert "foo" not in registry

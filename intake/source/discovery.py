@@ -83,14 +83,12 @@ class DriverSouces:
             self._scanned = _package_scan()
         return self._scanned
 
-    @property
     def disabled(self):
         if self._disabled is None:
             self._disabled = [k for k, v in self.conf.get("drivers", {}).items() if v is False]
 
         return self._disabled
 
-    @property
     def registered(self):
         # priority order (decreasing): runtime, config, entrypoints, package scan
         if self._registered is None:
@@ -105,9 +103,8 @@ class DriverSouces:
 
         return self._registered
 
-    @property
     def enabled_plugins(self):
-        return {k: v for k, v in self.registered.items() if k not in self.disabled}
+        return {k: v for k, v in self.registered().items() if k not in self.disabled()}
 
     def register_driver(self, name, value, clobber=False, do_enable=False):
         """Add runtime driver definition to list of registered drivers (drivers in global scope with corresponding ``intake.open_*`` function)
@@ -124,20 +121,20 @@ class DriverSouces:
             If True, unset the disabled flag for this driver
         """
         name = _normalize(name)
-        if name in self.registered and not clobber:
+        if name in self.registered() and not clobber:
             raise ValueError(f"Driver {name} already enabled")
-        if name in self.disabled:
+        if name in self.disabled():
             if do_enable:
-                self.disabled.remove(name)
+                self.enable(name, value)
             else:
                 logger.warning(f"Adding driver {name}, but it is disabled")
 
-        self.registered[name] = value
+        self.registered()[name] = value
 
     def unregister_driver(self, name):
         """Remove runtime registered driver"""
         name = _normalize(name)
-        self.registered.pop(name)
+        self.registered().pop(name)
 
     def enable(self, name, driver=None):
         """
@@ -153,7 +150,16 @@ class DriverSouces:
             Dotted object name, as in ``'intake_xarray.xzarr.ZarrSource'``.
             If None, simply remove driver disable flag, if it is found
         """
-        self.register_driver(name, driver, clobber=True, do_enable=True)
+        config = self.conf
+        if "drivers" not in config:
+            config["drivers"] = {}
+        if driver:
+            config["drivers"][name] = driver
+        elif config["drivers"].get(name) is False:
+            del config["drivers"][name]
+        if name in self.disabled():
+            self.disabled().remove(name)
+        config.save()
 
     def disable(self, name):
         """Disable a driver by name.
@@ -166,7 +172,12 @@ class DriverSouces:
             As in ``'zarr'``
         """
         name = _normalize(name)
-        self.disabled.append(name)
+        config = self.conf
+        if "drivers" not in config:
+            config["drivers"] = {}
+        config["drivers"][name] = False
+        config.save()
+        self.disabled().append(name)
 
 
 drivers = DriverSouces()

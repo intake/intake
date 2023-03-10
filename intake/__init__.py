@@ -61,7 +61,7 @@ def __getattr__(attr):
         gl[attr] = mod
         return mod
 
-    if attr[:5] == "open_" and attr[5:] in registry.drivers.enabled_plugins:
+    if attr[:5] == "open_" and attr[5:] in registry.drivers.enabled_plugins():
         driver = registry[attr[5:]]  # "open_..."
         return driver
 
@@ -69,7 +69,7 @@ def __getattr__(attr):
 
 
 def __dir__(*_, **__):
-    openers = ["open_" + name for name in registry.drivers.enabled_plugins]
+    openers = ["open_" + name for name in registry.drivers.enabled_plugins()]
     return sorted(list(globals()) + list(imports) + openers)
 
 
