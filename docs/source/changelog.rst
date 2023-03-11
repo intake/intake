@@ -1,6 +1,24 @@
 Changelog
 =========
 
+.. _v0.6.8:
+
+0.6.8
+-----
+
+Released March 11, 2023
+
+- user parameter parsed as string before conversion to given type
+- numpy source becomes first to have read() path avoid dask
+- when registering drivers dynamically, corresponding open_* functions
+  will be created automatically (plus refactor/cleanup of the discovery code)
+- docs config and style updates; the list of plugins to automatically
+  pull in status badges
+- catalog .gui attribute will make top-level GUI instance instead of
+  cut down one-catalog version
+- pre-commit checks added and consistent code style applied
+
+
 .. _v0.6.7:
 
 0.6.7
