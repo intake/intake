@@ -139,6 +139,11 @@
   description: Generate catalogs and load tables as DataFrames from Salesforce
   drivers: salesforce_catalog, salesforce_table
 
+- name: intake-sdmx
+  repo: dr-leo/intake_sdmx
+  description: Plugin for SDMX-compliant data sources such as BIS, ECB, ESTAT, INSEE, ILO, UN, UNICEF, World Bank and more
+  drivers: sdmx_dataset
+
 - name: intake-sklearn
   repo: AlbertDeFusco/intake-sklearn
   description: Load scikit-learn models from Pickle files
