@@ -113,7 +113,7 @@
   drivers: parquet
 
 - name: intake-pattern-catalog
-  repo: https://bitbucket.org/dtnse/intake_pattern_catalog
+  repo: DTN-Public/intake-pattern-catalog
   description: Plugin for specifying a file-path pattern which can represent a number of different entries
   drivers: pattern_cat
 
