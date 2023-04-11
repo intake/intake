@@ -42,9 +42,10 @@ def generate_plugin_table():
     plugin_df["short_name"] = plugin_df["name"].apply(lambda x: x.split("/")[-1])
     plugin_df["repo_links"] = plugin_df["repo"].apply(format_repo_link)
     plugin_df["conda_package"] = plugin_df["conda_package"].fillna(plugin_df["short_name"])
+    plugin_df["ci_yaml"] = plugin_df["ci_yaml"].fillna("main.yaml")
 
     # CI badges
-    plugin_df["ci_badges"] = plugin_df["repo_links"].apply(lambda x: f"{x}/workflows/CI/badge.svg")
+    plugin_df["ci_badges"] = plugin_df[["repo_links", "ci_yaml"]].apply(lambda x: f"{x[0]}/actions/workflows/{x[1]}/badge.svg", axis=1)
     plugin_df["ci_links"] = plugin_df["repo_links"].apply(lambda x: f"{x}/actions")
     ci_badges_ok = asyncio.run(check_all_ok(plugin_df["ci_badges"]))
 

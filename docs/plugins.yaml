@@ -33,6 +33,11 @@
   description: Scan tables and send SQL queries to a <a href="https://docs.dremio.com/"> Dremio </a> server
   drivers: dremio
 
+- name: intake-duckdb
+  repo: intake/intake-duckdb
+  description: Load DuckDB tables and build catalogs from DuckDB backends
+  drivers: duckdb, duckdb_cat
+
 - name: intake-dynamodb
   repo: informatics-lab/intake-dynamodb>
   description: Link to Amazon DynamoDB
@@ -192,6 +197,7 @@
 
 - name: intake-thredds
   repo: NCAR/intake-thredds
+  ci_yaml: ci.yaml
   description: Intake interface to THREDDS data catalogs
   drivers: thredds_cat, thredds_merged_source
 
