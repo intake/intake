@@ -268,3 +268,76 @@ class Columns(DataFrameTransform):
 
     def pick_columns(self, df):
         return df[self._params["columns"]]
+
+
+class DataFramePipeline(DataFrameTransform):
+    """Apply a sequence of transformations over a DataFrame
+
+    The sequence of steps is defined as a list-of-dicts under
+    the key "steps". Each step requires a "method" key and
+    can optionally take "kwargs".
+
+    A special method called 'cols' enables column selection
+    and takes the kwarg 'columns'.
+
+    If a method cannot be found as an attribute of the output
+    of the previous step, the pipeline will attempt to import
+    the method and apply it.
+
+    Here's an example of performing a groupby, selecting two
+    columns and computing the mean.
+
+    by_origin:
+      driver: intake.source.derived.DataFramePipeline
+      args:
+        targets:
+          - auto
+        steps:
+          - method: groupby
+            kwargs:
+              by: origin
+          - method: cols
+            kwargs:
+              columns:
+                - hp
+                - mpg
+          - method: mean
+    """
+
+    input_container = "dataframe"
+    container = "dataframe"
+    required_params = ["steps"]
+
+    class DataFrameStep(object):
+        def __init__(self, method):
+            self.method = method
+
+        def __call__(self, df, **kwargs):
+            if callable(self.method):
+                pass
+            elif self.method == "cols":
+                return df.__getitem__(kwargs["columns"])
+            else:
+                return getattr(df, self.method)(**kwargs)
+
+    def __init__(self, steps, **kwargs):
+        kwargs.update(transform=self.pipeline, steps=steps, transform_kwargs={})
+        super().__init__(**kwargs)
+
+    def pipeline(self, df):
+        """Apply pipeline steps"""
+        for step in self._params["steps"]:
+            method = step["method"]
+            kwargs = step.get("kwargs", {})
+            if callable(method):
+                df = method(df, **kwargs)
+            elif method == "cols":
+                df = df.__getitem__(kwargs["columns"])
+            else:
+                try:
+                    func = getattr(df, method)
+                    df = func(**kwargs)
+                except AttributeError:
+                    func = import_name(method)
+                    df = func(df, **kwargs)
+        return df
