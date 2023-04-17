@@ -308,18 +308,6 @@ class DataFramePipeline(DataFrameTransform):
     container = "dataframe"
     required_params = ["steps"]
 
-    class DataFrameStep(object):
-        def __init__(self, method):
-            self.method = method
-
-        def __call__(self, df, **kwargs):
-            if callable(self.method):
-                pass
-            elif self.method == "cols":
-                return df.__getitem__(kwargs["columns"])
-            else:
-                return getattr(df, self.method)(**kwargs)
-
     def __init__(self, steps, **kwargs):
         kwargs.update(transform=self.pipeline, steps=steps, transform_kwargs={})
         super().__init__(**kwargs)
@@ -333,6 +321,10 @@ class DataFramePipeline(DataFrameTransform):
                 df = method(df, **kwargs)
             elif method == "cols":
                 df = df.__getitem__(kwargs["columns"])
+            elif method in ("apply", "transform"):
+                kwargs_func = kwargs.pop("func")
+                func = kwargs_func if callable(kwargs_func) else import_name(kwargs_func)
+                df = df.apply(func, **kwargs)
             else:
                 try:
                     func = getattr(df, method)
