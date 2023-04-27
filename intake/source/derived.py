@@ -319,6 +319,11 @@ class DataFramePipeline(DataFrameTransform):
             kwargs = step.get("kwargs", {})
             if callable(method):
                 df = method(df, **kwargs)
+            elif method.count(".") == 1:
+                sel, f = method.split(".")
+                mod = getattr(df, sel)
+                func = getattr(mod, f)
+                df = func(**kwargs)
             elif method == "cols":
                 df = df.__getitem__(kwargs["columns"])
             elif method in ("apply", "transform"):
