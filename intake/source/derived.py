@@ -311,9 +311,18 @@ class DataFramePipeline(DataFrameTransform):
     def __init__(self, steps, **kwargs):
         kwargs.update(transform=self.pipeline, steps=steps, transform_kwargs={})
         super().__init__(**kwargs)
+        self._sources = {}
+
+    def _get_sources(self):
+        for target in self.targets:
+            s = get_source(target, self.cat, self._kwargs, self._cat_kwargs).to_dask()
+            self._sources[target] = s
 
     def pipeline(self, df):
         """Apply pipeline steps"""
+        if not self._sources:
+            self._get_sources()
+
         for step in self._params["steps"]:
             method = step["method"]
             kwargs = step.get("kwargs", {})
@@ -326,6 +335,20 @@ class DataFramePipeline(DataFrameTransform):
                 df = func(**kwargs)
             elif method == "cols":
                 df = df.__getitem__(kwargs["columns"])
+            elif method == "assign":
+                to_assign = {}
+                for col, value in kwargs.items():
+                    if value in self.targets:
+                        to_assign[col] = self._sources[value]
+                df = df.assign(**to_assign)
+            elif method in ("merge", "join"):
+                other = kwargs["other"]
+                if isinstance(other, list):
+                    kwargs["other"] = [self._sources[s] for s in other]
+                else:
+                    kwargs["other"] = self._sources[other]
+                func = getattr(df, method)
+                df = func(**kwargs)
             elif method in ("apply", "transform"):
                 kwargs_func = kwargs.pop("func")
                 func = kwargs_func if callable(kwargs_func) else import_name(kwargs_func)
