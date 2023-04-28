@@ -419,7 +419,7 @@ class DataFramePipeline(DataFrameTransform):
                 try:
                     func = getattr(df, method)
                 except AttributeError:
-                    func = import_name(method)
+                    func = partial(import_name(method), df)
 
             try:
                 df = func(**kwargs)

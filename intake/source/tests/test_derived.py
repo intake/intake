@@ -1,8 +1,17 @@
 import os
 
+import pytest
+
 import intake
+from intake.source.derived import TransformError
 
 catfile = os.path.join(os.path.dirname(__file__), "..", "..", "catalog", "tests", "catalog_alias.yml")
+
+
+@pytest.fixture
+def pipe_cat():
+    catfile = os.path.join(os.path.dirname(__file__), "..", "tests", "pipeline.yaml")
+    return intake.open_catalog(catfile)
 
 
 def test_columns():
@@ -34,3 +43,71 @@ def test_other_cat():
     cat = intake.open_catalog(catfile)
     df1 = cat.other_cat.read()
     assert df1.columns.tolist() == ["name", "score"]
+
+
+def test_pipeline_no_loc(pipe_cat):
+    with pytest.raises(ValueError):
+        pipe_cat.error_iloc.read()
+
+    with pytest.raises(ValueError):
+        pipe_cat.error_loc.read()
+
+
+def test_pipeline_failed(pipe_cat):
+    with pytest.raises(TransformError):
+        _ = pipe_cat.failed.read()
+
+
+def test_pipeline_cols(pipe_cat):
+    name_col = pipe_cat.one_column.read()
+    assert name_col.to_list() == ["Alice", "Bob", "Charlie", "Eve"]
+
+    two_cols = pipe_cat.two_columns.read()
+    assert two_cols.values.tolist() == [["Alice", 1], ["Bob", 2], ["Charlie", 3], ["Eve", 3]]
+
+
+def test_pipeline_accessor(pipe_cat):
+    lower = pipe_cat.accessor.read()
+
+    assert lower.tolist() == ["alice", "bob", "charlie", "eve"]
+
+
+def test_pipeline_assign(pipe_cat):
+    df = pipe_cat.assign.read()
+
+    assert "lower" in df
+    assert df["lower"].tolist() == ["alice", "bob", "charlie", "eve"]
+
+
+def test_pipeline_concat(pipe_cat):
+    concated_rows = pipe_cat.concat_rows.read()
+    assert concated_rows.shape == (8, 3)
+
+    concated_cols = pipe_cat.concat_cols.read()
+    assert concated_cols.shape == (4, 6)
+
+
+def test_pipeline_merge(pipe_cat):
+    merged = pipe_cat.merged.read()
+    assert merged.columns.to_list() == ["name_x", "score_x", "rank", "name_y", "score_y"]
+    assert merged.shape == (6, 5)
+
+
+def test_pipeline_join(pipe_cat):
+    join1 = pipe_cat.join1.read()
+    assert join1.shape == (4, 6)
+    assert join1.columns.to_list() == ["name", "score", "rank", "name1", "score1", "rank1"]
+
+    join2 = pipe_cat.join2.read()
+    assert join2.shape == (4, 9)
+    assert join2.columns.to_list() == ["name", "score", "rank", "name2", "score2", "rank2", "name2", "score2", "rank2"]
+
+
+def test_pipeline_func(pipe_cat):
+    from .util import zscore
+
+    df = pipe_cat.df.read()
+    z = zscore(df.score)
+
+    pipe = pipe_cat.func.read()
+    assert z.equals(pipe)
