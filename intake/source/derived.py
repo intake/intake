@@ -1,8 +1,18 @@
-from functools import lru_cache
+from copy import deepcopy
+from functools import lru_cache, partial
+from textwrap import dedent
 
 from .. import open_catalog
 from . import import_name
 from .base import DataSource, Schema
+
+
+def _kwargs_string(kwargs_dict):
+    return ", ".join([f"{k}={v}" for k, v in kwargs_dict.items()])
+
+
+class TransformError(Exception):
+    pass
 
 
 class AliasSource(DataSource):
@@ -277,8 +287,19 @@ class DataFramePipeline(DataFrameTransform):
     the key "steps". Each step requires a "method" key and
     can optionally take "kwargs".
 
+    loc/iloc are not supported, but query is recommended
+    for filtering.
+
     A special method called 'cols' enables column selection
-    and takes the kwarg 'columns'.
+    and takes the kwarg 'columns', which can be a single value
+    or a list of column names.
+
+    merge, join, and assign will look for a source defined in
+    the targets key of the pipeline.
+
+    A special method called 'concat' will perform dd.concat
+    operations where the list of dataframes to concat is
+    provided in the kwarg 'dfs'.
 
     If a method cannot be found as an attribute of the output
     of the previous step, the pipeline will attempt to import
@@ -323,44 +344,98 @@ class DataFramePipeline(DataFrameTransform):
         if not self._sources:
             self._get_sources()
 
-        for step in self._params["steps"]:
+        for idx, step in enumerate(self._params["steps"]):
             method = step["method"]
-            kwargs = step.get("kwargs", {})
+            kwargs = deepcopy(step.get("kwargs", {}))
+
             if callable(method):
-                df = method(df, **kwargs)
-            elif method.count(".") == 1:
+                func = partial(method, df)
+
+            elif method in ("loc", "iloc"):
+                msg = dedent(
+                    """\
+                    iloc and loc are not supported. To select one or more columns use
+
+                    - method: cols
+                      kwargs:
+                        columns: <single value or or list>
+
+                    To filter use the the query method
+
+                    - method: query
+                      kwargs:
+                        arg: A > 2
+                      """
+                )
+                raise ValueError(msg)
+
+            elif method.count(".") == 1 and hasattr(df, method.split(".")[0]):
                 sel, f = method.split(".")
                 mod = getattr(df, sel)
                 func = getattr(mod, f)
-                df = func(**kwargs)
+
             elif method == "cols":
-                df = df.__getitem__(kwargs["columns"])
+                columns = kwargs.pop("columns")
+                func = partial(df.__getitem__, columns)
+
             elif method == "assign":
                 to_assign = {}
                 for col, value in kwargs.items():
                     if value in self.targets:
                         to_assign[col] = self._sources[value]
-                df = df.assign(**to_assign)
+                    else:
+                        raise ValueError(f"Step {idx} {method}: {value} is not listed in the targets key of this pipeline.")
+                kwargs = to_assign
+                func = df.assign
+
             elif method == "join":
                 other = kwargs["other"]
                 if isinstance(other, list):
                     kwargs["other"] = [self._sources[s] for s in other]
                 else:
                     kwargs["other"] = self._sources[other]
-                df = df.join(**kwargs)
+                func = df.join
+
             elif method == "merge":
                 right = kwargs["right"]
-                kwargs["right"] = self._sources[right]
-                df = df.merge(**kwargs)
+                source = self._sources.get(right)
+                if source is None:
+                    raise ValueError(f"Step {idx} {method}: {right} is not listed in the targets key of this pipeline.")
+                else:
+                    kwargs["right"] = source
+                func = df.merge
+
             elif method in ("apply", "transform"):
                 kwargs_func = kwargs.pop("func")
                 func = kwargs_func if callable(kwargs_func) else import_name(kwargs_func)
-                df = df.apply(func, **kwargs)
+                func = partial(df.apply, func)
+
+            elif method == "concat":
+                objs = kwargs["dfs"]
+                kwargs["dfs"] = [self._sources[s] for s in objs]
+                func = import_name("dask.dataframe.concat")
+
             else:
                 try:
                     func = getattr(df, method)
-                    df = func(**kwargs)
                 except AttributeError:
                     func = import_name(method)
-                    df = func(df, **kwargs)
+
+            try:
+                df = func(**kwargs)
+            except Exception as e:
+                original_kwargs = step.get("kwargs", {})
+                print(func)
+                print(kwargs)
+                s = _kwargs_string(original_kwargs)
+                msg = dedent(
+                    f"""\
+                    DataFramePipeline source {self.name} step {idx+1} failed
+                    {method}({s})
+
+                    {repr(e)}
+                    """
+                )
+                raise TransformError(msg) from e
+
         return df
