@@ -341,14 +341,17 @@ class DataFramePipeline(DataFrameTransform):
                     if value in self.targets:
                         to_assign[col] = self._sources[value]
                 df = df.assign(**to_assign)
-            elif method in ("merge", "join"):
+            elif method == "join":
                 other = kwargs["other"]
                 if isinstance(other, list):
                     kwargs["other"] = [self._sources[s] for s in other]
                 else:
                     kwargs["other"] = self._sources[other]
-                func = getattr(df, method)
-                df = func(**kwargs)
+                df = df.join(**kwargs)
+            elif method == "merge":
+                right = kwargs["right"]
+                kwargs["right"] = self._sources[right]
+                df = df.merge(**kwargs)
             elif method in ("apply", "transform"):
                 kwargs_func = kwargs.pop("func")
                 func = kwargs_func if callable(kwargs_func) else import_name(kwargs_func)
