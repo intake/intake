@@ -97,6 +97,17 @@ def test_bad_open():
     assert intake.open_catalog() == intake.open_catalog(None)
 
 
+def test_bad_open_helptext():
+    with pytest.raises(ValueError) as val_err:
+        # unknown driver
+        intake.open_catalog("", driver="unknown")
+    assert "plugin directory" in str(val_err.value).lower()
+
+    with pytest.raises(AttributeError) as attr_err:
+        intake.open_not_a_real_plugin()
+    assert "plugin directory" in str(attr_err.value).lower()
+
+
 def test_output_notebook():
     pytest.importorskip("hvplot")
     intake.output_notebook()
