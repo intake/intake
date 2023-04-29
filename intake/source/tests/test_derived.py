@@ -3,7 +3,7 @@ import os
 import pytest
 
 import intake
-from intake.source.derived import TransformError
+from intake.source.derived import PipelineError, TransformError
 
 catfile = os.path.join(os.path.dirname(__file__), "..", "..", "catalog", "tests", "catalog_alias.yml")
 
@@ -79,6 +79,13 @@ def test_pipeline_assign(pipe_cat):
     assert df["lower"].tolist() == ["alice", "bob", "charlie", "eve"]
 
 
+def test_pipeline_assign_value(pipe_cat):
+    df = pipe_cat.assign_value.read()
+
+    assert "new_col" in df
+    assert df["new_col"].tolist() == ["value"] * 4
+
+
 def test_pipeline_concat(pipe_cat):
     concated_rows = pipe_cat.concat_rows.read()
     assert concated_rows.shape == (8, 3)
@@ -93,6 +100,11 @@ def test_pipeline_merge(pipe_cat):
     assert merged.shape == (6, 5)
 
 
+def test_pipeline_merge_fail(pipe_cat):
+    with pytest.raises(PipelineError):
+        _ = pipe_cat.merge_fail.read()
+
+
 def test_pipeline_join(pipe_cat):
     join1 = pipe_cat.join1.read()
     assert join1.shape == (4, 6)
@@ -101,6 +113,11 @@ def test_pipeline_join(pipe_cat):
     join_list = pipe_cat.join_list.read()
     assert join_list.shape == (4, 6)
     assert join_list.columns.to_list() == ["name", "score", "rank", "name1", "score1", "rank1"]
+
+
+def test_pipeline_join_fail(pipe_cat):
+    with pytest.raises(PipelineError):
+        _ = pipe_cat.join_fail.read()
 
 
 def test_pipeline_func(pipe_cat):
@@ -127,3 +144,9 @@ def test_groupby_apply(pipe_cat):
     agg = pipe_cat.groupby_apply.read()
 
     assert agg.score.equals(df.groupby("rank")["score"].sum())
+
+
+def test_groupby_transform(pipe_cat):
+    lengths = pipe_cat.groupby_transform.read()
+
+    assert lengths.score.to_list() == [1, 1, 2, 2]

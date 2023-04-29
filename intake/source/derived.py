@@ -15,6 +15,12 @@ class TransformError(Exception):
     pass
 
 
+class PipelineError(Exception):
+    def __init__(self, step_index, method, source):
+        self.message = "Step {step_index} {method}: {source} is not listed in the targets key of this pipeline."
+        super().__init__(self.message)
+
+
 class AliasSource(DataSource):
     """Refer to another named source, unmodified
 
@@ -369,6 +375,7 @@ class DataFramePipeline(DataFrameTransform):
                 )
                 raise ValueError(msg)
 
+            # this will catch accessor methods like .dt.<method> and .str.<method>
             elif method.count(".") == 1 and hasattr(df, method.split(".")[0]):
                 sel, f = method.split(".")
                 mod = getattr(df, sel)
@@ -384,23 +391,28 @@ class DataFramePipeline(DataFrameTransform):
                     if value in self.targets:
                         to_assign[col] = self._sources[value]
                     else:
-                        raise ValueError(f"Step {idx} {method}: {value} is not listed in the targets key of this pipeline.")
+                        to_assign[col] = value
                 kwargs = to_assign
                 func = df.assign
 
             elif method == "join":
                 other = kwargs["other"]
-                if isinstance(other, list):
-                    kwargs["other"] = [self._sources[s] for s in other]
-                else:
-                    kwargs["other"] = self._sources[other]
+                if not isinstance(other, list):
+                    other = [other]
+
+                kwargs["other"] = []
+                for s in other:
+                    if s in self.targets:
+                        kwargs["other"].append(self._sources[s])
+                    else:
+                        raise PipelineError(idx, method, s)
                 func = df.join
 
             elif method == "merge":
                 right = kwargs["right"]
                 source = self._sources.get(right)
                 if source is None:
-                    raise ValueError(f"Step {idx} {method}: {right} is not listed in the targets key of this pipeline.")
+                    raise PipelineError(idx, method, source)
                 else:
                     kwargs["right"] = source
                 func = df.merge

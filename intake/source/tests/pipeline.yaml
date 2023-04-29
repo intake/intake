@@ -71,6 +71,15 @@ sources:
           kwargs:
             lower: accessor
 
+  assign_value:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: assign
+          kwargs:
+            new_col: value
+
   concat_rows:
     driver: intake.source.derived.DataFramePipeline
     args:
@@ -100,6 +109,16 @@ sources:
             right: df1
             "on": rank
 
+  merge_fail:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: merge
+          kwargs:
+            right: df1
+            "on": rank
+
   join1:
     driver: intake.source.derived.DataFramePipeline
     args:
@@ -118,6 +137,16 @@ sources:
         - method: join
           kwargs:
             other: [df1]
+            rsuffix: 1
+
+  join_fail:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: join
+          kwargs:
+            other: df1
             rsuffix: 1
 
   func:
@@ -156,3 +185,15 @@ sources:
           kwargs:
             func: numpy.sum
             meta: {score: float}
+
+  groupby_transform:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: groupby
+          kwargs:
+            by: rank
+        - method: transform
+          kwargs:
+            func: builtins.len
