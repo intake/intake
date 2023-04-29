@@ -150,3 +150,10 @@ def test_groupby_transform(pipe_cat):
     lengths = pipe_cat.groupby_transform.read()
 
     assert lengths.score.to_list() == [1, 1, 2, 2]
+
+
+def test_pipeline_dask(pipe_cat):
+    df = pipe_cat.groupby_apply.read()
+    ddf = pipe_cat.groupby_apply.to_dask()
+
+    assert df.equals(ddf.compute())
