@@ -3,6 +3,7 @@ from functools import lru_cache, partial
 from textwrap import dedent
 
 from .. import open_catalog
+from ..catalog.exceptions import CatalogException
 from . import import_name
 from .base import DataSource, Schema
 
@@ -11,14 +12,27 @@ def _kwargs_string(kwargs_dict):
     return ", ".join([f"{k}={v}" for k, v in kwargs_dict.items()])
 
 
-class PipelineStepError(Exception):
+class PipelineStepError(CatalogException):
     pass
 
 
-class MissingTargetError(Exception):
+class MissingTargetError(CatalogException):
     def __init__(self, source, step_index, method, target):
         self.message = f"{source} step {step_index} {method}: {target} is not listed in the targets key of this pipeline."
         super().__init__(self.message)
+
+
+cached_cats = lru_cache(10)(open_catalog)
+
+
+def get_source(target, cat, kwargs, cat_kwargs):
+    if ":" in target:
+        caturl, target = target.rsplit(":", 1)
+        cat = cached_cats(caturl, **cat_kwargs)
+    if cat:
+        return cat[target].configure_new(**kwargs)
+    # for testing only
+    return target  # pragma: no cover
 
 
 class AliasSource(DataSource):
@@ -38,10 +52,10 @@ class AliasSource(DataSource):
     """
 
     container = "other"
-    version = 1
+    version = 2
     name = "alias"
 
-    def __init__(self, target, mapping=None, metadata=None, **kwargs):
+    def __init__(self, target, mapping=None, metadata=None, kwargs=None, cat_kwargs=None):
         """
 
         Parameters
@@ -54,11 +68,14 @@ class AliasSource(DataSource):
         metadata: dict or None
             Extra metadata to associate
         kwargs: passed on to the target
+        cat_kwargs: passed on to the target catalog if target is in
+            another catalog
         """
         super(AliasSource, self).__init__(metadata)
         self.target = target
         self.mapping = mapping or {target: target}
-        self.kwargs = kwargs
+        self.kwargs = kwargs or {}
+        self.cat_kwargs = cat_kwargs or {}
         self.metadata = metadata
         self.source = None
 
@@ -66,7 +83,8 @@ class AliasSource(DataSource):
         if self.cat is None:
             raise ValueError("AliasSource cannot be used outside a catalog")
         if self.source is None:
-            self.source = self.cat[self.mapping[self.target]](metadata=self.metadata, **self.kwargs)
+            target = self.mapping[self.target]
+            self.source = get_source(target, self.cat, self.kwargs, self.cat_kwargs)
             self.metadata = self.source.metadata.copy()
             self.container = self.source.container
             self.partition_access = self.source.partition_access
@@ -91,19 +109,6 @@ class AliasSource(DataSource):
     def to_dask(self):
         self._get_source()
         return self.source.to_dask()
-
-
-cached_cats = lru_cache(10)(open_catalog)
-
-
-def get_source(target, cat, kwargs, cat_kwargs):
-    if ":" in target:
-        caturl, target = target.rsplit(":", 1)
-        cat = cached_cats(caturl, **cat_kwargs)
-    if cat:
-        return cat[target].configure_new(**kwargs)
-    # for testing only
-    return target  # pragma: no cover
 
 
 def first(targets, cat, kwargs, cat_kwargs):
