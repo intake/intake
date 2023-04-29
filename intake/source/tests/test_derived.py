@@ -111,3 +111,19 @@ def test_pipeline_func(pipe_cat):
 
     pipe = pipe_cat.func.read()
     assert z.equals(pipe)
+
+
+def test_pipeline_apply(pipe_cat):
+    from .util import reverse
+
+    df = pipe_cat.df.read()
+    s = pipe_cat.apply.read()
+
+    assert s.equals(df.name.apply(reverse))
+
+
+def test_groupby_apply(pipe_cat):
+    df = pipe_cat.df.read()
+    agg = pipe_cat.groupby_apply.read()
+
+    assert agg.score.equals(df.groupby("rank")["score"].sum())

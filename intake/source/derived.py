@@ -408,7 +408,7 @@ class DataFramePipeline(DataFrameTransform):
             elif method in ("apply", "transform"):
                 kwargs_func = kwargs.pop("func")
                 func = kwargs_func if callable(kwargs_func) else import_name(kwargs_func)
-                func = partial(df.apply, func)
+                func = partial(getattr(df, method), func)
 
             elif method == "concat":
                 objs = kwargs["dfs"]

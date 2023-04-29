@@ -134,12 +134,25 @@ sources:
     args:
       targets: [df]
       steps:
-        - method: groupby
-          kwargs:
-            by: rank
         - method: cols
           kwargs:
             columns: name
         - method: apply
           kwargs:
             func: intake.source.tests.util.reverse
+
+  groupby_apply:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: groupby
+          kwargs:
+            by: rank
+        - method: cols
+          kwargs:
+            columns: [score]
+        - method: apply
+          kwargs:
+            func: numpy.sum
+            meta: {score: float}
