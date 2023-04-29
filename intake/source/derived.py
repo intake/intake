@@ -425,8 +425,6 @@ class DataFramePipeline(DataFrameTransform):
                 df = func(**kwargs)
             except Exception as e:
                 original_kwargs = step.get("kwargs", {})
-                print(func)
-                print(kwargs)
                 s = _kwargs_string(original_kwargs)
                 msg = dedent(
                     f"""\

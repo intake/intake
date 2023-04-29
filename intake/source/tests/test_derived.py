@@ -98,9 +98,9 @@ def test_pipeline_join(pipe_cat):
     assert join1.shape == (4, 6)
     assert join1.columns.to_list() == ["name", "score", "rank", "name1", "score1", "rank1"]
 
-    join2 = pipe_cat.join2.read()
-    assert join2.shape == (4, 9)
-    assert join2.columns.to_list() == ["name", "score", "rank", "name2", "score2", "rank2", "name2", "score2", "rank2"]
+    join_list = pipe_cat.join_list.read()
+    assert join_list.shape == (4, 6)
+    assert join_list.columns.to_list() == ["name", "score", "rank", "name1", "score1", "rank1"]
 
 
 def test_pipeline_func(pipe_cat):

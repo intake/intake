@@ -110,15 +110,15 @@ sources:
             other: df1
             rsuffix: 1
 
-  join2:
+  join_list:
     driver: intake.source.derived.DataFramePipeline
     args:
       targets: [df, df1, df2]
       steps:
         - method: join
           kwargs:
-            other: [df1, df2]
-            rsuffix: 2
+            other: [df1]
+            rsuffix: 1
 
   func:
     driver: intake.source.derived.DataFramePipeline
