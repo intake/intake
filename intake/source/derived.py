@@ -17,7 +17,7 @@ class TransformError(Exception):
 
 class PipelineError(Exception):
     def __init__(self, step_index, method, source):
-        self.message = "Step {step_index} {method}: {source} is not listed in the targets key of this pipeline."
+        self.message = f"Step {step_index} {method}: {source} is not listed in the targets key of this pipeline."
         super().__init__(self.message)
 
 
