@@ -35,3 +35,18 @@ def test_mapping():
     out = str(s.discover())
     assert s.container == "ndarray"
     assert "int64" in out
+
+
+def test_other_cat():
+    cat = intake.open_catalog(fn)
+    other = cat.alias_other_cat
+
+    assert other.source is None
+    assert other.cat.name == cat.name
+
+    _ = other.discover()
+
+    assert other.source is not None
+    assert other.source.cat.name == "name_in_cat"
+    assert other.source._csv_kwargs == {"parse_dates": True}
+    assert other.source.cat._captured_init_kwargs == {"getenv": True}
