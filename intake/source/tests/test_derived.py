@@ -3,7 +3,7 @@ import os
 import pytest
 
 import intake
-from intake.source.derived import PipelineError, TransformError
+from intake.source.derived import MissingTargetError, PipelineStepError
 
 catfile = os.path.join(os.path.dirname(__file__), "..", "..", "catalog", "tests", "catalog_alias.yml")
 
@@ -54,7 +54,7 @@ def test_pipeline_no_loc(pipe_cat):
 
 
 def test_pipeline_failed(pipe_cat):
-    with pytest.raises(TransformError):
+    with pytest.raises(PipelineStepError):
         _ = pipe_cat.failed.read()
 
 
@@ -101,7 +101,7 @@ def test_pipeline_merge(pipe_cat):
 
 
 def test_pipeline_merge_fail(pipe_cat):
-    with pytest.raises(PipelineError):
+    with pytest.raises(MissingTargetError):
         _ = pipe_cat.merge_fail.read()
 
 
@@ -116,7 +116,7 @@ def test_pipeline_join(pipe_cat):
 
 
 def test_pipeline_join_fail(pipe_cat):
-    with pytest.raises(PipelineError):
+    with pytest.raises(MissingTargetError):
         _ = pipe_cat.join_fail.read()
 
 

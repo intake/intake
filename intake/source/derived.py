@@ -11,13 +11,13 @@ def _kwargs_string(kwargs_dict):
     return ", ".join([f"{k}={v}" for k, v in kwargs_dict.items()])
 
 
-class TransformError(Exception):
+class PipelineStepError(Exception):
     pass
 
 
-class PipelineError(Exception):
-    def __init__(self, step_index, method, source):
-        self.message = f"Step {step_index} {method}: {source} is not listed in the targets key of this pipeline."
+class MissingTargetError(Exception):
+    def __init__(self, source, step_index, method, target):
+        self.message = f"{source} step {step_index} {method}: {target} is not listed in the targets key of this pipeline."
         super().__init__(self.message)
 
 
@@ -405,14 +405,14 @@ class DataFramePipeline(DataFrameTransform):
                     if s in self.targets:
                         kwargs["other"].append(self._sources[s])
                     else:
-                        raise PipelineError(idx, method, s)
+                        raise MissingTargetError(self.name, idx + 1, method, s)
                 func = df.join
 
             elif method == "merge":
                 right = kwargs["right"]
                 source = self._sources.get(right)
                 if source is None:
-                    raise PipelineError(idx, method, source)
+                    raise MissingTargetError(self.name, idx + 1, method, right)
                 else:
                     kwargs["right"] = source
                 func = df.merge
@@ -446,6 +446,6 @@ class DataFramePipeline(DataFrameTransform):
                     {repr(e)}
                     """
                 )
-                raise TransformError(msg) from e
+                raise PipelineStepError(msg) from e
 
         return df
