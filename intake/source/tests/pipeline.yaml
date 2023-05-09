@@ -1,0 +1,199 @@
+sources:
+  df:
+    driver: csv
+    args:
+      urlpath: '{{ CATALOG_DIR }}/sample1.csv'
+  df1:
+    driver: csv
+    args:
+      urlpath: '{{ CATALOG_DIR }}/sample2_1.csv'
+  df2:
+    driver: csv
+    args:
+      urlpath: '{{ CATALOG_DIR }}/sample2_2.csv'
+
+  error_iloc:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps: [{method: iloc}]
+
+  error_loc:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps: [{method: loc}]
+
+  one_column:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: cols
+          kwargs:
+            columns: name
+
+  two_columns:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: cols
+          kwargs:
+            columns:
+              - name
+              - rank
+
+  accessor:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: cols
+          kwargs:
+            columns: name
+        - method: str.lower
+
+  failed:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: cols
+          kwargs: {columns: nope}
+
+  assign:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df, accessor]
+      steps:
+        - method: assign
+          kwargs:
+            lower: accessor
+
+  assign_value:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: assign
+          kwargs:
+            new_col: value
+
+  concat_rows:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df, df1]
+      steps:
+        - method: concat
+          kwargs:
+            dfs: [df, df1]
+
+  concat_cols:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df, df1]
+      steps:
+        - method: concat
+          kwargs:
+            dfs: [df, df1]
+            axis: columns
+
+  merged:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df, df1]
+      steps:
+        - method: merge
+          kwargs:
+            right: df1
+            "on": rank
+
+  merge_fail:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: merge
+          kwargs:
+            right: df1
+            "on": rank
+
+  join1:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df, df1]
+      steps:
+        - method: join
+          kwargs:
+            other: df1
+            rsuffix: 1
+
+  join_list:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df, df1, df2]
+      steps:
+        - method: join
+          kwargs:
+            other: [df1]
+            rsuffix: 1
+
+  join_fail:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: join
+          kwargs:
+            other: df1
+            rsuffix: 1
+
+  func:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: cols
+          kwargs: {columns: score}
+        - method: intake.source.tests.util.zscore
+
+  apply:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: cols
+          kwargs:
+            columns: name
+        - method: apply
+          kwargs:
+            func: intake.source.tests.util.reverse
+
+  groupby_apply:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: groupby
+          kwargs:
+            by: rank
+        - method: cols
+          kwargs:
+            columns: [score]
+        - method: apply
+          kwargs:
+            func: numpy.sum
+            meta: {score: float}
+
+  groupby_transform:
+    driver: intake.source.derived.DataFramePipeline
+    args:
+      targets: [df]
+      steps:
+        - method: groupby
+          kwargs:
+            by: rank
+        - method: transform
+          kwargs:
+            func: builtins.len

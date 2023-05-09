@@ -18,3 +18,11 @@ def verify_datasource_interface(source):
 
     for method in ["discover", "read", "read_chunked", "read_partition", "to_dask", "close"]:
         assert hasattr(source, method)
+
+
+def zscore(s):
+    return (s - s.mean()) / s.std(ddof=0)
+
+
+def reverse(s):
+    return s[::-1]

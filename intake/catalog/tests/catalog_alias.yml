@@ -54,3 +54,11 @@ sources:
       targets:
         - "{{CATALOG_DIR}}/catalog1.yml:entry1"
       columns: ["name", "score"]
+  alias_other_cat:
+    driver: alias
+    args:
+      target: "{{CATALOG_DIR}}/catalog1.yml:entry1"
+      kwargs:
+        csv_kwargs: {parse_dates: True}
+      cat_kwargs:
+        getenv: true
