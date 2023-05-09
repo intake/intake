@@ -39,8 +39,14 @@ class AliasSource(DataSource):
     """Refer to another named source, unmodified
 
     The purpose of an Alias is to be able to refer to other source(s) in the
-    same catalog, perhaps leaving the choice of which target to load up to the
-    user. This source makes no sense outside of a catalog.
+    same catalog or an external catalog, perhaps leaving the choice of which
+    target to load up to the user. This source makes no sense outside of a catalog.
+
+    The "target" for an aliased data source will normally be a string. In the
+    simple case, it is the name of a data source in the same catalog. However,
+    we use the syntax "catalog:source" to refer to sources in other catalogs,
+    where the part before ":" will be passed to intake.open_catalog,
+    together with any keyword arguments from cat_kwargs.
 
     In this case, the output of the target source is not modified, but this
     class acts as a prototype 'derived' source for processing the output of
