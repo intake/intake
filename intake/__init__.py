@@ -61,9 +61,18 @@ def __getattr__(attr):
         gl[attr] = mod
         return mod
 
-    if attr[:5] == "open_" and attr[5:] in registry.drivers.enabled_plugins():
-        driver = registry[attr[5:]]  # "open_..."
-        return driver
+    if attr[:5] == "open_":
+        if attr[5:] in registry.drivers.enabled_plugins():
+            driver = registry[attr[5:]]  # "open_..."
+            return driver
+        else:
+            registered_methods = [f"open_{driver}" for driver in registry.drivers.enabled_plugins()]
+            raise AttributeError(
+                f"Unknown open method '{attr}'. "
+                "Do you need to install a new driver from the plugin directory? "
+                "https://intake.readthedocs.io/en/latest/plugin-directory.html\n"
+                f"Registered opener methods: {registered_methods}"
+            )
 
     raise AttributeError(attr)
 
@@ -145,5 +154,10 @@ def open_catalog(uri=None, **kwargs):
     if "_file" not in driver:
         kwargs.pop("fs", None)
     if driver not in registry:
-        raise ValueError("Unknown catalog driver (%s), supply one of: %s" % (driver, list(sorted(registry))))
+        raise ValueError(
+            f"Unknown catalog driver '{driver}'. "
+            "Do you need to install a new driver from the plugin directory? "
+            "https://intake.readthedocs.io/en/latest/plugin-directory.html\n"
+            f"Current registry: {list(sorted(registry))}"
+        )
     return registry[driver](uri, **kwargs)

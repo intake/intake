@@ -64,15 +64,20 @@ class MsgPackSerializer(object):
 
             return msgpack.packb(obj, **np_pack_kwargs)
         elif container == "dataframe":
+            pickle.dumps(obj)
             # Use pyarrow for serializing DataFrames, rather than
             # msgpack: https://github.com/intake/intake/issues/460
             pa = check_pyarrow()
 
-            context = pa.default_serialization_context()
-            # This eventually goes to msgpack.packb, which doesn't
-            # directly accept PyArrow Buffer objects. Need to wrap
-            # it in a memoryview to avoid a TypeError.
-            return memoryview(context.serialize(obj).to_buffer())
+            if pa.__version__.split(".") < [
+                "12",
+            ]:
+                context = pa.default_serialization_context()
+                # This eventually goes to msgpack.packb, which doesn't
+                # directly accept PyArrow Buffer objects. Need to wrap
+                # it in a memoryview to avoid a TypeError.
+                return memoryview(context.serialize(obj).to_buffer())
+            return memoryview(pa.serialize_pandas(obj))
         else:
             return msgpack.packb(obj, **pack_kwargs)
 
@@ -85,8 +90,12 @@ class MsgPackSerializer(object):
             return msgpack.unpackb(bytestr, **np_unpack_kwargs)
         elif container == "dataframe":
             pa = check_pyarrow()
-            context = pa.default_serialization_context()
-            return context.deserialize(bytestr)
+            if pa.__version__.split(".") < [
+                "12",
+            ]:
+                context = pa.default_serialization_context()
+                return context.deserialize(bytestr)
+            return pa.deserialize_pandas(bytestr)
         else:
             return msgpack.unpackb(bytestr, **unpack_kwargs)
 
