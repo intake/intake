@@ -51,7 +51,8 @@ class CSVSource(base.DataSource, base.PatternMixin):
         self.urlpath = urlpath
         self._storage_options = storage_options
         self._csv_kwargs = csv_kwargs or {}
-        self._dataframe = None
+        self._dask_df = None
+        self._pandas_dfs = None
 
         super(CSVSource, self).__init__(metadata=metadata)
 
@@ -59,13 +60,13 @@ class CSVSource(base.DataSource, base.PatternMixin):
         """Get a column of values for each field in pattern"""
         from pandas.api.types import CategoricalDtype
 
-        col = self._dataframe[path_column]
+        col = self._dask_df[path_column]
         paths = sorted(col.cat.categories)
 
         column_by_field = {
             field: col.cat.codes.map(dict(enumerate(values))).astype(CategoricalDtype(set(values))) for field, values in reverse_formats(self.pattern, paths).items()
         }
-        self._dataframe = self._dataframe.assign(**column_by_field)
+        self._dask_df = self._dask_df.assign(**column_by_field)
 
     def _path_column(self):
         """Set ``include_path_column`` in csv_kwargs and returns path column name"""
@@ -81,46 +82,100 @@ class CSVSource(base.DataSource, base.PatternMixin):
             self._csv_kwargs["include_path_column"] = path_column
         return path_column
 
-    def _open_dataset(self, urlpath):
+    def _read_pandas(self):
+        """Open dataset using pandas and use pattern fields to set new columns"""
+
+        self._get_cache(self._urlpath)[0]
+
+    def _open_dask(self):
         """Open dataset using dask and use pattern fields to set new columns"""
+
+        if self._dask_df is not None:
+            return
+
         import dask.dataframe
 
+        urlpath = self._get_cache(self._urlpath)[0]
+
         if self.pattern is None:
-            self._dataframe = dask.dataframe.read_csv(urlpath, storage_options=self._storage_options, **self._csv_kwargs)
+            self._dask_df = dask.dataframe.read_csv(urlpath, storage_options=self._storage_options, **self._csv_kwargs)
             return
 
         drop_path_column = "include_path_column" not in self._csv_kwargs
         path_column = self._path_column()
 
-        self._dataframe = dask.dataframe.read_csv(urlpath, storage_options=self._storage_options, **self._csv_kwargs)
+        self._dask_df = dask.dataframe.read_csv(urlpath, storage_options=self._storage_options, **self._csv_kwargs)
 
         # add the new columns to the dataframe
         self._set_pattern_columns(path_column)
 
         if drop_path_column:
-            self._dataframe = self._dataframe.drop([path_column], axis=1)
+            self._dask_df = self._dask_df.drop([path_column], axis=1)
 
     def _get_schema(self):
+        if self._dask_df is not None:
+            dtypes = self._dask_df._meta.dtypes.to_dict()
+            dtypes = {n: str(t) for (n, t) in dtypes.items()}
+            return base.Schema(dtype=dtypes, shape=(None, len(dtypes)), npartitions=self._dask_df.npartitions, extra_metadata={})
+
+        import fsspec
+        from fsspec.core import split_protocol
+
         urlpath = self._get_cache(self._urlpath)[0]
+        protocol, _ = split_protocol(urlpath)
+        fs = fsspec.filesystem(protocol, storage_options=self._storage_options)
+        self._files = sorted(fs.expand_path(urlpath))
 
-        if self._dataframe is None:
-            self._open_dataset(urlpath)
-
-        dtypes = self._dataframe._meta.dtypes.to_dict()
-        dtypes = {n: str(t) for (n, t) in dtypes.items()}
-        return base.Schema(dtype=dtypes, shape=(None, len(dtypes)), npartitions=self._dataframe.npartitions, extra_metadata={})
+        # TODO: read header of first file and get some metadata
+        return base.Schema(dtype={}, shape=(None, None), npartitions=len(self._files), extra_metadata={})
 
     def _get_partition(self, i):
+        if self._dask_df is not None:
+            # TODO: side effects from having different partition
+            # definitions (dask vs. files)?
+            return self._dask_df.get_partition(i).compute()
+
         self._get_schema()
-        return self._dataframe.get_partition(i).compute()
+        # TODO: does it make sense to cache these, or just read afresh every time?
+        if self._pandas_dfs is None:
+            self._pandas_dfs = [None for _ in range(len(self._files))]
+
+        if self._pandas_dfs[i] is not None:
+            return self._pandas_dfs[i]
+
+        import pandas as pd
+
+        url_part = self._files[i]
+        if self.pattern is None:
+            df_part = pd.read_csv(url_part, storage_options=self._storage_options, **self._csv_kwargs)
+
+        else:
+            drop_path_column = "include_path_column" not in self._csv_kwargs
+            path_column = self._path_column()
+
+            df_part = pd.read_csv(url_part, storage_options=self._storage_options, **self._csv_kwargs)
+
+            # add the new columns to the dataframe
+            self._set_pattern_columns(path_column)
+
+            if drop_path_column:
+                df_part = df_part.drop([path_column], axis=1)
+
+        self._pandas_dfs[i] = df_part
+        return df_part
 
     def read(self):
+        if self._dask_df is not None:
+            return self._dask_df.compute()
+
+        import pandas as pd
+
         self._get_schema()
-        return self._dataframe.compute()
+        return pd.concat([self._get_partition(i) for i in range(len(self._files))])
 
     def to_dask(self):
-        self._get_schema()
-        return self._dataframe
+        self._open_dask()
+        return self._dask_df
 
     def to_spark(self):
         from intake_spark.base import SparkHolder
@@ -129,4 +184,4 @@ class CSVSource(base.DataSource, base.PatternMixin):
         return h.setup()
 
     def _close(self):
-        self._dataframe = None
+        self._dask_df = None
