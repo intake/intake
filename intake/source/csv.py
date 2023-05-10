@@ -49,7 +49,7 @@ class CSVSource(base.DataSource, base.PatternMixin):
         """
         self.path_as_pattern = path_as_pattern
         self.urlpath = urlpath
-        self._storage_options = storage_options
+        self._storage_options = storage_options or {}
         self._csv_kwargs = csv_kwargs or {}
         self._dask_df = None
         self._files = None
@@ -115,13 +115,20 @@ class CSVSource(base.DataSource, base.PatternMixin):
             return base.Schema(dtype=dtypes, shape=(None, len(dtypes)), npartitions=self._dask_df.npartitions, extra_metadata={})
 
         if self._files is None:
-            import fsspec
-            from fsspec.core import split_protocol
-
             urlpath = self._get_cache(self._urlpath)[0]
-            protocol, _ = split_protocol(urlpath)
-            fs = fsspec.filesystem(protocol, storage_options=self._storage_options)
-            self._files = sorted(fs.expand_path(urlpath))
+            if not isinstance(urlpath, list):
+                urlpath = [urlpath]
+
+            glob_in_path = any("*" in path for path in urlpath)
+            if self.pattern is None and not glob_in_path:
+                self._files = urlpath
+            else:
+                import fsspec
+                from fsspec.core import split_protocol
+
+                protocol, _ = split_protocol(urlpath)
+                fs = fsspec.filesystem(protocol, **self._storage_options)
+                self._files = fs.expand_path(urlpath)
 
         # FIX: does it make sense to cache these, or just read afresh every time?
         if self._pandas_dfs is None:
@@ -150,14 +157,13 @@ class CSVSource(base.DataSource, base.PatternMixin):
 
         if self._pandas_dfs[i] is None:
             url_part = self._files[i]
-            self._read_pandas(url_part)
+            self._read_pandas(url_part, i)
 
         return self._pandas_dfs[i]
 
-    def _read_pandas(self, url_part):
+    def _read_pandas(self, url_part, i):
         import pandas as pd
 
-        i = self._files.index(url_part)
         if self.pattern is None:
             self._pandas_dfs[i] = pd.read_csv(url_part, storage_options=self._storage_options, **self._csv_kwargs)
             return
