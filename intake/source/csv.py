@@ -52,6 +52,7 @@ class CSVSource(base.DataSource, base.PatternMixin):
         self._storage_options = storage_options
         self._csv_kwargs = csv_kwargs or {}
         self._dask_df = None
+        self._files = None
         self._pandas_dfs = None
 
         super(CSVSource, self).__init__(metadata=metadata)
@@ -81,11 +82,6 @@ class CSVSource(base.DataSource, base.PatternMixin):
             path_column = "path"
             self._csv_kwargs["include_path_column"] = path_column
         return path_column
-
-    def _read_pandas(self):
-        """Open dataset using pandas and use pattern fields to set new columns"""
-
-        self._get_cache(self._urlpath)[0]
 
     def _open_dask(self):
         """Open dataset using dask and use pattern fields to set new columns"""
@@ -118,53 +114,65 @@ class CSVSource(base.DataSource, base.PatternMixin):
             dtypes = {n: str(t) for (n, t) in dtypes.items()}
             return base.Schema(dtype=dtypes, shape=(None, len(dtypes)), npartitions=self._dask_df.npartitions, extra_metadata={})
 
-        import fsspec
-        from fsspec.core import split_protocol
+        if self._files is None:
+            import fsspec
+            from fsspec.core import split_protocol
 
-        urlpath = self._get_cache(self._urlpath)[0]
-        protocol, _ = split_protocol(urlpath)
-        fs = fsspec.filesystem(protocol, storage_options=self._storage_options)
-        self._files = sorted(fs.expand_path(urlpath))
+            urlpath = self._get_cache(self._urlpath)[0]
+            protocol, _ = split_protocol(urlpath)
+            fs = fsspec.filesystem(protocol, storage_options=self._storage_options)
+            self._files = sorted(fs.expand_path(urlpath))
 
-        # TODO: read header of first file and get some metadata
-        return base.Schema(dtype={}, shape=(None, None), npartitions=len(self._files), extra_metadata={})
-
-    def _get_partition(self, i):
-        if self._dask_df is not None:
-            # TODO: side effects from having different partition
-            # definitions (dask vs. files)?
-            return self._dask_df.get_partition(i).compute()
-
-        self._get_schema()
-        # TODO: does it make sense to cache these, or just read afresh every time?
+        # FIX: does it make sense to cache these, or just read afresh every time?
         if self._pandas_dfs is None:
             self._pandas_dfs = [None for _ in range(len(self._files))]
 
-        if self._pandas_dfs[i] is not None:
-            return self._pandas_dfs[i]
+        if all([df is None for df in self._pandas_dfs]):
+            nrows = self._csv_kwargs.get("nrows")
+            self._csv_kwargs["nrows"] = 10
+            df = self._get_partition(0)
+            self._pandas_dfs[0] = None
+            if nrows is None:
+                del self._csv_kwargs["nrows"]
+            else:
+                self._csv_kwargs["nrows"] = nrows
+        else:
+            df = next(df for df in self._pandas_dfs if df is not None)
 
+        dtypes = dict(df.dtypes)
+        return base.Schema(dtype=dtypes, shape=(None, len(dtypes)), npartitions=len(self._files), extra_metadata={})
+
+    def _get_partition(self, i):
+        if self._dask_df is not None:
+            # FIX: side effects from having different partition
+            # definitions (dask vs. files)?
+            return self._dask_df.get_partition(i).compute()
+
+        if self._pandas_dfs[i] is None:
+            url_part = self._files[i]
+            self._read_pandas(url_part)
+
+        return self._pandas_dfs[i]
+
+    def _read_pandas(self, url_part):
         import pandas as pd
 
-        url_part = self._files[i]
+        i = self._files.index(url_part)
         if self.pattern is None:
-            df_part = pd.read_csv(url_part, storage_options=self._storage_options, **self._csv_kwargs)
+            self._pandas_dfs[i] = pd.read_csv(url_part, storage_options=self._storage_options, **self._csv_kwargs)
+            return
 
-        else:
-            include_path_column = "include_path_column" in self._csv_kwargs
-            path_column = self._path_column()
+        include_path_column = "include_path_column" in self._csv_kwargs
+        path_column = self._path_column()
 
-            csv_kwargs = self._csv_kwargs
-            csv_kwargs.pop("include_path_column")
-            df_part = pd.read_csv(url_part, storage_options=self._storage_options, **csv_kwargs)
+        csv_kwargs = self._csv_kwargs
+        csv_kwargs.pop("include_path_column")
+        df_part = pd.read_csv(url_part, storage_options=self._storage_options, **csv_kwargs)
 
-            # add the new columns to the dataframe
-            self._set_pattern_columns(path_column)
-
-            if include_path_column:
-                df_part[path_column] = url_part
+        if include_path_column:
+            df_part[path_column] = url_part
 
         self._pandas_dfs[i] = df_part
-        return df_part
 
     def read(self):
         if self._dask_df is not None:
