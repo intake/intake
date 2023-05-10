@@ -84,7 +84,19 @@ def test_discover(sample1_datasource):
     assert info["npartitions"] == 1
 
 
-def test_read(sample1_datasource, data_filenames):
+def test_read_dask(sample1_datasource, data_filenames):
+    sample1_datasource._open_dask()
+    assert sample1_datasource._dask_df is not None
+
+    expected_df = pd.read_csv(data_filenames["sample1"])
+    df = sample1_datasource.read()
+
+    assert expected_df.equals(df)
+
+
+def test_read_pandas(sample1_datasource, data_filenames):
+    sample1_datasource._dask_df = None
+
     expected_df = pd.read_csv(data_filenames["sample1"])
     df = sample1_datasource.read()
 
@@ -95,9 +107,18 @@ def test_read_list(sample_list_datasource, data_filenames):
     df_1 = pd.read_csv(data_filenames["sample2_1"])
     df_2 = pd.read_csv(data_filenames["sample2_2"])
     expected_df = pd.concat([df_1, df_2])
-    df = sample_list_datasource.read()
 
-    assert expected_df.equals(df)
+    sample_list_datasource._open_dask()
+    assert sample_list_datasource._dask_df is not None
+    dask_df = sample_list_datasource.read()
+
+    assert expected_df.equals(dask_df)
+
+    sample_list_datasource._dask_df = None
+    pandas_df = sample_list_datasource.read()
+    assert sample_list_datasource._dask_df is None
+
+    assert expected_df.equals(pandas_df)
 
 
 def test_read_chunked(sample1_datasource, data_filenames):

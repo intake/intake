@@ -150,16 +150,18 @@ class CSVSource(base.DataSource, base.PatternMixin):
             df_part = pd.read_csv(url_part, storage_options=self._storage_options, **self._csv_kwargs)
 
         else:
-            drop_path_column = "include_path_column" not in self._csv_kwargs
+            include_path_column = "include_path_column" in self._csv_kwargs
             path_column = self._path_column()
 
-            df_part = pd.read_csv(url_part, storage_options=self._storage_options, **self._csv_kwargs)
+            csv_kwargs = self._csv_kwargs
+            csv_kwargs.pop("include_path_column")
+            df_part = pd.read_csv(url_part, storage_options=self._storage_options, **csv_kwargs)
 
             # add the new columns to the dataframe
             self._set_pattern_columns(path_column)
 
-            if drop_path_column:
-                df_part = df_part.drop([path_column], axis=1)
+            if include_path_column:
+                df_part[path_column] = url_part
 
         self._pandas_dfs[i] = df_part
         return df_part
