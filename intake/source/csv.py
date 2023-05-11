@@ -146,7 +146,7 @@ class CSVSource(base.DataSource, base.PatternMixin):
         else:
             df = next(df for df in self._pandas_dfs if df is not None)
 
-        dtypes = dict(df.dtypes)
+        dtypes = {col: str(dtype) for col, dtype in df.dtypes.items()}
         return base.Schema(dtype=dtypes, shape=(None, len(dtypes)), npartitions=len(self._files), extra_metadata={})
 
     def _get_partition(self, i):
@@ -201,3 +201,4 @@ class CSVSource(base.DataSource, base.PatternMixin):
 
     def _close(self):
         self._dask_df = None
+        self._pandas_dfs = None
