@@ -53,7 +53,7 @@ class CSVSource(base.DataSource, base.PatternMixin):
         self._csv_kwargs = csv_kwargs or {}
         self._dask_df = None
         self._files = None
-        self._pandas_dfs = None
+        self._schema = None
 
         super(CSVSource, self).__init__(metadata=metadata)
 
@@ -108,46 +108,49 @@ class CSVSource(base.DataSource, base.PatternMixin):
         if drop_path_column:
             self._dask_df = self._dask_df.drop([path_column], axis=1)
 
+    def files(self):
+        if self._files is not None:
+            return self._files
+
+        urlpath = self._get_cache(self._urlpath)[0]
+        if not isinstance(urlpath, list):
+            urlpath = [urlpath]
+
+        glob_in_path = any("*" in path for path in urlpath)
+        if self.pattern is None and not glob_in_path:
+            self._files = urlpath
+        else:
+            import fsspec
+            from fsspec.core import split_protocol
+
+            protocol, _ = split_protocol(urlpath)
+            fs = fsspec.filesystem(protocol, **self._storage_options)
+            self._files = fs.expand_path(urlpath)
+
+        return self._files
+
     def _get_schema(self):
+        if self._schema is not None:
+            return self._schema
+
         if self._dask_df is not None:
             dtypes = self._dask_df._meta.dtypes.to_dict()
             dtypes = {n: str(t) for (n, t) in dtypes.items()}
-            return base.Schema(dtype=dtypes, shape=(None, len(dtypes)), npartitions=self._dask_df.npartitions, extra_metadata={})
+            self._schema = base.Schema(dtype=dtypes, shape=(None, len(dtypes)), npartitions=self._dask_df.npartitions, extra_metadata={})
+            return self._schema
 
-        if self._files is None:
-            urlpath = self._get_cache(self._urlpath)[0]
-            if not isinstance(urlpath, list):
-                urlpath = [urlpath]
-
-            glob_in_path = any("*" in path for path in urlpath)
-            if self.pattern is None and not glob_in_path:
-                self._files = urlpath
-            else:
-                import fsspec
-                from fsspec.core import split_protocol
-
-                protocol, _ = split_protocol(urlpath)
-                fs = fsspec.filesystem(protocol, **self._storage_options)
-                self._files = fs.expand_path(urlpath)
-
-        # FIX: does it make sense to cache these, or just read afresh every time?
-        if self._pandas_dfs is None:
-            self._pandas_dfs = [None for _ in range(len(self._files))]
-
-        if all([df is None for df in self._pandas_dfs]):
-            nrows = self._csv_kwargs.get("nrows")
-            self._csv_kwargs["nrows"] = 10
-            df = self._get_partition(0)
-            self._pandas_dfs[0] = None
-            if nrows is None:
-                del self._csv_kwargs["nrows"]
-            else:
-                self._csv_kwargs["nrows"] = nrows
+        nrows = self._csv_kwargs.get("nrows")
+        self._csv_kwargs["nrows"] = 10
+        df = self._get_partition(0)
+        if nrows is None:
+            del self._csv_kwargs["nrows"]
         else:
-            df = next(df for df in self._pandas_dfs if df is not None)
+            self._csv_kwargs["nrows"] = nrows
 
         dtypes = {col: str(dtype) for col, dtype in df.dtypes.items()}
-        return base.Schema(dtype=dtypes, shape=(None, len(dtypes)), npartitions=len(self._files), extra_metadata={})
+        self._schema = base.Schema(dtype=dtypes, shape=(None, len(dtypes)), npartitions=len(self.files()), extra_metadata={})
+
+        return self._schema
 
     def _get_partition(self, i):
         if self._dask_df is not None:
@@ -155,18 +158,14 @@ class CSVSource(base.DataSource, base.PatternMixin):
             # definitions (dask vs. files)?
             return self._dask_df.get_partition(i).compute()
 
-        if self._pandas_dfs[i] is None:
-            url_part = self._files[i]
-            self._read_pandas(url_part, i)
-
-        return self._pandas_dfs[i]
+        url_part = self.files()[i]
+        return self._read_pandas(url_part, i)
 
     def _read_pandas(self, url_part, i):
         import pandas as pd
 
         if self.pattern is None:
-            self._pandas_dfs[i] = pd.read_csv(url_part, storage_options=self._storage_options, **self._csv_kwargs)
-            return
+            return pd.read_csv(url_part, storage_options=self._storage_options, **self._csv_kwargs)
 
         include_path_column = "include_path_column" in self._csv_kwargs
         path_column = self._path_column()
@@ -178,7 +177,7 @@ class CSVSource(base.DataSource, base.PatternMixin):
         if include_path_column:
             df_part[path_column] = url_part
 
-        self._pandas_dfs[i] = df_part
+        return df_part
 
     def read(self):
         if self._dask_df is not None:
@@ -187,7 +186,7 @@ class CSVSource(base.DataSource, base.PatternMixin):
         import pandas as pd
 
         self._get_schema()
-        return pd.concat([self._get_partition(i) for i in range(len(self._files))])
+        return pd.concat([self._get_partition(i) for i in range(len(self.files()))])
 
     def to_dask(self):
         self._open_dask()
@@ -201,4 +200,4 @@ class CSVSource(base.DataSource, base.PatternMixin):
 
     def _close(self):
         self._dask_df = None
-        self._pandas_dfs = None
+        self._files = None

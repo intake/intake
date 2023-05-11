@@ -187,7 +187,7 @@ class TestServerV1Source(TestServerV1Base):
 
         # Cheat and look into internal state now
         source = self.server._cache.peek(source_id)
-        assert isinstance(source._pandas_dfs, list)
+        assert source._files is not None
 
         # now wait slightly over idle time, run periodic functions,
         # and check again
@@ -196,7 +196,7 @@ class TestServerV1Source(TestServerV1Base):
 
         # should be closed
         source = self.server._cache.peek(source_id)
-        assert source._pandas_dfs is None
+        assert source._files is None
 
         # wait a little longer
         time.sleep(0.1)
