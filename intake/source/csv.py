@@ -57,17 +57,18 @@ class CSVSource(base.DataSource, base.PatternMixin):
 
         super(CSVSource, self).__init__(metadata=metadata)
 
-    def _set_pattern_columns(self, path_column):
+    def _set_pattern_columns(self, df, path_column):
         """Get a column of values for each field in pattern"""
         from pandas.api.types import CategoricalDtype
 
-        col = self._dask_df[path_column]
+        col = df[path_column]
         paths = sorted(col.cat.categories)
 
         column_by_field = {
             field: col.cat.codes.map(dict(enumerate(values))).astype(CategoricalDtype(set(values))) for field, values in reverse_formats(self.pattern, paths).items()
         }
-        self._dask_df = self._dask_df.assign(**column_by_field)
+
+        return df.assign(**column_by_field)
 
     def _path_column(self):
         """Set ``include_path_column`` in csv_kwargs and returns path column name"""
@@ -103,7 +104,7 @@ class CSVSource(base.DataSource, base.PatternMixin):
         self._dask_df = dask.dataframe.read_csv(urlpath, storage_options=self._storage_options, **self._csv_kwargs)
 
         # add the new columns to the dataframe
-        self._set_pattern_columns(path_column)
+        self._dask_df = self._set_pattern_columns(self._dask_df, path_column)
 
         if drop_path_column:
             self._dask_df = self._dask_df.drop([path_column], axis=1)
@@ -120,14 +121,11 @@ class CSVSource(base.DataSource, base.PatternMixin):
         if self.pattern is None and not glob_in_path:
             self._files = urlpath
         else:
-            import fsspec
-            from fsspec.core import split_protocol
+            from fsspec.core import get_fs_token_paths
 
-            protocol, _ = split_protocol(urlpath)
-            fs = fsspec.filesystem(protocol, **self._storage_options)
-            self._files = fs.expand_path(urlpath)
+            self._files = get_fs_token_paths(urlpath)[2]
 
-        return self._files
+        return sorted(self._files)
 
     def _get_schema(self):
         if self._schema is not None:
@@ -167,15 +165,19 @@ class CSVSource(base.DataSource, base.PatternMixin):
         if self.pattern is None:
             return pd.read_csv(url_part, storage_options=self._storage_options, **self._csv_kwargs)
 
-        include_path_column = "include_path_column" in self._csv_kwargs
+        drop_path_column = "include_path_column" not in self._csv_kwargs
         path_column = self._path_column()
 
         csv_kwargs = self._csv_kwargs
         csv_kwargs.pop("include_path_column")
         df_part = pd.read_csv(url_part, storage_options=self._storage_options, **csv_kwargs)
 
-        if include_path_column:
-            df_part[path_column] = url_part
+        from pandas.api.types import CategoricalDtype
+
+        df_part[path_column] = pd.Series(url_part, index=df_part.index, dtype=CategoricalDtype(self.files()))
+        df_part = self._set_pattern_columns(df_part, path_column)
+        if drop_path_column:
+            df_part = df_part.drop([path_column], axis=1)
 
         return df_part
 

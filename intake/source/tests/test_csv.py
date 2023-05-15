@@ -130,25 +130,19 @@ def test_read_chunked(sample1_datasource, data_filenames):
     assert expected_df.equals(df)
 
 
-def check_read_pattern_output(source):
-    da = source.to_dask()
-    assert da.num.cat.known is True
-    assert da.dup.cat.known is True
-
+def check_read_pattern_output(df, df_part):
     # check that first partition has correct num and dup; which file
     # it represents is not guaranteed
-    df0 = da.get_partition(0).compute()
-    if df0["name"][0].endswith("1"):
-        assert all(df0.num == 2)
-        assert all(df0.dup == 1)
-    elif df0["name"][0].endswith("2"):
-        assert all(df0.num == 2)
-        assert all(df0.dup == 2)
-    elif df0["name"][0].endswith("3"):
-        assert all(df0.num == 3)
-        assert all(df0.dup == 2)
+    if df_part["name"][0].endswith("1"):
+        assert all(df_part.num == 2)
+        assert all(df_part.dup == 1)
+    elif df_part["name"][0].endswith("2"):
+        assert all(df_part.num == 2)
+        assert all(df_part.dup == 2)
+    elif df_part["name"][0].endswith("3"):
+        assert all(df_part.num == 3)
+        assert all(df_part.dup == 2)
 
-    df = source.read()
     assert len(df.columns) == 5
     assert "num" in df
     assert "dup" in df
@@ -169,28 +163,35 @@ def check_read_pattern_output(source):
     assert all(file_3.num == 3)
     assert all(file_3.dup == 2)
 
-    return da
 
-
-def test_read_pattern(sample_pattern_datasource):
+def test_read_pattern_dask(sample_pattern_datasource):
     da = sample_pattern_datasource.to_dask()
     assert set(da.num.cat.categories) == {2, 3}
     assert set(da.dup.cat.categories) == {1, 2}
-    check_read_pattern_output(sample_pattern_datasource)
+    check_read_pattern_output(da.compute(), da.get_partition(0).compute())
+
+
+def test_read_pattern_pandas(sample_pattern_datasource):
+    sample_pattern_datasource._dask_df = None
+    df = sample_pattern_datasource.read()
+    assert set(df.num.cat.categories) == {2, 3}
+    assert set(df.dup.cat.categories) == {1, 2}
+    df_part = sample_pattern_datasource._get_partition(0)
+    check_read_pattern_output(df, df_part)
 
 
 def test_read_pattern_with_cache(sample_pattern_datasource_with_cache):
     da = sample_pattern_datasource_with_cache.to_dask()
     assert set(da.num.cat.categories) == {2, 3}
     assert set(da.dup.cat.categories) == {1, 2}
-    check_read_pattern_output(sample_pattern_datasource_with_cache)
+    check_read_pattern_output(da.compute(), da.get_partition(0).compute())
 
 
 def test_read_pattern_with_path_as_pattern_str(sample_list_datasource_with_path_as_pattern_str):
     da = sample_list_datasource_with_path_as_pattern_str.to_dask()
     assert set(da.num.cat.categories) == {2}
     assert set(da.dup.cat.categories) == {1, 2}
-    check_read_pattern_output(sample_list_datasource_with_path_as_pattern_str)
+    check_read_pattern_output(da.compute(), da.get_partition(0).compute())
 
 
 def test_read_partition(sample2_datasource, data_filenames):
