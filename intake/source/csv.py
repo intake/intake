@@ -5,6 +5,8 @@
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
 
+from fsspec.core import get_fs_token_paths
+
 from . import base
 from .utils import reverse_formats, unique_string
 
@@ -121,8 +123,6 @@ class CSVSource(base.DataSource, base.PatternMixin):
         if self.pattern is None and not glob_in_path:
             self._files = urlpath
         else:
-            from fsspec.core import get_fs_token_paths
-
             self._files = get_fs_token_paths(urlpath)[2]
 
         return sorted(self._files)

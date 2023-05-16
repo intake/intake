@@ -51,6 +51,11 @@ def sample_list_datasource(data_filenames):
 
 
 @pytest.fixture
+def sample_list_datasource_with_glob(data_filenames):
+    return csv.CSVSource([data_filenames["sample1"], data_filenames["sample2_all"]])
+
+
+@pytest.fixture
 def sample_list_datasource_with_path_as_pattern_str(data_filenames):
     return csv.CSVSource([data_filenames["sample2_1"], data_filenames["sample2_2"]], path_as_pattern="sample{num:d}_{dup:d}.csv")
 
@@ -117,6 +122,26 @@ def test_read_list(sample_list_datasource, data_filenames):
     sample_list_datasource._dask_df = None
     pandas_df = sample_list_datasource.read()
     assert sample_list_datasource._dask_df is None
+
+    assert expected_df.equals(pandas_df)
+
+
+def test_read_list_with_glob(sample_list_datasource_with_glob, data_filenames):
+    df_1 = pd.read_csv(data_filenames["sample1"])
+    df_2 = pd.read_csv(data_filenames["sample2_1"])
+    df_3 = pd.read_csv(data_filenames["sample2_2"])
+    expected_df = pd.concat([df_1, df_2, df_3])
+    assert len(sample_list_datasource_with_glob.files()) == 3
+
+    sample_list_datasource_with_glob._open_dask()
+    assert sample_list_datasource_with_glob._dask_df is not None
+    dask_df = sample_list_datasource_with_glob.read()
+
+    assert expected_df.equals(dask_df)
+
+    sample_list_datasource_with_glob._dask_df = None
+    pandas_df = sample_list_datasource_with_glob.read()
+    assert sample_list_datasource_with_glob._dask_df is None
 
     assert expected_df.equals(pandas_df)
 
