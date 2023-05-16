@@ -97,7 +97,7 @@ class DictSerialiseMixin(object):
 
     def __dask_tokenize__(self):
         if self.__tok_cache is None:
-            from dask.base import tokenize
+            from intake.source.utils import tokenize
 
             self.__tok_cache = tokenize(self.__getstate__())
         return self.__tok_cache
@@ -120,9 +120,9 @@ class DictSerialiseMixin(object):
         self.__init__(*state["args"], **state["kwargs"])
 
     def __hash__(self):
-        from dask.base import tokenize
+        from intake.source.utils import tokenize
 
-        return int(tokenize(self), 16)
+        return int(tokenize(self.__getstate__()), 16)
 
     def __eq__(self, other):
         return hash(self) == hash(other)

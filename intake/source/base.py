@@ -12,6 +12,7 @@ from yaml import dump
 
 from ..utils import DictSerialiseMixin, make_path_posix, pretty_describe
 from .cache import make_caches
+from .utils import tokenize
 
 
 class Schema(dict):
@@ -50,7 +51,10 @@ class NoEntry(AttributeError):
 
 
 class CacheMixin:
-    """Allows "old style" caching for Data Source"""
+    """Allows "old style" caching for Data Source
+
+    NOTE: to be removed
+    """
 
     _cache = None
 
@@ -175,8 +179,6 @@ class PersistMixin:
     """Adds interaction with PersistStore to DataSource"""
 
     def get_persisted(self):
-        from dask.base import tokenize
-
         from ..container.persist import store
 
         return store[tokenize(self)]()
@@ -188,8 +190,6 @@ class PersistMixin:
 
     @property
     def has_been_persisted(self):
-        from dask.base import tokenize
-
         from ..container.persist import store
 
         return tokenize(self) in store
@@ -212,8 +212,6 @@ class PersistMixin:
             version was written.
         kargs: passed to the _persist method on the base container.
         """
-        from dask.base import tokenize
-
         from ..container.persist import PersistStore
 
         if "original_tok" in self.metadata:
@@ -432,8 +430,6 @@ class DataSourceBase(DictSerialiseMixin):
 
     def _export(self, path, **kwargs):
         import time
-
-        from dask.base import tokenize
 
         from ..container import container_map
 

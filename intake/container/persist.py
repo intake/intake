@@ -57,7 +57,7 @@ class PersistStore(YAMLFileCatalog):
 
     def getdir(self, source):
         """Clear/create a directory to store a persisted dataset into"""
-        from dask.base import tokenize
+        from intake.source.utils import tokenize
 
         subdir = posixpath.join(self.pdir, tokenize(source))
         try:
@@ -98,7 +98,7 @@ class PersistStore(YAMLFileCatalog):
         if it is a persisted thing ("original_tok" is in its metadata), else
         generate its own token.
         """
-        from dask.base import tokenize
+        from intake.source.utils import tokenize
 
         if isinstance(source, str):
             return source
@@ -164,7 +164,7 @@ class PersistStore(YAMLFileCatalog):
         Will return True if the source is not in the store at all, if it's
         TTL is set to None, or if more seconds have passed than the TTL.
         """
-        from dask.base import tokenize
+        from intake.source.utils import tokenize
 
         now = time.time()
         token = tokenize(source)
