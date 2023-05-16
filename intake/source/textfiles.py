@@ -84,7 +84,7 @@ class TextFilesSource(base.DataSource):
 
     def read(self):
         self._get_schema()
-        return self.to_dask().compute()
+        return [line for i in range(len(self._files)) for line in self._get_partition(i)]
 
     def to_spark(self):
         from intake_spark.base import SparkHolder
