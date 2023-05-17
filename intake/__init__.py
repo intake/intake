@@ -34,6 +34,15 @@ imports = {
 logger = logging.getLogger("intake")
 
 
+def import_name(name):
+    modname = name.split(":", 1)[0]
+    logger.debug("Importing: %s" % modname)
+    mod = importlib.import_module(modname)
+    if ":" in name:
+        mod = getattr(mod, name.split(":")[1])
+    return mod
+
+
 def __getattr__(attr):
     """Lazy attribute propagator
 
@@ -53,13 +62,8 @@ def __getattr__(attr):
 
     if attr in imports:
         dest = imports[attr]
-        modname = dest.split(":", 1)[0]
-        logger.debug("Importing: %s" % modname)
-        mod = importlib.import_module(modname)
-        if ":" in dest:
-            mod = getattr(mod, dest.split(":")[1])
-        gl[attr] = mod
-        return mod
+        gl[attr] = import_name(dest)
+        return gl[attr]
 
     if attr[:5] == "open_":
         if attr[5:] in registry.drivers.enabled_plugins():
