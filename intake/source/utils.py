@@ -4,21 +4,25 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
+from hashlib import md5
 
-from packaging.version import Version
-
-try:
-    import dask
-
-    DASK_VERSION = Version(dask.__version__)
-except ImportError:
-    DASK_VERSION = None
 from ..utils import make_path_posix
+
+
+def tokenize(*args, **kwargs):
+    """Deterministic token
+
+    copied from dask
+    """
+    hasher = md5(str(tuple(args)).encode())
+    if kwargs:
+        hasher.update(str(args).encode())
+    return hasher.hexdigest()
 
 
 def _validate_format_spec(format_spec):
     if not format_spec:
-        raise ValueError(("Format specifier must be set if " "no separator between fields."))
+        raise ValueError("Format specifier must be set if " "no separator between fields.")
     if format_spec[-1].isalpha():
         format_spec = format_spec[:-1]
     if not format_spec.isdigit():

@@ -13,11 +13,10 @@ import pytest
 from intake.container.persist import store
 from intake.source.base import DataSource
 from intake.source.textfiles import TextFilesSource
+from intake.source.utils import tokenize
 
 
 def test_store(temp_cache):
-    from dask.base import tokenize
-
     assert list(store) == []
     s = DataSource(metadata={"original_name": "blah"})
     token = tokenize(s)

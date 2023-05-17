@@ -4,6 +4,7 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
+from fsspec import open_files
 from packaging.version import Version
 
 from intake.source.base import DataSource, Schema
@@ -88,7 +89,7 @@ class RemoteDataFrame(RemoteSource):
         if not hasattr(df, "npartitions"):
             df = dd.from_pandas(df, npartitions=1)
         df.to_parquet(path, **kwargs)
-        source = ParquetSource(path, meta={})
+        source = ParquetSource(path)
         return source
 
 
@@ -137,7 +138,6 @@ class GenericDataFrame(DataSource):
     def _load_metadata(self):
         import dask.dataframe as dd
         import dask.delayed
-        from fsspec import open_files
 
         self.files = open_files(self.url, **self.storage_options)
 

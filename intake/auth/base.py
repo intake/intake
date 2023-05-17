@@ -74,7 +74,7 @@ class BaseClientAuth(object):
 
     @property
     def _tok(self):
-        from dask.base import tokenize
+        from intake.source.utils import tokenize
 
         return tokenize({"cls": type(self).__name__, "args": self.args})
 

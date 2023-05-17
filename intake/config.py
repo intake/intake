@@ -11,10 +11,9 @@ import posixpath
 from os.path import expanduser
 
 import yaml
+from fsspec.implementations.local import make_path_posix
 
 from intake.utils import yaml_load
-
-from .utils import make_path_posix
 
 logger = logging.getLogger("intake")
 
