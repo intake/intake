@@ -9,10 +9,13 @@ import posixpath
 import time
 
 import yaml
+from fsspec import filesystem
+from fsspec.core import split_protocol
 
 from ..catalog.local import CatalogEntry, YAMLFileCatalog
 from ..config import conf, logger
 from ..source import DataSource, import_name
+from ..source.utils import tokenize
 from ..utils import make_path_posix
 
 
@@ -33,9 +36,6 @@ class PersistStore(YAMLFileCatalog):
         return cls._singleton[0]
 
     def __init__(self, path=None, **storage_options):
-        from fsspec import filesystem
-        from fsspec.core import split_protocol
-
         self.pdir = make_path_posix(path or conf.get("persist_path"))
         protocol, _ = split_protocol(self.pdir)
         path = posixpath.join(self.pdir, "cat.yaml")
@@ -98,8 +98,6 @@ class PersistStore(YAMLFileCatalog):
         if it is a persisted thing ("original_tok" is in its metadata), else
         generate its own token.
         """
-        from intake.source.utils import tokenize
-
         if isinstance(source, str):
             return source
 

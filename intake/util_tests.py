@@ -15,8 +15,7 @@ from contextlib import contextmanager
 
 import requests
 import yaml
-
-from .utils import make_path_posix
+from fsspec.implementations.local import make_path_posix
 
 ex = sys.executable
 here = os.path.dirname(__file__)

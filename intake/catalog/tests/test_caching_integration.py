@@ -11,10 +11,10 @@ import string
 import time
 
 import pytest
+from fsspec.implementations.local import make_path_posix
 
 import intake
 from intake.config import conf
-from intake.utils import make_path_posix
 
 
 @pytest.fixture

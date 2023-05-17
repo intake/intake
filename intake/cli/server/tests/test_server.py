@@ -14,6 +14,7 @@ import time
 import msgpack
 import pytest
 import requests
+from fsspec.implementations.local import make_path_posix
 from tornado.ioloop import IOLoop
 from tornado.testing import AsyncHTTPTestCase
 
@@ -21,7 +22,6 @@ from intake import open_catalog
 from intake.cli.server.server import IntakeServer
 from intake.compat import pack_kwargs, unpack_kwargs
 from intake.container.serializer import GzipCompressor, MsgPackSerializer
-from intake.utils import make_path_posix
 
 catalog_file = make_path_posix(os.path.join(os.path.dirname(__file__), "catalog1.yml"))
 

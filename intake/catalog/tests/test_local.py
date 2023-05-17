@@ -13,11 +13,11 @@ import time
 
 import pandas
 import pytest
+from fsspec.implementations.local import make_path_posix
 
 from intake import open_catalog
 from intake.catalog import exceptions, local
 from intake.catalog.local import LocalCatalogEntry, UserParameter, get_dir
-from intake.utils import make_path_posix
 
 from .util import assert_items_equal
 

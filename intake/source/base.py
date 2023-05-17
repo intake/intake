@@ -267,6 +267,12 @@ class DataSourceBase(DictSerialiseMixin):
         """
         raise NotImplementedError
 
+    def __eq__(self, other):
+        return type(self) is type(other) and self._captured_init_args == other._captured_init_args and self._captured_init_kwargs == other._captured_init_kwargs
+
+    def __hash__(self):
+        return hash((type(self), str(self._captured_init_args), str(self._captured_init_kwargs)))
+
     def _close(self):
         """Subclasses should close all open resources"""
         raise NotImplementedError

@@ -14,13 +14,13 @@ import time
 
 import pytest
 import requests
+from fsspec.implementations.local import make_path_posix
 
 from intake import config, open_catalog, register_driver
 from intake.container import persist
 from intake.source.base import DataSource, Schema
 from intake.tests.test_utils import copy_test_file
 from intake.util_tests import PY2, ex
-from intake.utils import make_path_posix
 
 here = os.path.dirname(__file__)
 

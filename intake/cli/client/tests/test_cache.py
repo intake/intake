@@ -10,11 +10,11 @@ import subprocess
 import sys
 
 import pytest
+from fsspec.implementations.local import make_path_posix
 
 import intake
 import intake.config
 from intake.source.cache import CacheMetadata
-from intake.utils import make_path_posix
 
 cpath = make_path_posix(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "catalog", "tests", "catalog_caching.yml")))
 

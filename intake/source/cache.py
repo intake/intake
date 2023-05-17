@@ -12,9 +12,12 @@ import os
 import posixpath
 import re
 import shutil
+import subprocess
 import warnings
 from datetime import datetime
 from hashlib import md5
+
+from fsspec import open_files
 
 from intake.config import conf
 from intake.utils import is_notebook, make_path_posix
@@ -314,8 +317,6 @@ class FileCache(BaseCache):
     """
 
     def _make_files(self, urlpath, **kwargs):
-        from fsspec import open_files
-
         self._ensure_cache_dir()
         if isinstance(urlpath, (list, tuple)):
             subdir = self._hash(":".join(urlpath))
@@ -338,8 +339,6 @@ class DirCache(BaseCache):
     """
 
     def _make_files(self, urlpath, **kwargs):
-        from fsspec import open_files
-
         self._ensure_cache_dir()
         subdir = self._hash(urlpath)
         depth = self._spec["depth"]
@@ -383,8 +382,6 @@ class CompressedCache(BaseCache):
         import tempfile
 
         d = tempfile.mkdtemp()
-        from fsspec import open_files
-
         self._ensure_cache_dir()
         self._urlpath = urlpath
         files_in = open_files(urlpath, "rb", **self._storage_options)
@@ -454,10 +451,6 @@ class DATCache(BaseCache):
         return None, None
 
     def _load(self, _, __, urlpath, meta=True):
-        import subprocess
-
-        from fsspec import open_files
-
         path = os.path.join(self._cache_dir, self._hash(urlpath))
         dat, part = os.path.split(urlpath)
         cmd = ["dat", "clone", dat, path, "--no-watch"]

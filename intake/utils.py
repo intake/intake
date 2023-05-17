@@ -19,6 +19,7 @@ import yaml
 
 def make_path_posix(path):
     """Make path generic"""
+    # TODO: migrate to fsspec' implementation
     if "://" in path:
         return path
     return path.replace("\\", "/").replace("//", "/")
@@ -99,7 +100,7 @@ class DictSerialiseMixin(object):
         if self.__tok_cache is None:
             from intake.source.utils import tokenize
 
-            self.__tok_cache = tokenize(self.__getstate__())
+            self.__tok_cache = tokenize(self)
         return self.__tok_cache
 
     def __getstate__(self):
@@ -122,7 +123,7 @@ class DictSerialiseMixin(object):
     def __hash__(self):
         from intake.source.utils import tokenize
 
-        return int(tokenize(self.__getstate__()), 16)
+        return int(tokenize(self), 16)
 
     def __eq__(self, other):
         return hash(self) == hash(other)
