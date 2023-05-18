@@ -71,7 +71,7 @@ class Text(FileData):
 @dataclass
 class SQLQuery(Service):
     structure: ClassVar = {"sequence", "table"}
-    conn: str
+    conn: str | dict
     query: str
 
 

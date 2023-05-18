@@ -38,6 +38,12 @@ class BaseReader:
         """Minimal snapshot of the data"""
         raise NotImplementedError
 
+    @property
+    def _func(self):
+        if isinstance(self.func, str):
+            return import_name(self.func)
+        return self.func
+
     def read(self, **kwargs):
         """Produce data artefact
 
@@ -45,7 +51,6 @@ class BaseReader:
         """
         kw = self.data.kwargs.copy()
         kw.update(kwargs)
-        func = import_name(self.func)
         if self.storage_options:
             kw["storage_options"] = self.data.storage_options
         if self.url_arg and self.url_arg not in kwargs and self.concat_func:
@@ -61,7 +66,7 @@ class BaseReader:
         if self.url_arg:
             kw[self.url_arg] = self.data.url
 
-        return func(**kw)
+        return self._func(**kw)
 
 
 class Pandas(BaseReader):
@@ -85,6 +90,44 @@ class DaskParquet(BaseReader):
     func = "dask.dataframe:read_parquet"
     url_arg = "path"
     output_instance = "dask.dataframe:DataFrame"
+
+
+class DuckDB(BaseReader):
+    imports = {"duckdb"}
+    output_instance = "duckdb.DuckDBPyRelation"  # can be converted to pandas with .df
+    implements = {datatypes.Parquet, datatypes.CSV, datatypes.JSONFile, datatypes.SQLQuery}
+
+    def glimpse(self, **kwargs):
+        return self.read().limit(10)
+
+    def func(self, **kwargs):
+        import duckdb
+
+        conn = getattr(self.data, "conn", {})  # only SQL type normally has this
+        if isinstance(conn, str):
+            conn = {"database": conn}
+        self._dd = duckdb.connect(**conn)  # connection must be cached for results to be usable
+        queries = {
+            datatypes.Parquet: "SELECT * FROM read_parquet('{self.data.url}')",
+            datatypes.CSV: "SELECT * FROM read_csv_auto('{self.data.url}')",
+            datatypes.JSONFile: "SELECT * FROM read_json_auto('{self.data.url}')",
+            datatypes.SQLQuery: "{self.data.query}",
+        }
+        return self._dd.query(queries[type(self.data)].format(**locals()))
+
+
+class PandasDuck(Pandas):
+    imports = {"duckdb", "pandas"}
+    implements = {datatypes.Parquet, datatypes.CSV, datatypes.JSONFile, datatypes.SQLQuery}
+
+    def __init__(self, data):
+        self.d = DuckDB(data)
+
+    def glimpse(self, **kwargs):
+        return self.d.glimpse().df()
+
+    def read(self, **kwargs):
+        return self.d.read().df()
 
 
 class Awkward(BaseReader):

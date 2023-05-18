@@ -22,4 +22,4 @@ def test_recommend_filetype():
 
 def test_recommend_reader():
     pp = datatypes.Parquet()
-    assert readers.recommend(pp) == {readers.PandasParquet, readers.AwkwardParquet, readers.DaskParquet}
+    assert readers.recommend(pp) == {readers.PandasParquet, readers.AwkwardParquet, readers.DaskParquet, readers.DuckDB, readers.PandasDuck}
