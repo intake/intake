@@ -9,6 +9,8 @@ from intake.readers.utils import subclasses
 
 @dataclass
 class Base:
+    """Prototype dataset definition"""
+
     kwargs: dict = field(default_factory=dict)
     metadata: dict = field(default_factory=dict)
     mimetypes: ClassVar = set()
@@ -17,6 +19,8 @@ class Base:
 
 @dataclass
 class FileData(Base):
+    """Datatypes loaded from files"""
+
     url: str | list = ""  # location of the dataset
     storage_option: dict = field(default_factory=dict)  # any fsspec kwargs to read that location
     _filelist: ClassVar[list | None] = None  # will hold list of files after glob expansion
@@ -34,10 +38,14 @@ class FileData(Base):
 
 
 class Service:
+    """Datatypes loaded from some service"""
+
     ...
 
 
 class Catalog:
+    """Datatypes that are groupings of other data"""
+
     ...
 
 
@@ -90,6 +98,21 @@ class JSONFile(FileData):
 
 
 def recommend(url=None, mime=None, head=None):
+    """Show which data types match
+
+    Parameters
+    ----------
+    url: str
+        Location of data
+    mime: str
+        MIME type, usually "x/y" form
+    head: bytes
+        A small number of bytes from the file head, for seeking magic bytes
+
+    Returns
+    -------
+    set of matching datatype classes
+    """
     out = set()
     if mime:
         for cls in subclasses(Base):

@@ -20,19 +20,29 @@ class BaseReader:
 
     @classmethod
     def check_imports(cls):
-        for package in cls.imports:
-            importlib.metadata.distribution(package)
+        """See if required packages are importable, but don't import them"""
+        try:
+            for package in cls.imports:
+                importlib.metadata.distribution(package)
+            return True
+        except (ImportError, ModuleNotFoundError, NameError):
+            return False
 
     @classmethod
     def doc(cls):
+        """Doc associated with loading function"""
         func = import_name(cls.func)
         return func.__doc__
 
-    def glipse(self, **kwargs):
+    def glimpse(self, **kwargs):
         """Minimal snapshot of the data"""
         raise NotImplementedError
 
     def read(self, **kwargs):
+        """Produce data artefact
+
+        Output type is given by the .output_instance attribute
+        """
         kw = self.data.kwargs.copy()
         kw.update(kwargs)
         func = import_name(self.func)
@@ -64,8 +74,33 @@ class PandasParquet(Pandas):
     concat_func = None  # pandas concats for us
     implements = {datatypes.Parquet}
     optional_imports = {"fastparquet", "pyarrow"}
-    func = "pandas:read_parquet"
+    func = "pandas:read_parquqet"
     url_arg = "path"
+
+
+class DaskParquet(BaseReader):
+    imports = {"dask.dataframe"}
+    implements = {datatypes.Parquet}
+    optional_imports = {"fastparquet", "pyarrow"}
+    func = "dask.dataframe:read_parquet"
+    url_arg = "path"
+    output_instance = "dask.dataframe:DataFrame"
+
+
+class Awkward(BaseReader):
+    imports = {"awkward"}
+    output_instance = "awkward:Array"
+
+
+class AwkwardParquet(Awkward):
+    implements = {datatypes.Parquet}
+    imports = {"awkward", "pyarrow"}
+    func = "awkward:from_parquet"
+    url_arg = "path"
+
+    def glimpse(self, **kwargs):
+        kwargs["row_groups"] = [0]
+        return self.read(**kwargs)
 
 
 class PandasCSV(Pandas):
@@ -73,15 +108,18 @@ class PandasCSV(Pandas):
     func = "pandas:read_csv"
     url_arg = "filepath_or_buffer"
 
-    def glipse(self, **kwargs):
+    def glimpse(self, **kwargs):
         kw = {"nrows": 10, self.url_arg: self.data.filelist[0]}
         kw.update(kwargs)
         return self.read(**kw)
 
 
-def recommend(data):
+def recommend(data, check_imports=False):
+    """Show which readers claim to support the given data instance"""
     out = set()
     for cls in subclasses(BaseReader):
         if type(data) in cls.implements:
+            if check_imports and not cls.check_imports:
+                continue
             out.add(cls)
     return out
