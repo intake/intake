@@ -28,6 +28,10 @@ class BaseReader:
         func = import_name(cls.func)
         return func.__doc__
 
+    def glipse(self, **kwargs):
+        """Minimal snapshot of the data"""
+        raise NotImplementedError
+
     def read(self, **kwargs):
         kw = self.data.kwargs.copy()
         kw.update(kwargs)
@@ -68,6 +72,11 @@ class PandasCSV(Pandas):
     implements = {datatypes.CSV}
     func = "pandas:read_csv"
     url_arg = "filepath_or_buffer"
+
+    def glipse(self, **kwargs):
+        kw = {"nrows": 10, self.url_arg: self.data.filelist[0]}
+        kw.update(kwargs)
+        return self.read(**kw)
 
 
 def recommend(data):

@@ -17,12 +17,14 @@ class Base:
 
 @dataclass
 class FileData(Base):
-    url: str = ""
-    storage_option: dict = field(default_factory=dict)
-    _filelist: ClassVar = None
+    url: str | list = ""  # location of the dataset
+    storage_option: dict = field(default_factory=dict)  # any fsspec kwargs to read that location
+    _filelist: ClassVar[list | None] = None  # will hold list of files after glob expansion
+    magic = set()  # bytes at file start to identify it
 
     @property
     def filelist(self):
+        """Expand any globs in the given URL"""
         if self._filelist is None:
             if isinstance(self.url, (list, tuple)):
                 self._filelist = self.url
@@ -43,6 +45,7 @@ class Parquet(FileData):
     extensions = {"parq", "parquet", "/"}
     mimetypes = {"application/vnd.apache.parquet"}
     structure = {"table", "nested"}
+    magic = {b"PAR1"}
 
 
 class CSV(FileData):
@@ -86,10 +89,8 @@ class JSONFile(FileData):
     structure = {"nested", "table"}
 
 
-def recommend(url=None, mime=None):
+def recommend(url=None, mime=None, head=None):
     out = set()
-    if url is None and mime is None:
-        raise ValueError
     if mime:
         for cls in subclasses(Base):
             if any(re.match(m, mime) for m in cls.mimetypes):
@@ -99,4 +100,9 @@ def recommend(url=None, mime=None):
         for cls in subclasses(Base):
             if any(url.endswith(m) for m in cls.extensions):
                 out.add(cls)
+    if head:
+        for cls in subclasses(FileData):
+            if any(head.startswith for m in cls.magic):
+                out.add(cls)
+
     return out
