@@ -22,4 +22,7 @@ def test_recommend_filetype():
 
 def test_recommend_reader():
     pp = datatypes.Parquet()
-    assert readers.recommend(pp) == {readers.PandasParquet, readers.AwkwardParquet, readers.DaskParquet, readers.DuckDB, readers.PandasDuck}
+    rec = readers.recommend(pp)
+    assert {readers.PandasParquet, readers.AwkwardParquet, readers.DaskParquet} - rec["importable"] - rec["not_importable"] == set()
+    pp = datatypes.CSV()
+    assert readers.PandasCSV in readers.recommend(pp)["importable"]

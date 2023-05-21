@@ -206,6 +206,10 @@ class PandasCSV(Pandas):
         return self.read(**kw)
 
 
+# class Ray
+# https://docs.ray.io/en/latest/data/creating-datasets.html#supported-file-formats
+
+
 def recommend(data):
     """Show which readers claim to support the given data instance"""
     out = {"importable": set(), "not_importable": set()}
