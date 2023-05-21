@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import importlib.metadata
 
 from intake import import_name
@@ -10,6 +12,7 @@ class BaseReader:
     implements = set()
     optional_imports = set()
     func = "builtins:NotImplementedError"
+    func_doc = None
     concat_func = None
     output_instance = None
     url_arg = None
@@ -29,12 +32,21 @@ class BaseReader:
             return False
 
     @classmethod
+    def output_doc(cls):
+        """Doc associated with output type"""
+        out = import_name(cls.output_instance)
+        return out.__doc__
+
+    @classmethod
     def doc(cls):
         """Doc associated with loading function"""
-        func = import_name(cls.func)
-        return func.__doc__
+        f = cls.func_doc or cls.func
+        if isinstance(f, str):
+            return import_name(f).__doc__
+        # if callable
+        return f.__doc__
 
-    def glimpse(self, **kwargs):
+    def discover(self, **kwargs):
         """Minimal snapshot of the data"""
         raise NotImplementedError
 
@@ -83,8 +95,15 @@ class PandasParquet(Pandas):
     url_arg = "path"
 
 
-class DaskParquet(BaseReader):
-    imports = {"dask.dataframe"}
+class Dasky(BaseReader):
+    """Compatibility for dask-producing classes, provides to_dask()->read()"""
+
+    def to_dask(self, **kwargs):
+        return self.read(**kwargs)
+
+
+class DaskParquet(Dasky):
+    imports = {"dask", "pandas"}
     implements = {datatypes.Parquet}
     optional_imports = {"fastparquet", "pyarrow"}
     func = "dask.dataframe:read_parquet"
@@ -94,10 +113,11 @@ class DaskParquet(BaseReader):
 
 class DuckDB(BaseReader):
     imports = {"duckdb"}
-    output_instance = "duckdb.DuckDBPyRelation"  # can be converted to pandas with .df
+    output_instance = "duckdb:DuckDBPyRelation"  # can be converted to pandas with .df
     implements = {datatypes.Parquet, datatypes.CSV, datatypes.JSONFile, datatypes.SQLQuery}
+    func_doc = "duckdb:query"
 
-    def glimpse(self, **kwargs):
+    def discover(self, **kwargs):
         return self.read().limit(10)
 
     def func(self, **kwargs):
@@ -119,15 +139,34 @@ class DuckDB(BaseReader):
 class PandasDuck(Pandas):
     imports = {"duckdb", "pandas"}
     implements = {datatypes.Parquet, datatypes.CSV, datatypes.JSONFile, datatypes.SQLQuery}
+    func_doc = "duckdb:query"
 
     def __init__(self, data):
         self.d = DuckDB(data)
 
-    def glimpse(self, **kwargs):
-        return self.d.glimpse().df()
+    def discover(self, **kwargs):
+        return self.d.discover().df()
 
     def read(self, **kwargs):
         return self.d.read().df()
+
+
+class SparkDataFrame(BaseReader):
+    imports = {"pyspark"}
+    implements = {datatypes.Parquet, datatypes.CSV, datatypes.Text}
+    func_doc = "pyspark.sql:SparkSession.read"
+    output_instance = "pyspark.sql:DataFrame"
+
+    def discover(self, **kwargs):
+        return self.read(**kwargs).limit(10)
+
+    def read(self, **kwargs):
+        from pyspark.sql import SparkSession
+
+        spark = SparkSession.builder.getOrCreate()
+        method_name = {datatypes.CSV: "csv", datatypes.Parquet: "parquet", datatypes.Text: "text"}
+        method = getattr(spark.read, method_name[type(self.data)])
+        return method(self.data.url, **kwargs)
 
 
 class Awkward(BaseReader):
@@ -136,14 +175,24 @@ class Awkward(BaseReader):
 
 
 class AwkwardParquet(Awkward):
+    # TODO: merge JSON and/or root into here?
     implements = {datatypes.Parquet}
     imports = {"awkward", "pyarrow"}
     func = "awkward:from_parquet"
     url_arg = "path"
 
-    def glimpse(self, **kwargs):
+    def discover(self, **kwargs):
         kwargs["row_groups"] = [0]
         return self.read(**kwargs)
+
+
+class DaskAwkwardParquet(AwkwardParquet, Dasky):
+    imports = {"dask_awkward", "pyarrow"}
+    func = "dask_awkward:from_parquet"
+    output_instance = "dask_awkward:Array"
+
+    def discover(self, **kwargs):
+        return self.read(**kwargs).partitions[0]
 
 
 class PandasCSV(Pandas):
@@ -151,18 +200,19 @@ class PandasCSV(Pandas):
     func = "pandas:read_csv"
     url_arg = "filepath_or_buffer"
 
-    def glimpse(self, **kwargs):
+    def discover(self, **kwargs):
         kw = {"nrows": 10, self.url_arg: self.data.filelist[0]}
         kw.update(kwargs)
         return self.read(**kw)
 
 
-def recommend(data, check_imports=False):
+def recommend(data):
     """Show which readers claim to support the given data instance"""
-    out = set()
+    out = {"importable": set(), "not_importable": set()}
     for cls in subclasses(BaseReader):
         if type(data) in cls.implements:
-            if check_imports and not cls.check_imports:
-                continue
-            out.add(cls)
+            if cls.check_imports():
+                out["importable"].add(cls)
+            else:
+                out["not_importable"].add(cls)
     return out

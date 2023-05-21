@@ -39,7 +39,9 @@ def import_name(name):
     logger.debug("Importing: %s" % modname)
     mod = importlib.import_module(modname)
     if ":" in name:
-        mod = getattr(mod, name.split(":")[1])
+        end = name.split(":")[1]
+        for bit in end.split("."):
+            mod = getattr(mod, bit)
     return mod
 
 
