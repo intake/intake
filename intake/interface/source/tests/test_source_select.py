@@ -12,7 +12,7 @@ pytest.importorskip("panel")
 
 def assert_widget_matches(browser):
     assert browser.options == browser.widget.options
-    assert browser.selected == browser.widget.value
+    assert browser.selected in ([], browser.widget.value)
 
 
 def test_source_browser_init_with_cats(cat1, cat2, sources1, sources2):

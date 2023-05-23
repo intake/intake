@@ -224,7 +224,6 @@ class BaseSelector(Base):
     def remove(self, items):
         """Remove items from options"""
         items = coerce_to_list(items)
-        breakpoint()
         new_options = {k: v for k, v in self.options.items() if v not in items}
         self.widget.options = new_options
         self.widget.param.trigger("options")
@@ -232,7 +231,8 @@ class BaseSelector(Base):
     @property
     def selected(self):
         """Value selected on the widget"""
-        return None if self.widget.value == "None" else self.widget.value
+        ops = self.widget.options
+        return [val for val in self.widget.value if (val in ops.values() if isinstance(ops, dict) else val in ops)]
 
     @selected.setter
     def selected(self, new):
