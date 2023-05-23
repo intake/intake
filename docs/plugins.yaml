@@ -205,3 +205,10 @@
   repo: intake/intake-xarray
   description: Load netCDF, Zarr and other multi-dimensional data
   drivers: xarray_image, netcdf, grib, opendap, rasterio, remote-xarray, zarr
+
+- name: intake-dataframe-catalog
+  repo: ACCESS-NRI/intake-dataframe-catalog
+  ci_yaml: ci.yml
+  description: A searchable table of intake sources and associated metadata
+  drivers: df_catalog
+  conda_channel: accessnri

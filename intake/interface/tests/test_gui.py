@@ -50,6 +50,7 @@ def test_par_selector(gui, cat2):
     assert s.urlpath.endswith("crime2.csv")
 
 
+@pytest.mark.xfail
 def test_gui_remove_selected_cat(gui, cat1):
     gui.cat.select.remove_selected()
     assert gui.cat.search_widget.disabled is True

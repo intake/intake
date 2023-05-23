@@ -231,7 +231,8 @@ class BaseSelector(Base):
     @property
     def selected(self):
         """Value selected on the widget"""
-        return self.widget.value
+        ops = self.widget.options
+        return [val for val in self.widget.value if (val in ops.values() if isinstance(ops, dict) else val in ops)]
 
     @selected.setter
     def selected(self, new):

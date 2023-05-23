@@ -86,3 +86,38 @@ def test_zarr_minimal():
     assert s.dtype == "int"
     assert s.shape == (10,)
     assert (s.read_partition((0,)) == s.read()).all()
+
+
+def test_zarr_parts():
+    zarr = pytest.importorskip("zarr")
+    out = {}
+    g = zarr.open(out, mode="w")
+    z = g.create_dataset("data", dtype="i4", shape=(10, 10), chunks=(5, 5), compression=None)
+    z[:5, :5] = 1
+    z[:5, 5:] = 2
+    z[5:, :5] = 3
+    z[5:, 5:] = 4
+    source = intake.open_ndzarr(out, component="data")
+
+    assert (source.read_partition((0, 0)) == 1).all()
+    assert (source.read_partition((1, 1)) == 4).all()
+
+    da = source.to_dask()
+    assert da.npartitions == 4
+    assert (da.compute() == z[:]).all()
+
+    g = zarr.open(out, mode="w")
+    gg = g.create_group("inner")
+    z = gg.create_dataset("data", dtype="i4", shape=(10, 10), chunks=(5, 5), compression=None)
+    z[:5, :5] = 1
+    z[:5, 5:] = 2
+    z[5:, :5] = 3
+    z[5:, 5:] = 4
+    source = intake.open_ndzarr(out, component="inner/data")
+
+    assert (source.read_partition((0, 0)) == 1).all()
+    assert (source.read_partition((1, 1)) == 4).all()
+
+    da = source.to_dask()
+    assert da.npartitions == 4
+    assert (da.compute() == z[:]).all()
