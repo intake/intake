@@ -61,7 +61,7 @@ def assert_is_empty(plots, visible=True):
     assert plots.source is None
     assert plots.has_plots is False
     assert plots.options == []
-    assert plots.selected is None
+    assert str(plots.selected) == "None"
     if visible:
         assert plots.pane.object is None
         assert plots.custom.name == "Create"
@@ -70,7 +70,7 @@ def assert_is_empty(plots, visible=True):
         assert plots.panel.objects == plots.children
         assert len(plots.watchers) == 6
     else:
-        assert not plots.selected
+        assert str(plots.selected) == "None"
         assert not plots.watchers
         assert not plots.panel.objects
 

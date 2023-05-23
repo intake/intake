@@ -36,7 +36,8 @@ class ZarrArraySource(DataSource):
         component : str or None
             If None, assume the URL points to an array. If given, assume
             the URL points to a group, and descend the group to find the
-            array at this location in the hierarchy.
+            array at this location in the hierarchy; components are separated
+            by the "/" character.
         kwargs : passed on to dask.array.from_zarr
         """
         self.urlpath = urlpath
@@ -48,33 +49,34 @@ class ZarrArraySource(DataSource):
         super(ZarrArraySource, self).__init__(metadata=metadata)
 
     def _get_schema(self):
-        import dask.array as da
+        import zarr
 
         if self._arr is None:
-            self._arr = da.from_zarr(self.urlpath, component=self.component, storage_options=self.storage_options, **self.kwargs)
+            self._arr = zarr.open(self.urlpath, storage_options=self.storage_options)
+            if self.component:
+                comp = self.component.split("/")
+                for sub in comp:
+                    self._arr = self._arr[sub]
             self.chunks = self._arr.chunks
             self.shape = self._arr.shape
             self.dtype = self._arr.dtype
-            self.npartitions = self._arr.npartitions
+            self.npartitions = self._arr.nchunks
         return Schema(dtype=str(self.dtype), shape=self.shape, extra_metadata=self.metadata, npartitions=self.npartitions, chunks=self.chunks)
-
-    def _get_partition(self, i):
-        if isinstance(i, list):
-            i = tuple(i)
-        return self._arr.blocks[i].compute()
 
     def read_partition(self, i):
         self._get_schema()
-        return self._get_partition(i)
+        chunks = self._arr.chunks
+        sel = tuple(slice(ch * j, ch * (j + 1), None) for ch, j in zip(chunks, i))
+        return self._arr.__getitem__(sel)
 
     def to_dask(self):
-        self._get_schema()
-        return self._arr
+        import dask.array as da
+
+        return da.from_zarr(self.urlpath, component=self.component, storage_options=self.storage_options, **self.kwargs)
 
     def read(self):
         self._get_schema()
-        return self._arr.compute()
+        return self._arr[:]
 
     def _close(self):
         self._arr = None
-        self._mapper = None
