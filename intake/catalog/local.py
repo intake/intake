@@ -818,9 +818,14 @@ class EntrypointEntry(CatalogEntry):
             "container": self._container,
         }
 
-    def get(self):
+    def __call__(self, **kwargs):
         """Instantiate the DataSource for the given parameters"""
-        return self._entrypoint.load()
+        source = self._entrypoint.load()
+        if kwargs:
+            source = source.configure_new(**kwargs)
+        return source
+
+    get = __call__
 
 
 class EntrypointsCatalog(Catalog):
