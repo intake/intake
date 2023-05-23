@@ -206,8 +206,23 @@ class PandasCSV(Pandas):
         return self.read(**kw)
 
 
-# class Ray
-# https://docs.ray.io/en/latest/data/creating-datasets.html#supported-file-formats
+class Ray(BaseReader):
+    # https://docs.ray.io/en/latest/data/creating-datasets.html#supported-file-formats
+    implements = {datatypes.CSV, datatypes.Parquet, datatypes.JSONFile, datatypes.Text}
+    imports = {"ray"}
+    output_instance = {"ray.data:Dataset"}
+    func_doc = {"ray.data:Dataset"}
+    url_arg = "paths"
+
+    def discover(self, **kwargs):
+        return self.read(**kwargs).limit(10)
+
+    def read(self, **kwargs):
+        data = import_name("ray.data")
+        method_name = {datatypes.CSV: "read_csv", datatypes.JSONFile: "read_json", datatypes.Parquet: "read_parquet", datatypes.Text: "read_text"}[type(self.data)]
+        method = getattr(data, method_name)
+        kwargs[self.url_arg] = self.data.url
+        return method(**kwargs)
 
 
 def recommend(data):
