@@ -136,21 +136,6 @@ class DuckDB(BaseReader):
         return self._dd.query(queries[type(self.data)].format(**locals()))
 
 
-class PandasDuck(Pandas):
-    imports = {"duckdb", "pandas"}
-    implements = {datatypes.Parquet, datatypes.CSV, datatypes.JSONFile, datatypes.SQLQuery}
-    func_doc = "duckdb:query"
-
-    def __init__(self, data):
-        self.d = DuckDB(data)
-
-    def discover(self, **kwargs):
-        return self.d.discover().df()
-
-    def read(self, **kwargs):
-        return self.d.read().df()
-
-
 class SparkDataFrame(BaseReader):
     imports = {"pyspark"}
     implements = {datatypes.Parquet, datatypes.CSV, datatypes.Text}
