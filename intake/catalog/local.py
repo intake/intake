@@ -503,17 +503,14 @@ def register_plugin_module(mod):
 
 
 def get_dir(path):
-    if "://" in path:
-        protocol, _ = split_protocol(path)
-        out = get_filesystem_class(protocol)._parent(path)
-        if "://" not in out:
-            # some FSs strip this, some do not
-            out = protocol + "://" + out
-        return out
-    path = make_path_posix(os.path.join(os.getcwd(), os.path.dirname(path)))
-    if path[-1] != "/":
-        path += "/"
-    return path
+    protocol, _ = split_protocol(path)
+    out = get_filesystem_class(protocol)._parent(path)
+    if "://" not in out and protocol:
+        # some FSs strip this, some do not
+        out = protocol + "://" + out
+    if out[-1] != "/":
+        out += "/"
+    return out
 
 
 class YAMLFileCatalog(Catalog):
