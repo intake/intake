@@ -33,10 +33,11 @@ class ZarrArraySource(DataSource):
             information
         storage_options : dict
             Passed on to storage backend for remote files
-        component : tuple(str) or None
+        component : str or None
             If None, assume the URL points to an array. If given, assume
             the URL points to a group, and descend the group to find the
-            array at this location in the hierarchy.
+            array at this location in the hierarchy; components are separated
+            by the "/" character.
         kwargs : passed on to dask.array.from_zarr
         """
         self.urlpath = urlpath
@@ -53,7 +54,7 @@ class ZarrArraySource(DataSource):
         if self._arr is None:
             self._arr = zarr.open(self.urlpath, storage_options=self.storage_options)
             if self.component:
-                comp = (self.component,) if isinstance(self.component, str) else self.component
+                comp = self.component.split("/")
                 for sub in comp:
                     self._arr = self._arr[sub]
             self.chunks = self._arr.chunks
