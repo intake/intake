@@ -9,6 +9,7 @@ import inspect
 import logging
 import os
 import warnings
+from pathlib import PurePath
 
 import entrypoints
 from fsspec import get_filesystem_class, open_files
@@ -504,7 +505,11 @@ def register_plugin_module(mod):
 
 def get_dir(path):
     protocol, _ = split_protocol(path)
-    out = get_filesystem_class(protocol)._parent(path)
+    out = str(PurePath(path).parent)
+    if out.startswith("file://"):
+        out = out[7:]
+    elif out.startswith("file:"):
+        out = out[5:]
     if "://" not in out and protocol:
         # some FSs strip this, some do not
         out = protocol + "://" + out
