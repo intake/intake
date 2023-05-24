@@ -12,8 +12,7 @@ import warnings
 from pathlib import PurePath
 
 import entrypoints
-from fsspec import get_filesystem_class, open_files
-from fsspec.core import split_protocol
+from fsspec import open_files
 
 from .. import __version__
 from ..source import get_plugin_class, register_driver
@@ -504,18 +503,8 @@ def register_plugin_module(mod):
 
 
 def get_dir(path):
-    protocol, _ = split_protocol(path)
-    out = str(PurePath(path).parent)
-    if out.startswith("file://"):
-        out = out[7:]
-    elif out.startswith("file:"):
-        out = out[5:]
-    if "://" not in out and protocol:
-        # some FSs strip this, some do not
-        out = protocol + "://" + out
-    if out[-1] != "/":
-        out += "/"
-    return out
+    """Get the parent directory of the path"""
+    return f"{PurePath(path).parent.as_posix().replace(':/', '://')}/"
 
 
 class YAMLFileCatalog(Catalog):
