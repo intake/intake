@@ -504,7 +504,7 @@ def register_plugin_module(mod):
 
 def get_dir(path):
     """Get the parent directory of the path"""
-    return f"{PurePath(path).parent.as_posix()}/"
+    return f"{PurePath(path).parent.as_posix().replace(':/', '://')}/"
 
 
 class YAMLFileCatalog(Catalog):
