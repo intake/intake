@@ -11,7 +11,7 @@ import fsspec
 from intake.readers.utils import subclasses
 
 
-@dataclass(kw_only=True)
+@dataclass
 class BaseData:
     """Prototype dataset definition"""
 
@@ -20,7 +20,7 @@ class BaseData:
     extensions: ClassVar = set()
 
 
-@dataclass(kw_only=True)
+@dataclass
 class FileData(BaseData):
     """Datatypes loaded from files"""
 
@@ -71,7 +71,7 @@ class Text(FileData):
     structure = {"sequence"}
 
 
-@dataclass(kw_only=True)
+@dataclass
 class SQLQuery(Service):
     structure: ClassVar = {"sequence", "table"}
     conn: str | dict = ""
@@ -83,7 +83,7 @@ class CatalogFile(Catalog, FileData):
     mimetypes = {"text/yaml"}
 
 
-@dataclass(kw_only=True)
+@dataclass
 class CatalogAPI(Catalog, Service):
     api_root: str = ""
 
