@@ -1,3 +1,5 @@
+"""Convert between python representations of data"""
+
 from intake.readers import readers
 
 _converted = {}
@@ -35,8 +37,19 @@ def daskdf_to_pandas(x, **kw):
     return x.compute(**kw)
 
 
+@register_converter("pandas:DataFrame", "hvplot:hvPlotTabular")
+@register_converter("dask.dataframe:DataFrame", "hvplot:hvPlotTabular")
+def daskdf_to_hvplot(x, explorer=False, **kw):
+    import hvplot
+
+    if explorer:
+        # this is actually a hvplot.ui:hvPlotExplorer
+        return hvplot.explorer(x, **kw)
+    return hvplot.plot(x, **kw)
+
+
 @register_converter("ray.data:Dataset", "pandas:DataFrame")
-def ray_to_pandas(x, **kw):
+def ray_to_pandas(x, explorer=False, **kw):
     return x.to_pandas(**kw)
 
 

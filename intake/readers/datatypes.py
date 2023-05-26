@@ -1,3 +1,5 @@
+"""Enumerates sorts of data that can exist"""
+
 from __future__ import annotations
 
 import re
@@ -9,18 +11,17 @@ import fsspec
 from intake.readers.utils import subclasses
 
 
-@dataclass
-class Base:
+@dataclass(kw_only=True)
+class BaseData:
     """Prototype dataset definition"""
 
-    kwargs: dict = field(default_factory=dict)
     metadata: dict = field(default_factory=dict)
     mimetypes: ClassVar = set()
     extensions: ClassVar = set()
 
 
-@dataclass
-class FileData(Base):
+@dataclass(kw_only=True)
+class FileData(BaseData):
     """Datatypes loaded from files"""
 
     url: str | list = ""  # location of the dataset
@@ -39,13 +40,13 @@ class FileData(Base):
         return self._filelist
 
 
-class Service:
+class Service(BaseData):
     """Datatypes loaded from some service"""
 
     ...
 
 
-class Catalog:
+class Catalog(BaseData):
     """Datatypes that are groupings of other data"""
 
     ...
@@ -70,11 +71,11 @@ class Text(FileData):
     structure = {"sequence"}
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SQLQuery(Service):
     structure: ClassVar = {"sequence", "table"}
-    conn: str | dict
-    query: str
+    conn: str | dict = ""
+    query: str = ""
 
 
 class CatalogFile(Catalog, FileData):
@@ -82,9 +83,9 @@ class CatalogFile(Catalog, FileData):
     mimetypes = {"text/yaml"}
 
 
-@dataclass
+@dataclass(kw_only=True)
 class CatalogAPI(Catalog, Service):
-    api_root: str
+    api_root: str = ""
 
 
 class YAMLFile(FileData):
@@ -99,7 +100,7 @@ class JSONFile(FileData):
     structure = {"nested", "table"}
 
 
-def recommend(url=None, mime=None, head=None):
+def recommend(url=None, mime=None, head=None, import_all=False):
     """Show which data types match
 
     Parameters
@@ -110,19 +111,24 @@ def recommend(url=None, mime=None, head=None):
         MIME type, usually "x/y" form
     head: bytes
         A small number of bytes from the file head, for seeking magic bytes
+    import_all: bool
+        If true, will load all entrypoint definitions of data types, which will not
+    show up if they have not yet been imported
 
     Returns
     -------
     set of matching datatype classes
     """
     out = set()
+    if import_all:
+        pass  # scan entrypoints for data types
     if mime:
-        for cls in subclasses(Base):
+        for cls in subclasses(BaseData):
             if any(re.match(m, mime) for m in cls.mimetypes):
                 out.add(cls)
     if url:
         # urlparse to remove query parts?
-        for cls in subclasses(Base):
+        for cls in subclasses(BaseData):
             if any(url.endswith(m) for m in cls.extensions):
                 out.add(cls)
     if head:

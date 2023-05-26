@@ -1,3 +1,5 @@
+"""Classes for reading data into a python object"""
+
 from __future__ import annotations
 
 import importlib.metadata
@@ -15,11 +17,10 @@ class BaseReader:
     func_doc = None
     concat_func = None
     output_instance = None
-    url_arg = None
-    storage_options = False
 
-    def __init__(self, data):
+    def __init__(self, data, **kwargs):
         self.data = data
+        self.kwargs = kwargs
 
     @classmethod
     def check_imports(cls):
@@ -47,8 +48,12 @@ class BaseReader:
         return f.__doc__
 
     def discover(self, **kwargs):
-        """Minimal snapshot of the data"""
-        raise NotImplementedError
+        """Part of the data
+
+        The intent is to return a minimal dataset, but for some readers and conditions this may be
+        up to the whole of the data. Output type is the same as for read().
+        """
+        return self.read(**kwargs)
 
     @property
     def _func(self):
@@ -56,11 +61,27 @@ class BaseReader:
             return import_name(self.func)
         return self.func
 
+    @classmethod
+    def classname(cls):
+        return cls.__name__.lower()
+
     def read(self, **kwargs):
         """Produce data artefact
 
+        Any of the arguments encoded in the data instance can be overridden.
+
         Output type is given by the .output_instance attribute
         """
+        kw = self.kwargs.copy()
+        kw.update(kwargs)
+        return self._func(**kw)
+
+
+class FileReader(BaseReader):
+    url_arg = None
+    storage_options = False
+
+    def read(self, **kwargs):
         kw = self.data.kwargs.copy()
         kw.update(kwargs)
         if self.storage_options:
@@ -81,7 +102,7 @@ class BaseReader:
         return self._func(**kw)
 
 
-class Pandas(BaseReader):
+class Pandas(FileReader):
     imports = {"pandas"}
     concat_func = "pandas:concat"
     output_instance = "pandas:DataFrame"
@@ -95,7 +116,7 @@ class PandasParquet(Pandas):
     url_arg = "path"
 
 
-class Dasky(BaseReader):
+class Dasky(FileReader):
     """Compatibility for dask-producing classes, provides to_dask()->read()"""
 
     def to_dask(self, **kwargs):
@@ -111,7 +132,7 @@ class DaskParquet(Dasky):
     output_instance = "dask.dataframe:DataFrame"
 
 
-class DuckDB(BaseReader):
+class DuckDB(FileReader):
     imports = {"duckdb"}
     output_instance = "duckdb:DuckDBPyRelation"  # can be converted to pandas with .df
     implements = {datatypes.Parquet, datatypes.CSV, datatypes.JSONFile, datatypes.SQLQuery}
@@ -136,7 +157,7 @@ class DuckDB(BaseReader):
         return self._dd.query(queries[type(self.data)].format(**locals()))
 
 
-class SparkDataFrame(BaseReader):
+class SparkDataFrame(FileReader):
     imports = {"pyspark"}
     implements = {datatypes.Parquet, datatypes.CSV, datatypes.Text}
     func_doc = "pyspark.sql:SparkSession.read"
@@ -154,7 +175,7 @@ class SparkDataFrame(BaseReader):
         return method(self.data.url, **kwargs)
 
 
-class Awkward(BaseReader):
+class Awkward(FileReader):
     imports = {"awkward"}
     output_instance = "awkward:Array"
 
@@ -191,7 +212,7 @@ class PandasCSV(Pandas):
         return self.read(**kw)
 
 
-class Ray(BaseReader):
+class Ray(FileReader):
     # https://docs.ray.io/en/latest/data/creating-datasets.html#supported-file-formats
     implements = {datatypes.CSV, datatypes.Parquet, datatypes.JSONFile, datatypes.Text}
     imports = {"ray"}
