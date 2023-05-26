@@ -82,7 +82,7 @@ class FileReader(BaseReader):
     storage_options = False
 
     def read(self, **kwargs):
-        kw = self.data.kwargs.copy()
+        kw = self.kwargs.copy()
         kw.update(kwargs)
         if self.storage_options:
             kw["storage_options"] = self.data.storage_options

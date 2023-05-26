@@ -12,15 +12,13 @@ from intake.readers.utils import subclasses
 class DataDescription:
     """Defines some data that can be processed
 
-    At minimum, this is a definitions of a datatype instance and
+    At minimum, this is a definitions of a datatype instance and kwargs to read it
     """
 
-    def __init__(self, data: BaseData, kwargs_map: dict | None, user_parameters: dict | None, preferred_outtype=None, preferred_reader=None):
+    def __init__(self, data: BaseData, kwargs_map: dict | None, user_parameters: dict | None):
         self.data = data
         self.kwmap: dict[str, dict[str, Any]] = kwargs_map or {}
         self.up = user_parameters or {}
-        self.pout = preferred_outtype
-        self.pread = preferred_reader
 
     def select_reader(self, outtype: str | None = None, reader: str | None = None):
         """Pick Reader class
@@ -63,6 +61,7 @@ class DataDescription:
         return reader_cls
 
     def get_kwargs(self, reader_cls: BaseReader, **kwargs):
+        """Get set of kwargs for given reader, based on prescription, new args and user parameters"""
         kw = self.kwmap.get(reader_cls.__name__.lower()).copy()
         kw.update(kwargs)
         # process user_parameters and template
