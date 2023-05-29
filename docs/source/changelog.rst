@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.7.0
+-----
+
+Released May 29, 2023
+
+- be able to override arguments when using a source defined in an entry-point
+- make sources usable without explicit dependence on dask: zarr, textfiles, csv
+- removed some explicit usage (but not all) of dask throughout the codebase
+- new dataframe pipeline transform source
+
 .. _v0.6.8:
 
 0.6.8
