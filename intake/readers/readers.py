@@ -231,6 +231,18 @@ class Ray(FileReader):
         return method(**kwargs)
 
 
+class TiledCatalog(BaseReader):
+    implements = {datatypes.CatalogAPI}
+    imports = {"tiled"}
+    # a Node can convert to a Catalog
+    output_instance = {"tiled.client.node.Node"}
+
+    def read(self):
+        from tiled.client import from_uri
+
+        return from_uri(self.data.api_root)
+
+
 def recommend(data):
     """Show which readers claim to support the given data instance"""
     out = {"importable": set(), "not_importable": set()}

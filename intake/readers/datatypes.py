@@ -86,6 +86,7 @@ class CatalogFile(Catalog, FileData):
 @dataclass
 class CatalogAPI(Catalog, Service):
     api_root: str = ""
+    headers: dict = field(default_factory=dict)
 
 
 class YAMLFile(FileData):

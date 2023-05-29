@@ -58,6 +58,17 @@ def ray_to_daskdf(x, **kw):
     return x.to_dask(**kw)
 
 
+@register_converter("tiled.client.node.Node", "intake.readers.entry:Catalog")
+def tiled_node_to_cat(x, *kw):
+    # provisional: values here are Nodes or data client instances
+    return dict(x)
+
+
+@register_converter("tiled.client.base:BaseClient", "intake.readers.entry:DataDescription")
+def tiled_client_to_entry(x, **kw):
+    pass
+
+
 def converts_to(data):
     """What things can data convert to"""
     out = set()
