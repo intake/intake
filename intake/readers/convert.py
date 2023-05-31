@@ -118,11 +118,11 @@ def convert(data, outtype: str, **kwargs):
 
 
 class ConvertReader(readers.BaseReader):
-    def __init__(self, reader: readers.BaseReader, func: callable, **kwargs):
+    def __init__(self, reader: readers.BaseReader, func: callable, output_instance: str, **kwargs):
         self.data = reader
         self.func = func
         self.kwargs = kwargs
-        self.output_instance = reader.output_instance
+        self.output_instance = output_instance
 
     def read(self, **kwargs):
         kw = self.kwargs.copy()

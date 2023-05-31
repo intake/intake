@@ -95,7 +95,7 @@ class Functioner:
         from intake.readers.convert import ConvertReader
 
         func = self.funcdict[item]
-        return ConvertReader(self.reader, func)
+        return ConvertReader(self.reader, func, output_instance=item)
 
     def __repr__(self):
         return f"Transformers for {self.reader.output_instance}:\n{self.funcdict}"
@@ -106,9 +106,10 @@ class Functioner:
     def __getattr__(self, item):
         from intake.readers.convert import ConvertReader
 
-        out = [func for func in self.funcdict.values() if func.__name__ == item]
+        out = [(outtype, func) for outtype, func in self.funcdict.items() if func.__name__ == item]
         if len(out):
-            return ConvertReader(self.reader, out[0])
+            outtype, func = out[0]
+            return ConvertReader(self.reader, func, output_instance=outtype)
         raise KeyError(item)
 
 
