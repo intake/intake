@@ -74,7 +74,42 @@ class BaseReader:
         """
         kw = self.kwargs.copy()
         kw.update(kwargs)
-        return self._func(**kw)
+        return self._func(self.data, **kw)
+
+    @property
+    def transform(self):
+        from intake.readers.convert import convert_funcs
+
+        funcdict = convert_funcs(self.output_instance)
+        return Functioner(self, funcdict)
+
+
+class Functioner:
+    """Find and apply transform functions to reader output"""
+
+    def __init__(self, reader, funcdict):
+        self.reader = reader
+        self.funcdict = funcdict
+
+    def __getitem__(self, item):
+        from intake.readers.convert import ConvertReader
+
+        func = self.funcdict[item]
+        return ConvertReader(self.reader, func)
+
+    def __repr__(self):
+        return f"Transformers for {self.reader.output_instance}:\n{self.funcdict}"
+
+    def __dir__(self):
+        return list(sorted(f.__name__ for f in self.funcdict.values()))
+
+    def __getattr__(self, item):
+        from intake.readers.convert import ConvertReader
+
+        out = [func for func in self.funcdict.values() if func.__name__ == item]
+        if len(out):
+            return ConvertReader(self.reader, out[0])
+        raise KeyError(item)
 
 
 class FileReader(BaseReader):
@@ -112,7 +147,7 @@ class PandasParquet(Pandas):
     concat_func = None  # pandas concats for us
     implements = {datatypes.Parquet}
     optional_imports = {"fastparquet", "pyarrow"}
-    func = "pandas:read_parquqet"
+    func = "pandas:read_parquet"
     url_arg = "path"
 
 

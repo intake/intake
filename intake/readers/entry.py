@@ -21,7 +21,7 @@ class DataDescription:
         self.kwmap: dict[str, dict[str, Any]] = kwargs_map or {}
         self.up = user_parameters or {}
 
-    def select_reader(self, outtype: str | None = None, reader: str | None = None):
+    def select_reader(self, outtype: str | None = None, reader: str | None = None) -> type:
         """Pick Reader class
 
         Rules:
@@ -61,9 +61,14 @@ class DataDescription:
             reader_cls = reader_classes[0]
         return reader_cls
 
-    def get_kwargs(self, reader_cls: BaseReader, **kwargs):
+    def get_kwargs(self, reader_cls: BaseReader, **kwargs) -> dict:
         """Get set of kwargs for given reader, based on prescription, new args and user parameters"""
         kw = self.kwmap.get(reader_cls.__name__.lower()).copy()
         kw.update(kwargs)
         # process user_parameters and template
         return kw
+
+    def get_reader(self, outtype, reader, **kwargs) -> BaseReader:
+        cls = self.select_reader(outtype=outtype, reader=reader)
+        kw = self.get_kwargs(cls, **kwargs)
+        return cls(**kw)

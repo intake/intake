@@ -6,7 +6,7 @@ _converted = {}
 
 
 def outtypes():
-    """Available types we can convert *to*"""
+    """All available types we can convert *to*"""
     return set(_[1] for _ in _converted)
 
 
@@ -45,11 +45,11 @@ def daskdf_to_hvplot(x, explorer=False, **kw):
     if explorer:
         # this is actually a hvplot.ui:hvPlotExplorer
         return hvplot.explorer(x, **kw)
-    return hvplot.plot(x, **kw)
+    return hvplot.hvPlot(x, **kw)
 
 
 @register_converter("ray.data:Dataset", "pandas:DataFrame")
-def ray_to_pandas(x, explorer=False, **kw):
+def ray_to_pandas(x, **kw):
     return x.to_pandas(**kw)
 
 
@@ -83,7 +83,10 @@ def converts_to(data):
 
 
 def convert_func(data, outtype: str):
-    """Get conversion function"""
+    """Get conversion function from given data to outtype
+
+    his works on concrete data, not a datatype or reader instance
+    """
     package = type(data).__module__.split(".", 1)[0]
     for intype, out in _converted:
         if out != outtype:
@@ -96,7 +99,36 @@ def convert_func(data, outtype: str):
     raise ValueError("Converter not found")
 
 
+def convert_funcs(in_type: str):
+    """Get available conversion functions for input type"""
+    out_dict = {}
+    for intype, out in _converted:
+        if intype == in_type:
+            out_dict[out] = _converted[(intype, out)]
+    return out_dict
+
+
 def convert(data, outtype: str, **kwargs):
-    """Convert this data to given type"""
+    """Convert this data to given type
+
+    This works on concrete data, not a datatype or reader instance
+    """
     func = convert_func(data, outtype)
     return func(data, **kwargs)
+
+
+class ConvertReader(readers.BaseReader):
+    def __init__(self, reader: readers.BaseReader, func: callable, **kwargs):
+        self.data = reader
+        self.func = func
+        self.kwargs = kwargs
+        self.output_instance = reader.output_instance
+
+    def read(self, **kwargs):
+        kw = self.kwargs.copy()
+        kw.update(kwargs)
+        return self.func(self.data.read(), **kw)
+
+    def output_doc(self):
+        """Doc associated with output type"""
+        return self.func.__doc__
