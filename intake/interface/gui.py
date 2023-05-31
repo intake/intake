@@ -26,16 +26,6 @@ class GUI:
     cats: list of catalogs
         catalogs used to initalize the cat panel
 
-    Attributes
-    ----------
-    children: list of panel objects
-        children that will be used to populate the panel when visible
-    panel: panel layout object
-        instance of a panel layout (row or column) that contains children
-        when visible
-    watchers: list of param watchers
-        watchers that are set on children - cleaned up when visible
-        is set to false.
     """
 
     def __init__(self, cats=None):
@@ -53,8 +43,8 @@ class GUI:
         search = pn.widgets.Button(name="🔍")
         col1 = pn.Column(self.catsel, pn.Row(add, sub, search))
         add.on_click(self.add_clicked)
-        add.on_click(self.sub_clicked)
-        add.on_click(self.search_clicked)
+        sub.on_click(self.sub_clicked)
+        search.on_click(self.search_clicked)
 
         self.sourcesel = pn.widgets.MultiSelect(name="Sources", size=13, styles={"width": "25%"})
         plot = pn.widgets.Button(name="📊")
@@ -69,18 +59,22 @@ class GUI:
 
         self.plots = defined_plots.Plots()
         self.plots.panel.visible = False
-        self.add = CatAdder()
+        self.add = CatAdder(done_callback=self.add_catalog)
         self.add.panel.visible = False
         self.row1 = pn.Row(self.plots.panel, self.add.panel)
 
         self.main = pn.Column(row0, self.row1)
         self.cat_selected(None)
 
+    def _repr_mimebundle_(self, *args, **kwargs):
+        """Display in a notebook or a server"""
+        return self.main._repr_mimebundle_(*args, **kwargs)
+
     def show(self, *args, **kwargs):
-        return self.panel.show(*args, **kwargs)
+        return self.main.show(*args, **kwargs)
 
     def __repr__(self):
-        return repr(self.main)
+        return "Intake GUI"
 
     def cat_selected(self, *_):
         cat = self.catsel.value
@@ -106,8 +100,10 @@ class GUI:
                 self._children[cat] = children
             self.sourcesel.param.update(options=list(self._sources))
 
-    def add_catalog(self, cat, name=None):
-        ...
+    def add_catalog(self, cat, name=None, **_):
+        name = name or cat.name
+        self._cats[name] = cat
+        self.catsel.param.update(options=list(self._cats))
 
     def source_selected(self, *_):
         import yaml
@@ -121,22 +117,27 @@ class GUI:
         self.sourceinf.param.update(value=txt)
 
     def plot_clicked(self, *_):
-        if self.sources:
+        if self.plots.panel.visible:
+            self.plots.panel.visible = False
+        elif self.sources:
             self.plots.source = self.sources[0]
             self.add.panel.visible = False
             self.plots.panel.visible = True
 
     def add_clicked(self, *_):
-        self.add.panel.visible = True
-        self.plots.panel.visible = False
+        if self.add.panel.visible:
+            self.add.panel.visible = False
+        else:
+            self.add.panel.visible = True
+            self.plots.panel.visible = False
 
     def sub_clicked(self, *_):
-        if self.cats:
-            for catname in self.catsel.values:
-                self.remove_cat(catname)
+        for catname in self.catsel.value:
+            self.remove_cat(catname)
 
     def remove_cat(self, catname):
-        ...
+        self._cats.pop(catname, None)  # remake "builtin" if accidentally removed?
+        self.catsel.param.update(options=list(self._cats))
 
     def search_clicked(self, *_):
         ...
@@ -144,7 +145,7 @@ class GUI:
     @property
     def cats(self):
         """Cats that have been selected from the cat sub-panel"""
-        return [self._cats[k] for k in self.catsel.values]
+        return [self._cats[k] for k in self.catsel.value]
 
     @property
     def sources(self):
