@@ -8,6 +8,10 @@ import panel as pn
 
 import intake
 from intake.interface.base import ICONS
+from intake.interface.catalog.add import CatAdder
+
+# from intake.interface.catalog.search import Search
+from intake.interface.source import defined_plots
 
 
 class GUI:
@@ -42,7 +46,7 @@ class GUI:
 
         # layout
         col0 = pn.Column(pn.pane.PNG(ICONS["logo"], align="center"), margin=(25, 0, 0, 0), width=50)
-        self.catsel = pn.widgets.MultiSelect(name="Catalogs", options=list(self._cats), value=[], size=10)
+        self.catsel = pn.widgets.MultiSelect(name="Catalogs", options=list(self._cats), value=[], size=13, styles={"width": "25%"})
         self.catsel.param.watch(self.cat_selected, "value")
         add = pn.widgets.Button(name="+")
         sub = pn.widgets.Button(name="-")
@@ -52,7 +56,7 @@ class GUI:
         add.on_click(self.sub_clicked)
         add.on_click(self.search_clicked)
 
-        self.sourcesel = pn.widgets.MultiSelect(name="Sources", size=10)
+        self.sourcesel = pn.widgets.MultiSelect(name="Sources", size=13, styles={"width": "25%"})
         plot = pn.widgets.Button(name="📊")
         plot.on_click(self.plot_clicked)
         self.sourcesel.param.watch(self.source_selected, "value")
@@ -60,8 +64,16 @@ class GUI:
 
         self.sourceinf = pn.widgets.CodeEditor(readonly=True, language="yaml", print_margin=False, annotations=[])
         col3 = pn.Column(self.sourceinf)
-        self.main = pn.Row(col0, col1, col2, col3, styles={"width": "100%"})
 
+        row0 = pn.Row(col0, col1, col2, col3, styles={"width": "100%"})
+
+        self.plots = defined_plots.Plots()
+        self.plots.panel.visible = False
+        self.add = CatAdder()
+        self.add.panel.visible = False
+        self.row1 = pn.Row(self.plots.panel, self.add.panel)
+
+        self.main = pn.Column(row0, self.row1)
         self.cat_selected(None)
 
     def show(self, *args, **kwargs):
@@ -109,12 +121,21 @@ class GUI:
         self.sourceinf.param.update(value=txt)
 
     def plot_clicked(self, *_):
-        ...
+        if self.sources:
+            self.plots.source = self.sources[0]
+            self.add.panel.visible = False
+            self.plots.panel.visible = True
 
     def add_clicked(self, *_):
-        ...
+        self.add.panel.visible = True
+        self.plots.panel.visible = False
 
     def sub_clicked(self, *_):
+        if self.cats:
+            for catname in self.catsel.values:
+                self.remove_cat(catname)
+
+    def remove_cat(self, catname):
         ...
 
     def search_clicked(self, *_):
@@ -128,7 +149,7 @@ class GUI:
     @property
     def sources(self):
         """Sources that have been selected from the source sub-panel"""
-        return [self.sources[k] for k in self.sourcesel.values]
+        return [self._sources[k] for k in self.sourcesel.value]
 
     @property
     def source_instance(self):
