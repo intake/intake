@@ -12,7 +12,8 @@ from intake.readers.utils import subclasses
 class DataDescription:
     """Defines some data that can be processed
 
-    At minimum, this is a definitions of a datatype instance and kwargs to read it
+    At minimum, this is a definitions of a datatype instance and kwargs to read it,
+    like a classic Intake entry
     """
 
     def __init__(self, data: BaseData, kwargs_map: dict | None, user_parameters: dict | None):
