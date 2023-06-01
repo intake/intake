@@ -77,7 +77,7 @@ class GUI:
         return "Intake GUI"
 
     def cat_selected(self, *_):
-        down = "\u200c"
+        down = "|"
         right = "└─>"
 
         cat = self.catsel.value
@@ -86,25 +86,30 @@ class GUI:
         else:
             catname = cat[0]
             cat = self._cats[catname]
-        children = {}
+        catsel_needs_update = False
         self._sources.clear()
         for entry in cat:
             source = cat[entry]
             if isinstance(source, intake.catalog.Catalog):
-                indent = len(catname.lstrip(down)) - len(catname.lstrip(down).lstrip()) + 2
-                name = down + " " * indent + right + entry
-                self.add_catalog(source, name=name)
-                children[name] = source
+                indent = len(catname.lstrip(down)) - len(catname.lstrip(down).lstrip(".")) + 2
+                name = down + "." * indent + right + entry
+                if name not in self._cats:
+                    self._cats[name] = source
+                    self._children.setdefault(catname, []).append(name)
+                    catsel_needs_update = True
             else:
                 self._sources[entry] = source
-        if children:
-            self._children[catname] = children
+        if catsel_needs_update:
+            self.update_catsel()
         self.sourcesel.param.update(options=list(self._sources))
+
+    def update_catsel(self):
+        self.catsel.param.update(options=get_catlist(self._cats, self._children))
 
     def add_catalog(self, cat, name=None, **_):
         name = name or cat.name
         self._cats[name] = cat
-        self.catsel.param.update(options=list(self._cats))
+        self.update_catsel()
 
     def source_selected(self, *_):
         import yaml
@@ -136,11 +141,12 @@ class GUI:
         for catname in self.catsel.value:
             self.remove_cat(catname)
 
-    def remove_cat(self, catname):
+    def remove_cat(self, catname, done=True):
         self._cats.pop(catname, None)  # remake "builtin" if accidentally removed?
-        self.catsel.param.update(options=list(self._cats))
-        for cat in self._children.get(catname):
-            self.remove_cat(cat)
+        for cat in self._children.get(catname, []):
+            self.remove_cat(cat, done=False)
+        if done:
+            self.catsel.param.update(options=list(self._cats))
 
     def search_clicked(self, *_):
         ...
@@ -158,3 +164,16 @@ class GUI:
     @property
     def source_instance(self):
         return self.sources[0] if self.sourcesel.values else None
+
+
+def get_catlist(catnames, children, outlist=None, seen=None):
+    outlist = outlist or []
+    seen = seen or set()
+    for name in sorted(catnames):
+        if name in seen:
+            continue
+        seen.add(name)
+        outlist.append(name)
+        if name in children:
+            get_catlist(children[name], children, outlist, seen)
+    return outlist
