@@ -9,8 +9,7 @@ import panel as pn
 import intake
 from intake.interface.base import ICONS
 from intake.interface.catalog.add import CatAdder
-
-# from intake.interface.catalog.search import Search
+from intake.interface.catalog.search import Search
 from intake.interface.source import defined_plots
 
 
@@ -61,7 +60,9 @@ class GUI:
         self.plots.panel.visible = False
         self.add = CatAdder(done_callback=self.add_catalog)
         self.add.panel.visible = False
-        self.row1 = pn.Row(self.plots.panel, self.add.panel)
+        self.search = Search(done_callback=self.searched)
+        self.search.panel.visible = False
+        self.row1 = pn.Row(self.plots.panel, self.add.panel, self.search.panel)
 
         self.main = pn.Column(row0, self.row1)
         self.cat_selected(None)
@@ -129,6 +130,13 @@ class GUI:
             self.plots.source = self.sources[0]
             self.add.panel.visible = False
             self.plots.panel.visible = True
+            self.search.panel.visible = False
+
+    def searched(self, searchstring: str):
+        if self.cats:
+            cat = self.cats[0]
+            cat2 = cat.search(searchstring)
+            self.add_catalog(cat2, name=f"search <{searchstring[:10]}>")
 
     def add_clicked(self, *_):
         if self.add.panel.visible:
@@ -136,6 +144,7 @@ class GUI:
         else:
             self.add.panel.visible = True
             self.plots.panel.visible = False
+            self.search.panel.visible = False
 
     def sub_clicked(self, *_):
         for catname in self.catsel.value:
@@ -149,7 +158,12 @@ class GUI:
             self.catsel.param.update(options=list(self._cats))
 
     def search_clicked(self, *_):
-        ...
+        if self.search.panel.visible:
+            self.search.panel.visible = False
+        else:
+            self.add.panel.visible = False
+            self.plots.panel.visible = False
+            self.search.panel.visible = True
 
     @property
     def cats(self):
