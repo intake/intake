@@ -16,15 +16,15 @@ from intake.interface.source import defined_plots
 
 class GUI:
     """
-    Top level GUI panel that contains controls and all visible sub-panels
+    Top level GUI panel
 
     This class is responsible for coordinating the inputs and outputs
     of various sup-panels and their effects on each other.
 
     Parameters
     ----------
-    cats: list of catalogs
-        catalogs used to initalize the cat panel
+    cats: dict of catalogs
+        catalogs used to initalize the cat panel, {display_name: cat_object}
 
     """
 
@@ -83,21 +83,20 @@ class GUI:
         else:
             catname = cat[0]
             cat = self._cats[catname]
-        if cat in self._children:
-            self.remove_cat(catname)
-        else:
+        if cat not in self._children:
             children = {}
             self._sources.clear()
             for entry in cat:
                 source = cat[entry]
                 if isinstance(source, intake.catalog.Catalog):
-                    name = f"  -- {entry}"
+                    indent = len(entry) - len(entry.lstrip()) + 2
+                    name = " " * indent + "-> " + entry
                     self.add_catalog(source, name=name)
                     children[name] = source
                 else:
                     self._sources[entry] = source
             if children:
-                self._children[cat] = children
+                self._children[catname] = children
             self.sourcesel.param.update(options=list(self._sources))
 
     def add_catalog(self, cat, name=None, **_):
@@ -138,6 +137,8 @@ class GUI:
     def remove_cat(self, catname):
         self._cats.pop(catname, None)  # remake "builtin" if accidentally removed?
         self.catsel.param.update(options=list(self._cats))
+        for cat in self._children.get(catname):
+            self.remove_cat(cat)
 
     def search_clicked(self, *_):
         ...
