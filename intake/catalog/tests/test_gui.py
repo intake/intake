@@ -32,7 +32,7 @@ def test_cat_no_panel_display_gui(catalog1):
 
 def test_cat_gui(catalog1):
     pytest.importorskip("panel")
-    assert repr(catalog1.gui).startswith("Column")
+    assert repr(catalog1.gui).startswith("Intake")
 
 
 @pytest.mark.skipif(panel_importable(), reason="panel is importable, so skip")
@@ -48,4 +48,4 @@ def test_entry_no_panel_display_gui(catalog1):
 
 def test_entry_gui(catalog1):
     pytest.importorskip("panel")
-    assert repr(catalog1.entry1.gui).startswith("Column")
+    assert repr(catalog1.entry1.gui).startswith("Intake")
