@@ -30,9 +30,9 @@ class GUI:
 
     def __init__(self, cats=None):
         # state
-        self._children = {}
-        self._cats = cats or {"builtin": intake.cat}
-        self._sources = {}
+        self._children = {}  # cat name in the selector to child catalogs' names: cat objects
+        self._cats = cats or {"builtin": intake.cat}  # mapping of name in the selector to catalog object
+        self._sources = {}  # source name: source instance
 
         # layout
         col0 = pn.Column(pn.pane.PNG(ICONS["logo"], align="center"), margin=(25, 0, 0, 0), width=50)
@@ -77,27 +77,29 @@ class GUI:
         return "Intake GUI"
 
     def cat_selected(self, *_):
+        down = "\u200c"
+        right = "└─>"
+
         cat = self.catsel.value
         if not cat:
             return
         else:
             catname = cat[0]
             cat = self._cats[catname]
-        if cat not in self._children:
-            children = {}
-            self._sources.clear()
-            for entry in cat:
-                source = cat[entry]
-                if isinstance(source, intake.catalog.Catalog):
-                    indent = len(entry) - len(entry.lstrip()) + 2
-                    name = " " * indent + "-> " + entry
-                    self.add_catalog(source, name=name)
-                    children[name] = source
-                else:
-                    self._sources[entry] = source
-            if children:
-                self._children[catname] = children
-            self.sourcesel.param.update(options=list(self._sources))
+        children = {}
+        self._sources.clear()
+        for entry in cat:
+            source = cat[entry]
+            if isinstance(source, intake.catalog.Catalog):
+                indent = len(catname.lstrip(down)) - len(catname.lstrip(down).lstrip()) + 2
+                name = down + " " * indent + right + entry
+                self.add_catalog(source, name=name)
+                children[name] = source
+            else:
+                self._sources[entry] = source
+        if children:
+            self._children[catname] = children
+        self.sourcesel.param.update(options=list(self._sources))
 
     def add_catalog(self, cat, name=None, **_):
         name = name or cat.name
