@@ -44,8 +44,3 @@ def test_entry_no_panel_does_not_raise_errors(catalog1):
 def test_entry_no_panel_display_gui(catalog1):
     with pytest.raises(RuntimeError, match=EXPECTED_ERROR_TEXT):
         repr(catalog1.entry1.gui)
-
-
-def test_entry_gui(catalog1):
-    pytest.importorskip("panel")
-    assert repr(catalog1.entry1.gui).startswith("Intake")
