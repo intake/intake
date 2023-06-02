@@ -248,6 +248,13 @@ class PandasCSV(Pandas):
         return self.read(**kw)
 
 
+class DaskCSV(Dasky):
+    implements = {datatypes.CSV}
+    func = "dask.dataframe:read_csv"
+    url_arg = "urlpath"
+    output_instance = "dask.dataframe:DataFrame"
+
+
 class Ray(FileReader):
     # https://docs.ray.io/en/latest/data/creating-datasets.html#supported-file-formats
     implements = {datatypes.CSV, datatypes.Parquet, datatypes.JSONFile, datatypes.Text}
