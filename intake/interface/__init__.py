@@ -39,23 +39,19 @@ def __getattr__(attr):
     return gl[attr]
 
 
-def output_notebook(inline=True, logo=False):
+def output_notebook(*_, **__):
     """
     Load the notebook extension
-
-    Parameters
-    ----------
-    inline : boolean (optional)
-        Whether to inline JS code or load it from a CDN
-    logo : boolean (optional)
-        Whether to show the logo(s)
     """
     try:
         import hvplot
+        import panel as pn
+
+        if pn.__version__ < "1":
+            raise ImportError("Requires panel >=1.0 to use plotting")
     except ImportError:
         raise ImportError(
             "The intake plotting API requires hvplot." "hvplot may be installed with:\n\n" "`conda install -c pyviz hvplot` or " "`pip install hvplot`."
         )
-    import holoviews as hv
 
-    return hv.extension("bokeh", inline=inline, logo=logo)
+    return pn.extension("codeeditor", template="fast")
