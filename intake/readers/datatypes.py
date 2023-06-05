@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import fsspec
 
 from intake.readers.utils import subclasses
+
+# https://en.wikipedia.org/wiki/List_of_file_signatures
 
 
 @dataclass
@@ -17,7 +19,8 @@ class BaseData:
 
     metadata: dict = field(default_factory=dict)
     mimetypes: ClassVar = set()
-    extensions: ClassVar = set()
+    filepattern: ClassVar = set()
+    structure: ClassVar = None
 
 
 @dataclass
@@ -49,24 +52,24 @@ class Service(BaseData):
 class Catalog(BaseData):
     """Datatypes that are groupings of other data"""
 
-    ...
+    structure = "catalog"
 
 
 class Parquet(FileData):
-    extensions = {"parq", "parquet", "/"}
+    filepattern = {"parq$", "parquet$", "/$"}
     mimetypes = {"application/vnd.apache.parquet"}
     structure = {"table", "nested"}
     magic = {b"PAR1"}
 
 
 class CSV(FileData):
-    extensions = {"csv", "txt", "tsv"}
+    filepattern = {"csv$", "txt$", "tsv$"}
     mimetypes = {"text/csv", "application/csv", "application/vnd.ms-excel"}
     structure = {"table"}
 
 
 class Text(FileData):
-    extensions = {"txt", "text"}
+    filepattern = {"txt$", "text$"}
     mimetypes = {"text/.*"}
     structure = {"sequence"}
 
@@ -76,10 +79,11 @@ class SQLQuery(Service):
     structure: ClassVar = {"sequence", "table"}
     conn: str | dict = ""
     query: str = ""
+    filepattern = {"^oracle", "^mssql", "^sqlite", "^mysql", "^postgres"}
 
 
 class CatalogFile(Catalog, FileData):
-    extensions = {"yaml", "yml"}
+    filepattern = {"yaml$", "yml$"}
     mimetypes = {"text/yaml"}
 
 
@@ -90,18 +94,36 @@ class CatalogAPI(Catalog, Service):
 
 
 class YAMLFile(FileData):
-    extensions = {"yaml", "yml"}
+    filepattern = {"yaml$", "yml$"}
     mimetypes = {"text/yaml"}
     structure = {"nested"}
 
 
 class JSONFile(FileData):
-    extensions = {"json"}
+    filepattern = {"json$"}
     mimetypes = {"text/json", "application/json"}
     structure = {"nested", "table"}
 
 
-def recommend(url=None, mime=None, head=None, import_all=False):
+@dataclass()
+class Tiled(Service):
+    tiled_client: Any = None
+
+
+comp_magic = {
+    # These are a bit like datatypes making raw bytes/file object output
+    (0, b"\x1f\x8b"): "gzip",
+    (0, b"BZh"): "bzip2",
+    (0, b"(\xc2\xb5/\xc3\xbd"): "zstd",
+}
+container_magic = {
+    # these are like datatypes making filesystems
+    (257, b"ustar"): "tar",
+    (0, b"PK"): "zip",
+}
+
+
+def recommend(url=None, mime=None, head=None, storage_options=None):
     """Show which data types match
 
     Parameters
@@ -112,29 +134,53 @@ def recommend(url=None, mime=None, head=None, import_all=False):
         MIME type, usually "x/y" form
     head: bytes
         A small number of bytes from the file head, for seeking magic bytes
-    import_all: bool
-        If true, will load all entrypoint definitions of data types, which will not
-    show up if they have not yet been imported
+    storage_options: dict | None
+        If passing a URL which might be a remote file, storage_options can be used
+        by fsspec.
 
     Returns
     -------
     set of matching datatype classes
     """
+    # instead of returning datatype class, should we make instance with
+    # storage_options, if known?
     out = set()
-    if import_all:
-        pass  # scan entrypoints for data types
     if mime:
         for cls in subclasses(BaseData):
             if any(re.match(m, mime) for m in cls.mimetypes):
                 out.add(cls)
     if url:
         # urlparse to remove query parts?
+        # try stripping compression extensions?
         for cls in subclasses(BaseData):
-            if any(url.endswith(m) for m in cls.extensions):
+            if any(re.findall(m, url) for m in cls.filepattern):
                 out.add(cls)
     if head:
         for cls in subclasses(FileData):
-            if any(head.startswith for m in cls.magic):
+            if any(head.startswith(m) for m in cls.magic):
                 out.add(cls)
+    if out or url:
+        return out
 
-    return out
+    try:
+        with fsspec.open(url, "rb", **(storage_options or {})) as f:
+            head = f.read(2**20)
+    except IOError:
+        return out
+
+    for (off, mag), comp in comp_magic:
+        if head[off:].startswith(mag):
+            storage_options = (storage_options or {}).copy()
+            storage_options["compression"] = comp
+            out = recommend(url, storage_options=storage_options)
+            if out:
+                print("Update storage_options: ", storage_options)
+                return out
+    for (off, mag), comp in container_magic:
+        if head[off:].startswith(mag):
+            prot = fsspec.core.split_protocol(url)[0]
+            out = recommend(f"{comp}://*::{url}", storage_options={prot: storage_options})
+            if out:
+                print("Update url: ", url, "\nstorage_options: ", storage_options)
+                return out
+    return recommend(head=head)

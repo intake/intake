@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.metadata
+import inspect
 
 from intake import import_name
 from intake.readers import datatypes
@@ -91,6 +92,9 @@ class Functioner:
         self.reader = reader
         self.funcdict = funcdict
 
+    def _ipython_key_completions_(self):
+        return list(self.funcdict)
+
     def __getitem__(self, item):
         from intake.readers.convert import ConvertReader
 
@@ -145,11 +149,12 @@ class Pandas(FileReader):
 
 
 class PandasParquet(Pandas):
-    concat_func = None  # pandas concats for us
+    concat_func = "pandas:concat"
     implements = {datatypes.Parquet}
     optional_imports = {"fastparquet", "pyarrow"}
     func = "pandas:read_parquet"
     url_arg = "path"
+    storage_options = True
 
 
 class Dasky(FileReader):
@@ -274,16 +279,21 @@ class Ray(FileReader):
         return method(**kwargs)
 
 
-class TiledCatalog(BaseReader):
+class TiledNode(BaseReader):
     implements = {datatypes.CatalogAPI}
     imports = {"tiled"}
     # a Node can convert to a Catalog
-    output_instance = {"tiled.client.node.Node"}
+    output_instance = {"tiled.client.node:Node"}
+    func = "tiled.client:from_uri"
 
-    def read(self):
-        from tiled.client import from_uri
+    def read(self, **kwargs):
+        return self._func(self.data.api_root, **kwargs)
 
-        return from_uri(self.data.api_root)
+
+class TiledDataset(BaseReader):
+    # returns dask/normal xarray or dataframe
+    implements = {datatypes.Tiled}
+    output_instance = "tiled.client.base:BaseClient"
 
 
 def recommend(data):
@@ -296,3 +306,26 @@ def recommend(data):
             else:
                 out["not_importable"].add(cls)
     return out
+
+
+def reader_from_call(func, *args, **kwargs):
+    from intake.readers.readers import BaseReader
+
+    package = func.__module__.split(".", 1)[0]
+
+    found = False
+    for cls in subclasses(BaseReader):
+        if callable(cls.func):
+            if cls.func == func:
+                found = cls
+                break
+        elif cls.check_imports() and cls.func.split(":", 1)[0].split(".", 1)[0] == package:
+            if import_name(cls.func) == func:
+                found = cls
+                break
+    if not found:
+        raise ValueError
+
+    pars = inspect.signature(func).parameters
+    kw = dict(zip(pars, args), **kwargs)
+    return kw

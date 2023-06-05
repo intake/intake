@@ -1,6 +1,7 @@
 """Description of the ways to load a data set"""
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from intake import import_name
@@ -72,3 +73,8 @@ class DataDescription:
         cls = self.select_reader(outtype=outtype, reader=reader)
         kw = self.get_kwargs(cls, **kwargs)
         return cls(**kw)
+
+
+class Catalog(Mapping):
+    def __getattr__(self, item):
+        return self[item]
