@@ -92,8 +92,8 @@ class GUI:
         for entry in cat:
             source = cat[entry]
             if isinstance(source, intake.catalog.Catalog):
-                indent = len(catname.lstrip(down)) - len(catname.lstrip(down).lstrip(".")) + 2
-                name = down + "." * indent + right + entry
+                indent = len(catname.lstrip(down)) - len(catname.lstrip(down).lstrip(" ")) + 2
+                name = down + " " * indent + right + entry
                 if name not in self._cats:
                     self._cats[name] = source
                     self._children.setdefault(catname, []).append(name)
