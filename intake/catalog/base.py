@@ -488,7 +488,7 @@ class Catalog(DataSource):
             from ..interface.gui import GUI
 
             output_notebook()
-            self._gui = GUI(self)
+            self._gui = GUI({self.name: self})
         else:
             self._gui.visible = True
         return self._gui
