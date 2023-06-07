@@ -12,8 +12,7 @@ from intake.readers.readers import DaskCSV, PandasCSV, SparkDataFrame
 class CSVSource:
     """Read CSV files into dataframes
 
-    Prototype of sources reading dataframe data
-
+    Backward compatibility for V1 catalogs.
     """
 
     name = "csv"
@@ -22,8 +21,10 @@ class CSVSource:
         self.data = CSV(url=urlpath, storage_option=storage_options, metadata=metadata)
         self.kwargs = kwargs
 
+    def discover(self):
+        return PandasCSV(self.data).discover(**self.kwargs)
+
     def to_dask(self):
-        """Open dataset using dask and use pattern fields to set new columns"""
         return DaskCSV(self.data).read(**self.kwargs)
 
     def read(self):

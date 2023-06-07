@@ -1,4 +1,7 @@
-"""Convert between python representations of data"""
+"""Convert between python representations of data
+
+By convention, functions here do not change the data, just how it is held.
+"""
 
 from intake.readers import readers
 
@@ -134,3 +137,27 @@ class ConvertReader(readers.BaseReader):
     def output_doc(self):
         """Doc associated with output type"""
         return self.func.__doc__
+
+
+class Pipeline(readers.BaseReader):
+    """Holds a list of transforms/conversions to be enacted in sequence
+
+    A transform on a pipeline makes a new pipeline with that transform added to the sequence
+    of operations.
+    """
+
+    def __init__(self, data, steps: tuple[callable, dict]):
+        self.data = data
+        self.steps = steps
+
+    def discover(self, **kwargs):
+        data = self.data.discover()
+        for func, kw in self.steps:
+            data = func(data, **kw)
+        return data
+
+    def read(self, **_):
+        data = self.data.read()
+        for func, kw in self.steps:
+            data = func(data, **kw)
+        return data

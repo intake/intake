@@ -28,7 +28,7 @@ class FileData(BaseData):
     """Datatypes loaded from files"""
 
     url: str | list = ""  # location of the dataset
-    storage_option: dict = field(default_factory=dict)  # any fsspec kwargs to read that location
+    storage_options: dict = field(default_factory=dict)  # any fsspec kwargs to read that location
     _filelist: ClassVar[list | None] = None  # will hold list of files after glob expansion
     magic = set()  # bytes at file start to identify it
 
@@ -39,7 +39,7 @@ class FileData(BaseData):
             if isinstance(self.url, (list, tuple)):
                 self._filelist = self.url
             else:
-                self._filelist = fsspec.core.get_fs_token_paths(self.url, storage_options=self.storage_option)[2]
+                self._filelist = fsspec.core.get_fs_token_paths(self.url, storage_options=self.storage_options)[2]
         return self._filelist
 
 

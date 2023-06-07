@@ -19,9 +19,19 @@ class BaseReader:
     concat_func = None
     output_instance = None
 
-    def __init__(self, data, **kwargs):
+    def __init__(self, data, entry=None, **kwargs):
         self.data = data
         self.kwargs = kwargs
+        self.entry = entry
+
+    def __call__(self, outtype=None, reader=None, **kwargs):
+        if self.entry:
+            return self.entry.get_reader(outtype=outtype, reader=reader, **kwargs)
+        else:
+            return self.to_entry().get_reader(outtype=outtype, reader=reader, **kwargs)
+
+    def clone_new(self, outtype=None, reader=None, **kwargs):
+        return self(outtype=None, reader=None, **kwargs)
 
     @classmethod
     def check_imports(cls):
@@ -83,6 +93,11 @@ class BaseReader:
 
         funcdict = convert_funcs(self.output_instance)
         return Functioner(self, funcdict)
+
+    def to_entry(self):
+        from intake.readers.entry import DataDescription
+
+        return DataDescription(self.data, {type(self).__name__.lower(): self.kwargs})
 
 
 class Functioner:
@@ -178,6 +193,7 @@ class DuckDB(FileReader):
     output_instance = "duckdb:DuckDBPyRelation"  # can be converted to pandas with .df
     implements = {datatypes.Parquet, datatypes.CSV, datatypes.JSONFile, datatypes.SQLQuery}
     func_doc = "duckdb:query"
+    _dd = {}  # hold the engines, so results are still valid
 
     def discover(self, **kwargs):
         return self.read().limit(10)
@@ -188,14 +204,14 @@ class DuckDB(FileReader):
         conn = getattr(self.data, "conn", {})  # only SQL type normally has this
         if isinstance(conn, str):
             conn = {"database": conn}
-        self._dd = duckdb.connect(**conn)  # connection must be cached for results to be usable
+        self._dd[conn] = duckdb.connect(**conn)  # connection must be cached for results to be usable
         queries = {
             datatypes.Parquet: "SELECT * FROM read_parquet('{self.data.url}')",
             datatypes.CSV: "SELECT * FROM read_csv_auto('{self.data.url}')",
             datatypes.JSONFile: "SELECT * FROM read_json_auto('{self.data.url}')",
             datatypes.SQLQuery: "{self.data.query}",
         }
-        return self._dd.query(queries[type(self.data)].format(**locals()))
+        return self._dd[0].query(queries[type(self.data)].format(**locals()))
 
 
 class SparkDataFrame(FileReader):
@@ -208,7 +224,7 @@ class SparkDataFrame(FileReader):
         return self.read(**kwargs).limit(10)
 
     def read(self, **kwargs):
-        from pyspark.sql import SparkSession
+        SparkSession = import_name("pyspark.sq:SparkSession")
 
         spark = SparkSession.builder.getOrCreate()
         method_name = {datatypes.CSV: "csv", datatypes.Parquet: "parquet", datatypes.Text: "text"}
@@ -309,8 +325,6 @@ def recommend(data):
 
 
 def reader_from_call(func, *args, **kwargs):
-    from intake.readers.readers import BaseReader
-
     package = func.__module__.split(".", 1)[0]
 
     found = False
@@ -324,8 +338,25 @@ def reader_from_call(func, *args, **kwargs):
                 found = cls
                 break
     if not found:
-        raise ValueError
+        raise ValueError("Function not found in the set of readers")
 
     pars = inspect.signature(func).parameters
     kw = dict(zip(pars, args), **kwargs)
-    return kw
+    # TODO: unwrap args to make datatype class; url/storage_options are easy but what about others?
+    #  For a reader implementing multiple types, can we know which one - guess from URL, if given?
+    data_kw = {}
+    if issubclass(cls, FileReader):
+        data_kw["storage_options"] = kw.pop(cls.storage_options, None)
+        data_kw["url"] = kw.pop(cls.url_arg)
+    datacls = None
+    if len(cls.implements) == 1:
+        datacls = next(iter(cls.implements))
+    elif cls.url_arg:
+        clss = datatypes.recommend(kwargs[cls.url_arg], storage_options=(data_kw["url"] if cls.storage_options else None))
+        if clss:
+            datacls = next(iter(clss))
+    if datacls:
+        datacls = datacls(**data_kw)
+        cls = cls(datacls, **kwargs)
+
+    return {"reader": cls, "kwargs": kw, "data": datacls}

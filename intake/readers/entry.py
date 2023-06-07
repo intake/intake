@@ -6,7 +6,6 @@ from typing import Any
 
 from intake import import_name
 from intake.readers.datatypes import BaseData
-from intake.readers.readers import BaseReader
 from intake.readers.utils import subclasses
 
 
@@ -17,12 +16,12 @@ class DataDescription:
     like a classic Intake entry
     """
 
-    def __init__(self, data: BaseData, kwargs_map: dict | None, user_parameters: dict | None):
+    def __init__(self, data: BaseData, kwargs_map: dict | None, user_parameters: dict | None = None):
         self.data = data
         self.kwmap: dict[str, dict[str, Any]] = kwargs_map or {}
         self.up = user_parameters or {}
 
-    def select_reader(self, outtype: str | None = None, reader: str | None = None) -> type:
+    def select_reader(self, outtype: str | None = None, reader: str | None | type = None) -> type:
         """Pick Reader class
 
         Rules:
@@ -33,10 +32,14 @@ class DataDescription:
         - if neither is given, pick any reader for our data type, preferring one with an entry
           in kwmap
         """
+        from intake.readers.readers import BaseReader
+
         if reader and outtype:
             raise ValueError
         if reader:
-            if "." in reader or ":" in reader:
+            if isinstance(reader, type):
+                reader_cls = reader
+            elif "." in reader or ":" in reader:
                 reader_cls = import_name(reader)
             else:
                 reader_classes = [cls for cls in subclasses(BaseReader) if cls.__name__.lower() == reader.lower()]
@@ -54,6 +57,7 @@ class DataDescription:
                 raise ValueError
             reader_cls = reader_classes[0]
         else:
+            # == self.possible_readers ?
             reader_classes = [cls for cls in subclasses(BaseReader) if type(self.data) in cls.implements]
             if len(reader_classes) > 1:
                 reader_classes = [cls for cls in reader_classes if cls.__name__.lower() in self.kwmap] or reader_classes
@@ -62,17 +66,32 @@ class DataDescription:
             reader_cls = reader_classes[0]
         return reader_cls
 
-    def get_kwargs(self, reader_cls: BaseReader, **kwargs) -> dict:
+    def get_kwargs(self, reader_cls, **kwargs) -> dict:
         """Get set of kwargs for given reader, based on prescription, new args and user parameters"""
-        kw = self.kwmap.get(reader_cls.__name__.lower()).copy()
+        kw = self.kwmap.get(reader_cls.__name__.lower(), {}).copy()
+        kw["data"] = self.data
         kw.update(kwargs)
         # process user_parameters and template
         return kw
 
-    def get_reader(self, outtype, reader, **kwargs) -> BaseReader:
+    def get_reader(self, outtype=None, reader=None, **kwargs):
         cls = self.select_reader(outtype=outtype, reader=reader)
         kw = self.get_kwargs(cls, **kwargs)
-        return cls(**kw)
+        return cls(entry=self, **kw)
+
+    @property
+    def possible_readers(self):
+        from intake.readers import readers
+
+        return readers.recommend(self.data)
+
+    @property
+    def defined_readers(self):
+        return set(self.kwmap)
+
+    @property
+    def metadata(self):
+        return self.data.metadata
 
 
 class Catalog(Mapping):
