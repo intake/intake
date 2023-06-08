@@ -123,11 +123,13 @@ def convert(data, outtype: str, **kwargs):
 
 
 class ConvertReader(readers.BaseReader):
-    def __init__(self, reader: readers.BaseReader, func: callable, output_instance: str, **kwargs):
-        self.data = reader
+    def __init__(self, func: callable, output_instance: str, **kwargs):
+        super().__init__(**kwargs)
         self.func = func
-        self.kwargs = kwargs
         self.output_instance = output_instance
+
+    def __repr__(self):
+        return f"{ConvertReader} with func <{self.func}> creating an instance <{self.output_instance}>"
 
     def read(self, **kwargs):
         kw = self.kwargs.copy()

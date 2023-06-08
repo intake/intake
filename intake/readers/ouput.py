@@ -13,4 +13,4 @@ from intake.readers.datatypes import Parquet
 @register_converter("pandas:DataFrame", "intake.readers.datatypes:FileData")
 def pandas_to_parquet(x, url, storage_options=None, **kwargs):
     x.to_parquet(url, storage_options=storage_options, **kwargs)
-    return Parquet(url=url, storage_option=storage_options)
+    return Parquet(url=url, storage_options=storage_options)

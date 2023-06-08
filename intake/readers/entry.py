@@ -56,6 +56,11 @@ class DataDescription:
             elif len(reader_classes) == 0:
                 raise ValueError
             reader_cls = reader_classes[0]
+        elif self.kwmap:
+            reader_classes = [cls for cls in subclasses(BaseReader) if cls.__name__.lower() in self.kwmap]
+            if len(reader_classes) == 0:
+                raise ValueError
+            reader_cls = reader_classes[0]
         else:
             # == self.possible_readers ?
             reader_classes = [cls for cls in subclasses(BaseReader) if type(self.data) in cls.implements]

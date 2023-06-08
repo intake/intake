@@ -11,13 +11,21 @@ from intake.readers.utils import subclasses
 
 
 class BaseReader:
-    imports = set()  # allow for pip-style versions maybe
-    implements = set()
-    optional_imports = set()
-    func = "builtins:NotImplementedError"
-    func_doc = None
-    concat_func = None
-    output_instance = None
+    imports: set[str] = set()  # allow for pip-style versions maybe
+    implements: set[datatypes.BaseData] = set()
+    optional_imports: set[str] = set()
+    func: str = "builtins:NotImplementedError"
+    func_doc: str = None
+    concat_func: str = None
+    output_instance: str = None
+
+    def __new__(cls, *args, **kwargs):
+        """Capture creation args when instantiating"""
+        o = object.__new__(cls)
+        pars = inspect.signature(cls.__init__).parameters
+        o._kw = dict(zip(pars, args), **kwargs)
+        o._kw.pop("self")
+        return o
 
     def __init__(self, data, entry=None, **kwargs):
         self.data = data
@@ -97,7 +105,7 @@ class BaseReader:
     def to_entry(self):
         from intake.readers.entry import DataDescription
 
-        return DataDescription(self.data, {type(self).__name__.lower(): self.kwargs})
+        return DataDescription(self.data, {type(self).__name__.lower(): self._kw})
 
 
 class Functioner:
@@ -114,7 +122,7 @@ class Functioner:
         from intake.readers.convert import ConvertReader
 
         func = self.funcdict[item]
-        return ConvertReader(self.reader, func, output_instance=item)
+        return ConvertReader(data=self.reader, func=func, output_instance=item)
 
     def __repr__(self):
         return f"Transformers for {self.reader.output_instance}:\n{self.funcdict}"
@@ -128,7 +136,7 @@ class Functioner:
         out = [(outtype, func) for outtype, func in self.funcdict.items() if func.__name__ == item]
         if len(out):
             outtype, func = out[0]
-            return ConvertReader(self.reader, func, output_instance=outtype)
+            return ConvertReader(data=self.reader, func=func, output_instance=outtype)
         raise KeyError(item)
 
 
@@ -161,75 +169,111 @@ class Pandas(FileReader):
     imports = {"pandas"}
     concat_func = "pandas:concat"
     output_instance = "pandas:DataFrame"
+    storage_options = True
 
 
 class PandasParquet(Pandas):
-    concat_func = "pandas:concat"
     implements = {datatypes.Parquet}
     optional_imports = {"fastparquet", "pyarrow"}
     func = "pandas:read_parquet"
     url_arg = "path"
-    storage_options = True
 
 
-class Dasky(FileReader):
-    """Compatibility for dask-producing classes, provides to_dask()->read()"""
+class DaskDF(FileReader):
+    imports = {"dask", "pandas"}
+    output_instance = "dask.dataframe:DataFrame"
 
     def to_dask(self, **kwargs):
         return self.read(**kwargs)
 
 
-class DaskParquet(Dasky):
-    imports = {"dask", "pandas"}
+class DaskParquet(DaskDF):
     implements = {datatypes.Parquet}
     optional_imports = {"fastparquet", "pyarrow"}
     func = "dask.dataframe:read_parquet"
     url_arg = "path"
-    output_instance = "dask.dataframe:DataFrame"
 
 
-class DuckDB(FileReader):
+class DuckDB(BaseReader):
     imports = {"duckdb"}
     output_instance = "duckdb:DuckDBPyRelation"  # can be converted to pandas with .df
-    implements = {datatypes.Parquet, datatypes.CSV, datatypes.JSONFile, datatypes.SQLQuery}
     func_doc = "duckdb:query"
     _dd = {}  # hold the engines, so results are still valid
 
     def discover(self, **kwargs):
         return self.read().limit(10)
 
-    def func(self, **kwargs):
+    def _duck(self):
         import duckdb
 
         conn = getattr(self.data, "conn", {})  # only SQL type normally has this
-        if isinstance(conn, str):
-            conn = {"database": conn}
-        self._dd[conn] = duckdb.connect(**conn)  # connection must be cached for results to be usable
-        queries = {
-            datatypes.Parquet: "SELECT * FROM read_parquet('{self.data.url}')",
-            datatypes.CSV: "SELECT * FROM read_csv_auto('{self.data.url}')",
-            datatypes.JSONFile: "SELECT * FROM read_json_auto('{self.data.url}')",
-            datatypes.SQLQuery: "{self.data.query}",
-        }
-        return self._dd[0].query(queries[type(self.data)].format(**locals()))
+        if conn not in self._dd:
+            if isinstance(conn, str):
+                conn = {"database": conn}
+            self._dd[conn] = duckdb.connect(**conn)  # connection must be cached for results to be usable
+        return self._dd[conn]
+
+
+class DuckParquet(DuckDB, FileReader):
+    implements = {datatypes.Parquet}
+
+    def read(self, **kwargs):
+        return self._duck().query(f"SELECT * FROM read_parquet('{self.data.url}')")
+
+
+class DuckCSV(DuckDB, FileReader):
+    implements = {datatypes.CSV}
+
+    def read(self, **kwargs):
+        return self._duck().query(f"SELECT * FROM read_csv_auto('{self.data.url}')")
+
+
+class DuckJSON(DuckDB, FileReader):
+    implements = {datatypes.JSONFile}
+
+    def read(self, **kwargs):
+        return self._duck().query(f"SELECT * FROM read_json_auto('{self.data.url}')")
+
+
+class DuckSQL(DuckDB):
+    implements = {datatypes.SQLQuery}
+
+    def read(self, **kwargs):
+        return self._duck().query(self.data.query)
 
 
 class SparkDataFrame(FileReader):
     imports = {"pyspark"}
-    implements = {datatypes.Parquet, datatypes.CSV, datatypes.Text}
     func_doc = "pyspark.sql:SparkSession.read"
     output_instance = "pyspark.sql:DataFrame"
 
     def discover(self, **kwargs):
         return self.read(**kwargs).limit(10)
 
-    def read(self, **kwargs):
+    def _spark(self):
         SparkSession = import_name("pyspark.sq:SparkSession")
+        return SparkSession.builder.getOrCreate()
 
-        spark = SparkSession.builder.getOrCreate()
-        method_name = {datatypes.CSV: "csv", datatypes.Parquet: "parquet", datatypes.Text: "text"}
-        method = getattr(spark.read, method_name[type(self.data)])
-        return method(self.data.url, **kwargs)
+
+class SparkCSV(SparkDataFrame):
+    implements = {datatypes.CSV}
+
+    def read(self, **kwargs):
+        return self._spark().read.csv(self.data.url, **kwargs)
+
+
+class SparkParquet(SparkDataFrame):
+    implements = {datatypes.Parquet}
+
+    def read(self, **kwargs):
+        return self._spark().read.parquet(self.data.url, **kwargs)
+
+
+class SparkText(SparkDataFrame):
+    implements = {datatypes.Text}
+
+    def read(self, **kwargs):
+        return self._spark().read.text(self.data.url, **kwargs)
 
 
 class Awkward(FileReader):
@@ -238,7 +282,6 @@ class Awkward(FileReader):
 
 
 class AwkwardParquet(Awkward):
-    # TODO: merge JSON and/or root into here?
     implements = {datatypes.Parquet}
     imports = {"awkward", "pyarrow"}
     func = "awkward:from_parquet"
@@ -249,10 +292,26 @@ class AwkwardParquet(Awkward):
         return self.read(**kwargs)
 
 
-class DaskAwkwardParquet(AwkwardParquet, Dasky):
+class DaskAwkwardParquet(AwkwardParquet, DaskDF):
     imports = {"dask_awkward", "pyarrow"}
     func = "dask_awkward:from_parquet"
     output_instance = "dask_awkward:Array"
+
+    def discover(self, **kwargs):
+        return self.read(**kwargs).partitions[0]
+
+
+class AwkwardJSON(Awkward):
+    implements = {datatypes.Parquet}
+    func = "awkward:from_json"
+    url_arg = "source"
+
+
+class DaskAwkwardJSON(Awkward, DaskDF):
+    imports = {"dask_awkward"}
+    func = "dask_awkward:from_json"
+    output_instance = "dask_awkward:Array"
+    url_arg = "source"
 
     def discover(self, **kwargs):
         return self.read(**kwargs).partitions[0]
@@ -269,30 +328,40 @@ class PandasCSV(Pandas):
         return self.read(**kw)
 
 
-class DaskCSV(Dasky):
+class DaskCSV(DaskDF):
     implements = {datatypes.CSV}
     func = "dask.dataframe:read_csv"
     url_arg = "urlpath"
-    output_instance = "dask.dataframe:DataFrame"
 
 
 class Ray(FileReader):
     # https://docs.ray.io/en/latest/data/creating-datasets.html#supported-file-formats
-    implements = {datatypes.CSV, datatypes.Parquet, datatypes.JSONFile, datatypes.Text}
     imports = {"ray"}
-    output_instance = {"ray.data:Dataset"}
-    func_doc = {"ray.data:Dataset"}
+    output_instance = "ray.data:Dataset"
     url_arg = "paths"
 
     def discover(self, **kwargs):
         return self.read(**kwargs).limit(10)
 
-    def read(self, **kwargs):
-        data = import_name("ray.data")
-        method_name = {datatypes.CSV: "read_csv", datatypes.JSONFile: "read_json", datatypes.Parquet: "read_parquet", datatypes.Text: "read_text"}[type(self.data)]
-        method = getattr(data, method_name)
-        kwargs[self.url_arg] = self.data.url
-        return method(**kwargs)
+
+class RayParquet(Ray):
+    implements = {datatypes.Parquet}
+    func = "ray.data:read_parquet"
+
+
+class RayCSV(Ray):
+    implements = {datatypes.CSV}
+    func = "ray.data:read_csv"
+
+
+class RayJSON(Ray):
+    implements = {datatypes.JSONFile}
+    func = "ray.data:read_json"
+
+
+class RayText(Ray):
+    implements = {datatypes.Text}
+    func = "ray.data:read_text"
 
 
 class TiledNode(BaseReader):
@@ -325,6 +394,31 @@ def recommend(data):
 
 
 def reader_from_call(func, *args, **kwargs):
+    """Attempt to construct a reader instance by finding one that matches the function call
+
+    Fails for readers that don't define a func, probably because it depends on the file
+    type or needs a dynamic instance to be a method of.
+
+    Parameters
+    ----------
+    func: callable | str
+        If a callable, pass args and kwargs as you would have done to execute the function.
+        If a string, it should look like "func(arg1, args2, kwarg1, **kw)", i.e., a normal
+        python call but as a string. In the latter case, args and kwargs are ignored
+    """
+
+    import re
+
+    if isinstance(func, str):
+        frame = inspect.currentframe().f_back
+        match = re.match("^(.*?)[(](.*)[)]", func)
+        if match:
+            groups = match.groups()
+        else:
+            raise ValueError
+        func = eval(groups[0], frame.f_globals, frame.f_locals)
+        args, kwargs = eval(f"""(lambda *args, **kwargs: (args, kwargs))({groups[1]})""", frame.f_globals, frame.f_locals)
+
     package = func.__module__.split(".", 1)[0]
 
     found = False
@@ -346,13 +440,13 @@ def reader_from_call(func, *args, **kwargs):
     #  For a reader implementing multiple types, can we know which one - guess from URL, if given?
     data_kw = {}
     if issubclass(cls, FileReader):
-        data_kw["storage_options"] = kw.pop(cls.storage_options, None)
+        data_kw["storage_options"] = kw.pop("storage_options", None)
         data_kw["url"] = kw.pop(cls.url_arg)
     datacls = None
     if len(cls.implements) == 1:
         datacls = next(iter(cls.implements))
     elif cls.url_arg:
-        clss = datatypes.recommend(kwargs[cls.url_arg], storage_options=(data_kw["url"] if cls.storage_options else None))
+        clss = datatypes.recommend(kwargs[cls.url_arg], storage_options=(data_kw["url"] if cls.storage_options is not None else None))
         if clss:
             datacls = next(iter(clss))
     if datacls:
