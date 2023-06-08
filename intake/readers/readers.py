@@ -24,7 +24,7 @@ class BaseReader:
         o = object.__new__(cls)
         pars = inspect.signature(cls.__init__).parameters
         o._kw = dict(zip(pars, args), **kwargs)
-        o._kw.pop("self")
+        o._kw.pop("self", None)
         return o
 
     def __init__(self, data, entry=None, **kwargs):
@@ -125,7 +125,9 @@ class Functioner:
         return ConvertReader(data=self.reader, func=func, output_instance=item)
 
     def __repr__(self):
-        return f"Transformers for {self.reader.output_instance}:\n{self.funcdict}"
+        import pprint
+
+        return f"Transformers for {self.reader.output_instance}:\n{pprint.pformat(self.funcdict)}"
 
     def __dir__(self):
         return list(sorted(f.__name__ for f in self.funcdict.values()))
