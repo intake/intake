@@ -124,11 +124,12 @@ class CSVSource(base.DataSource, base.PatternMixin):
             self._files = urlpath
         else:
             protocol = split_protocol(urlpath[0])[0]
-            self._files = get_fs_token_paths(urlpath, storage_options=self._storage_options)[2]
+            fs, _, paths = get_fs_token_paths(urlpath, storage_options=self._storage_options)
+            self._files = sorted(paths)
             if protocol:
-                self._files = [f"{protocol}://{fn}" for fn in self._files]
+                self._files = [fs.unstrip_protocol(fn) for fn in self._files]
 
-        return sorted(self._files)
+        return self._files
 
     def _get_schema(self):
         if self._schema is not None:
