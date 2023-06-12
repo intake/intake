@@ -5,7 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
 
-from fsspec.core import get_fs_token_paths
+from fsspec.core import get_fs_token_paths, split_protocol
 
 from . import base
 from .utils import reverse_formats, unique_string
@@ -123,9 +123,13 @@ class CSVSource(base.DataSource, base.PatternMixin):
         if self.pattern is None and not glob_in_path:
             self._files = urlpath
         else:
-            self._files = get_fs_token_paths(urlpath)[2]
+            protocol = split_protocol(urlpath[0])[0]
+            fs, _, paths = get_fs_token_paths(urlpath, storage_options=self._storage_options)
+            self._files = sorted(paths)
+            if protocol:
+                self._files = [fs.unstrip_protocol(fn) for fn in self._files]
 
-        return sorted(self._files)
+        return self._files
 
     def _get_schema(self):
         if self._schema is not None:

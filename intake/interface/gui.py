@@ -6,105 +6,187 @@
 # -----------------------------------------------------------------------------
 import panel as pn
 
-from .base import ICONS, Base
-from .catalog.gui import CatGUI
-from .source.gui import SourceGUI
+import intake
+from intake.interface.base import ICONS
+from intake.interface.catalog.add import CatAdder
+from intake.interface.catalog.search import Search
+from intake.interface.source import defined_plots
 
 
-class GUI(Base):
+class GUI:
     """
-    Top level GUI panel that contains controls and all visible sub-panels
+    Top level GUI panel
 
     This class is responsible for coordinating the inputs and outputs
     of various sup-panels and their effects on each other.
 
     Parameters
     ----------
-    cats: list of catalogs
-        catalogs used to initalize the cat panel
+    cats: dict of catalogs
+        catalogs used to initalize the cat panel, {display_name: cat_object}
 
-    Attributes
-    ----------
-    children: list of panel objects
-        children that will be used to populate the panel when visible
-    panel: panel layout object
-        instance of a panel layout (row or column) that contains children
-        when visible
-    watchers: list of param watchers
-        watchers that are set on children - cleaned up when visible
-        is set to false.
     """
 
     def __init__(self, cats=None):
-        self.source = SourceGUI()
-        self.cat = CatGUI(cats=cats, done_callback=self.done_callback)
-        self.panel = pn.Column(
-            pn.Row(
-                pn.panel(ICONS["logo"]),
-                pn.Column(self.cat.select.panel, self.cat.control_panel, margin=0, width_policy="max"),
-                pn.Column(self.source.select.panel, self.source.control_panel, margin=0, width_policy="max"),
-                self.source.description.panel,
-                margin=0,
-                width_policy="max",
-            ),
-            pn.Row(self.cat.search.panel, self.cat.add.panel, self.source.plot.panel, width_policy="max"),
-            width_policy="max",
-        )
-        super(GUI, self).__init__()
+        # state
+        self._children = {}  # cat name in the selector to child catalogs' names: cat objects
+        self._cats = cats or {"builtin": intake.cat}  # mapping of name in the selector to catalog object
+        self._sources = {}  # source name: source instance
 
-    def done_callback(self, cats):
-        self.source.select.cats = cats
+        # layout
+        col0 = pn.Column(pn.pane.PNG(ICONS["logo"], align="center"), margin=(25, 0, 0, 0), width=50)
+        self.catsel = pn.widgets.MultiSelect(name="Catalogs", options=list(self._cats), value=[], size=13, styles={"width": "25%"})
+        self.catsel.param.watch(self.cat_selected, "value")
+        add = pn.widgets.Button(name="+")
+        sub = pn.widgets.Button(name="-")
+        search = pn.widgets.Button(name="🔍")
+        col1 = pn.Column(self.catsel, pn.Row(add, sub, search))
+        add.on_click(self.add_clicked)
+        sub.on_click(self.sub_clicked)
+        search.on_click(self.search_clicked)
+
+        self.sourcesel = pn.widgets.MultiSelect(name="Sources", size=13, styles={"width": "25%"})
+        plot = pn.widgets.Button(name="📊")
+        plot.on_click(self.plot_clicked)
+        self.sourcesel.param.watch(self.source_selected, "value")
+        col2 = pn.Column(self.sourcesel, plot)
+
+        self.sourceinf = pn.widgets.CodeEditor(readonly=True, language="yaml", print_margin=False, annotations=[])
+        col3 = pn.Column(self.sourceinf)
+
+        row0 = pn.Row(col0, col1, col2, col3, styles={"width": "100%"})
+
+        self.plots = defined_plots.Plots()
+        self.plots.panel.visible = False
+        self.add = CatAdder(done_callback=self.add_catalog)
+        self.add.panel.visible = False
+        self.search = Search(done_callback=self.searched)
+        self.search.panel.visible = False
+        self.row1 = pn.Row(self.plots.panel, self.add.panel, self.search.panel)
+
+        self.main = pn.Column(row0, self.row1)
+        self.cat_selected(None)
+
+    def _repr_mimebundle_(self, *args, **kwargs):
+        """Display in a notebook or a server"""
+        return self.main._repr_mimebundle_(*args, **kwargs)
+
+    def show(self, *args, **kwargs):
+        return self.main.show(*args, **kwargs)
+
+    def __repr__(self):
+        return "Intake GUI"
+
+    def cat_selected(self, *_):
+        right = "└─>"
+
+        cat = self.catsel.value
+        if not cat:
+            return
+        else:
+            catname = cat[0]
+            cat = self._cats[catname]
+        catsel_needs_update = False
+        self._sources.clear()
+        for entry in cat:
+            source = cat[entry]
+            if isinstance(source, intake.catalog.Catalog):
+                indent = len(catname) - len(catname.lstrip(" ")) + 2
+                name = " " * indent + right + entry
+                if name not in self._cats:
+                    self._cats[name] = source
+                    self._children.setdefault(catname, []).append(name)
+                    catsel_needs_update = True
+            else:
+                self._sources[entry] = source
+        if catsel_needs_update:
+            self.update_catsel()
+        self.sourcesel.param.update(options=list(self._sources))
+
+    def update_catsel(self):
+        self.catsel.param.update(options=get_catlist(self._cats, self._children))
+
+    def add_catalog(self, cat, name=None, **_):
+        name = name or cat.name
+        self._cats[name] = cat
+        self.update_catsel()
+
+    def source_selected(self, *_):
+        import yaml
+
+        source = self.sourcesel.value
+        if not source:
+            return
+        else:
+            source = self._sources[source[0]]
+        txt = yaml.dump(source._yaml()["sources"], default_flow_style=False)
+        self.sourceinf.param.update(value=txt)
+
+    def plot_clicked(self, *_):
+        if self.plots.panel.visible:
+            self.plots.panel.visible = False
+        elif self.sources:
+            self.plots.source = self.sources[0]
+            self.add.panel.visible = False
+            self.plots.panel.visible = True
+            self.search.panel.visible = False
+
+    def searched(self, searchstring: str):
+        if self.cats:
+            cat = self.cats[0]
+            cat2 = cat.search(searchstring)
+            self.add_catalog(cat2, name=f"search <{searchstring[:10]}>")
+
+    def add_clicked(self, *_):
+        if self.add.panel.visible:
+            self.add.panel.visible = False
+        else:
+            self.add.panel.visible = True
+            self.plots.panel.visible = False
+            self.search.panel.visible = False
+
+    def sub_clicked(self, *_):
+        for catname in self.catsel.value:
+            self.remove_cat(catname)
+
+    def remove_cat(self, catname, done=True):
+        self._cats.pop(catname, None)  # remake "builtin" if accidentally removed?
+        for cat in self._children.get(catname, []):
+            self.remove_cat(cat, done=False)
+        if done:
+            self.catsel.param.update(options=list(self._cats))
+
+    def search_clicked(self, *_):
+        if self.search.panel.visible:
+            self.search.panel.visible = False
+        else:
+            self.add.panel.visible = False
+            self.plots.panel.visible = False
+            self.search.panel.visible = True
 
     @property
     def cats(self):
         """Cats that have been selected from the cat sub-panel"""
-        return self.cat.cats
-
-    def add(self, *args, **kwargs):
-        """Add to list of cats"""
-        return self.cat.select.add(*args, **kwargs)
+        return [self._cats[k] for k in self.catsel.value]
 
     @property
     def sources(self):
         """Sources that have been selected from the source sub-panel"""
-        return self.source.sources
+        return [self._sources[k] for k in self.sourcesel.value]
 
     @property
     def source_instance(self):
-        """DataSource instance for the current selection and any parameters"""
-        return self.source.source_instance
+        return self.sources[0] if self.sourcesel.values else None
 
-    @property
-    def item(self):
-        """Item that is selected"""
-        if len(self.sources) == 0:
-            return None
-        return self.sources[0]
 
-    def __getstate__(self):
-        """Serialize the current state of the object"""
-        return {
-            "visible": self.visible,
-            "cat": self.cat.__getstate__(),
-            "source": self.source.__getstate__(),
-        }
-
-    def __setstate__(self, state):
-        """Set the current state of the object from the serialized version.
-        Works inplace. See ``__getstate__`` to get serialized version and
-        ``from_state`` to create a new object."""
-        self.visible = state.get("visible", True)
-        self.cat.__setstate__(state["cat"])
-        self.source.__setstate__(state["source"])
-        return self
-
-    @classmethod
-    def from_state(cls, state):
-        """Create a new object from a serialized exising object.
-
-        Example
-        -------
-        original = GUI()
-        copy = GUI.from_state(original.__getstate__())
-        """
-        return cls(cats=[]).__setstate__(state)
+def get_catlist(catnames, children, outlist=None, seen=None):
+    outlist = outlist or []
+    seen = seen or set()
+    for name in sorted(catnames):
+        if name in seen:
+            continue
+        seen.add(name)
+        outlist.append(name)
+        if name in children:
+            get_catlist(children[name], children, outlist, seen)
+    return outlist

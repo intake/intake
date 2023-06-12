@@ -15,7 +15,7 @@ from fsspec.registry import known_implementations
 
 import intake
 
-from ..base import ICONS, MAX_WIDTH, Base, enable_widget
+from ..base import MAX_WIDTH, Base, enable_widget
 
 
 class FileSelector(Base):
@@ -104,13 +104,6 @@ class FileSelector(Base):
     def go_home(self, arg=None):
         self.protocol.value = "file"
         self.path_text.value = os.getcwd() + os.path.sep
-
-    def validate(self, arg=None):
-        """Check that inputted path is valid - set validator accordingly"""
-        if os.path.isdir(self.path):
-            self.validator.object = None
-        else:
-            self.validator.object = ICONS["error"]
 
     def make_options(self, arg=None):
         if self.done_callback:
@@ -239,16 +232,12 @@ class CatAdder(Base):
     def setup(self):
         self.selectors = [self.fs, self.url]
         self.tabs = pn.Tabs(*map(lambda x: x.panel, self.selectors))
-        self.validator = pn.pane.SVG(None, width=25)
 
         self.watchers = [
             self.widget.param.watch(self.add_cat, "clicks"),
-            self.tabs.param.watch(self.tab_change, "active"),
-            self.fs.main.param.watch(self.remove_error, "value"),
-            self.url.main.param.watch(self.remove_error, "value"),
         ]
 
-        self.children = [self.tabs, pn.Row(self.widget, self.validator)]
+        self.children = [self.tabs, self.widget]
 
     @property
     def cat_url(self):
@@ -274,32 +263,6 @@ class CatAdder(Base):
         """Add cat and close panel"""
         try:
             self.done_callback(self.cat)
-            self.visible = False
+            self.panel.visible = False
         except Exception as e:
-            self.validator.object = ICONS["error"]
             raise e
-
-    def remove_error(self, *args):
-        """Remove error from the widget"""
-        self.validator.object = None
-
-    def tab_change(self, event):
-        """When tab changes remove error, and enable widget if on url tab"""
-        self.remove_error()
-        if event.new == 1:
-            self.widget.disabled = False
-
-    def __getstate__(self):
-        """Serialize the current state of the object"""
-        return {"visible": self.visible, "local": self.fs.__getstate__(), "remote": self.url.__getstate__(), "active": self.tabs.active if self.tabs else 0}
-
-    def __setstate__(self, state):
-        """Set the current state of the object from the serialized version.
-        Works inplace. See ``__getstate__`` to get serialized version and
-        ``from_state`` to create a new object."""
-        self.fs.__setstate__(state["local"])
-        self.url.__setstate__(state["remote"])
-        self.visible = state.get("visible", True)
-        if self.visible:
-            self.tabs.active = state["active"]
-        return self

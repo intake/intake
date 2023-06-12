@@ -4,7 +4,6 @@ notebook
 panel
 hvplot
 bokeh
-fsspec
 aiohttp
 requests
 pandas
