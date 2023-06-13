@@ -2,6 +2,7 @@
 
 By convention, functions here do not change the data, just how it is held.
 """
+import re
 
 from intake.readers import readers
 
@@ -30,6 +31,10 @@ def register_converter(intype: str, outtype: str, clobber=True):
     return f
 
 
+class SameType:
+    ...
+
+
 @register_converter("duckdb:DuckDBPyRelation", "pandas:DataFrame")
 def duck_to_pandas(x, **kw):
     return x.df(**kw)
@@ -48,7 +53,7 @@ def daskdf_to_hvplot(x, explorer=False, **kw):
     if explorer:
         # this is actually a hvplot.ui:hvPlotExplorer
         return hvplot.explorer(x, **kw)
-    return hvplot.hvPlot(x, **kw)
+    return hvplot.hvPlot(x, **kw)()
 
 
 @register_converter("ray.data:Dataset", "pandas:DataFrame")
@@ -108,7 +113,7 @@ def convert_funcs(in_type: str):
     """Get available conversion functions for input type"""
     out_dict = {}
     for intype, out in _converted:
-        if intype == in_type:
+        if re.match(intype, in_type) or re.match(in_type, intype):
             out_dict[out] = _converted[(intype, out)]
     return out_dict
 
@@ -122,25 +127,6 @@ def convert(data, outtype: str, **kwargs):
     return func(data, **kwargs)
 
 
-class ConvertReader(readers.BaseReader):
-    def __init__(self, func: callable, output_instance: str, **kwargs):
-        super().__init__(**kwargs)
-        self.func = func
-        self.output_instance = output_instance
-
-    def __repr__(self):
-        return f"{ConvertReader} with func <{self.func}> creating an instance <{self.output_instance}>"
-
-    def read(self, **kwargs):
-        kw = self.kwargs.copy()
-        kw.update(kwargs)
-        return self.func(self.data.read(), **kw)
-
-    def output_doc(self):
-        """Doc associated with output type"""
-        return self.func.__doc__
-
-
 class Pipeline(readers.BaseReader):
     """Holds a list of transforms/conversions to be enacted in sequence
 
@@ -148,18 +134,47 @@ class Pipeline(readers.BaseReader):
     of operations.
     """
 
-    def __init__(self, data, steps: tuple[callable, dict]):
-        self.data = data
-        self.steps = steps
+    def __init__(self, data, steps: list[tuple[callable, dict]], out_instances: list[str], entry=None, **kwargs):
+        if isinstance(data.reader, Pipeline):
+            self.reader = data.reader.reader
+            self.steps = data.reader.steps + steps
+            out_instances = data.reader.output_instances + out_instances
+            data = data.reader.data
+        else:
+            self.reader = data.reader
+            self.steps = steps
+            out_instances = out_instances
+        super().__init__(data, entry, **kwargs)
+        self.output_instances = []
+        prev = self.reader.output_instance
+        for inst in out_instances:
+            if inst is SameType:
+                inst = prev
+            prev = inst
+            self.output_instances.append(inst)
+        steps[-1][1].update(kwargs)
+        self.entry = entry
+
+    @property
+    def output_instance(self):
+        return self.output_instances[self.until or -1]
+
+    def __repr__(self):
+        start = f"PipelineReader: from {self.reader}"
+        bits = [f"{f.__name__}, {kw} => {out}" for (f, kw), out in zip(self.steps, self.output_instances)]
+        return "\n".join([start] + bits)
 
     def discover(self, **kwargs):
-        data = self.data.discover()
+        data = self.reader.discover()
         for func, kw in self.steps:
             data = func(data, **kw)
         return data
 
     def read(self, **_):
-        data = self.data.read()
+        data = self.reader.read()
         for func, kw in self.steps:
             data = func(data, **kw)
         return data
+
+    def first_n_stages(self, n: int):
+        return Pipeline(self.data, self.steps[:n], self.output_instances[:n], entry=self.entry, **self.kwargs)

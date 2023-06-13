@@ -110,6 +110,13 @@ class Tiled(Service):
     tiled_client: Any = None
 
 
+@dataclass()
+class ReaderData(BaseData):
+    """Represents the output of another reader as a data entity"""
+
+    reader: Any = None
+
+
 comp_magic = {
     # These are a bit like datatypes making raw bytes/file object output
     (0, b"\x1f\x8b"): "gzip",

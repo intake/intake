@@ -32,14 +32,19 @@ class BaseReader:
         self.kwargs = kwargs
         self.entry = entry
 
+    def __repr__(self):
+        return f"{type(self).__name__} reader for {self.data} producing {self.output_instance}"
+
     def __call__(self, outtype=None, reader=None, **kwargs):
+        """New version of this instance with altered arguments"""
         if self.entry:
             return self.entry.get_reader(outtype=outtype, reader=reader, **kwargs)
         else:
             return self.to_entry().get_reader(outtype=outtype, reader=reader, **kwargs)
 
     def clone_new(self, outtype=None, reader=None, **kwargs):
-        return self(outtype=None, reader=None, **kwargs)
+        """Compatibility method"""
+        return self(outtype=outtype, reader=reader, **kwargs)
 
     @classmethod
     def check_imports(cls):
@@ -119,10 +124,10 @@ class Functioner:
         return list(self.funcdict)
 
     def __getitem__(self, item):
-        from intake.readers.convert import ConvertReader
+        from intake.readers.convert import Pipeline
 
         func = self.funcdict[item]
-        return ConvertReader(data=self.reader, func=func, output_instance=item)
+        return Pipeline(reader=datatypes.ReaderData(reader=self.reader), steps=[(func, {})], out_instances=[item])
 
     def __repr__(self):
         import pprint
@@ -133,12 +138,12 @@ class Functioner:
         return list(sorted(f.__name__ for f in self.funcdict.values()))
 
     def __getattr__(self, item):
-        from intake.readers.convert import ConvertReader
+        from intake.readers.convert import Pipeline
 
         out = [(outtype, func) for outtype, func in self.funcdict.items() if func.__name__ == item]
         if len(out):
             outtype, func = out[0]
-            return ConvertReader(data=self.reader, func=func, output_instance=outtype)
+            return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, {})], out_instances=[outtype])
         raise KeyError(item)
 
 
