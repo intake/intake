@@ -157,12 +157,21 @@ class Pipeline(readers.BaseReader):
 
     @property
     def output_instance(self):
-        return self.output_instances[self.until or -1]
+        return self.output_instances[-1]
 
     def __repr__(self):
         start = f"PipelineReader: from {self.reader}"
         bits = [f"{f.__name__}, {kw} => {out}" for (f, kw), out in zip(self.steps, self.output_instances)]
         return "\n".join([start] + bits)
+
+    def output_doc(self):
+        from intake import import_name
+
+        out = import_name(self.output_instance)
+        return out.__doc__
+
+    def doc(self):
+        return self.steps[-1][0].__doc__
 
     def discover(self, **kwargs):
         data = self.reader.discover()
@@ -177,4 +186,11 @@ class Pipeline(readers.BaseReader):
         return data
 
     def first_n_stages(self, n: int):
+        """Truncate pipeline to the given stage
+
+        If n is equal to the number of steps, this is a simple copy.
+        """
+        if n < 1 or n > len(self.steps):
+            raise ValueError(f"n must be between {1} and {len(self.steps)}")
+
         return Pipeline(self.data, self.steps[:n], self.output_instances[:n], entry=self.entry, **self.kwargs)

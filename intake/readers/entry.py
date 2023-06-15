@@ -16,7 +16,7 @@ class DataDescription:
     like a classic Intake entry
     """
 
-    def __init__(self, data: BaseData, kwargs_map: dict | None, user_parameters: dict | None = None):
+    def __init__(self, data: BaseData, kwargs_map: dict | None = None, user_parameters: dict | None = None):
         self.data = data
         self.kwmap: dict[str, dict[str, Any]] = kwargs_map or {}
         self.up = user_parameters or {}
@@ -97,6 +97,22 @@ class DataDescription:
     @property
     def metadata(self):
         return self.data.metadata
+
+    def add_reader(self, reader):
+        if not reader.data == self:
+            # only require types to match?
+            raise ValueError("Reader is for a different data definition")
+        # TODO: key here is only name; need token and ability to give name
+        key = type(reader).__name__.lower()
+        kw = reader._kw.copy()
+        self.kwmap[key] = kw  # check clobber
+
+    def __repr__(self):
+        if self.kwmap:
+            part = f"with defined readers {list(self.kwmap)}"
+        else:
+            part = "with no defined readers"
+        return f"Entry for data {self.data}\n" + part
 
 
 class Catalog(Mapping):

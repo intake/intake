@@ -22,6 +22,29 @@ class BaseData:
     filepattern: ClassVar = set()
     structure: ClassVar = None
 
+    def to_entry(self):
+        """Make an entry of the data definition only, no reader kwargs"""
+        from intake.readers.entry import DataDescription
+
+        return DataDescription(self)
+
+    def to_reader(self, outtype):
+        from intake.readers.entry import DataDescription
+
+        return DataDescription(self).get_reader(outtype=outtype)
+
+    @property
+    def possible_readers(self):
+        self.to_entry().possible_readers
+
+    def __eq__(self, other):
+        if type(self) == type(other):
+            try:
+                return all(other.__dict__.get(k) == v for (k, v) in self.__dict__.items() if not k.startswith("_"))
+            except (ValueError, TypeError):
+                pass
+        return False
+
 
 @dataclass
 class FileData(BaseData):

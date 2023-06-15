@@ -18,7 +18,7 @@ class CSVSource:
     name = "csv"
 
     def __init__(self, urlpath, storage_options=None, metadata=None, **kwargs):
-        self.data = CSV(url=urlpath, storage_option=storage_options, metadata=metadata)
+        self.data = CSV(url=urlpath, storage_options=storage_options, metadata=metadata)
         self.kwargs = kwargs
 
     def discover(self):
