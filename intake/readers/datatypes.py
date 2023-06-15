@@ -26,7 +26,7 @@ class BaseData:
         """Make an entry of the data definition only, no reader kwargs"""
         from intake.readers.entry import DataDescription
 
-        return DataDescription(self)
+        return DataDescription(data=self)
 
     def to_reader(self, outtype):
         from intake.readers.entry import DataDescription
@@ -35,7 +35,7 @@ class BaseData:
 
     @property
     def possible_readers(self):
-        self.to_entry().possible_readers
+        return self.to_entry().possible_readers
 
     def __eq__(self, other):
         if type(self) == type(other):

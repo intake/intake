@@ -3,7 +3,7 @@
 By convention, functions change the data but not the container type
 """
 
-from intake.readers.convert import SameType, register_converter
+from intake.readers.convert import register_converter
 
 
 @register_converter("pandas:DataFrame", "pandas:DataFrame")
@@ -17,7 +17,7 @@ def pyspark_select_columns(x, columns, **_):
     return x.select(columns)
 
 
-@register_converter(".*", SameType)
+@register_converter(".*", ".*")  # SameType)
 def method(x, method_name: str, **kw):
     """Call named method on object
 

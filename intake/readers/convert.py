@@ -160,8 +160,8 @@ class Pipeline(readers.BaseReader):
         return self.output_instances[-1]
 
     def __repr__(self):
-        start = f"PipelineReader: from {self.reader}"
-        bits = [f"{f.__name__}, {kw} => {out}" for (f, kw), out in zip(self.steps, self.output_instances)]
+        start = f"PipelineReader: \nfrom {self.reader}"
+        bits = [f"  {i}: {f.__name__}, {kw} => {out}" for i, ((f, kw), out) in enumerate(zip(self.steps, self.output_instances))]
         return "\n".join([start] + bits)
 
     def output_doc(self):
@@ -194,3 +194,9 @@ class Pipeline(readers.BaseReader):
             raise ValueError(f"n must be between {1} and {len(self.steps)}")
 
         return Pipeline(self.data, self.steps[:n], self.output_instances[:n], entry=self.entry, **self.kwargs)
+
+    def with_step(self, step, out_instance):
+        if not isinstance(step, tuple):
+            # must be a func - check?
+            step = (step, {})
+        return Pipeline(data=self.data, steps=self.steps + [step], out_instances=self.output_instances + [out_instance])

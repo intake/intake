@@ -127,7 +127,10 @@ class Functioner:
         from intake.readers.convert import Pipeline
 
         func = self.funcdict[item]
-        return Pipeline(reader=datatypes.ReaderData(reader=self.reader), steps=[(func, {})], out_instances=[item])
+        if isinstance(self.reader, Pipeline):
+            return self.reader.with_step(func, out_instance=item)
+
+        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, {})], out_instances=[item])
 
     def __repr__(self):
         import pprint
@@ -141,10 +144,13 @@ class Functioner:
         from intake.readers.convert import Pipeline
 
         out = [(outtype, func) for outtype, func in self.funcdict.items() if func.__name__ == item]
-        if len(out):
-            outtype, func = out[0]
-            return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, {})], out_instances=[outtype])
-        raise KeyError(item)
+        if not len(out):
+            raise KeyError(item)
+        outtype, func = out[0]
+        if isinstance(self.reader, Pipeline):
+            return self.reader.with_step((func, {}), out_instance=outtype)
+
+        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, {})], out_instances=[outtype])
 
 
 class FileReader(BaseReader):
