@@ -97,6 +97,13 @@ class Text(FileData):
     structure = {"sequence"}
 
 
+class PNG(FileData):
+    filepattern = {"png$"}
+    structure = {"array", "image"}
+    mimetypes = {"image/png"}
+    magic = b"\x89PNG"
+
+
 @dataclass
 class SQLQuery(Service):
     structure: ClassVar = {"sequence", "table"}

@@ -200,6 +200,26 @@ class FileReader(BaseReader):
         return self._func(**kw)
 
 
+class FileByteReader(FileReader):
+    output_instance = "builtin:bytes"
+    implements = {datatypes.FileData}
+
+    def discover(self, **kwargs):
+        import fsspec
+
+        with fsspec.open(self.data.url, mode="rb", **(self.data.storage_options or {})) as f:
+            return f.read()
+
+    def read(self, **kwargs):
+        import fsspec
+
+        out = []
+        for of in fsspec.open_files(self.data.url, mode="rb", **(self.data.storage_options or {})):
+            with of as f:
+                out.append(f.read())
+        return b"".join(out)
+
+
 class Pandas(FileReader):
     imports = {"pandas"}
     concat_func = "pandas:concat"
@@ -420,7 +440,7 @@ def recommend(data):
     """Show which readers claim to support the given data instance"""
     out = {"importable": set(), "not_importable": set()}
     for cls in subclasses(BaseReader):
-        if type(data) in cls.implements:
+        if any(isinstance(data, imp) for imp in cls.implements):
             if cls.check_imports():
                 out["importable"].add(cls)
             else:
