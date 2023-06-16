@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.metadata
 import inspect
+from itertools import chain
 
 from intake import import_name
 from intake.readers import datatypes
@@ -41,6 +42,23 @@ class BaseReader:
             return self.entry.get_reader(outtype=outtype, reader=reader, **kwargs)
         else:
             return self.to_entry().get_reader(outtype=outtype, reader=reader, **kwargs)
+
+    def __getattr__(self, item):
+        return self.transform.__getattr__(item)
+
+    def __getitem__(self, item):
+        from intake.readers.convert import Pipeline
+        from intake.readers.transform import getitem
+
+        outtype = self.output_instance
+        func = getitem
+        if isinstance(self, Pipeline):
+            return self.with_step((func, {"item": item}), out_instance=outtype)
+
+        return Pipeline(data=datatypes.ReaderData(reader=self), steps=[(func, {"item": item})], out_instances=[outtype])
+
+    def __dir__(self):
+        return list(sorted(chain(object.__dir__(self), dir(self.transform))))
 
     def clone_new(self, outtype=None, reader=None, **kwargs):
         """Compatibility method"""
@@ -135,6 +153,7 @@ class Functioner:
     def __repr__(self):
         import pprint
 
+        # TODO: replace .*/SameType outputs with out output_instance
         return f"Transformers for {self.reader.output_instance}:\n{pprint.pformat(self.funcdict)}"
 
     def __dir__(self):
@@ -142,11 +161,14 @@ class Functioner:
 
     def __getattr__(self, item):
         from intake.readers.convert import Pipeline
+        from intake.readers.transform import method
 
         out = [(outtype, func) for outtype, func in self.funcdict.items() if func.__name__ == item]
         if not len(out):
-            raise KeyError(item)
-        outtype, func = out[0]
+            outtype = self.reader.output_instance
+            func = method
+        else:
+            outtype, func = out[0]
         if isinstance(self.reader, Pipeline):
             return self.reader.with_step((func, {}), out_instance=outtype)
 
@@ -315,7 +337,7 @@ class DaskAwkwardParquet(AwkwardParquet, DaskDF):
 
 
 class AwkwardJSON(Awkward):
-    implements = {datatypes.Parquet}
+    implements = {datatypes.JSONFile}
     func = "awkward:from_json"
     url_arg = "source"
 

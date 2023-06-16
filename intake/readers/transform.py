@@ -2,7 +2,6 @@
 
 By convention, functions change the data but not the container type
 """
-
 from intake.readers.convert import register_converter
 
 
@@ -24,3 +23,12 @@ def method(x, method_name: str, **kw):
     Assumes output type is the same as input.
     """
     return getattr(x, method_name)(**kw)
+
+
+@register_converter(".*", ".*")  # SameType)
+def getitem(x, item, **kw):
+    """Equivalent of x[item]
+
+    Assumes output type is the same as input.
+    """
+    return x[item]

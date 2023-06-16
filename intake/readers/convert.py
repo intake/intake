@@ -157,6 +157,7 @@ class Pipeline(readers.BaseReader):
 
     @property
     def output_instance(self):
+        # TODO: replace .*/SameTypes with previous output instance
         return self.output_instances[-1]
 
     def __repr__(self):
@@ -171,17 +172,26 @@ class Pipeline(readers.BaseReader):
         return out.__doc__
 
     def doc(self):
-        return self.steps[-1][0].__doc__
+        return self.doc_n(-1)
+
+    def doc_n(self, n):
+        self.steps[n][0].__doc__
 
     def discover(self, **kwargs):
         data = self.reader.discover()
-        for func, kw in self.steps:
+        for i, (func, kw) in enumerate(self.steps):
+            if i == len(self.steps) - 1:
+                # kwargs passed here override only the last stage
+                kw = dict(**kw, **kwargs)
             data = func(data, **kw)
         return data
 
-    def read(self, **_):
+    def read(self, **kwargs):
         data = self.reader.read()
-        for func, kw in self.steps:
+        for i, (func, kw) in enumerate(self.steps):
+            if i == len(self.steps) - 1:
+                # kwargs passed here override only the last stage
+                kw = dict(**kw, **kwargs)
             data = func(data, **kw)
         return data
 
