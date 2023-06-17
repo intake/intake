@@ -19,6 +19,11 @@ def can_provide(outtype: str):
     return set(intype for intype, out in _converted if out == outtype)
 
 
+# TODO: readers are found by the subclasses of a base and class attributes, but here we have a
+#  dict and simple functions. Should have same pattern? Many of these are simple delegation to
+#  a method/function, so at least should auto-generate docstring like with functools.wraps .
+
+
 def register_converter(intype: str, outtype: str, clobber=True):
     """Add a convert function to the list of known conversions"""
     if not clobber and (intype, outtype) in _converted:
@@ -41,6 +46,7 @@ def duck_to_pandas(x, **kw):
 
 
 @register_converter("dask.dataframe:DataFrame", "pandas:DataFrame")
+@register_converter("dask.array:Array", "numpy:ndarray")
 def daskdf_to_pandas(x, **kw):
     return x.compute(**kw)
 

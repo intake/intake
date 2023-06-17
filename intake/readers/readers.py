@@ -29,6 +29,13 @@ class BaseReader:
         return o
 
     def __init__(self, data, entry=None, **kwargs):
+        """
+
+        Parameters
+        ----------
+        data: intake.readers.datatypes.BaseData
+        entry: intake.readers.entry.DataDescription | None
+        """
         self.data = data
         self.kwargs = kwargs
         self.entry = entry
@@ -61,7 +68,7 @@ class BaseReader:
         return list(sorted(chain(object.__dir__(self), dir(self.transform))))
 
     def clone_new(self, outtype=None, reader=None, **kwargs):
-        """Compatibility method"""
+        """Compatibility method from intake 1.0's Source"""
         return self(outtype=outtype, reader=reader, **kwargs)
 
     @classmethod
@@ -99,6 +106,7 @@ class BaseReader:
 
     @property
     def _func(self):
+        """Import and replace .func, if it is a string"""
         if isinstance(self.func, str):
             return import_name(self.func)
         return self.func
@@ -126,6 +134,7 @@ class BaseReader:
         return Functioner(self, funcdict)
 
     def to_entry(self):
+        """Create an entry with only this reader defined"""
         from intake.readers.entry import DataDescription
 
         return DataDescription(self.data, {type(self).__name__.lower(): self._kw})
@@ -176,6 +185,8 @@ class Functioner:
 
 
 class FileReader(BaseReader):
+    """Convenience superclass for readers of files"""
+
     url_arg = None
     storage_options = False
 
@@ -201,6 +212,8 @@ class FileReader(BaseReader):
 
 
 class FileByteReader(FileReader):
+    """The contents of file(s) as bytes objects"""
+
     output_instance = "builtin:bytes"
     implements = {datatypes.FileData}
 

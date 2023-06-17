@@ -115,6 +115,16 @@ class DataDescription:
         return f"Entry for data {self.data}\n" + part
 
 
+def merge_entries(*entries: tuple[DataDescription, ...]) -> tuple(DataDescription):
+    out = {}
+    for entry in entries:
+        if entry.data not in out:
+            out[entry.data] = entry
+        else:
+            out[entry.data].kwmap.update(entry.kwmap)
+    return list(out.values())
+
+
 class Catalog(Mapping):
     def __getattr__(self, item):
         return self[item]

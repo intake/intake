@@ -3,24 +3,25 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
-from typing import Any, ClassVar
 
 import fsspec
 
 from intake.readers.utils import subclasses
 
+# TODO: make "structure" possibilities an enum?
+
 # https://en.wikipedia.org/wiki/List_of_file_signatures
 
 
-@dataclass
 class BaseData:
     """Prototype dataset definition"""
 
-    metadata: dict = field(default_factory=dict)
-    mimetypes: ClassVar = set()
-    filepattern: ClassVar = set()
-    structure: ClassVar = None
+    mimetypes = set()
+    filepattern = set()
+    structure = set()
+
+    def __init__(self, metadata: dict | None = None):
+        self.metadata = metadata
 
     def to_entry(self):
         """Make an entry of the data definition only, no reader kwargs"""
@@ -37,23 +38,26 @@ class BaseData:
     def possible_readers(self):
         return self.to_entry().possible_readers
 
-    def __eq__(self, other):
-        if type(self) == type(other):
-            try:
-                return all(other.__dict__.get(k) == v for (k, v) in self.__dict__.items() if not k.startswith("_"))
-            except (ValueError, TypeError):
-                pass
-        return False
+    def __repr__(self):
+        d = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+        return f"{type(self).__name__}, {d}"
+
+    def __hash__(self):
+        from hashlib import md5
+
+        return int(md5(repr(self).encode()).hexdigest(), 16)
 
 
-@dataclass
 class FileData(BaseData):
     """Datatypes loaded from files"""
 
-    url: str | list = ""  # location of the dataset
-    storage_options: dict = field(default_factory=dict)  # any fsspec kwargs to read that location
-    _filelist: ClassVar[list | None] = None  # will hold list of files after glob expansion
     magic = set()  # bytes at file start to identify it
+
+    def __init__(self, url: str = "", storage_options: dict | None = None, metadata: dict | None = None):
+        self.url = url
+        self.storage_options = storage_options
+        self._filelist = None
+        super().__init__(metadata)
 
     @property
     def filelist(self):
@@ -101,15 +105,17 @@ class PNG(FileData):
     filepattern = {"png$"}
     structure = {"array", "image"}
     mimetypes = {"image/png"}
-    magic = b"\x89PNG"
+    magic = {b"\x89PNG"}
 
 
-@dataclass
 class SQLQuery(Service):
-    structure: ClassVar = {"sequence", "table"}
-    conn: str | dict = ""
-    query: str = ""
+    structure = {"sequence", "table"}
     filepattern = {"^oracle", "^mssql", "^sqlite", "^mysql", "^postgres"}
+
+    def __init__(self, conn, query, metadata=None):
+        self.conn = conn
+        self.query = query
+        self.metadata = metadata
 
 
 class CatalogFile(Catalog, FileData):
@@ -117,10 +123,11 @@ class CatalogFile(Catalog, FileData):
     mimetypes = {"text/yaml"}
 
 
-@dataclass
 class CatalogAPI(Catalog, Service):
-    api_root: str = ""
-    headers: dict = field(default_factory=dict)
+    def __init__(self, api_root, headers=None, metadata=None):
+        self.api_root = api_root
+        self.headers = headers
+        super().__init__(metadata=metadata)
 
 
 class YAMLFile(FileData):
@@ -135,16 +142,18 @@ class JSONFile(FileData):
     structure = {"nested", "table"}
 
 
-@dataclass()
 class Tiled(Service):
-    tiled_client: Any = None
+    def __init__(self, tiled_client, metadata=None):
+        self.tiled_client = tiled_client
+        super().__init__(metadata)
 
 
-@dataclass()
 class ReaderData(BaseData):
     """Represents the output of another reader as a data entity"""
 
-    reader: Any = None
+    def __init__(self, reader, metadata=None):
+        self.reader = reader
+        super().__init__(metadata)
 
 
 comp_magic = {
