@@ -5,6 +5,7 @@ By convention, functions here do not change the data, just how it is held.
 import re
 
 from intake.readers import readers
+from intake.readers.utils import Token
 
 _converted = {}
 
@@ -170,6 +171,10 @@ class Pipeline(readers.BaseReader):
         start = f"PipelineReader: \nfrom {self.reader}"
         bits = [f"  {i}: {f.__name__}, {kw} => {out}" for i, ((f, kw), out) in enumerate(zip(self.steps, self.output_instances))]
         return "\n".join([start] + bits)
+
+    @property
+    def tokens(self) -> list[Token]:
+        return [self.first_n_stages(n).token for n in range(len(self.steps))]
 
     def output_doc(self):
         from intake import import_name

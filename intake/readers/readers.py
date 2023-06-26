@@ -8,10 +8,10 @@ from itertools import chain
 
 from intake import import_name
 from intake.readers import datatypes
-from intake.readers.utils import subclasses
+from intake.readers.utils import Tokenizable, subclasses
 
 
-class BaseReader:
+class BaseReader(Tokenizable):
     imports: set[str] = set()  # allow for pip-style versions maybe
     implements: set[datatypes.BaseData] = set()
     optional_imports: set[str] = set()

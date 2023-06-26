@@ -16,10 +16,3 @@ def tokenize(*args, **kwargs):
     if kwargs:
         hasher.update(str(args).encode())
     return hasher.hexdigest()
-
-
-def unique_string():
-    from random import choice
-    from string import ascii_letters, digits
-
-    return "".join([choice(ascii_letters + digits) for n in range(8)])

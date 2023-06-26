@@ -3,25 +3,26 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 import fsspec
 
-from intake.readers.utils import subclasses
+from intake.readers.utils import Tokenizable, subclasses
 
 # TODO: make "structure" possibilities an enum?
 
 # https://en.wikipedia.org/wiki/List_of_file_signatures
 
 
-class BaseData:
+class BaseData(Tokenizable):
     """Prototype dataset definition"""
 
-    mimetypes = set()
-    filepattern = set()
-    structure = set()
+    mimetypes: set[str] = set()
+    filepattern: set[str] = set()
+    structure: set[str] = set()
 
-    def __init__(self, metadata: dict | None = None):
-        self.metadata = metadata
+    def __init__(self, metadata: dict[str, Any] | None = None):
+        self.metadata: dict[str, Any] = metadata or {}
 
     def to_entry(self):
         """Make an entry of the data definition only, no reader kwargs"""
@@ -30,22 +31,19 @@ class BaseData:
         return DataDescription(data=self)
 
     def to_reader(self, outtype):
+        """Get the default reader for this data: the first importable one"""
         from intake.readers.entry import DataDescription
 
         return DataDescription(self).get_reader(outtype=outtype)
 
     @property
     def possible_readers(self):
+        """List of reader classes for this type, grouped by importability"""
         return self.to_entry().possible_readers
 
     def __repr__(self):
         d = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
         return f"{type(self).__name__}, {d}"
-
-    def __hash__(self):
-        from hashlib import md5
-
-        return int(md5(repr(self).encode()).hexdigest(), 16)
 
 
 class FileData(BaseData):
@@ -154,6 +152,22 @@ class ReaderData(BaseData):
     def __init__(self, reader, metadata=None):
         self.reader = reader
         super().__init__(metadata)
+
+
+class NumpyFile(FileData):
+    magic = {b"\x93NUMPY"}
+    filepattern = {"npy$", "text$"}
+    structure = {"array"}
+
+
+class Feather2(FileData):
+    magic = {b"ARROW1"}
+    structure = {"tabular", "structured"}
+
+
+class Feather1(FileData):
+    magic = {b"FEA1"}
+    structure = {"tabular", "structured"}
 
 
 comp_magic = {
