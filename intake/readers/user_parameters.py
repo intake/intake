@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Iterable
 
 import typeguard
 
@@ -65,3 +65,29 @@ class BoundedNumberUserParameter(BaseUserParameter):
         if self.min:
             out = out and self.min < value
         return out
+
+
+def _set_values(up, arguments):
+    if isinstance(arguments, dict):
+        return {k: _set_values(up, v) for k, v in arguments.copy().items()}
+    elif isinstance(arguments, str) and arguments.startswith("{") and arguments.endswith("}") and arguments[1:-1] in up:
+        return up[arguments[1:-1]]
+    elif isinstance(arguments, str):
+        return arguments.format(**up)
+    elif isinstance(arguments, Iterable):
+        return type(arguments)([_set_values(up, v) for v in arguments])
+    return arguments
+
+
+def set_values(user_parameters: dict[str, BaseUserParameter], arguments: dict[str, Any]):
+    """Walk kwargs and set the value and types of any parameters found
+
+    If one of arguments matches the name of a user_parameter, it will set the value of that
+    parameter before proceeding.
+    """
+    up = user_parameters.copy()
+    for k, v in arguments.copy().items():
+        if k in user_parameters:
+            up[k].set_default(v)
+            arguments.pop(k)
+    return _set_values({k: u.default for k, u in up.items()}, arguments)

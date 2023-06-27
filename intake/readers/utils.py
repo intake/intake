@@ -10,10 +10,16 @@ def subclasses(cls):
 
 
 class Tokenizable:
+    _tok = None
+
     @property
     def token(self):
-        dic = {k: v for k, v in self.__dict__ if not k.startswith("_")}
-        return md5(f"{self.__class__}{dic}".encode()).hexdigest()[:16]
+        # TODO: this effectively says that mutation, if allowed, does not change token
+        if self._tok is None:
+            # TODO: walk dict and use tokens of instances of Tokenizable therein?
+            dic = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+            self._tok = md5(f"{self.__class__}{dic}".encode()).hexdigest()[:16]
+        return self._tok
 
     def __hash__(self):
         """Hash depends on class name and all non-_* attributes"""

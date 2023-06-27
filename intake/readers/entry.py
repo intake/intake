@@ -80,12 +80,17 @@ class DataDescription:
             reader_cls = reader_classes[0]
         return reader_cls
 
-    def get_kwargs(self, reader_cls, **kwargs) -> dict:
-        """Get set of kwargs for given reader, based on prescription, new args and user parameters"""
+    def get_kwargs(self, reader_cls: type, user_parameters: dict[str | BaseUserParameter] | None = None, **kwargs) -> dict[str, Any]:
+        """Get set of kwargs for given reader, based on prescription, new args and user parameters
+
+        Here, `user_parameters` is intended to come from the containing catalog. To provide values
+        for a user parameter, include it by name in kwargs
+        """
         kw = self.kwmap.get(reader_cls.__name__.lower(), {}).copy()
         kw["data"] = self.data
         kw.update(kwargs)
-        # process user_parameters and template
+        up = self.up.copy()
+        up.update(user_parameters)
         return kw
 
     def get_reader(self, outtype=None, reader=None, **kwargs):
