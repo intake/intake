@@ -1,3 +1,5 @@
+import os
+import re
 from typing import Any, Iterable
 
 import typeguard
@@ -67,12 +69,20 @@ class BoundedNumberUserParameter(BaseUserParameter):
         return out
 
 
+template_env = re.compile(r"[{]env[(]([^)]+)[)][}]")
+template_subenv = re.compile(r"env[(]([^)]+)[)]")
+
+
 def _set_values(up, arguments):
     if isinstance(arguments, dict):
         return {k: _set_values(up, v) for k, v in arguments.copy().items()}
     elif isinstance(arguments, str) and arguments.startswith("{") and arguments.endswith("}") and arguments[1:-1] in up:
         return up[arguments[1:-1]]
     elif isinstance(arguments, str):
+        m = template_env.match(arguments)
+        if m:
+            var = m.groups()[0]
+            return os.getenv(var)
         return arguments.format(**up)
     elif isinstance(arguments, Iterable):
         return type(arguments)([_set_values(up, v) for v in arguments])
@@ -90,4 +100,9 @@ def set_values(user_parameters: dict[str, BaseUserParameter], arguments: dict[st
         if k in user_parameters:
             up[k].set_default(v)
             arguments.pop(k)
+    for k, v in up.copy().items():
+        if isinstance(v, str):
+            m = template_subenv.match(v)
+            if m:
+                up[k] = v.set_default(m.groups()[0])
     return _set_values({k: u.default for k, u in up.items()}, arguments)
