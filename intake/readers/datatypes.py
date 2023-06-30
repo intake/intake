@@ -7,6 +7,7 @@ from typing import Any
 
 import fsspec
 
+from intake import import_name
 from intake.readers.utils import Tokenizable, subclasses
 
 # TODO: make "structure" possibilities an enum?
@@ -22,24 +23,42 @@ class BaseData(Tokenizable):
     structure: set[str] = set()
 
     def __init__(self, metadata: dict[str, Any] | None = None):
-        self.metadata: dict[str, Any] = metadata or {}
-
-    def to_entry(self):
-        """Make an entry of the data definition only, no reader kwargs"""
-        from intake.readers.entry import DataDescription
-
-        return DataDescription(data=self)
-
-    def to_reader(self, outtype):
-        """Get the default reader for this data: the first importable one"""
-        from intake.readers.entry import DataDescription
-
-        return DataDescription(self).get_reader(outtype=outtype)
+        self._metadata: dict[str, Any] = metadata or {}  # arbitrary information
 
     @property
     def possible_readers(self):
         """List of reader classes for this type, grouped by importability"""
-        return self.to_entry().possible_readers
+        from intake.readers.readers import recommend
+
+        return recommend(self)
+
+    @property
+    def possible_outputs(self):
+        readers = self.possible_readers["importable"]
+        return {r: r.output_instance for r in readers}
+
+    @property
+    def metadata(self):
+        return self._metadata
+
+    def to_reader(self, outtype: str | None = None, reader: str | None = None):
+        if outtype and reader:
+            raise ValueError
+        if reader:
+            return import_name(reader)(data=self)
+        elif outtype:
+            for reader, out in self.possible_outputs.items():
+                if out == outtype:
+                    return reader(data=self)
+            raise ValueError("outtype not in available in importable readers")
+        reader = next(iter(self.possible_readers["importable"]))
+        return reader(data=self)
+
+    def to_description(self):
+        from intake.readers.entry import DataDescription
+
+        kw = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+        return DataDescription(datatype=self.qname(), kwargs=kw, metadata=self.metadata)
 
     def __repr__(self):
         d = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
@@ -113,7 +132,7 @@ class SQLQuery(Service):
     def __init__(self, conn, query, metadata=None):
         self.conn = conn
         self.query = query
-        self.metadata = metadata
+        super().__init__(metadata)
 
 
 class CatalogFile(Catalog, FileData):
@@ -151,6 +170,7 @@ class ReaderData(BaseData):
 
     def __init__(self, reader, metadata=None):
         self.reader = reader
+        self._tok = reader.token
         super().__init__(metadata)
 
 

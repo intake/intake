@@ -20,35 +20,29 @@ class BaseReader(Tokenizable):
     concat_func: str = None
     output_instance: str = None
 
-    def __new__(cls, *args, **kwargs):
-        """Capture creation args when instantiating"""
-        o = object.__new__(cls)
-        pars = inspect.signature(cls.__init__).parameters
-        o._kw = dict(zip(pars, args), **kwargs)
-        o._kw.pop("self", None)
-        return o
-
-    def __init__(self, data, entry=None, **kwargs):
+    def __init__(self, data, metadata: dict | None = None, **kwargs):
         """
 
         Parameters
         ----------
         data: intake.readers.datatypes.BaseData
-        entry: intake.readers.entry.DataDescription | None
         """
         self.data = data
         self.kwargs = kwargs
-        self.entry = entry
+        self._metadata = metadata or {}
+
+    @property
+    def metadata(self):
+        return self._metadata
 
     def __repr__(self):
         return f"{type(self).__name__} reader for {self.data} producing {self.output_instance}"
 
-    def __call__(self, outtype=None, reader=None, **kwargs):
+    def __call__(self, **kwargs):
         """New version of this instance with altered arguments"""
-        if self.entry:
-            return self.entry.get_reader(outtype=outtype, reader=reader, **kwargs)
-        else:
-            return self.to_entry().get_reader(outtype=outtype, reader=reader, **kwargs)
+        kw = self.kwargs.copy()
+        kw.update(kwargs)
+        return type(self)(self.data, **kw)
 
     def __getattr__(self, item):
         return self.transform.__getattr__(item)
@@ -67,9 +61,9 @@ class BaseReader(Tokenizable):
     def __dir__(self):
         return list(sorted(chain(object.__dir__(self), dir(self.transform))))
 
-    def clone_new(self, outtype=None, reader=None, **kwargs):
+    def clone_new(self, **kwargs):
         """Compatibility method from intake 1.0's Source"""
-        return self(outtype=outtype, reader=reader, **kwargs)
+        return self(**kwargs)
 
     @classmethod
     def check_imports(cls):
@@ -135,9 +129,9 @@ class BaseReader(Tokenizable):
 
     def to_entry(self):
         """Create an entry with only this reader defined"""
-        from intake.readers.entry import DataDescription
+        from intake.readers.entry import ReaderDescription
 
-        return DataDescription(self.data, {type(self).__name__.lower(): self._kw})
+        return ReaderDescription(data=self.data.to_description(), reader=self.qname(), kwargs=self.kwargs)
 
 
 class Functioner:

@@ -3,169 +3,119 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from itertools import chain
-from typing import Any, Iterable, NamedTuple
+from typing import Any, Iterable
 
 from intake import import_name
-from intake.readers.datatypes import BaseData
 from intake.readers.readers import BaseReader
-from intake.readers.user_parameters import BaseUserParameter
-from intake.readers.utils import subclasses
+from intake.readers.user_parameters import BaseUserParameter, set_values
+from intake.readers.utils import Tokenizable, merge_dicts
 
 
-class Spec(NamedTuple):
-    reader: str
-    kwargs: dict[str, Any]
+class DataDescription(Tokenizable):
+    """Defines some data and a single way to load it, with parameters not yet resolved"""
 
+    def __init__(self, datatype: str, kwargs: dict = None, metadata: dict = None, user_parameters: dict = None):
+        self.datatype = datatype
+        self.kwargs = kwargs or {}
+        self._metadata = metadata or {}
+        self._ups = user_parameters or {}
 
-class DataDescription:
-    """Defines some data and ways in which it can be handled
+    def __repr__(self):
+        part = f"DataDescription {self.datatype} {self.kwargs}"
+        if self.user_parameters:
+            part += f"\n {self.user_parameters}"
+        return part
 
-    At minimum, this is a definitions of a datatype instance and kwargs to read it,
-    like a classic Intake entry.
+    def to_data(self, **kwargs):
+        cls = import_name(self.datatype)
+        kw = self.get_kwargs()
+        kw.update(kwargs)
+        return cls(**kw)
 
-    More generally, multiple readers and pipelines originating in the base data can be defined,
-    or even multiple argument sets for the same readers.
-    """
-
-    def __init__(self, data: BaseData, kwargs_map: list[Spec], user_parameters: dict[str | BaseUserParameter] | None = None):
-        self.data = data
-        self.kwmap: dict[str, dict[str, Any]] = kwargs_map or dict[str, dict[str, Any]]()
-        self.up = user_parameters or dict[str | BaseUserParameter]()
-
-    def select_reader(self, outtype: str | None = None, reader: str | None | type = None) -> type:
-        """Pick Reader class
-
-        Rules:
-        - if reader is specified, try to find and use that. Can be classname (match lowercase)
-          if already a subclass of BaseReader, or full path str to class. If not found, error
-        - if outtype is given instead (can't have both), find any reader subclass of BaseReader
-          which says it implements it for our data type, preferring one with an entry in kwmap
-        - if neither is given, pick any reader for our data type, preferring one with an entry
-          in kwmap
-        """
-        if reader and outtype:
-            raise ValueError
-        if reader:
-            if isinstance(reader, type):
-                reader_cls = reader
-            elif "." in reader or ":" in reader:
-                reader_cls = import_name(reader)
-            else:
-                reader_classes = [cls for cls in subclasses(BaseReader) if cls.__name__.lower() == reader.lower()]
-                if reader_classes:
-                    reader_cls = reader_classes[0]
-                else:
-                    raise ValueError
-            if type(self.data) not in reader_cls.implements:
-                raise ValueError
-        elif outtype:
-            reader_classes = [cls for cls in subclasses(BaseReader) if type(self.data) in cls.implements and outtype in cls.output_instance]
-            if len(reader_classes) > 1:
-                reader_classes = [cls for cls in reader_classes if cls.__name__.lower() in self.kwmap] or reader_classes
-            elif len(reader_classes) == 0:
-                raise ValueError
-            reader_cls = reader_classes[0]
-        elif self.kwmap:
-            reader_classes = [cls for cls in subclasses(BaseReader) if cls.__name__.lower() in self.kwmap]
-            if len(reader_classes) == 0:
-                raise ValueError
-            reader_cls = reader_classes[0]
-        else:
-            # == self.possible_readers ?
-            reader_classes = [cls for cls in subclasses(BaseReader) if type(self.data) in cls.implements]
-            if len(reader_classes) > 1:
-                reader_classes = [cls for cls in reader_classes if cls.__name__.lower() in self.kwmap] or reader_classes
-            elif len(reader_classes) == 0:
-                raise ValueError
-            reader_cls = reader_classes[0]
-        return reader_cls
-
-    def get_kwargs(self, reader_cls: type, user_parameters: dict[str | BaseUserParameter] | None = None, **kwargs) -> dict[str, Any]:
+    def get_kwargs(self, user_parameters: dict[str | BaseUserParameter] | None = None, **kwargs) -> dict[str, Any]:
         """Get set of kwargs for given reader, based on prescription, new args and user parameters
 
         Here, `user_parameters` is intended to come from the containing catalog. To provide values
         for a user parameter, include it by name in kwargs
         """
-        kw = self.kwmap.get(reader_cls.__name__.lower(), {}).copy()
-        kw["data"] = self.data
-        kw.update(kwargs)
-        up = self.up.copy()
-        up.update(user_parameters)
+        kw = self.kwargs.copy()
+        up = self._ups.copy()
+        up.update(user_parameters or {})
+        kw = set_values(up, kw)
         return kw
 
-    def get_reader(self, outtype=None, reader=None, **kwargs):
-        cls = self.select_reader(outtype=outtype, reader=reader)
-        kw = self.get_kwargs(cls, **kwargs)
-        return cls(entry=self, **kw)
-
     @property
-    def possible_readers(self):
-        from intake.readers import readers
+    def user_parameters(self):
+        return self._ups
 
-        return readers.recommend(self.data)
 
-    @property
-    def defined_readers(self):
-        return set(self.kwmap)
+class ReaderDescription(Tokenizable):
+    def __init__(
+        self,
+        data: DataDescription,
+        reader: str,
+        kwargs: dict[str, Any] | None = None,
+        user_parameters: dict[str | BaseUserParameter] | None = None,
+        metadata: dict | None = None,
+    ):
+        self.data = data
+        self.reader = reader
+        self.kwargs = kwargs or dict[str, Any]()
+        self._ups = user_parameters or dict[str | BaseUserParameter]()
+        self._metadata = metadata or {}
+
+    def get_kwargs(self, **kwargs) -> dict[str, Any]:
+        """Get set of kwargs for given reader, based on prescription, new args and user parameters
+
+        Here, `user_parameters` is intended to come from the containing catalog. To provide values
+        for a user parameter, include it by name in kwargs
+        """
+        kw = self.kwargs.copy()
+        kw["data"] = self.data.to_data()
+        kw.update(kwargs)
+        up = self.data.user_parameters.copy()
+        up.update(self._ups)
+        kw = set_values(up, kw)
+        return kw
+
+    def to_reader(self, **kwargs):
+        cls = import_name(self.reader)
+        kw = self.get_kwargs(**kwargs)
+        return cls(**kw)
+
+    def __call__(self, **kwargs):
+        return self.to_reader(**kwargs)
 
     @property
     def metadata(self):
+        # reader has own metadata?
         return self.data.metadata
 
-    def add_reader(self, reader):
-        if not reader.data == self:
-            # only require types to match?
-            raise ValueError("Reader is for a different data definition")
-        # TODO: key here is only name; need token and ability to give name
-        key = type(reader).__name__.lower()
-        kw = reader._kw.copy()
-        self.kwmap[key] = kw  # check clobber
-
     def __repr__(self):
-        if self.kwmap:
-            part = f"with defined readers {list(self.kwmap)}"
-        else:
-            part = "with no defined readers"
-        return f"Entry for data {self.data}\n" + part
+        return f"Entry for data {self.data}\nreader: {self.reader}\nkwargs: {self.kwargs}"
 
     def __add__(self, other: DataDescription | BaseReader):
-        # if other has the same data instance, add its kwargs to produce a DataDescription
-        # if not, we make a Catalog
+        """makes a catalog from any two descriptions"""
         if not isinstance(other, (DataDescription, BaseReader)):
             raise TypeError
-
-    def __iadd__(self, other: DataDescription | BaseReader):
-        # merge in kwargs of the other. If not the same data instance, error
-        if not isinstance(other, (DataDescription, BaseReader)):
-            raise TypeError
-        if other.data != self.data:
-            raise ValueError
-
-
-def merge_entries(*entries: tuple[DataDescription, ...]) -> tuple(DataDescription):
-    """Make an entry with kwargs combined from several entries
-
-    This is meant for one data instance, but will work for many, producing a list.
-    That output list is a lot like a catalog without explicit names, so this function
-    is likely called in the process of making a catalog.
-    """
-    out = {}
-    for entry in entries:
-        if entry.data not in out:
-            out[entry.data] = entry
-        else:
-            out[entry.data].kwmap.update(entry.kwmap)
-    return list(out.values())
+        if isinstance(other, BaseReader):
+            other = other.to_entry()
+        return Catalog(entries=(self, other))
 
 
 class Catalog(Mapping):
-    def __init__(self, entries: dict[int:DataDescription], aliases: dict[str, int] | None = None, user_parameters: dict | None = None, metadata: dict | None = None):
-        self.entries = entries  # map raw int tokens to DataDescriptions by their hash
+    def __init__(
+        self,
+        entries: Iterable[DataDescription],
+        aliases: dict[str, int] | None = None,
+        user_parameters: dict[str, BaseUserParameter] | None = None,  # global to the catalog
+        metadata: dict | None = None,
+    ):
         # TODO: extract out all tokens of data instances and pipeline stages
-        # TODO: replace token references with instance counterpart now or on access?
+        self.entries: dict[str, DataDescription] = {e.token: e for e in entries}
         self.aliases = aliases or {}  # names the catalog wants to expose
         self.metadata = metadata or {}
-        self.up = user_parameters or {}
+        self.up: dict[str, BaseUserParameter] = user_parameters or {}
 
     def __getattr__(self, item):
         return self[item]
@@ -176,7 +126,7 @@ class Catalog(Mapping):
         return self.entries[item]
 
     def __iter__(self):
-        return list(self.aliases)
+        return iter(self.aliases)
 
     def __len__(self):
         return len(self.aliases)
@@ -187,6 +137,14 @@ class Catalog(Mapping):
     def __add__(self, other: Catalog | DataDescription):
         if not isinstance(other, (Catalog, DataDescription)):
             raise TypeError
+        if isinstance(other, DataDescription):
+            other = Catalog([other])
+        return Catalog(
+            entries=chain(self.entries.values(), other.entries.values()),
+            aliases=merge_dicts(self.aliases, other.aliases),
+            user_parameters=merge_dicts(self.up, other.up),
+            metadata=merge_dicts(self.metadata, other.metadata),
+        )
 
     def __iadd__(self, other: Catalog | DataDescription):
         if not isinstance(other, (Catalog, DataDescription)):
@@ -212,18 +170,23 @@ class Catalog(Mapping):
 
     def __call__(self, **kwargs):
         """Makes copy of the catalog with new values for global user parameters"""
-        pass
+        up = self.user_parameters.copy()
+        for k, v in kwargs.copy().items():
+            if k in self.user_parameters:
+                up[k].set_default(v)
+                kwargs.pop(k)
+        return Catalog(self.entries.values(), self.aliases, user_parameters=up, metadata=self.metadata)
 
     def rename(self, old, new, clobber=True):
-        if clobber and new in self.aliases:
+        if not clobber and new in self.aliases:
             raise ValueError
         self.aliases[new] = self.aliases.pop(old)
 
     def name(self, tok, name, clobber=True):
-        if not isinstance(tok, int):
-            tok = hash(tok)
-        if clobber and name in self.aliases:
+        if not clobber and name in self.aliases:
             raise ValueError
+        if not isinstance(tok, str):
+            tok = tok.token
         if tok not in self.entries:
-            raise ValueError
+            raise KeyError
         self.aliases[name] = tok

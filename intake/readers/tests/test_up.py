@@ -4,7 +4,7 @@ import intake.readers.user_parameters as up
 
 
 def test_basic():
-    p = up.BaseUserParameter(default=1, dtype=int)
+    p = up.SimpleUserParameter(default=1, dtype=int)
     pars = {"k": ["{p}", 1]}
     out = up.set_values({"p": p}, pars)
     assert out == {"k": [1, 1]}

@@ -37,7 +37,7 @@ def register_converter(intype: str, outtype: str, clobber=True):
 
 
 class SameType:
-    ...
+    """Used to indicate that the output of a transform is the same as the input, which is arbitrary"""
 
 
 @register_converter("duckdb:DuckDBPyRelation", "pandas:DataFrame")

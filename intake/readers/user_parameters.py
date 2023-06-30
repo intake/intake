@@ -10,9 +10,13 @@ from intake.readers.utils import Tokenizable
 class BaseUserParameter(Tokenizable):
     """This base class is enough for simple type coercion."""
 
-    def __init__(self, default, dtype=object):
+    def __init__(self, default, metadata: dict | None = None):
         self.default = default
-        self.dtype = dtype
+        self._metadata = metadata or {}
+
+    def __repr__(self):
+        dic = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+        return f"Parameter {type(self).__name__}, {self._description}\n{dic}"
 
     def set_default(self, value):
         value = self.coerce(value)
@@ -22,12 +26,10 @@ class BaseUserParameter(Tokenizable):
             raise ValueError
 
     def coerce(self, value):
-        if not isinstance(value, self.dtype):
-            return self.dtype(value)
         return value
 
     def _validate(self, value):
-        return self.coerce(value) is not None
+        return True
 
     def validate(self, value) -> bool:
         try:
@@ -36,9 +38,20 @@ class BaseUserParameter(Tokenizable):
             return False
 
 
-class OptionsUserParameter(BaseUserParameter):
-    def __init__(self, default, options, dtype=object):
-        super().__init__(default, dtype=dtype)
+class SimpleUserParameter(BaseUserParameter):
+    def __init__(self, dtype=object, **kw):
+        self.dtype = dtype
+        super().__init__(**kw)
+
+    def coerce(self, value):
+        if not isinstance(value, self.dtype):
+            return self.dtype(value)
+        return value
+
+
+class OptionsUserParameter(SimpleUserParameter):
+    def __init__(self, options, dtype=object, **kw):
+        super().__init__(dtype=dtype, **kw)
         self.options = options
 
     def _validate(self, value):
@@ -46,17 +59,17 @@ class OptionsUserParameter(BaseUserParameter):
 
 
 class MultiOptionUserParameter(OptionsUserParameter):
-    def __init__(self, default, options, dtype=list[Any]):
-        super().__init__(default, options=options, dtype=dtype)
+    def __init__(self, options, dtype=list[Any], **kw):
+        super().__init__(options=options, dtype=dtype, **kw)
 
     def _validate(self, value):
         typeguard.check_type(value, self.dtype)
         return all(v in self.options for v in value)
 
 
-class BoundedNumberUserParameter(BaseUserParameter):
-    def __init__(self, default, dtype=float, max_value=None, min_value=None):
-        super().__init__(default, dtype=dtype)
+class BoundedNumberUserParameter(SimpleUserParameter):
+    def __init__(self, dtype=float, max_value=None, min_value=None, **kw):
+        super().__init__(dtype=dtype, **kw)
         self.max = max_value
         self.min = min_value
 
