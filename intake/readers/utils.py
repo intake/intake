@@ -1,3 +1,4 @@
+import re
 from hashlib import md5
 
 
@@ -17,6 +18,9 @@ def merge_dicts(*dicts):
     return out
 
 
+func_or_method = re.compile(r"<(function|method) ([^ ]+) at 0x[0-9a-f]+>")
+
+
 class Tokenizable:
     _tok = None
 
@@ -27,7 +31,8 @@ class Tokenizable:
         if self._tok is None:
             # TODO: walk dict and use tokens of instances of Tokenizable therein?
             dic = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
-            self._tok = md5(f"{self.qname()}|{dic}".encode()).hexdigest()[:16]
+            dictxt = func_or_method.sub(r"\2", str(dic))
+            self._tok = md5(f"{self.qname()}|{dictxt}".encode()).hexdigest()[:16]
         return self._tok
 
     def __hash__(self):
@@ -41,3 +46,7 @@ class Tokenizable:
     def qname(cls):
         """module:class name of this class, makes str for import_name"""
         return f"{cls.__module__}:{cls.__name__}"
+
+
+def make_cls(cls, kwargs):
+    return cls(**kwargs)

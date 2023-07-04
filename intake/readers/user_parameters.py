@@ -8,7 +8,7 @@ from intake.readers.utils import Tokenizable
 
 
 class BaseUserParameter(Tokenizable):
-    """This base class is enough for simple type coercion."""
+    """The base class allows for any default without checking/coercing"""
 
     def __init__(self, default, metadata: dict | None = None):
         self.default = default
@@ -39,6 +39,8 @@ class BaseUserParameter(Tokenizable):
 
 
 class SimpleUserParameter(BaseUserParameter):
+    """This class is enough for simple type coercion."""
+
     def __init__(self, dtype=object, **kw):
         self.dtype = dtype
         super().__init__(**kw)
@@ -50,6 +52,8 @@ class SimpleUserParameter(BaseUserParameter):
 
 
 class OptionsUserParameter(SimpleUserParameter):
+    """One choice out of a given allow list"""
+
     def __init__(self, options, dtype=object, **kw):
         super().__init__(dtype=dtype, **kw)
         self.options = options
@@ -59,6 +63,8 @@ class OptionsUserParameter(SimpleUserParameter):
 
 
 class MultiOptionUserParameter(OptionsUserParameter):
+    """Multiple choices out of a given allow list"""
+
     def __init__(self, options, dtype=list[Any], **kw):
         super().__init__(options=options, dtype=dtype, **kw)
 
@@ -68,6 +74,8 @@ class MultiOptionUserParameter(OptionsUserParameter):
 
 
 class BoundedNumberUserParameter(SimpleUserParameter):
+    """A number within a range bound"""
+
     def __init__(self, dtype=float, max_value=None, min_value=None, **kw):
         super().__init__(dtype=dtype, **kw)
         self.max = max_value
@@ -84,9 +92,12 @@ class BoundedNumberUserParameter(SimpleUserParameter):
 
 template_env = re.compile(r"[{]env[(]([^)]+)[)][}]")
 template_subenv = re.compile(r"env[(]([^)]+)[)]")
+template_data = re.compile(r"[{]data[(]([^)]+)[)][}]")
 
 
 def _set_values(up, arguments):
+    from intake.readers.entry import ReaderDescription
+
     if isinstance(arguments, dict):
         return {k: _set_values(up, v) for k, v in arguments.copy().items()}
     elif isinstance(arguments, str) and arguments.startswith("{") and arguments.endswith("}") and arguments[1:-1] in up:
@@ -96,6 +107,13 @@ def _set_values(up, arguments):
         if m:
             var = m.groups()[0]
             return os.getenv(var)
+        m = template_data.match(arguments)
+        if m:
+            var = m.groups()[0]
+            thing = up[var]
+            if isinstance(thing, ReaderDescription):
+                thing = thing.to_reader(user_parameters=up)
+            return thing
         return arguments.format(**up)
     elif isinstance(arguments, Iterable):
         return type(arguments)([_set_values(up, v) for v in arguments])
@@ -118,4 +136,4 @@ def set_values(user_parameters: dict[str, BaseUserParameter], arguments: dict[st
             m = template_subenv.match(v)
             if m:
                 up[k] = v.set_default(m.groups()[0])
-    return _set_values({k: u.default for k, u in up.items()}, arguments)
+    return _set_values({k: (u.default if isinstance(u, BaseUserParameter) else u) for k, u in up.items()}, arguments)

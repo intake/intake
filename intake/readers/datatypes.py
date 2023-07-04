@@ -48,7 +48,7 @@ class BaseData(Tokenizable):
             return import_name(reader)(data=self)
         elif outtype:
             for reader, out in self.possible_outputs.items():
-                if out == outtype:
+                if out == outtype or re.match(outtype, out):
                     return reader(data=self)
             raise ValueError("outtype not in available in importable readers")
         reader = next(iter(self.possible_readers["importable"]))
@@ -166,11 +166,14 @@ class Tiled(Service):
 
 
 class ReaderData(BaseData):
-    """Represents the output of another reader as a data entity"""
+    """Represents the output of another reader as a data entity
+
+    This type is special, as it will lead to a reference being created when any
+    reader using it is included in a catalog.
+    """
 
     def __init__(self, reader, metadata=None):
         self.reader = reader
-        self._tok = reader.token
         super().__init__(metadata)
 
 

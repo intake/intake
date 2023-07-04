@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from copy import copy
 from itertools import chain
 from typing import Any, Iterable
 
@@ -64,35 +65,46 @@ class ReaderDescription(Tokenizable):
         self._ups = user_parameters or dict[str | BaseUserParameter]()
         self._metadata = metadata or {}
 
-    def get_kwargs(self, **kwargs) -> dict[str, Any]:
+    def get_kwargs(self, user_parameters=None, **kwargs) -> dict[str, Any]:
         """Get set of kwargs for given reader, based on prescription, new args and user parameters
 
         Here, `user_parameters` is intended to come from the containing catalog. To provide values
         for a user parameter, include it by name in kwargs
         """
         kw = self.kwargs.copy()
+        # TODO: there may be templates in the data def too
         kw["data"] = self.data.to_data()
         kw.update(kwargs)
         up = self.data.user_parameters.copy()
         up.update(self._ups)
+        up.update(user_parameters or {})
         kw = set_values(up, kw)
         return kw
 
-    def to_reader(self, **kwargs):
+    @property
+    def user_parameters(self):
+        return self._ups
+
+    def to_reader(self, user_parameters=None, **kwargs):
         cls = import_name(self.reader)
-        kw = self.get_kwargs(**kwargs)
+        kw = self.get_kwargs(user_parameters=user_parameters, **kwargs)
         return cls(**kw)
 
-    def __call__(self, **kwargs):
-        return self.to_reader(**kwargs)
+    def __call__(self, user_parameters=None, **kwargs):
+        return self.to_reader(user_parameters=user_parameters, **kwargs)
 
     @property
     def metadata(self):
         # reader has own metadata?
         return self.data.metadata
 
+    def to_data(self):
+        from intake.readers.datatypes import ReaderData
+
+        return ReaderData(self.to_reader())
+
     def __repr__(self):
-        return f"Entry for data {self.data}\nreader: {self.reader}\nkwargs: {self.kwargs}"
+        return f"Entry for {self.data}\nreader: {self.reader}\nkwargs: {self.kwargs}"
 
     def __add__(self, other: DataDescription | BaseReader):
         """makes a catalog from any two descriptions"""
@@ -106,24 +118,62 @@ class ReaderDescription(Tokenizable):
 class Catalog(Mapping):
     def __init__(
         self,
-        entries: Iterable[DataDescription],
+        entries: Iterable[ReaderDescription] | Mapping | None = None,
         aliases: dict[str, int] | None = None,
+        data: Iterable[DataDescription] | Mapping = None,
         user_parameters: dict[str, BaseUserParameter] | None = None,  # global to the catalog
         metadata: dict | None = None,
     ):
-        # TODO: extract out all tokens of data instances and pipeline stages
-        self.entries: dict[str, DataDescription] = {e.token: e for e in entries}
+        self.data = data or {}  # process/tokenise data if an interable
+        if isinstance(entries, Iterable):
+            self.entries: dict[str, ReaderDescription] = {}
+            for e in entries:
+                self.add_entry(e)
+        else:
+            self.entries = entries or {}
         self.aliases = aliases or {}  # names the catalog wants to expose
         self.metadata = metadata or {}
         self.up: dict[str, BaseUserParameter] = user_parameters or {}
 
+    def add_entry(self, entry, name=None):
+        if isinstance(entry, BaseReader):
+            entry = entry.to_entry()
+        self.entries[entry.token] = entry
+        if entry.data.datatype == "intake.readers.datatypes:ReaderData":
+            tok = self.add_entry(entry.data.kwargs["reader"])
+            entry.data = "data(%s)" % tok
+        else:
+            self.data[entry.data.token] = entry.data
+
+        if entry.reader == "intake.readers.convert:Pipeline":
+            # walk top-level arguments to functions looking for data deps
+            for func, kw in entry.kwargs["steps"]:
+                for k, v in kw.copy().items():
+                    if isinstance(v, BaseReader):
+                        tok = self.add_entry(v)
+                        kw[k] = "{data(%s)}" % tok
+
+        if name:
+            self.aliases[name] = entry.token
+        return entry.token
+
     def __getattr__(self, item):
         return self[item]
+
+    def __getstate__(self):
+        # maybe straight to a JSON/YAML representation here
+        return self.__dict__
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
 
     def __getitem__(self, item):
         if item in self.aliases:
             item = self.aliases[item]
-        return self.entries[item]
+        item = copy(self.entries[item])
+        if isinstance(item.data, str) and item.data.startswith("data(") and item.data.endswith(")"):
+            item.data = self.entries[item.data[5:-1]]
+        return item(user_parameters=dict(**self.up, **self.entries))
 
     def __iter__(self):
         return iter(self.aliases)
@@ -146,14 +196,21 @@ class Catalog(Mapping):
             metadata=merge_dicts(self.metadata, other.metadata),
         )
 
-    def __iadd__(self, other: Catalog | DataDescription):
-        if not isinstance(other, (Catalog, DataDescription)):
+    def __iadd__(self, other: Catalog | ReaderDescription | BaseReader):
+        if not isinstance(other, (Catalog, ReaderDescription, BaseReader)):
             raise TypeError
+        if not isinstance(other, Catalog):
+            other = Catalog([other])
+        self.entries.update(other.entries)
+        self.aliases.update(other.aliases)
+        self.up.update(other.up)
+        self.metadata.update(other.metadata)
+        return self
 
     def __contains__(self, item: str | DataDescription):
         if isinstance(item, DataDescription):
             item = item.token
-        return item in self.entries
+        return item in self.entries or item in self.aliases
 
     def __setitem__(self, name: str, entry: DataDescription):
         """Add the entry to this catalog with the given alias name
@@ -161,12 +218,10 @@ class Catalog(Mapping):
         If the entry is already in the catalog, this effectively just adds an alias. Any existing alias of
         the same name will be clobbered.
         """
-        self.entries[entry.token] = entry
-        self.aliases[name] = entry.token
+        self.add_entry(entry, name=name)
 
-    @property
     def data(self):
-        return set(e.data for e in self.entries)
+        return {e.data for e in self.entries.values()}
 
     def __call__(self, **kwargs):
         """Makes copy of the catalog with new values for global user parameters"""

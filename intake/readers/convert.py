@@ -150,7 +150,7 @@ class Pipeline(readers.BaseReader):
             self.reader = data.reader
             self.steps = steps
             out_instances = out_instances
-        super().__init__(data, entry, **kwargs)
+        super().__init__(data=data, steps=steps, out_instances=out_instances)
         self.output_instances = []
         prev = self.reader.output_instance
         for inst in out_instances:
@@ -197,12 +197,20 @@ class Pipeline(readers.BaseReader):
         return data
 
     def read(self, **kwargs):
+        from intake.readers.readers import BaseReader
+
         data = self.reader.read()
         for i, (func, kw) in enumerate(self.steps):
+            kw2 = kw.copy()
+            for k, v in kw.items():
+                if isinstance(v, BaseReader):
+                    kw2[k] = v.read()
+                else:
+                    kw2[k] = v
             if i == len(self.steps) - 1:
                 # kwargs passed here override only the last stage
-                kw = dict(**kw, **kwargs)
-            data = func(data, **kw)
+                kw2 = dict(**kw2, **kwargs)
+            data = func(data, **kw2)
         return data
 
     def first_n_stages(self, n: int):

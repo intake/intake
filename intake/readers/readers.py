@@ -146,12 +146,18 @@ class Functioner:
 
     def __getitem__(self, item):
         from intake.readers.convert import Pipeline
+        from intake.readers.transform import getitem
 
-        func = self.funcdict[item]
+        if item in self.funcdict:
+            func = self.funcdict[item]
+            kw = {}
+        else:
+            func = getitem
+            kw = {"item": item}
         if isinstance(self.reader, Pipeline):
-            return self.reader.with_step(func, out_instance=item)
+            return self.reader.with_step((func, kw), out_instance=item)
 
-        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, {})], out_instances=[item])
+        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, kw)], out_instances=[item])
 
     def __repr__(self):
         import pprint
@@ -170,12 +176,14 @@ class Functioner:
         if not len(out):
             outtype = self.reader.output_instance
             func = method
+            kw = {"method_name": item}
         else:
             outtype, func = out[0]
+            kw = {}
         if isinstance(self.reader, Pipeline):
-            return self.reader.with_step((func, {}), out_instance=outtype)
+            return self.reader.with_step((func, kw), out_instance=outtype)
 
-        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, {})], out_instances=[outtype])
+        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, kw)], out_instances=[outtype])
 
 
 class FileReader(BaseReader):
