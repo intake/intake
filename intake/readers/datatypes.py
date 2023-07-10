@@ -54,7 +54,7 @@ class BaseData(Tokenizable):
         reader = next(iter(self.possible_readers["importable"]))
         return reader(data=self)
 
-    def to_description(self):
+    def to_entry(self):
         from intake.readers.entry import DataDescription
 
         kw = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}

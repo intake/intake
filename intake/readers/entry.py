@@ -8,8 +8,17 @@ from typing import Any, Iterable
 
 from intake import import_name
 from intake.readers.readers import BaseReader
-from intake.readers.user_parameters import BaseUserParameter, set_values
-from intake.readers.utils import Tokenizable, merge_dicts
+from intake.readers.user_parameters import (
+    BaseUserParameter,
+    SimpleUserParameter,
+    set_values,
+)
+from intake.readers.utils import (
+    Tokenizable,
+    extract_by_path,
+    extract_by_value,
+    merge_dicts,
+)
 
 
 class DataDescription(Tokenizable):
@@ -40,10 +49,22 @@ class DataDescription(Tokenizable):
         for a user parameter, include it by name in kwargs
         """
         kw = self.kwargs.copy()
+        kw.update(kwargs)
         up = self._ups.copy()
         up.update(user_parameters or {})
         kw = set_values(up, kw)
         return kw
+
+    def extract_parameter(self, name: str, path: str | None = None, value: Any = None, cls: type = SimpleUserParameter):
+        if not ((path is None) ^ (value is None)):
+            raise ValueError
+        ups = self.user_parameters.copy()
+        if path is not None:
+            kw, up = extract_by_path(path, cls, name, self.kwargs)
+        else:
+            kw, up = extract_by_value(value, cls, name, self.kwargs)
+        ups[name] = up
+        return DataDescription(self.datatype, kw, metadata=self._metadata, user_parameters=ups)
 
     @property
     def user_parameters(self):
@@ -80,6 +101,31 @@ class ReaderDescription(Tokenizable):
         up.update(user_parameters or {})
         kw = set_values(up, kw)
         return kw
+
+    def extract_parameter(self, name: str, path=None, value=None, level="reader", cls=SimpleUserParameter):
+        """Creates new version of the description
+
+        Creates new instance, since the token will in general change
+        """
+        if level not in ("data", "reader"):
+            raise ValueError
+        if not ((path is None) ^ (value is None)):
+            raise ValueError
+        if level == "data":
+            data = self.data.extract_parameter(name, path, value, cls)
+            if value is not None:
+                kw, _ = extract_by_value(value, cls, name, self.kwargs)
+            else:
+                kw = self.kwargs.copy()
+            return ReaderDescription(data, self.reader, kw, self.user_parameters)
+        else:
+            ups = self.user_parameters.copy()
+            if path is not None:
+                kw, up = extract_by_path(path, cls, name, self.kwargs)
+            else:
+                kw, up = extract_by_value(value, cls, name, self.kwargs)
+            ups[name] = up
+            return ReaderDescription(self.data, self.reader, kw, ups)
 
     @property
     def user_parameters(self):
@@ -124,7 +170,7 @@ class Catalog(Mapping):
         user_parameters: dict[str, BaseUserParameter] | None = None,  # global to the catalog
         metadata: dict | None = None,
     ):
-        self.data = data or {}  # process/tokenise data if an interable
+        self.data = data or {}  # process/tokenise data if an iterable
         if isinstance(entries, Iterable):
             self.entries: dict[str, ReaderDescription] = {}
             for e in entries:
@@ -134,6 +180,22 @@ class Catalog(Mapping):
         self.aliases = aliases or {}  # names the catalog wants to expose
         self.metadata = metadata or {}
         self.up: dict[str, BaseUserParameter] = user_parameters or {}
+
+    @classmethod
+    def from_dict(cls, entries_dict: dict):
+        """Create catalog from {alias: reader} dict"""
+        # question: should allow this kind of input in __init__?
+        cat = cls()
+        for k, v in entries_dict.items():
+            cat[k] = v
+        return cat
+
+    def to_dict(self):
+        """Simplify catalog int {alias: reader} form
+
+        This materialises all user_parameters to their current defaults
+        """
+        return {self[k] for k in self.aliases}
 
     def add_entry(self, entry, name=None):
         if isinstance(entry, BaseReader):
@@ -156,6 +218,10 @@ class Catalog(Mapping):
         if name:
             self.aliases[name] = entry.token
         return entry.token
+
+    def extract_parameter(self, name, value, path, cls):
+        # TODO: can "upgrade" UPs from contained readers/data?
+        pass
 
     def __getattr__(self, item):
         return self[item]

@@ -4,19 +4,21 @@ from typing import Any, Iterable
 
 import typeguard
 
+from intake import import_name
 from intake.readers.utils import Tokenizable
 
 
 class BaseUserParameter(Tokenizable):
     """The base class allows for any default without checking/coercing"""
 
-    def __init__(self, default, metadata: dict | None = None):
+    def __init__(self, default, description="", metadata: dict | None = None):
         self.default = default
+        self._description = description
         self._metadata = metadata or {}
 
     def __repr__(self):
         dic = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
-        return f"Parameter {type(self).__name__}, {self._description}\n{dic}"
+        return f"{type(self).__name__}, {self._description}\n{dic}"
 
     def set_default(self, value):
         value = self.coerce(value)
@@ -90,9 +92,9 @@ class BoundedNumberUserParameter(SimpleUserParameter):
         return out
 
 
-template_env = re.compile(r"[{]env[(]([^)]+)[)][}]")
-template_subenv = re.compile(r"env[(]([^)]+)[)]")
-template_data = re.compile(r"[{]data[(]([^)]+)[)][}]")
+template_env = re.compile(r"env[(]([^)]+)[)]")
+template_data = re.compile(r"data[(]([^)]+)[)]")
+template_func = re.compile(r"func[(]([^)]+)[)]")
 
 
 def _set_values(up, arguments):
@@ -100,20 +102,28 @@ def _set_values(up, arguments):
 
     if isinstance(arguments, dict):
         return {k: _set_values(up, v) for k, v in arguments.copy().items()}
-    elif isinstance(arguments, str) and arguments.startswith("{") and arguments.endswith("}") and arguments[1:-1] in up:
-        return up[arguments[1:-1]]
-    elif isinstance(arguments, str):
-        m = template_env.match(arguments)
-        if m:
-            var = m.groups()[0]
-            return os.getenv(var)
-        m = template_data.match(arguments)
-        if m:
-            var = m.groups()[0]
-            thing = up[var]
-            if isinstance(thing, ReaderDescription):
-                thing = thing.to_reader(user_parameters=up)
-            return thing
+    elif isinstance(arguments, str) and arguments.startswith("{") and arguments.endswith("}"):
+        arg = arguments[1:-1]
+        if arg in up:
+            return up[arguments[1:-1]]
+        else:
+            m = template_env.match(arg)
+            if m:
+                var = m.groups()[0]
+                return os.getenv(var)
+            m = template_data.match(arg)
+            if m:
+                var = m.groups()[0]
+                thing = up[var]
+                if isinstance(thing, ReaderDescription):
+                    thing = thing.to_reader(user_parameters=up)
+                return thing
+            m = template_func.match(arg)
+            if m:
+                var = m.groups()[0]
+                return import_name(var)
+
+    if isinstance(arguments, str):
         return arguments.format(**up)
     elif isinstance(arguments, Iterable):
         return type(arguments)([_set_values(up, v) for v in arguments])
@@ -133,7 +143,12 @@ def set_values(user_parameters: dict[str, BaseUserParameter], arguments: dict[st
             arguments.pop(k)
     for k, v in up.copy().items():
         if isinstance(v, str):
-            m = template_subenv.match(v)
+            m = template_env.match(v)
             if m:
                 up[k] = v.set_default(m.groups()[0])
+            m = template_func.match(v)
+            if m:
+                var = m.groups()[0]
+                up[k] = import_name(var)
+
     return _set_values({k: (u.default if isinstance(u, BaseUserParameter) else u) for k, u in up.items()}, arguments)

@@ -8,7 +8,7 @@ from itertools import chain
 
 from intake import import_name
 from intake.readers import datatypes
-from intake.readers.utils import Tokenizable, subclasses
+from intake.readers.utils import Tokenizable, find_funcs, subclasses
 
 
 class BaseReader(Tokenizable):
@@ -131,7 +131,7 @@ class BaseReader(Tokenizable):
         """Create an entry with only this reader defined"""
         from intake.readers.entry import ReaderDescription
 
-        return ReaderDescription(data=self.data.to_description(), reader=self.qname(), kwargs=self.kwargs)
+        return ReaderDescription(data=self.data.to_entry(), reader=self.qname(), kwargs=find_funcs(self.kwargs))
 
 
 class Functioner:
