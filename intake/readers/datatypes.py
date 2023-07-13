@@ -41,11 +41,13 @@ class BaseData(Tokenizable):
     def metadata(self):
         return self._metadata
 
-    def to_reader(self, outtype: str | None = None, reader: str | None = None):
+    def to_reader(self, outtype: str | None = None, reader: str | type | None = None):
         if outtype and reader:
             raise ValueError
+        if isinstance(reader, str):
+            reader = import_name(reader)
         if reader:
-            return import_name(reader)(data=self)
+            return reader(data=self)
         elif outtype:
             for reader, out in self.possible_outputs.items():
                 if out == outtype or re.match(outtype, out):

@@ -98,7 +98,6 @@ class ReaderDescription(Tokenizable):
         Here, `user_parameters` is intended to come from the containing catalog. To provide values
         for a user parameter, include it by name in kwargs
         """
-        breakpoint()
         kw = self.kwargs.copy()
 
         # make data instance
@@ -155,12 +154,12 @@ class ReaderDescription(Tokenizable):
         # reader has own metadata?
         return self.data.metadata
 
-    def to_data(self):
+    def to_data(self, user_parameters=None):
         """Make data instance for what this reader produces"""
         # or should this return a DataDescription?
         from intake.readers.datatypes import ReaderData
 
-        return ReaderData(self.to_reader())
+        return ReaderData(self.to_reader(user_parameters=user_parameters))
 
     def __repr__(self):
         return f"Entry for {self.data}\nreader: {self.reader}\nkwargs: {self.kwargs}"
@@ -187,13 +186,14 @@ class Catalog(Mapping):
         self.aliases = aliases or {}  # names the catalog wants to expose
         if isinstance(entries, Mapping) or entries is None:
             self.entries = {}
-            for k, v in entries.items():
-                if isinstance(v, BaseReader):
-                    v = v.to_entry()
-                if k != v.token:
-                    self.add_entry(v, name=k)
-                else:
-                    self.add_entry(v)
+            if entries:
+                for k, v in entries.items():
+                    if isinstance(v, BaseReader):
+                        v = v.to_entry()
+                    if k != v.token:
+                        self.add_entry(v, name=k)
+                    else:
+                        self.add_entry(v)
         elif isinstance(entries, Iterable):
             self.entries: dict[str, ReaderDescription] = {}
             for e in entries:
