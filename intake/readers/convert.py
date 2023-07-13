@@ -213,6 +213,10 @@ class Pipeline(readers.BaseReader):
             data = func(data, **kw2)
         return data
 
+    def apply(self, func, output_instance=None, **kwargs):
+        """Add a pipeline stage applying function to the pipeline output so far"""
+        return self.with_step([(func, kwargs)], output_instance or self.output_instance)
+
     def first_n_stages(self, n: int):
         """Truncate pipeline to the given stage
 

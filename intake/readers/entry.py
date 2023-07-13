@@ -28,7 +28,7 @@ class DataDescription(Tokenizable):
         self.datatype = datatype
         self.kwargs = kwargs or {}
         self._metadata = metadata or {}
-        self._ups = user_parameters or {}
+        self._user_parameters = user_parameters or {}
 
     def __repr__(self):
         part = f"DataDescription {self.datatype} {self.kwargs}"
@@ -36,11 +36,17 @@ class DataDescription(Tokenizable):
             part += f"\n {self.user_parameters}"
         return part
 
-    def to_data(self, **kwargs):
+    def to_data(self, user_parameters=None, **kwargs):
         cls = import_name(self.datatype)
-        kw = self.get_kwargs()
-        kw.update(kwargs)
+        kw = self.get_kwargs(user_parameters=user_parameters, **kwargs)
         return cls(**kw)
+
+    @property
+    def metadata(self):
+        return self._metadata
+
+    def __call__(self, **kwargs):
+        return self.to_data(**kwargs)
 
     def get_kwargs(self, user_parameters: dict[str | BaseUserParameter] | None = None, **kwargs) -> dict[str, Any]:
         """Get set of kwargs for given reader, based on prescription, new args and user parameters
@@ -50,7 +56,7 @@ class DataDescription(Tokenizable):
         """
         kw = self.kwargs.copy()
         kw.update(kwargs)
-        up = self._ups.copy()
+        up = self._user_parameters.copy()
         up.update(user_parameters or {})
         kw = set_values(up, kw)
         return kw
@@ -68,7 +74,7 @@ class DataDescription(Tokenizable):
 
     @property
     def user_parameters(self):
-        return self._ups
+        return self._user_parameters
 
 
 class ReaderDescription(Tokenizable):
@@ -83,7 +89,7 @@ class ReaderDescription(Tokenizable):
         self.data = data
         self.reader = reader
         self.kwargs = kwargs or dict[str, Any]()
-        self._ups = user_parameters or dict[str | BaseUserParameter]()
+        self._user_parameters = user_parameters or dict[str | BaseUserParameter]()
         self._metadata = metadata or {}
 
     def get_kwargs(self, user_parameters=None, **kwargs) -> dict[str, Any]:
@@ -92,13 +98,18 @@ class ReaderDescription(Tokenizable):
         Here, `user_parameters` is intended to come from the containing catalog. To provide values
         for a user parameter, include it by name in kwargs
         """
+        breakpoint()
         kw = self.kwargs.copy()
-        # TODO: there may be templates in the data def too
-        kw["data"] = self.data.to_data()
+
+        # make data instance
+        kw_subset = {k: v for k, v in kwargs.items() if k in user_parameters or k in self.data.user_parameters}
+        kw["data"] = self.data.to_data(user_parameters=user_parameters, **kw_subset)
+
+        # now make reader
         kw.update(kwargs)
-        up = self.data.user_parameters.copy()
-        up.update(self._ups)
-        up.update(user_parameters or {})
+        up = user_parameters or {}  # global/catalog
+        up.update(self.data.user_parameters)
+        up.update(self._user_parameters)
         kw = set_values(up, kw)
         return kw
 
@@ -129,7 +140,7 @@ class ReaderDescription(Tokenizable):
 
     @property
     def user_parameters(self):
-        return self._ups
+        return self._user_parameters
 
     def to_reader(self, user_parameters=None, **kwargs):
         cls = import_name(self.reader)
@@ -145,6 +156,8 @@ class ReaderDescription(Tokenizable):
         return self.data.metadata
 
     def to_data(self):
+        """Make data instance for what this reader produces"""
+        # or should this return a DataDescription?
         from intake.readers.datatypes import ReaderData
 
         return ReaderData(self.to_reader())
@@ -154,7 +167,7 @@ class ReaderDescription(Tokenizable):
 
     def __add__(self, other: DataDescription | BaseReader):
         """makes a catalog from any two descriptions"""
-        if not isinstance(other, (DataDescription, BaseReader)):
+        if not isinstance(other, (BaseReader, ReaderDescription)):
             raise TypeError
         if isinstance(other, BaseReader):
             other = other.to_entry()
@@ -171,15 +184,24 @@ class Catalog(Mapping):
         metadata: dict | None = None,
     ):
         self.data = data or {}  # process/tokenise data if an iterable
-        if isinstance(entries, Iterable):
+        self.aliases = aliases or {}  # names the catalog wants to expose
+        if isinstance(entries, Mapping) or entries is None:
+            self.entries = {}
+            for k, v in entries.items():
+                if isinstance(v, BaseReader):
+                    v = v.to_entry()
+                if k != v.token:
+                    self.add_entry(v, name=k)
+                else:
+                    self.add_entry(v)
+        elif isinstance(entries, Iterable):
             self.entries: dict[str, ReaderDescription] = {}
             for e in entries:
                 self.add_entry(e)
         else:
-            self.entries = entries or {}
-        self.aliases = aliases or {}  # names the catalog wants to expose
+            raise TypeError
         self.metadata = metadata or {}
-        self.up: dict[str, BaseUserParameter] = user_parameters or {}
+        self.user_parameters: dict[str, BaseUserParameter] = user_parameters or {}
 
     @classmethod
     def from_dict(cls, entries_dict: dict):
@@ -219,9 +241,58 @@ class Catalog(Mapping):
             self.aliases[name] = entry.token
         return entry.token
 
-    def extract_parameter(self, name, value, path, cls):
-        # TODO: can "upgrade" UPs from contained readers/data?
-        pass
+    def promote_parameter_from(self, entity: str, parameter_name: Any, level="cat") -> Catalog:
+        """Move catalog from given entry/data *up*"""
+        if level not in ("cat", "data"):
+            raise ValueError
+        if entity in self.aliases:
+            entity = self.entries[self.aliases[entity]]
+        elif entity in self.entries:
+            entity = self.entries[entity]
+        elif entity in self.data:
+            entity = self.data[entity]
+            assert level != "data"
+        else:
+            raise KeyError
+        up = entity.user_parameters.pop(parameter_name)
+        if level == "cat":
+            self.user_parameters[parameter_name] = up
+        else:
+            entity.data.user_parameters[parameter_name] = up
+        return self
+
+    def promote_parameter_name(self, parameter_name: Any, level="cat") -> Catalog:
+        """Find and promote given named parameter, assuming they are all identical"""
+        up = None
+        ups = None
+        if level not in ("cat", "data"):
+            raise ValueError
+        for entity in self.entries:
+            if parameter_name in entity.user_parameters and up is None:
+                ups = entity.user_parameters[parameter_name]
+                up = entity.user_parameters[parameter_name]
+                entity0 = entity
+            elif parameter_name in entity.user_parameters and up == entity.user_parameters[parameter_name]:
+                continue
+            elif parameter_name in entity.user_parameters:
+                ups[parameter_name] = up  # rewind
+                raise ValueError
+        for entity in self.data:
+            if parameter_name in entity.user_parameters and up is None:
+                assert level == "cat"
+                ups = entity.user_parameters[parameter_name]
+                up = entity.user_parameters[parameter_name]
+            elif parameter_name in entity.user_parameters and up == entity.user_parameters[parameter_name]:
+                continue
+            elif parameter_name in entity.user_parameters:
+                ups[parameter_name] = up  # rewind
+                raise ValueError
+
+        if level == "cat":
+            self.user_parameters[parameter_name] = up
+        else:
+            entity0.data.user_parameters[parameter_name] = up
+        return self
 
     def __getattr__(self, item):
         return self[item]
@@ -234,12 +305,21 @@ class Catalog(Mapping):
         self.__dict__.update(state)
 
     def __getitem__(self, item):
+        if isinstance(item, tuple):
+            item, kw = item
+        else:
+            kw = {}
         if item in self.aliases:
             item = self.aliases[item]
-        item = copy(self.entries[item])
-        if isinstance(item.data, str) and item.data.startswith("data(") and item.data.endswith(")"):
-            item.data = self.entries[item.data[5:-1]]
-        return item(user_parameters=dict(**self.up, **self.entries))
+        if item in self.entries:
+            item = copy(self.entries[item])
+            if isinstance(item.data, str) and item.data.startswith("data(") and item.data.endswith(")"):
+                item.data = self.entries[item.data[5:-1]]
+            return item(user_parameters=dict(**self.user_parameters, **self.entries), **(kw or {}))
+        elif item in self.data:
+            return self.data[item].to_data(user_parameters=self.user_parameters, **(kw or {}))
+        else:
+            raise KeyError(item)
 
     def __iter__(self):
         return iter(self.aliases)
@@ -258,7 +338,7 @@ class Catalog(Mapping):
         return Catalog(
             entries=chain(self.entries.values(), other.entries.values()),
             aliases=merge_dicts(self.aliases, other.aliases),
-            user_parameters=merge_dicts(self.up, other.up),
+            user_parameters=merge_dicts(self.user_parameters, other.up),
             metadata=merge_dicts(self.metadata, other.metadata),
         )
 
@@ -269,7 +349,7 @@ class Catalog(Mapping):
             other = Catalog([other])
         self.entries.update(other.entries)
         self.aliases.update(other.aliases)
-        self.up.update(other.up)
+        self.user_parameters.update(other.up)
         self.metadata.update(other.metadata)
         return self
 
@@ -277,6 +357,12 @@ class Catalog(Mapping):
         if isinstance(item, DataDescription):
             item = item.token
         return item in self.entries or item in self.aliases
+
+    def __repr__(self):
+        txt = f"{type(self).__name__}\n named datasets: {sorted(self.aliases)}"
+        if self.user_parameters:
+            txt = txt + f"\n user parameters: {sorted(self.user_parameters)}"
+        return txt
 
     def __setitem__(self, name: str, entry: DataDescription):
         """Add the entry to this catalog with the given alias name
@@ -294,7 +380,7 @@ class Catalog(Mapping):
         up = self.user_parameters.copy()
         for k, v in kwargs.copy().items():
             if k in self.user_parameters:
-                up[k].set_default(v)
+                up[k] = up.with_default(v)
                 kwargs.pop(k)
         return Catalog(self.entries.values(), self.aliases, user_parameters=up, metadata=self.metadata)
 

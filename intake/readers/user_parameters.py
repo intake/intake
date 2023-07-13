@@ -1,8 +1,7 @@
+import builtins
 import os
 import re
 from typing import Any, Iterable
-
-import typeguard
 
 from intake import import_name
 from intake.readers.utils import Tokenizable
@@ -27,6 +26,13 @@ class BaseUserParameter(Tokenizable):
         else:
             raise ValueError
 
+    def with_default(self, value):
+        import copy
+
+        up = copy.copy(self)
+        up.set_default(value)
+        return up
+
     def coerce(self, value):
         return value
 
@@ -43,14 +49,23 @@ class BaseUserParameter(Tokenizable):
 class SimpleUserParameter(BaseUserParameter):
     """This class is enough for simple type coercion."""
 
-    def __init__(self, dtype=object, **kw):
-        self.dtype = dtype
+    def __init__(self, dtype: type = object, **kw):
+        self.dtype = dtype.__name__
+        if self.dtype not in dir(builtins) or not isinstance(dtype, type):
+            raise ValueError("Only supports classes from the builtins module")
         super().__init__(**kw)
 
+    @property
+    def _dtype(self):
+        return getattr(builtins, self.dtype)
+
     def coerce(self, value):
-        if not isinstance(value, self.dtype):
-            return self.dtype(value)
+        if not isinstance(value, self._dtype):
+            return self._dtype(value)  # works for dtype like str, int, list
         return value
+
+    def _validate(self, value):
+        return isinstance(value, self._dtype)
 
 
 class OptionsUserParameter(SimpleUserParameter):
@@ -58,21 +73,26 @@ class OptionsUserParameter(SimpleUserParameter):
 
     def __init__(self, options, dtype=object, **kw):
         super().__init__(dtype=dtype, **kw)
-        self.options = options
+        self.options = {self.coerce(o) for o in options}
 
     def _validate(self, value):
         return self.coerce(value) in self.options
 
 
 class MultiOptionUserParameter(OptionsUserParameter):
-    """Multiple choices out of a given allow list"""
+    """Multiple choices out of a given allow list/tuple"""
 
-    def __init__(self, options, dtype=list[Any], **kw):
+    def __init__(self, options: list | tuple, dtype=object, **kw):
         super().__init__(options=options, dtype=dtype, **kw)
 
+    def coerce_one(self, value):
+        return super().coerce(value)
+
+    def coerce(self, value):
+        return [self.coerce_one(v) for v in value]
+
     def _validate(self, value):
-        typeguard.check_type(value, self.dtype)
-        return all(v in self.options for v in value)
+        return isinstance(value, (list, tuple)) and all(v in self.options for v in value)
 
 
 class BoundedNumberUserParameter(SimpleUserParameter):
@@ -139,13 +159,13 @@ def set_values(user_parameters: dict[str, BaseUserParameter], arguments: dict[st
     up = user_parameters.copy()
     for k, v in arguments.copy().items():
         if k in user_parameters:
-            up[k].set_default(v)
+            up[k] = up[k].with_default(v)
             arguments.pop(k)
     for k, v in up.copy().items():
         if isinstance(v, str):
             m = template_env.match(v)
             if m:
-                up[k] = v.set_default(m.groups()[0])
+                up[k] = up[k].with_default(m.groups()[0])
             m = template_func.match(v)
             if m:
                 var = m.groups()[0]

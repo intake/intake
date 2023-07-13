@@ -45,6 +45,8 @@ class BaseReader(Tokenizable):
         return type(self)(self.data, **kw)
 
     def __getattr__(self, item):
+        if item in self._namespaces:
+            return self._namespaces[item]
         return self.transform.__getattr__(item)
 
     def __getitem__(self, item):
@@ -59,7 +61,13 @@ class BaseReader(Tokenizable):
         return Pipeline(data=datatypes.ReaderData(reader=self), steps=[(func, {"item": item})], out_instances=[outtype])
 
     def __dir__(self):
-        return list(sorted(chain(object.__dir__(self), dir(self.transform))))
+        return list(sorted(chain(object.__dir__(self), dir(self.transform), self._namespaces)))
+
+    @property
+    def _namespaces(self):
+        from intake.readers.namespaces import get_namespaces
+
+        return get_namespaces(self)
 
     def clone_new(self, **kwargs):
         """Compatibility method from intake 1.0's Source"""
@@ -119,6 +127,12 @@ class BaseReader(Tokenizable):
         kw = self.kwargs.copy()
         kw.update(kwargs)
         return self._func(self.data, **kw)
+
+    def apply(self, func, output_instance=None, **kwargs):
+        """Make a pipeline by applying a function to this reader's output"""
+        from intake.readers.convert import Pipeline
+
+        return Pipeline(datatypes.ReaderData(reader=self), [(func, kwargs)], [output_instance or self.output_instance])
 
     @property
     def transform(self):
