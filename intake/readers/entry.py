@@ -17,6 +17,7 @@ from intake.readers.utils import (
     Tokenizable,
     extract_by_path,
     extract_by_value,
+    find_readers,
     merge_dicts,
 )
 
@@ -31,9 +32,9 @@ class DataDescription(Tokenizable):
         self._user_parameters = user_parameters or {}
 
     def __repr__(self):
-        part = f"DataDescription {self.datatype} {self.kwargs}"
+        part = f"DataDescription type {self.datatype}\n kwargs {self.kwargs}"
         if self.user_parameters:
-            part += f"\n {self.user_parameters}"
+            part += f"\n parameters {self.user_parameters}"
         return part
 
     def to_data(self, user_parameters=None, **kwargs):
@@ -99,6 +100,7 @@ class ReaderDescription(Tokenizable):
         for a user parameter, include it by name in kwargs
         """
         kw = self.kwargs.copy()
+        user_parameters = user_parameters or {}
 
         # make data instance
         kw_subset = {k: v for k, v in kwargs.items() if k in user_parameters or k in self.data.user_parameters}
@@ -126,6 +128,7 @@ class ReaderDescription(Tokenizable):
             if value is not None:
                 kw, _ = extract_by_value(value, cls, name, self.kwargs)
             else:
+                # TODO: can path refer to self.kwargs rather than self.data.kwargs?
                 kw = self.kwargs.copy()
             return ReaderDescription(data, self.reader, kw, self.user_parameters)
         else:
@@ -203,15 +206,6 @@ class Catalog(Mapping):
         self.metadata = metadata or {}
         self.user_parameters: dict[str, BaseUserParameter] = user_parameters or {}
 
-    @classmethod
-    def from_dict(cls, entries_dict: dict):
-        """Create catalog from {alias: reader} dict"""
-        # question: should allow this kind of input in __init__?
-        cat = cls()
-        for k, v in entries_dict.items():
-            cat[k] = v
-        return cat
-
     def to_dict(self):
         """Simplify catalog int {alias: reader} form
 
@@ -220,9 +214,15 @@ class Catalog(Mapping):
         return {self[k] for k in self.aliases}
 
     def add_entry(self, entry, name=None):
+        """Add entry/reader (and its requirements) in-place, with optional alias"""
         if isinstance(entry, BaseReader):
+            for reader in find_readers(entry.__dict__):
+                # process all readers hidden within the entry as instances
+                # In this case, the two if blocks below are moot, but not harmful
+                self += reader
             entry = entry.to_entry()
         self.entries[entry.token] = entry
+
         if entry.data.datatype == "intake.readers.datatypes:ReaderData":
             tok = self.add_entry(entry.data.kwargs["reader"])
             entry.data = "data(%s)" % tok
@@ -242,7 +242,13 @@ class Catalog(Mapping):
         return entry.token
 
     def promote_parameter_from(self, entity: str, parameter_name: Any, level="cat") -> Catalog:
-        """Move catalog from given entry/data *up*"""
+        """Move user-parameter from given entry/data *up*
+
+        `entity` is an alias name or entry/data token
+
+        Since user parameters do not participate in tokenisation, this does not change any
+        tokens even though it operates in-place.
+        """
         if level not in ("cat", "data"):
             raise ValueError
         if entity in self.aliases:
@@ -338,7 +344,7 @@ class Catalog(Mapping):
         return Catalog(
             entries=chain(self.entries.values(), other.entries.values()),
             aliases=merge_dicts(self.aliases, other.aliases),
-            user_parameters=merge_dicts(self.user_parameters, other.up),
+            user_parameters=merge_dicts(self.user_parameters, other.user_parameters),
             metadata=merge_dicts(self.metadata, other.metadata),
         )
 
@@ -349,7 +355,7 @@ class Catalog(Mapping):
             other = Catalog([other])
         self.entries.update(other.entries)
         self.aliases.update(other.aliases)
-        self.user_parameters.update(other.up)
+        self.user_parameters.update(other.user_parameters)
         self.metadata.update(other.metadata)
         return self
 

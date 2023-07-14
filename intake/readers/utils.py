@@ -1,5 +1,6 @@
 import re
 from hashlib import md5
+from itertools import zip_longest
 from typing import Any, Callable, Iterable
 
 from intake import import_name
@@ -20,16 +21,29 @@ def merge_dicts(*dicts: tuple[dict, ...]) -> dict:
     Examples
     --------
     >>> merge_dicts({"a": {"a": 0, "b": 1}}, {"a": {"a": 1}, "b": 1})
-    merge_dicts({"a": {"a": 0, "b": 1}}, {"a": {"a": 2}, "b": 3})
+    {"a": {"a": 1, "b": 1}}, "b": 1)
+
+    >>> merge_dicts({"a": [None, True]}, {"a": [False, None]})
+    {"a": [False, True}
     """
-    out = {}
-    for dic in dicts:
-        for k, v in dic.items():
-            if k in out and isinstance(v, dict) and isinstance(out[k], dict):
-                # deep-merge nested dicts
-                out[k] = merge_dicts(out[k], v)
-            else:
-                out[k] = v
+    if isinstance(dicts[0], dict):
+        out = {}
+        for dic in dicts:
+            for k, v in dic.items():
+                if k in out and isinstance(v, Iterable) and not isinstance(v, (bytes, str)):
+                    # deep-merge nested dicts
+                    out[k] = merge_dicts(out[k], v)
+                else:
+                    out[k] = v
+    elif isinstance(dicts[0], Iterable) and not isinstance(dicts[0], (bytes, str)):
+        stuff = []
+        for values in zip_longest(*(d for d in dicts if d is not None)):
+            stuff.append(merge_dicts(*values))
+
+        out = type(dicts[0])(stuff)
+    else:
+        out = next((d for d in dicts if d is not None), None)
+
     return out
 
 
@@ -40,14 +54,30 @@ def nested_keys_to_dict(kw: dict[str, Any]) -> dict:
     --------
     >>> nested_keys_to_dict({"field": 0, "deeper.field": 1, "deeper.other": 2, "deep.est.field": 3})
     {'field': 0, 'deeper': {'field': 1, 'other': 2}, 'deep': {'est': {'field': 3}}}
+
+    >>>  nested_keys_to_dict({"deeper.1.field": 1, "list.1.1.1": True, "list.1.0": False})
+    {'deeper': [None, {"field": 1}], "list": [None, [False, [None, True]]]}
     """
     out = {}
     for k, v in kw.items():
         bits = k.split(".")
         o = out
-        for bit in bits[:-1]:
-            o = o.setdefault(bit, {})
-        o[bits[-1]] = v
+        for bit, bit2 in zip(bits[:-1], bits[1:]):
+            if bit2.isnumeric():
+                bit2 = int(bit2)
+                newpart = [None] * (int(bit2) + 1)
+            else:
+                newpart = {}
+            if isinstance(o, dict):
+                o = o.setdefault(bit, newpart)
+            else:
+                if o[int(bit)] is None:
+                    o[int(bit)] = newpart
+                o = o[int(bit)]
+        bit = bits[-1]
+        if bit.isnumeric():
+            bit = int(bit)
+        o[bit] = v
     return out
 
 
@@ -55,8 +85,14 @@ func_or_method = re.compile(r"<(function|method) ([^ ]+) at 0x[0-9a-f]+>")
 
 
 def _func_to_str(f: Callable) -> str:
+    from intake.readers.readers import BaseReader
+
+    if isinstance(f, BaseReader):
+        return "{data(%s)}" % f.to_entry().token
     if isinstance(f, Tokenizable):
-        return f"{f.token}"
+        # TODO: not covered, probably wrong, may need separate Data, DataDescription
+        #  and
+        return "{%s}" % f.token
     return "{func(%s)}" % f"{f.__module__}:{f.__name__}"
 
 
@@ -72,6 +108,25 @@ def find_funcs(val):
         return _func_to_str(val)
     else:
         return val
+
+
+def find_readers(val, out=None):
+    """Walk nested dict/iterables, finding all BaseReader instances"""
+    from intake.readers.readers import BaseReader
+
+    if out is None:
+        out = set()
+    if isinstance(val, dict):
+        [find_readers(v, out) for k, v in val.items()]
+    elif isinstance(val, (str, bytes)):
+        pass
+    elif isinstance(val, Iterable):
+        [find_readers(v, out) for v in val]
+    elif isinstance(val, BaseReader):
+        out.add(val)
+        # recurse to find readers depending on more readers
+        find_readers(val.__dict__, out)
+    return out
 
 
 class Tokenizable:
@@ -100,7 +155,7 @@ class Tokenizable:
         return int(self.token, 16)
 
     def __eq__(self, other):
-        return self.token == other.token
+        return type(self) == type(other) and self.token == other.token
 
     @classmethod
     def qname(cls):
@@ -115,21 +170,22 @@ def make_cls(cls: str | type, kwargs: dict):
     return cls(**kwargs)
 
 
+def descend_to_path(path: str | list, kwargs: dict | list | tuple):
+    if isinstance(path, str):
+        path = path.split(".")
+    part = path.pop(0)
+    if part.isnumeric():
+        part = int(part)
+    if path:
+        return descend_to_path(path, kwargs[part])
+    return kwargs[part]
+
+
 def extract_by_path(path: str, cls: type, name: str, kwargs: dict) -> tuple:
     """Walk kwargs, replacing dotted keys in path by UserParameter template"""
-    # TODO: could be implemented with nested_keys_to_dict/merge_dicts ?
-    parts = path.split(".")
-    try:
-        kw = kwargs.copy()
-        for part in parts[:-1]:
-            kw2 = kw[part].copy()
-            kw[part] = kw2
-        default = kw[parts[-1]]
-    except (KeyError, TypeError):
-        default = None
-    up = cls(default=default)
-    kw[parts[-1]] = "{%s}" % name
-    return kw, up
+    value = descend_to_path(path, kwargs)
+    up = cls(default=value)
+    return merge_dicts(kwargs, nested_keys_to_dict({path: "{%s}" % name})), up
 
 
 def _by_value(val, up, name):
@@ -141,6 +197,8 @@ def _by_value(val, up, name):
         return val.replace(up.default, "{%s}" % name)
     else:
         try:
+            if isinstance(val, (str, bytes)) and up.default in val:
+                return val.replace(up.default, "{%s}" % name)
             if val == up.default:
                 return "{%s}" % name
         except (TypeError, ValueError):
@@ -153,3 +211,23 @@ def extract_by_value(value: Any, cls: type, name: str, kwargs: dict) -> tuple:
     up = cls(default=value)
     kw = _by_value(kwargs, up, name)
     return kw, up
+
+
+def replace_values(val, needle, replace):
+    """Find `needle` in the given values and replace with `replace`
+
+    Useful for removing sensitive values from kwargs and replacing with functions
+    like "{env(...)}".
+    """
+    if isinstance(val, dict):
+        return {k: replace_values(v, needle, replace) for k, v in val.items()}
+    elif isinstance(val, Iterable) and not isinstance(val, (str, bytes)):
+        return type(val)([replace_values(v, needle, replace) for v in val])
+    try:
+        if val == needle:
+            return needle
+        elif isinstance(val, (str, bytes)):
+            return val.replace(needle, replace)
+    except (ValueError, TypeError):
+        pass
+    return val

@@ -144,7 +144,8 @@ def _set_values(up, arguments):
                 return import_name(var)
 
     if isinstance(arguments, str):
-        return arguments.format(**up)
+        envdict = {f"env({k})": os.getenv(k) for k in template_env.findall(arguments)}
+        return arguments.format(**up, **envdict)
     elif isinstance(arguments, Iterable):
         return type(arguments)([_set_values(up, v) for v in arguments])
     return arguments
@@ -162,13 +163,14 @@ def set_values(user_parameters: dict[str, BaseUserParameter], arguments: dict[st
             up[k] = up[k].with_default(v)
             arguments.pop(k)
     for k, v in up.copy().items():
-        if isinstance(v, str):
-            m = template_env.match(v)
+        # v can be a literal DataDescription (from a reader) rather than a UP
+        if isinstance(getattr(v, "default", None), str):
+            m = template_env.match(v.default)
             if m:
-                up[k] = up[k].with_default(m.groups()[0])
-            m = template_func.match(v)
+                up[k] = up[k].with_default(os.getenv(m.groups()[0]))
+            m = template_func.match(v.default)
             if m:
                 var = m.groups()[0]
-                up[k] = import_name(var)
+                up[k] = up[k].with_default(import_name(var))
 
     return _set_values({k: (u.default if isinstance(u, BaseUserParameter) else u) for k, u in up.items()}, arguments)
