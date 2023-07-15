@@ -141,10 +141,12 @@ class Tokenizable:
 
     @property
     def token(self):
-        # TODO: this effectively says that mutation, if allowed, does not change token
-        #  implying that only _ attributes are multable, such as _metadata
+        """Token is computed from all non-_ attributes and then cached.
+
+        Even if those attributes are mutated, the token will not change, but the
+        resultant might or might not beequal to the original.
+        """
         if self._tok is None:
-            # TODO: this is not necessary for Descriptions where funcs have already been stringified
             dic = {k: find_funcs(v) for k, v in self.__dict__.items() if not k.startswith("_")}
             dictxt = func_or_method.sub(r"\2", str(dic))
             self._tok = md5(f"{self.qname()}|{dictxt}".encode()).hexdigest()[:16]

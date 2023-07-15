@@ -249,6 +249,8 @@ class Catalog(Mapping):
         Since user parameters do not participate in tokenisation, this does not change any
         tokens even though it operates in-place.
         """
+        if not isinstance(entity, str):
+            entity = entity.token
         if level not in ("cat", "data"):
             raise ValueError
         if entity in self.aliases:
