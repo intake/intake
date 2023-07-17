@@ -1,6 +1,7 @@
 """Description of the ways to load a data set"""
 from __future__ import annotations
 
+import io
 from collections.abc import Mapping
 from copy import copy
 from itertools import chain
@@ -24,6 +25,8 @@ from intake.readers.utils import (
 
 class DataDescription(Tokenizable):
     """Defines some data and a single way to load it, with parameters not yet resolved"""
+
+    fields = {"_metadata", "_user_parameters", "_tok"}
 
     def __init__(self, datatype: str, kwargs: dict = None, metadata: dict = None, user_parameters: dict = None):
         self.datatype = datatype
@@ -79,6 +82,8 @@ class DataDescription(Tokenizable):
 
 
 class ReaderDescription(Tokenizable):
+    fields = {"_metadata", "_user_parameters", "_tok"}
+
     def __init__(
         self,
         data: DataDescription,
@@ -165,7 +170,8 @@ class ReaderDescription(Tokenizable):
         return ReaderData(self.to_reader(user_parameters=user_parameters))
 
     def __repr__(self):
-        return f"Entry for {self.data}\nreader: {self.reader}\nkwargs: {self.kwargs}"
+        extra = f"\n  parameters: {self.user_parameters}" if self.user_parameters else ""
+        return f"Entry for {self.data}\n  reader: {self.reader}\n  kwargs: {self.kwargs}" + extra
 
     def __add__(self, other: DataDescription | BaseReader):
         """makes a catalog from any two descriptions"""
@@ -185,6 +191,7 @@ class Catalog(Mapping):
         user_parameters: dict[str, BaseUserParameter] | None = None,  # global to the catalog
         metadata: dict | None = None,
     ):
+        self.version = 2
         self.data = data or {}  # process/tokenise data if an iterable
         self.aliases = aliases or {}  # names the catalog wants to expose
         if isinstance(entries, Mapping) or entries is None:
@@ -207,7 +214,7 @@ class Catalog(Mapping):
         self.user_parameters: dict[str, BaseUserParameter] = user_parameters or {}
 
     def to_dict(self):
-        """Simplify catalog int {alias: reader} form
+        """Simplify catalog into {alias: reader} form
 
         This materialises all user_parameters to their current defaults
         """
@@ -223,11 +230,13 @@ class Catalog(Mapping):
             entry = entry.to_entry()
         self.entries[entry.token] = entry
 
-        if entry.data.datatype == "intake.readers.datatypes:ReaderData":
-            tok = self.add_entry(entry.data.kwargs["reader"])
-            entry.data = "data(%s)" % tok
-        else:
-            self.data[entry.data.token] = entry.data
+        # assume if entry.data is str must be a "data(...)" and already in self.data - could check
+        if isinstance(entry.data, DataDescription):
+            if entry.data.datatype == "intake.readers.datatypes:ReaderData":
+                tok = self.add_entry(entry.data.kwargs["reader"])
+                entry.data = "data(%s)" % tok
+            else:
+                self.data[entry.data.token] = entry.data
 
         if entry.reader == "intake.readers.convert:Pipeline":
             # walk top-level arguments to functions looking for data deps
@@ -303,10 +312,28 @@ class Catalog(Mapping):
         return self
 
     def __getattr__(self, item):
-        return self[item]
+        try:
+            return self[item]
+        except KeyError:
+            pass
+        raise AttributeError(item)
+
+    def to_yaml_text(self):
+        from intake.readers import YAML
+
+        stream = io.StringIO()
+        YAML.dump(self, stream)
+        return stream.getvalue()
+
+    @staticmethod
+    def from_yaml_text(text):
+        from intake.readers import YAML
+
+        stream = io.StringIO(text)
+        return YAML.load(stream)
 
     def __getstate__(self):
-        # maybe straight to a JSON/YAML representation here
+        # maybe use intake.readers.YAML.dump(self) representation here
         return self.__dict__
 
     def __setstate__(self, state):
@@ -369,7 +396,7 @@ class Catalog(Mapping):
     def __repr__(self):
         txt = f"{type(self).__name__}\n named datasets: {sorted(self.aliases)}"
         if self.user_parameters:
-            txt = txt + f"\n user parameters: {sorted(self.user_parameters)}"
+            txt = txt + f"\n  parameters: {sorted(self.user_parameters)}"
         return txt
 
     def __setitem__(self, name: str, entry: DataDescription):
@@ -379,9 +406,6 @@ class Catalog(Mapping):
         the same name will be clobbered.
         """
         self.add_entry(entry, name=name)
-
-    def data(self):
-        return {e.data for e in self.entries.values()}
 
     def __call__(self, **kwargs):
         """Makes copy of the catalog with new values for global user parameters"""

@@ -21,6 +21,7 @@ class BaseData(Tokenizable):
     mimetypes: set[str] = set()
     filepattern: set[str] = set()
     structure: set[str] = set()
+    fields = {"_metadata"}
 
     def __init__(self, metadata: dict[str, Any] | None = None):
         self._metadata: dict[str, Any] = metadata or {}  # arbitrary information

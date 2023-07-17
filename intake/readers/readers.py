@@ -19,6 +19,7 @@ class BaseReader(Tokenizable):
     func_doc: str = None
     concat_func: str = None
     output_instance: str = None
+    fields = {"_metadata"}
 
     def __init__(self, data, metadata: dict | None = None, **kwargs):
         """

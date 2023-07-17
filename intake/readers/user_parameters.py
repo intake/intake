@@ -10,10 +10,11 @@ from intake.readers.utils import Tokenizable
 class BaseUserParameter(Tokenizable):
     """The base class allows for any default without checking/coercing"""
 
-    def __init__(self, default, description="", metadata: dict | None = None):
+    fields = {"_description"}
+
+    def __init__(self, default, description=""):
         self.default = default
         self._description = description
-        self._metadata = metadata or {}
 
     def __repr__(self):
         dic = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}

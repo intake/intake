@@ -138,6 +138,12 @@ class Tokenizable:
     """
 
     _tok = None
+    fields = set()
+
+    def _token(self):
+        dic = {k: find_funcs(v) for k, v in self.__dict__.items() if not k.startswith("_")}
+        dictxt = func_or_method.sub(r"\2", str(dic))
+        return md5(f"{self.qname()}|{dictxt}".encode()).hexdigest()[:16]
 
     @property
     def token(self):
@@ -147,9 +153,7 @@ class Tokenizable:
         resultant might or might not beequal to the original.
         """
         if self._tok is None:
-            dic = {k: find_funcs(v) for k, v in self.__dict__.items() if not k.startswith("_")}
-            dictxt = func_or_method.sub(r"\2", str(dic))
-            self._tok = md5(f"{self.qname()}|{dictxt}".encode()).hexdigest()[:16]
+            self._tok = self._token()
         return self._tok
 
     def __hash__(self):
@@ -163,6 +167,20 @@ class Tokenizable:
     def qname(cls):
         """module:class name of this class, makes str for import_name"""
         return f"{cls.__module__}:{cls.__name__}"
+
+    @classmethod
+    def to_yaml(cls, representer, node):
+        return representer.represent_mapping(f"!{cls.__name__}", node.__dict__)
+
+    @classmethod
+    def from_yaml(cls, constructor, node):
+        from ruamel.yaml.comments import CommentedMap
+
+        data = CommentedMap()
+        constructor.construct_mapping(node, data, deep=True)
+        obj = object.__new__(cls)
+        obj.__dict__.update(data)
+        return obj
 
 
 def make_cls(cls: str | type, kwargs: dict):
