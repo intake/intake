@@ -2,8 +2,8 @@
 
 This is how to "export" data from Intake.
 
-By convention, functions here produce an instance of FileData, which can then be used
-to produce new catalog entries.
+By convention, functions here produce an instance of FileData (or other data type),
+which can then be used to produce new catalog entries.
 """
 import fsspec
 
@@ -20,6 +20,7 @@ def pandas_to_parquet(x, url, storage_options=None, metadata=None, **kwargs):
 
 @register_converter("pandas:DataFrame", "matplotlib.pyplot:Figure")
 def pandas_to_matplotlib_figure(x, **kwargs):
+    # this could be a convert rather than an output
     import matplotlib.pyplot as plt
 
     fig = plt.Figure()
@@ -30,7 +31,11 @@ def pandas_to_matplotlib_figure(x, **kwargs):
 
 @register_converter("matplotlib.pyplot:Figure", "intake.readers.datatypes:PNG")
 def matplotlib_figure_to_png(x, url, metadata=None, storage_options=None, **kwargs):
-    # for thumbnails, use together with FileByteReader
+    """Take a matplotlib figure and save to PNG file
+
+    This could be used to produce thumbnails if followed by FileByteReader;
+    to use temporary storage rather than concrete files, can use memory: or caching filesystems
+    """
     with fsspec.open(url, mode="wb", **(storage_options or {})) as f:
         x.savefig(f, format="png", **kwargs)
     return PNG(url=url, metadata=metadata, storage_options=storage_options)

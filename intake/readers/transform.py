@@ -1,6 +1,6 @@
 """Manipulate data
 
-By convention, functions change the data but not the container type
+By convention, functions that change the data but not the container type
 """
 from intake.readers.convert import register_converter
 
