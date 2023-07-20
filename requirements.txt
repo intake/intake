@@ -4,6 +4,5 @@ entrypoints
 fsspec >=2021.7.0
 jinja2
 msgpack
-pyyaml
 requests
-typeguard
+ruamel.yaml

@@ -1,11 +1,12 @@
 """Description of the ways to load a data set"""
 from __future__ import annotations
 
-import io
 from collections.abc import Mapping
 from copy import copy
 from itertools import chain
 from typing import Any, Iterable
+
+import fsspec
 
 from intake import import_name
 from intake.readers.readers import BaseReader
@@ -318,19 +319,18 @@ class Catalog(Mapping):
             pass
         raise AttributeError(item)
 
-    def to_yaml_text(self):
+    def to_yaml_file(self, path, **storage_options):
         from intake.readers import YAML
 
-        stream = io.StringIO()
-        YAML.dump(self, stream)
-        return stream.getvalue()
+        with fsspec.open(path, mode="wt", **storage_options) as stream:
+            YAML.dump(self, stream)
 
     @staticmethod
-    def from_yaml_text(text):
+    def from_yaml_file(path, **storage_options):
         from intake.readers import YAML
 
-        stream = io.StringIO(text)
-        return YAML.load(stream)
+        with fsspec.open(path, **storage_options) as stream:
+            return YAML.load(stream)
 
     def __getstate__(self):
         # maybe use intake.readers.YAML.dump(self) representation here
