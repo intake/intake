@@ -14,11 +14,11 @@ class BaseUserParameter(Tokenizable):
 
     def __init__(self, default, description=""):
         self.default = default
-        self._description = description
+        self.description = description
 
     def __repr__(self):
         dic = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
-        return f"{type(self).__name__}, {self._description}\n{dic}"
+        return f"{type(self).__name__}, {self.description}\n{dic}"
 
     def set_default(self, value):
         value = self.coerce(value)
@@ -45,6 +45,11 @@ class BaseUserParameter(Tokenizable):
             return self._validate(value)
         except (TypeError, ValueError):
             return False
+
+    def to_dict(self):
+        dic = super().to_dict()
+        dic["cls"] = self.qname()
+        return dic
 
 
 class SimpleUserParameter(BaseUserParameter):
@@ -113,14 +118,59 @@ class BoundedNumberUserParameter(SimpleUserParameter):
         return out
 
 
+# TODO: Date type and generic functions of user_parameters like date(value).day
+
+templates = {}
+
+
+class NoMatch(ValueError):
+    ...
+
+
+def register_template(name):
+    def wrapper(func):
+        regex = re.compile(f"{name}[(]([^)]+)[)]")
+        templates[regex] = func
+
+        def go(text):
+            m = regex.match(text)
+            if m:
+                return func(m)
+            raise NoMatch
+
+        return go
+
+    return wrapper
+
+
 template_env = re.compile(r"env[(]([^)]+)[)]")
 template_data = re.compile(r"data[(]([^)]+)[)]")
 template_func = re.compile(r"func[(]([^)]+)[)]")
 
 
-def _set_values(up, arguments):
+@register_template(r"env")
+def env(match, up):
+    return os.getenv(match.groups[0])
+
+
+@register_template(r"data")
+def data(match, up):
     from intake.readers.entry import ReaderDescription
 
+    var = match.groups()[0]
+    thing = up[var]
+    if isinstance(thing, ReaderDescription):
+        thing = thing.to_reader(user_parameters=up)
+    return thing
+
+
+@register_template(r"import")
+@register_template(r"func")
+def imp(match, up):
+    return import_name(match.groups()[0])
+
+
+def _set_values(up, arguments):
     if isinstance(arguments, dict):
         return {k: _set_values(up, v) for k, v in arguments.copy().items()}
     elif isinstance(arguments, str) and arguments.startswith("{") and arguments.endswith("}"):
@@ -128,22 +178,10 @@ def _set_values(up, arguments):
         if arg in up:
             return up[arguments[1:-1]]
         else:
-            m = template_env.match(arg)
-            if m:
-                var = m.groups()[0]
-                return os.getenv(var)
-            m = template_data.match(arg)
-            if m:
-                var = m.groups()[0]
-                thing = up[var]
-                if isinstance(thing, ReaderDescription):
-                    thing = thing.to_reader(user_parameters=up)
-                return thing
-            m = template_func.match(arg)
-            if m:
-                var = m.groups()[0]
-                return import_name(var)
-
+            for k, v in templates.items():
+                m = re.match(k, arg)
+                if m:
+                    return v(m, up)
     if isinstance(arguments, str):
         envdict = {f"env({k})": os.getenv(k) for k in template_env.findall(arguments)}
         return arguments.format(**up, **envdict)

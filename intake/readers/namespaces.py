@@ -30,7 +30,7 @@ class Namespace:
             return []
         # if self.reader.output_instance doesn't match self.acts_on
         cls.mod = importlib.import_module(cls.imports)
-        return [f for f in dir(cls.mod) if callable(getattr(cls.mod, f))]
+        return [f for f in dir(cls.mod) if callable(getattr(cls.mod, f)) and not f.startswith("_")]
 
     def __dir__(self) -> Iterable[str]:
         # if self.reader.output_instance doesn't match self.acts_on:

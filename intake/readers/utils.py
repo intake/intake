@@ -138,10 +138,15 @@ class Tokenizable:
     """
 
     _tok = None
-    fields = set()
+    _avoid = {"metadata"}
+
+    def _dic_for_comp(self):
+        # TODO: we don't consider metadata part of the token. Any others?
+        #  Do we just want to exclude others?
+        return {k: find_funcs(v) for k, v in self.__dict__.items() if not k.startswith("_") and k not in self._avoid}
 
     def _token(self):
-        dic = {k: find_funcs(v) for k, v in self.__dict__.items() if not k.startswith("_")}
+        dic = self._dic_for_comp()
         dictxt = func_or_method.sub(r"\2", str(dic))
         return md5(f"{self.qname()}|{dictxt}".encode()).hexdigest()[:16]
 
@@ -168,19 +173,29 @@ class Tokenizable:
         """module:class name of this class, makes str for import_name"""
         return f"{cls.__module__}:{cls.__name__}"
 
-    @classmethod
-    def to_yaml(cls, representer, node):
-        return representer.represent_mapping(f"!{cls.__name__}", node.__dict__)
+    def to_dict(self):
+        return to_dict(self)
 
     @classmethod
-    def from_yaml(cls, constructor, node):
-        from ruamel.yaml.comments import CommentedMap
-
-        data = CommentedMap()
-        constructor.construct_mapping(node, data, deep=True)
+    def from_dict(cls, data):
+        data = data.copy()
+        if "cls" in data:
+            cls = import_name(data.pop("cls"))
         obj = object.__new__(cls)
-        obj.__dict__.update(data)
+        obj.__dict__.update(data)  # walk data
         return obj
+
+
+def to_dict(thing):
+    """Serialise deep structure into JSON-like hierarchy, invoking to_dict() on intake instances"""
+    if isinstance(thing, dict):
+        return {k: to_dict(v) for k, v in thing.items()}
+    elif isinstance(thing, (tuple, list)):
+        return [to_dict(v) for v in thing]
+    elif isinstance(thing, Tokenizable):
+        return {k: to_dict(v) for k, v in thing.__dict__.items() if not k.startswith("_")}
+    else:
+        return thing
 
 
 def make_cls(cls: str | type, kwargs: dict):

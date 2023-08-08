@@ -21,10 +21,9 @@ class BaseData(Tokenizable):
     mimetypes: set[str] = set()
     filepattern: set[str] = set()
     structure: set[str] = set()
-    fields = {"_metadata"}
 
     def __init__(self, metadata: dict[str, Any] | None = None):
-        self._metadata: dict[str, Any] = metadata or {}  # arbitrary information
+        self.metadata: dict[str, Any] = metadata or {}  # arbitrary information
 
     @property
     def possible_readers(self):
@@ -37,10 +36,6 @@ class BaseData(Tokenizable):
     def possible_outputs(self):
         readers = self.possible_readers["importable"]
         return {r: r.output_instance for r in readers}
-
-    @property
-    def metadata(self):
-        return self._metadata
 
     def to_reader(self, outtype: str | None = None, reader: str | type | None = None):
         if outtype and reader:

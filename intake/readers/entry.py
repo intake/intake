@@ -7,6 +7,7 @@ from itertools import chain
 from typing import Any, Iterable
 
 import fsspec
+import yaml
 
 from intake import import_name
 from intake.readers.readers import BaseReader
@@ -27,13 +28,11 @@ from intake.readers.utils import (
 class DataDescription(Tokenizable):
     """Defines some data and a single way to load it, with parameters not yet resolved"""
 
-    fields = {"_metadata", "_user_parameters", "_tok"}
-
     def __init__(self, datatype: str, kwargs: dict = None, metadata: dict = None, user_parameters: dict = None):
         self.datatype = datatype
         self.kwargs = kwargs or {}
-        self._metadata = metadata or {}
-        self._user_parameters = user_parameters or {}
+        self.metadata = metadata or {}
+        self.user_parameters = user_parameters or {}
 
     def __repr__(self):
         part = f"DataDescription type {self.datatype}\n kwargs {self.kwargs}"
@@ -46,10 +45,6 @@ class DataDescription(Tokenizable):
         kw = self.get_kwargs(user_parameters=user_parameters, **kwargs)
         return cls(**kw)
 
-    @property
-    def metadata(self):
-        return self._metadata
-
     def __call__(self, **kwargs):
         return self.to_data(**kwargs)
 
@@ -61,7 +56,7 @@ class DataDescription(Tokenizable):
         """
         kw = self.kwargs.copy()
         kw.update(kwargs)
-        up = self._user_parameters.copy()
+        up = self.user_parameters.copy()
         up.update(user_parameters or {})
         kw = set_values(up, kw)
         return kw
@@ -75,16 +70,10 @@ class DataDescription(Tokenizable):
         else:
             kw, up = extract_by_value(value, cls, name, self.kwargs)
         ups[name] = up
-        return DataDescription(self.datatype, kw, metadata=self._metadata, user_parameters=ups)
-
-    @property
-    def user_parameters(self):
-        return self._user_parameters
+        return DataDescription(self.datatype, kw, metadata=self.metadata, user_parameters=ups)
 
 
 class ReaderDescription(Tokenizable):
-    fields = {"_metadata", "_user_parameters", "_tok"}
-
     def __init__(
         self,
         data: DataDescription,
@@ -96,8 +85,8 @@ class ReaderDescription(Tokenizable):
         self.data = data
         self.reader = reader
         self.kwargs = kwargs or dict[str, Any]()
-        self._user_parameters = user_parameters or dict[str | BaseUserParameter]()
-        self._metadata = metadata or {}
+        self.user_parameters = user_parameters or dict[str | BaseUserParameter]()
+        self.metadata = metadata or {}
 
     def get_kwargs(self, user_parameters=None, **kwargs) -> dict[str, Any]:
         """Get set of kwargs for given reader, based on prescription, new args and user parameters
@@ -116,7 +105,7 @@ class ReaderDescription(Tokenizable):
         kw.update(kwargs)
         up = user_parameters or {}  # global/catalog
         up.update(self.data.user_parameters)
-        up.update(self._user_parameters)
+        up.update(self.user_parameters)
         kw = set_values(up, kw)
         return kw
 
@@ -146,10 +135,6 @@ class ReaderDescription(Tokenizable):
             ups[name] = up
             return ReaderDescription(self.data, self.reader, kw, ups)
 
-    @property
-    def user_parameters(self):
-        return self._user_parameters
-
     def to_reader(self, user_parameters=None, **kwargs):
         cls = import_name(self.reader)
         kw = self.get_kwargs(user_parameters=user_parameters, **kwargs)
@@ -158,17 +143,18 @@ class ReaderDescription(Tokenizable):
     def __call__(self, user_parameters=None, **kwargs):
         return self.to_reader(user_parameters=user_parameters, **kwargs)
 
-    @property
-    def metadata(self):
-        # reader has own metadata?
-        return self.data.metadata
-
     def to_data(self, user_parameters=None):
         """Make data instance for what this reader produces"""
         # or should this return a DataDescription?
         from intake.readers.datatypes import ReaderData
 
         return ReaderData(self.to_reader(user_parameters=user_parameters))
+
+    @classmethod
+    def from_dict(cls, data):
+        obj = super().from_dict(data)
+        obj.user_parameters = {k: BaseUserParameter.from_dict(v) for k, v in data["user_parameters"].items()}
+        return obj
 
     def __repr__(self):
         extra = f"\n  parameters: {self.user_parameters}" if self.user_parameters else ""
@@ -183,7 +169,7 @@ class ReaderDescription(Tokenizable):
         return Catalog(entries=(self, other))
 
 
-class Catalog(Mapping):
+class Catalog(Mapping, Tokenizable):
     def __init__(
         self,
         entries: Iterable[ReaderDescription] | Mapping | None = None,
@@ -214,13 +200,6 @@ class Catalog(Mapping):
         self.metadata = metadata or {}
         self.user_parameters: dict[str, BaseUserParameter] = user_parameters or {}
 
-    def to_dict(self):
-        """Simplify catalog into {alias: reader} form
-
-        This materialises all user_parameters to their current defaults
-        """
-        return {self[k] for k in self.aliases}
-
     def add_entry(self, entry, name=None):
         """Add entry/reader (and its requirements) in-place, with optional alias"""
         if isinstance(entry, BaseReader):
@@ -238,6 +217,7 @@ class Catalog(Mapping):
                 entry.data = "data(%s)" % tok
             else:
                 self.data[entry.data.token] = entry.data
+                entry.data = "data(%s)" % entry.data.token
 
         if entry.reader == "intake.readers.convert:Pipeline":
             # walk top-level arguments to functions looking for data deps
@@ -320,26 +300,29 @@ class Catalog(Mapping):
         raise AttributeError(item)
 
     def to_yaml_file(self, path, **storage_options):
-        from intake.readers import YAML
-
         with fsspec.open(path, mode="wt", **storage_options) as stream:
-            YAML.dump(self, stream)
+            yaml.dump(self.to_dict(), stream)
 
     @staticmethod
     def from_yaml_file(path, **storage_options):
-        from intake.readers import YAML
-
         with fsspec.open(path, **storage_options) as stream:
-            return YAML.load(stream)
+            return Catalog.from_dict(yaml.load(stream))
 
-    def __getstate__(self):
-        # maybe use intake.readers.YAML.dump(self) representation here
-        return self.__dict__
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
+    @classmethod
+    def from_dict(cls, data):
+        """Assemble catalog from dict representation"""
+        cat = cls()
+        for key, clss in zip(["entries", "data", "user_parameters"], [ReaderDescription, DataDescription, BaseUserParameter]):
+            for k, v in data[key].items():
+                desc = clss.from_dict(v)
+                desc._tok = k
+                getattr(cat, key)[k] = desc
+        cat.aliases = data["aliases"]
+        cat.metadata = data["metadata"]
+        return cat
 
     def __getitem__(self, item):
+        ups = self.user_parameters.copy()
         if isinstance(item, tuple):
             item, kw = item
         else:
@@ -349,10 +332,11 @@ class Catalog(Mapping):
         if item in self.entries:
             item = copy(self.entries[item])
             if isinstance(item.data, str) and item.data.startswith("data(") and item.data.endswith(")"):
-                item.data = self.entries[item.data[5:-1]]
-            return item(user_parameters=dict(**self.user_parameters, **self.entries), **(kw or {}))
+                item.data = self[item.data[5:-1]]
+                ups.update(item.data.user_parameters)
+            return item(user_parameters=dict(**ups, **self.entries), **(kw or {}))
         elif item in self.data:
-            return self.data[item].to_data(user_parameters=self.user_parameters, **(kw or {}))
+            return self.data[item].to_data(user_parameters=ups, **(kw or {}))
         else:
             raise KeyError(item)
 

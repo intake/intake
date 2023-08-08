@@ -19,7 +19,6 @@ class BaseReader(Tokenizable):
     func_doc: str = None
     concat_func: str = None
     output_instance: str = None
-    fields = {"_metadata"}
 
     def __init__(self, data, metadata: dict | None = None, **kwargs):
         """
@@ -30,11 +29,7 @@ class BaseReader(Tokenizable):
         """
         self.data = data
         self.kwargs = kwargs
-        self._metadata = metadata or {}
-
-    @property
-    def metadata(self):
-        return self._metadata
+        self.metadata = metadata or {}
 
     def __repr__(self):
         return f"{type(self).__name__} reader for {self.data} producing {self.output_instance}"
