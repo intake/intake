@@ -191,6 +191,11 @@ class Feather1(FileData):
     structure = {"tabular", "structured"}
 
 
+class PythonSourceCode(FileData):
+    structure = {"code"}
+    filepattern = "py$"
+
+
 comp_magic = {
     # These are a bit like datatypes making raw bytes/file object output
     (0, b"\x1f\x8b"): "gzip",

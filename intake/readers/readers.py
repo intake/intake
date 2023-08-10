@@ -448,7 +448,7 @@ class TiledNode(BaseReader):
     implements = {datatypes.CatalogAPI}
     imports = {"tiled"}
     # a Node can convert to a Catalog
-    output_instance = {"tiled.client.node:Node"}
+    output_instance = "tiled.client.node:Node"
     func = "tiled.client:from_uri"
 
     def read(self, **kwargs):
@@ -459,6 +459,23 @@ class TiledDataset(BaseReader):
     # returns dask/normal xarray or dataframe
     implements = {datatypes.Tiled}
     output_instance = "tiled.client.base:BaseClient"
+
+
+class PythonModule(BaseReader):
+    output_instance = "builtins:module"
+    implements = {datatypes.PythonSourceCode}
+
+    def read(self, module_name=None, **kwargs):
+        from types import ModuleType
+
+        import fsspec
+
+        if module_name is None:
+            module_name = self.data.url.rsplit("/", 1)[-1].split(".", 1)[0]
+        with fsspec.open(self.data.url, "rt", **(self.data.storage_options or {})) as f:
+            mod = ModuleType(module_name)
+            exec(f.read(), mod.__dict__)
+            return mod
 
 
 def recommend(data):

@@ -42,7 +42,9 @@ class DataDescription(Tokenizable):
 
     def to_data(self, user_parameters=None, **kwargs):
         cls = import_name(self.datatype)
-        kw = self.get_kwargs(user_parameters=user_parameters, **kwargs)
+        ups = self.user_parameters.copy()
+        ups.update(user_parameters or {})
+        kw = self.get_kwargs(user_parameters=ups, **kwargs)
         return cls(**kw)
 
     def __call__(self, **kwargs):
@@ -64,13 +66,12 @@ class DataDescription(Tokenizable):
     def extract_parameter(self, name: str, path: str | None = None, value: Any = None, cls: type = SimpleUserParameter):
         if not ((path is None) ^ (value is None)):
             raise ValueError
-        ups = self.user_parameters.copy()
         if path is not None:
             kw, up = extract_by_path(path, cls, name, self.kwargs)
         else:
             kw, up = extract_by_value(value, cls, name, self.kwargs)
-        ups[name] = up
-        return DataDescription(self.datatype, kw, metadata=self.metadata, user_parameters=ups)
+        self.kwargs = kw
+        self.user_parameters[name] = up
 
 
 class ReaderDescription(Tokenizable):
@@ -104,40 +105,36 @@ class ReaderDescription(Tokenizable):
         # now make reader
         kw.update(kwargs)
         up = user_parameters or {}  # global/catalog
-        up.update(self.data.user_parameters)
+        if isinstance(self.data, DataDescription):
+            up.update(self.data.user_parameters)
         up.update(self.user_parameters)
         kw = set_values(up, kw)
         return kw
 
-    def extract_parameter(self, name: str, path=None, value=None, level="reader", cls=SimpleUserParameter):
+    def extract_parameter(self, name: str, path=None, value=None, cls=SimpleUserParameter):
         """Creates new version of the description
 
         Creates new instance, since the token will in general change
         """
-        if level not in ("data", "reader"):
-            raise ValueError
         if not ((path is None) ^ (value is None)):
             raise ValueError
-        if level == "data":
-            data = self.data.extract_parameter(name, path, value, cls)
-            if value is not None:
-                kw, _ = extract_by_value(value, cls, name, self.kwargs)
-            else:
-                # TODO: can path refer to self.kwargs rather than self.data.kwargs?
-                kw = self.kwargs.copy()
-            return ReaderDescription(data, self.reader, kw, self.user_parameters)
+        if path is not None:
+            kw, up = extract_by_path(path, cls, name, self.kwargs)
         else:
-            ups = self.user_parameters.copy()
-            if path is not None:
-                kw, up = extract_by_path(path, cls, name, self.kwargs)
-            else:
-                kw, up = extract_by_value(value, cls, name, self.kwargs)
-            ups[name] = up
-            return ReaderDescription(self.data, self.reader, kw, ups)
+            kw, up = extract_by_value(value, cls, name, self.kwargs)
+        self.kwargs = kw
+        self.user_parameters[name] = up
 
     def to_reader(self, user_parameters=None, **kwargs):
         cls = import_name(self.reader)
-        kw = self.get_kwargs(user_parameters=user_parameters, **kwargs)
+        if isinstance(self.data, DataDescription):
+            # if not, is already a BaseData
+            ups = self.data.user_parameters.copy()
+        else:
+            ups = {}
+        ups.update(self.user_parameters)
+        ups.update(user_parameters or {})
+        kw = self.get_kwargs(user_parameters=ups, **kwargs)
         return cls(**kw)
 
     def __call__(self, user_parameters=None, **kwargs):
@@ -169,20 +166,21 @@ class ReaderDescription(Tokenizable):
         return Catalog(entries=(self, other))
 
 
-class Catalog(Mapping, Tokenizable):
+class Catalog(Tokenizable):
     def __init__(
         self,
         entries: Iterable[ReaderDescription] | Mapping | None = None,
         aliases: dict[str, int] | None = None,
         data: Iterable[DataDescription] | Mapping = None,
         user_parameters: dict[str, BaseUserParameter] | None = None,  # global to the catalog
+        parameter_overrides: dict[str, Any] | None = None,
         metadata: dict | None = None,
     ):
         self.version = 2
-        self.data = data or {}  # process/tokenise data if an iterable
-        self.aliases = aliases or {}  # names the catalog wants to expose
+        self.data: dict = data or {}  # process/tokenise data if an iterable
+        self.aliases: dict = aliases or {}  # names the catalog wants to expose
         if isinstance(entries, Mapping) or entries is None:
-            self.entries = {}
+            self.entries: dict = {}
             if entries:
                 for k, v in entries.items():
                     if isinstance(v, BaseReader):
@@ -197,8 +195,9 @@ class Catalog(Mapping, Tokenizable):
                 self.add_entry(e)
         else:
             raise TypeError
-        self.metadata = metadata or {}
+        self.metadata: dict = metadata or {}
         self.user_parameters: dict[str, BaseUserParameter] = user_parameters or {}
+        self._up_overrides: dict = parameter_overrides or {}
 
     def add_entry(self, entry, name=None):
         """Add entry/reader (and its requirements) in-place, with optional alias"""
@@ -231,32 +230,34 @@ class Catalog(Mapping, Tokenizable):
             self.aliases[name] = entry.token
         return entry.token
 
-    def promote_parameter_from(self, entity: str, parameter_name: Any, level="cat") -> Catalog:
-        """Move user-parameter from given entry/data *up*
+    def extract_parameter(
+        self,
+        item: str,
+        name: str,
+        path=None,
+        value=None,
+        cls=SimpleUserParameter,
+        store_to: str | None = None,
+    ):
+        # TODO: if entity is "Catalog", extract over all entities; currently this will
+        #  cause a recursion loop
+        entity = self.get_entity(item)
+        entity.extract_parameter(name, path=path, value=value, cls=cls)
+        if store_to is None:
+            return
+        elif store_to == "data" and isinstance(entity, ReaderDescription):
+            entity.data.user_parameters[name] = entity.user_parameters.pop(name)
+        else:
+            self.move_parameter(item, store_to, name)
+
+    def move_parameter(self, from_entity: str, to_entity: str, parameter_name: str) -> Catalog:
+        """Move user-parameter from between entry/data
 
         `entity` is an alias name or entry/data token
-
-        Since user parameters do not participate in tokenisation, this does not change any
-        tokens even though it operates in-place.
         """
-        if not isinstance(entity, str):
-            entity = entity.token
-        if level not in ("cat", "data"):
-            raise ValueError
-        if entity in self.aliases:
-            entity = self.entries[self.aliases[entity]]
-        elif entity in self.entries:
-            entity = self.entries[entity]
-        elif entity in self.data:
-            entity = self.data[entity]
-            assert level != "data"
-        else:
-            raise KeyError
-        up = entity.user_parameters.pop(parameter_name)
-        if level == "cat":
-            self.user_parameters[parameter_name] = up
-        else:
-            entity.data.user_parameters[parameter_name] = up
+        entity1 = self.get_entity(from_entity)
+        entity2 = self.get_entity(to_entity)
+        entity2.user_parameters[parameter_name] = entity1.user_parameters.pop(parameter_name)
         return self
 
     def promote_parameter_name(self, parameter_name: Any, level="cat") -> Catalog:
@@ -265,7 +266,7 @@ class Catalog(Mapping, Tokenizable):
         ups = None
         if level not in ("cat", "data"):
             raise ValueError
-        for entity in self.entries:
+        for entity in self.entries.values():
             if parameter_name in entity.user_parameters and up is None:
                 ups = entity.user_parameters[parameter_name]
                 up = entity.user_parameters[parameter_name]
@@ -275,7 +276,7 @@ class Catalog(Mapping, Tokenizable):
             elif parameter_name in entity.user_parameters:
                 ups[parameter_name] = up  # rewind
                 raise ValueError
-        for entity in self.data:
+        for entity in self.data.values():
             if parameter_name in entity.user_parameters and up is None:
                 assert level == "cat"
                 ups = entity.user_parameters[parameter_name]
@@ -295,7 +296,7 @@ class Catalog(Mapping, Tokenizable):
     def __getattr__(self, item):
         try:
             return self[item]
-        except KeyError:
+        except RuntimeError:
             pass
         raise AttributeError(item)
 
@@ -321,6 +322,18 @@ class Catalog(Mapping, Tokenizable):
         cat.metadata = data["metadata"]
         return cat
 
+    def get_entity(self, item: str):
+        if item == "Catalog":
+            return self
+        if item in self.aliases:
+            item = self.aliases[item]
+        if item in self.data:
+            return self.data[item]
+        elif item in self.entries:
+            return self.entries[item]
+        else:
+            raise KeyError(item)
+
     def __getitem__(self, item):
         ups = self.user_parameters.copy()
         if isinstance(item, tuple):
@@ -332,18 +345,34 @@ class Catalog(Mapping, Tokenizable):
         if item in self.entries:
             item = copy(self.entries[item])
             if isinstance(item.data, str) and item.data.startswith("data(") and item.data.endswith(")"):
-                item.data = self[item.data[5:-1]]
-                ups.update(item.data.user_parameters)
-            return item(user_parameters=dict(**ups, **self.entries), **(kw or {}))
+                dname = item.data[5:-1]
+                if dname in self.data:
+                    # else, this is a pipeline
+                    ups.update(self.data[dname].user_parameters)
+                    item.data = self.data[dname]
+                else:
+                    item.data = self[dname]
+            ups.update(self._up_overrides)
+            ups.update(self.entries)
+            return item(user_parameters=ups, **(kw or {}))
         elif item in self.data:
+            ups.update(self._up_overrides)
             return self.data[item].to_data(user_parameters=ups, **(kw or {}))
         else:
             raise KeyError(item)
 
+    def __call__(self, **kwargs):
+        """Set override values for any named user parameters"""
+        import copy
+
+        new = copy.copy(self)
+        new._up_overrides.update(kwargs)
+        return new
+
     def __iter__(self):
         return iter(self.aliases)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.aliases)
 
     def __dir__(self) -> Iterable[str]:
@@ -352,11 +381,12 @@ class Catalog(Mapping, Tokenizable):
     def __add__(self, other: Catalog | DataDescription):
         if not isinstance(other, (Catalog, DataDescription)):
             raise TypeError
-        if isinstance(other, DataDescription):
-            other = Catalog([other])
+        if isinstance(other, (DataDescription, ReaderDescription)):
+            other = Catalog(entries=[other])
         return Catalog(
             entries=chain(self.entries.values(), other.entries.values()),
             aliases=merge_dicts(self.aliases, other.aliases),
+            data=merge_dicts(self.data, other.data),
             user_parameters=merge_dicts(self.user_parameters, other.user_parameters),
             metadata=merge_dicts(self.metadata, other.metadata),
         )
@@ -390,15 +420,6 @@ class Catalog(Mapping, Tokenizable):
         the same name will be clobbered.
         """
         self.add_entry(entry, name=name)
-
-    def __call__(self, **kwargs):
-        """Makes copy of the catalog with new values for global user parameters"""
-        up = self.user_parameters.copy()
-        for k, v in kwargs.copy().items():
-            if k in self.user_parameters:
-                up[k] = up.with_default(v)
-                kwargs.pop(k)
-        return Catalog(self.entries.values(), self.aliases, user_parameters=up, metadata=self.metadata)
 
     def rename(self, old, new, clobber=True):
         if not clobber and new in self.aliases:
