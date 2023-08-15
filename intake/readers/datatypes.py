@@ -88,7 +88,10 @@ class FileData(BaseData):
 class Service(BaseData):
     """Datatypes loaded from some service"""
 
-    ...
+    def __init__(self, url, options=None, metadata=None):
+        self.url = url
+        self.options = options or {}
+        super().__init__(metadata=metadata)
 
 
 class Catalog(BaseData):
@@ -139,10 +142,8 @@ class CatalogFile(Catalog, FileData):
 
 
 class CatalogAPI(Catalog, Service):
-    def __init__(self, api_root, headers=None, metadata=None):
-        self.api_root = api_root
-        self.headers = headers
-        super().__init__(metadata=metadata)
+    filepattern = {"^(http|https):"}
+    structure = {"catalog"}
 
 
 class YAMLFile(FileData):
@@ -157,10 +158,12 @@ class JSONFile(FileData):
     structure = {"nested", "table"}
 
 
-class Tiled(Service):
-    def __init__(self, tiled_client, metadata=None):
-        self.tiled_client = tiled_client
-        super().__init__(metadata)
+class TiledService(CatalogAPI):
+    ...
+
+
+class TiledDataset(Service):
+    structure = {"array", "table", "nested"}
 
 
 class ReaderData(BaseData):
@@ -193,7 +196,7 @@ class Feather1(FileData):
 
 class PythonSourceCode(FileData):
     structure = {"code"}
-    filepattern = "py$"
+    filepattern = {"py$"}
 
 
 comp_magic = {
@@ -245,16 +248,17 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
         for cls in subclasses(FileData):
             if any(head.startswith(m) for m in cls.magic):
                 out.add(cls)
-    if out or url:
+    if out:
         return out
 
-    try:
-        with fsspec.open(url, "rb", **(storage_options or {})) as f:
-            head = f.read(2**20)
-    except IOError:
-        return out
+    if head is None and url:
+        try:
+            with fsspec.open(url, "rb", **(storage_options or {})) as f:
+                head = f.read(2**20)
+        except IOError:
+            return out
 
-    for (off, mag), comp in comp_magic:
+    for (off, mag), comp in comp_magic.items():
         if head[off:].startswith(mag):
             storage_options = (storage_options or {}).copy()
             storage_options["compression"] = comp
@@ -262,7 +266,7 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
             if out:
                 print("Update storage_options: ", storage_options)
                 return out
-    for (off, mag), comp in container_magic:
+    for (off, mag), comp in container_magic.items():
         if head[off:].startswith(mag):
             prot = fsspec.core.split_protocol(url)[0]
             out = recommend(f"{comp}://*::{url}", storage_options={prot: storage_options})

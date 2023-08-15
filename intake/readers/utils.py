@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import re
 from hashlib import md5
 from itertools import zip_longest
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Mapping
 
 from intake import import_name
 
@@ -127,6 +129,55 @@ def find_readers(val, out=None):
         # recurse to find readers depending on more readers
         find_readers(val.__dict__, out)
     return out
+
+
+class LazyDict(Mapping):
+    """Subclass this to make lazy dictionaries, where getting values can be expensive"""
+
+    def __getitem__(self, item):
+        raise NotImplementedError
+
+    def __len__(self):
+        return sum(1 for _ in self)
+
+    def __contains__(self, item):
+        return item in set(self)
+
+    def __iter__(self):
+        raise NotImplementedError
+
+
+class PartlyLazyDict(LazyDict):
+    """A dictionary-like, where some components may be lazy"""
+
+    def __init__(self, *mappings):
+        self.dic = {}
+        self.lazy = []
+        for mapping in mappings:
+            if isinstance(mapping, LazyDict):
+                self.lazy.append(mapping)
+            else:
+                self.dic.update(mapping)
+
+    def keys(self):
+        out = set(self.dic)
+        for mapping in self.lazy:
+            out.update(mapping)
+        return out
+
+    def __len__(self):
+        return len(self.keys())
+
+    def __iter__(self):
+        return iter(self.keys())
+
+    def __getitem__(self, item):
+        if item in self.dic:
+            return self.dic[item]
+        for mapping in self.lazy:
+            if item in mapping:
+                return mapping[item]
+        raise KeyError(item)
 
 
 class Tokenizable:

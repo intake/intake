@@ -82,10 +82,16 @@ class ReaderDescription(Tokenizable):
         kwargs: dict[str, Any] | None = None,
         user_parameters: dict[str | BaseUserParameter] | None = None,
         metadata: dict | None = None,
+        output_instance: str | None = None,
     ):
         self.data = data
         self.reader = reader
         self.kwargs = kwargs or dict[str, Any]()
+        if output_instance:
+            kwargs["output_instance"] = output_instance
+        else:
+            output_instance = import_name(reader).output_instance
+        self.output_instance = output_instance
         self.user_parameters = user_parameters or dict[str | BaseUserParameter]()
         self.metadata = metadata or {}
 
@@ -99,8 +105,10 @@ class ReaderDescription(Tokenizable):
         user_parameters = user_parameters or {}
 
         # make data instance
-        kw_subset = {k: v for k, v in kwargs.items() if k in user_parameters or k in self.data.user_parameters}
+        extra = self.data.user_parameters if isinstance(self.data, DataDescription) else {}
+        kw_subset = {k: v for k, v in kwargs.items() if k in user_parameters or k in extra}
         kw["data"] = self.data.to_data(user_parameters=user_parameters, **kw_subset)
+        kw["output_instance"] = self.output_instance
 
         # now make reader
         kw.update(kwargs)
@@ -155,7 +163,7 @@ class ReaderDescription(Tokenizable):
 
     def __repr__(self):
         extra = f"\n  parameters: {self.user_parameters}" if self.user_parameters else ""
-        return f"Entry for {self.data}\n  reader: {self.reader}\n  kwargs: {self.kwargs}" + extra
+        return f"Entry for {self.data}\n  reader: {self.reader}\n  kwargs: {self.kwargs}\n" f"  producing: {self.output_instance}" + extra
 
     def __add__(self, other: DataDescription | BaseReader):
         """makes a catalog from any two descriptions"""
@@ -172,29 +180,14 @@ class Catalog(Tokenizable):
         entries: Iterable[ReaderDescription] | Mapping | None = None,
         aliases: dict[str, int] | None = None,
         data: Iterable[DataDescription] | Mapping = None,
-        user_parameters: dict[str, BaseUserParameter] | None = None,  # global to the catalog
+        user_parameters: dict[str, BaseUserParameter] | None = None,
         parameter_overrides: dict[str, Any] | None = None,
         metadata: dict | None = None,
     ):
         self.version = 2
-        self.data: dict = data or {}  # process/tokenise data if an iterable
-        self.aliases: dict = aliases or {}  # names the catalog wants to expose
-        if isinstance(entries, Mapping) or entries is None:
-            self.entries: dict = {}
-            if entries:
-                for k, v in entries.items():
-                    if isinstance(v, BaseReader):
-                        v = v.to_entry()
-                    if k != v.token:
-                        self.add_entry(v, name=k)
-                    else:
-                        self.add_entry(v)
-        elif isinstance(entries, Iterable):
-            self.entries: dict[str, ReaderDescription] = {}
-            for e in entries:
-                self.add_entry(e)
-        else:
-            raise TypeError
+        self.data: dict = data or {}
+        self.aliases: dict = aliases or {}
+        self.entries = entries or {}
         self.metadata: dict = metadata or {}
         self.user_parameters: dict[str, BaseUserParameter] = user_parameters or {}
         self._up_overrides: dict = parameter_overrides or {}
@@ -327,19 +320,16 @@ class Catalog(Tokenizable):
             return self
         if item in self.aliases:
             item = self.aliases[item]
-        if item in self.data:
-            return self.data[item]
-        elif item in self.entries:
+        if item in self.entries:
             return self.entries[item]
+        elif item in self.data:
+            return self.data[item]
         else:
             raise KeyError(item)
 
     def __getitem__(self, item):
         ups = self.user_parameters.copy()
-        if isinstance(item, tuple):
-            item, kw = item
-        else:
-            kw = {}
+        kw = self._up_overrides.copy()
         if item in self.aliases:
             item = self.aliases[item]
         if item in self.entries:
@@ -352,21 +342,21 @@ class Catalog(Tokenizable):
                     item.data = self.data[dname]
                 else:
                     item.data = self[dname]
-            ups.update(self._up_overrides)
             ups.update(self.entries)
             return item(user_parameters=ups, **(kw or {}))
         elif item in self.data:
-            ups.update(self._up_overrides)
             return self.data[item].to_data(user_parameters=ups, **(kw or {}))
         else:
             raise KeyError(item)
 
     def __call__(self, **kwargs):
         """Set override values for any named user parameters"""
-        import copy
+        up_over = self._up_overrides.copy()
+        up_over.update(kwargs)
 
-        new = copy.copy(self)
-        new._up_overrides.update(kwargs)
+        new = Catalog(
+            entries=self.entries, aliases=self.aliases, data=self.data, user_parameters=self.user_parameters, parameter_overrides=up_over, metadata=self.metadata
+        )
         return new
 
     def __iter__(self):

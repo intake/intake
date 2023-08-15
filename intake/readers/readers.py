@@ -20,7 +20,7 @@ class BaseReader(Tokenizable):
     concat_func: str = None
     output_instance: str = None
 
-    def __init__(self, data, metadata: dict | None = None, **kwargs):
+    def __init__(self, data, metadata: dict | None = None, output_instance: str | None = None, **kwargs):
         """
 
         Parameters
@@ -30,6 +30,8 @@ class BaseReader(Tokenizable):
         self.data = data
         self.kwargs = kwargs
         self.metadata = metadata or {}
+        if output_instance:
+            self.output_instance = output_instance
 
     def __repr__(self):
         return f"{type(self).__name__} reader for {self.data} producing {self.output_instance}"
@@ -141,7 +143,7 @@ class BaseReader(Tokenizable):
         """Create an entry with only this reader defined"""
         from intake.readers.entry import ReaderDescription
 
-        return ReaderDescription(data=self.data.to_entry(), reader=self.qname(), kwargs=find_funcs(self.kwargs))
+        return ReaderDescription(data=self.data.to_entry(), reader=self.qname(), kwargs=find_funcs(self.kwargs), output_instance=self.output_instance)
 
 
 class Functioner:
@@ -445,20 +447,37 @@ class RayText(Ray):
 
 
 class TiledNode(BaseReader):
-    implements = {datatypes.CatalogAPI}
+    implements = {datatypes.TiledService}
     imports = {"tiled"}
     # a Node can convert to a Catalog
     output_instance = "tiled.client.node:Node"
     func = "tiled.client:from_uri"
 
     def read(self, **kwargs):
-        return self._func(self.data.api_root, **kwargs)
+        opts = self.data.options.copy()
+        opts.update(self.kwargs)
+        opts.update(kwargs)
+        return self._func(self.data.url, **opts)
 
 
-class TiledDataset(BaseReader):
-    # returns dask/normal xarray or dataframe
-    implements = {datatypes.Tiled}
+class TiledClient(BaseReader):
+    # returns dask/normal x/array/dataframe
+    implements = {datatypes.TiledDataset}
     output_instance = "tiled.client.base:BaseClient"
+
+    def read(self, as_client=True, dask=False, **kwargs):
+        from tiled.client import from_uri
+
+        opts = self.data.options.copy()
+        opts.update(self.kwargs)
+        opts.update(kwargs)
+        if dask:
+            opts["structure_clients"] = "dask"
+        client = from_uri(self.data.url, **opts)
+        if as_client:
+            return client
+        else:
+            return client.read()
 
 
 class PythonModule(BaseReader):

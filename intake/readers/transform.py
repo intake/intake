@@ -17,12 +17,13 @@ def pyspark_select_columns(x, columns, **_):
 
 
 @register_converter(".*", ".*")  # SameType)
-def method(x, method_name: str, **kw):
+def method(x, method_name: str, *args, **kw):
     """Call named method on object
 
     Assumes output type is the same as input.
     """
-    return getattr(x, method_name)(**kw)
+    # TODO: there is no way to get args here right now
+    return getattr(x, method_name)(*args, **kw)
 
 
 @register_converter(".*", ".*")  # SameType)

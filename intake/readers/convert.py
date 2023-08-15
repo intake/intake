@@ -73,16 +73,23 @@ def ray_to_daskdf(x, **kw):
 
 
 @register_converter("tiled.client.node:Node", "intake.readers.entry:Catalog")
-def tiled_node_to_cat(x, *kw):
-    # provisional: values here are Nodes or data client instances
-    return dict(x)
+def tiled_node_to_cat(x, **kw):
+    # eager creation of entries from a node
+    from intake.readers.datatypes import TiledDataset, TiledService
+    from intake.readers.entry import Catalog
+    from intake.readers.readers import TiledClient, TiledNode
 
-
-@register_converter("tiled.client.base:BaseClient", "intake.readers.reader:TiledDataset")
-def tiled_client_to_entry(x, **kw):
-    from intake.readers import datatypes
-
-    return datatypes.Tiled(tiled_client=x)
+    cat = Catalog()
+    for k, client in x.items():
+        if type(client).__name__ == "Node":
+            data = TiledService(url=client.uri)
+            reader = TiledNode(data=data, metadata=client.item)
+            cat[k] = reader
+        else:
+            data = TiledDataset(url=client.uri)
+            reader = TiledClient(data, output_instance=f"{type(client).__module__}:{type(client).__name__}", metadata=client.item)
+            cat[k] = reader
+    return cat
 
 
 def converts_to(data):
@@ -150,7 +157,8 @@ class Pipeline(readers.BaseReader):
             self.reader = data.reader
             self.steps = steps
             out_instances = out_instances
-        super().__init__(data=data, steps=steps, out_instances=out_instances)
+        # TODO: the output instance may be derivable for SameType or other dynamic use
+        super().__init__(data=data, steps=steps, out_instances=out_instances, output_instance=out_instances[-1])
         self.output_instances = []
         prev = self.reader.output_instance
         for inst in out_instances:
@@ -160,11 +168,6 @@ class Pipeline(readers.BaseReader):
             self.output_instances.append(inst)
         steps[-1][1].update(kwargs)
         self.entry = entry
-
-    @property
-    def output_instance(self):
-        # TODO: replace .*/SameTypes with previous output instance
-        return self.output_instances[-1]
 
     def __repr__(self):
         start = f"PipelineReader: \nfrom {self.reader}"

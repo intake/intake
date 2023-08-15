@@ -7,6 +7,8 @@ from intake.readers.utils import subclasses
 
 
 class Namespace:
+    """A set of functions as an accessor on a Reader, producing a Pipeline"""
+
     acts_on = ()
     imports = "nolibrary"
 
@@ -47,6 +49,8 @@ class Namespace:
 
 
 class FuncHolder:
+    """Acts like a function to capture a call into a pipeline stage"""
+
     def __init__(self, reader, func):
         self.reader = reader
         self.func = func
@@ -76,6 +80,7 @@ class pd(Namespace):
 
 
 def get_namespaces(reader):
+    """These namespaces are available on the reader"""
     out = {}
     for space in subclasses(Namespace):
         if any(re.match(act, reader.output_instance) for act in space.acts_on):
