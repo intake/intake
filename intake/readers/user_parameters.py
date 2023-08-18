@@ -6,7 +6,7 @@ import re
 from typing import Any, Iterable
 
 from intake import import_name
-from intake.readers.utils import Tokenizable
+from intake.readers.utils import FormatWithPassthrough, Tokenizable
 
 
 class BaseUserParameter(Tokenizable):
@@ -152,11 +152,16 @@ template_func = re.compile(r"func[(]([^)]+)[)]")
 
 @register_template(r"env")
 def env(match, up):
+    """Value from an environment variable"""
     return os.getenv(match.groups[0])
 
 
 @register_template(r"data")
 def data(match, up):
+    """The value from reading a dataset
+
+    Used in pipelines to point to the outputs of upstream readers
+    """
     from intake.readers.entry import ReaderDescription
 
     var = match.groups()[0]
@@ -169,6 +174,10 @@ def data(match, up):
 @register_template(r"import")
 @register_template(r"func")
 def imp(match, up):
+    """The result of importing the string, an arbitrary python object
+
+    Format of the input string is like "{import(package.module:object)}"
+    """
     return import_name(match.groups()[0])
 
 
@@ -185,8 +194,11 @@ def _set_values(up, arguments):
                 if m:
                     return v(m, up)
     if isinstance(arguments, str):
+        # missing env keys become empty strings
         envdict = {f"env({k})": os.getenv(k) for k in template_env.findall(arguments)}
-        return arguments.format(**up, **envdict)
+        data = FormatWithPassthrough(**up)
+        data.update(envdict)
+        return arguments.format_map(data)  # missing keys remain unformatted, but don't raise
     elif isinstance(arguments, Iterable):
         return type(arguments)([_set_values(up, v) for v in arguments])
     return arguments
@@ -206,12 +218,16 @@ def set_values(user_parameters: dict[str, BaseUserParameter], arguments: dict[st
     for k, v in up.copy().items():
         # v can be a literal DataDescription (from a reader) rather than a UP
         if isinstance(getattr(v, "default", None), str):
-            m = template_env.match(v.default)
-            if m:
-                up[k] = up[k].with_default(os.getenv(m.groups()[0]))
-            m = template_func.match(v.default)
-            if m:
-                var = m.groups()[0]
-                up[k] = up[k].with_default(import_name(var))
+            for templ, func in templates.items():
+                m = re.match(templ, v.default)
+                if m:
+                    up[k] = up[k].with_default(func(m, up))
+            # m = template_env.match(v.default)
+            # if m:
+            #     up[k] = up[k].with_default(os.getenv(m.groups()[0]))
+            # m = template_func.match(v.default)
+            # if m:
+            #     var = m.groups()[0]
+            #     up[k] = up[k].with_default(import_name(var))
 
     return _set_values({k: (u.default if isinstance(u, BaseUserParameter) else u) for k, u in up.items()}, arguments)

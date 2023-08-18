@@ -134,6 +134,8 @@ def find_readers(val, out=None):
 class LazyDict(Mapping):
     """Subclass this to make lazy dictionaries, where getting values can be expensive"""
 
+    _keys = None
+
     def __getitem__(self, item):
         raise NotImplementedError
 
@@ -141,7 +143,9 @@ class LazyDict(Mapping):
         return sum(1 for _ in self)
 
     def __contains__(self, item):
-        return item in set(self)
+        if self._keys is None:
+            self._keys = set(self)
+        return item in self._keys
 
     def __iter__(self):
         raise NotImplementedError
@@ -178,6 +182,28 @@ class PartlyLazyDict(LazyDict):
             if item in mapping:
                 return mapping[item]
         raise KeyError(item)
+
+    def __setitem__(self, key, value):
+        self.dic[key] = value
+
+    def update(self, data):
+        if isinstance(data, LazyDict):
+            self.lazy.append(data)
+        else:
+            self.dic.update(data)
+
+    def copy(self):
+        return PartlyLazyDict(self.dic.copy(), *self.lazy)
+
+
+class FormatWithPassthrough(dict):
+    """When calling .format(), use this to replace only those keys that are found"""
+
+    def __getitem__(self, item):
+        try:
+            return super().__getitem__(item)
+        except KeyError:
+            return "{%s}" % item
 
 
 class Tokenizable:

@@ -17,6 +17,7 @@ from intake.readers.user_parameters import (
     set_values,
 )
 from intake.readers.utils import (
+    LazyDict,
     Tokenizable,
     extract_by_path,
     extract_by_value,
@@ -342,7 +343,8 @@ class Catalog(Tokenizable):
                     item.data = self.data[dname]
                 else:
                     item.data = self[dname]
-            ups.update(self.entries)
+            if not isinstance(self.entries, LazyDict):
+                ups.update(self.entries)
             return item(user_parameters=ups, **(kw or {}))
         elif item in self.data:
             return self.data[item].to_data(user_parameters=ups, **(kw or {}))
