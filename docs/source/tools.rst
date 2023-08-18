@@ -282,3 +282,8 @@ Config and Cache
 CLI functions starting with ``intake cache`` and ``intake config`` are available to
 provide information about the system: the locations and value of configuration
 parameters, and the state of cached files.
+
+.. raw:: html
+
+    <script data-goatcounter="https://distdatacats.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

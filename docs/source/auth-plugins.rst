@@ -98,3 +98,8 @@ HTTP request to the catalog server.  To use this plugin, we would do the followi
     cat = intake.Catalog('http://example.com:5000', auth=auth)
 
 Now all requests made to the remote catalog will contain the ``intake-secret`` header.
+
+.. raw:: html
+
+    <script data-goatcounter="https://distdatacats.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

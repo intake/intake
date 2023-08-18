@@ -119,3 +119,8 @@ Intake Server
 The server protocol (see :ref:`server`) is simple enough that anyone can write their
 own implementation with full customisation and behaviour. In particular, auth and
 monitoring would be essential for a production-grade deployment.
+
+.. raw:: html
+
+    <script data-goatcounter="https://distdatacats.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

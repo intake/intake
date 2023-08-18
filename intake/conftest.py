@@ -29,6 +29,11 @@ MIN_PORT = 7480
 MAX_PORT = 7489
 PORT = MIN_PORT
 
+# ensures "object" dtype on strings in dask, which is still the default for pandas
+import dask
+
+dask.config.set({"dataframe.convert-string": False})
+
 
 class TestSource(DataSource):
     name = "test"

@@ -132,3 +132,8 @@ Glossary
 
 .. _conda website: https://conda.io/docs/
 .. _anaconda.org: http://anaconda.org
+
+.. raw:: html
+
+    <script data-goatcounter="https://distdatacats.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
