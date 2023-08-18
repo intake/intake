@@ -15,3 +15,8 @@ how to use the graphical interface, plotting, etc.
     plugin-directory.rst
     server.rst
     transforms.rst
+
+.. raw:: html
+
+    <script data-goatcounter="https://distdatacats.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

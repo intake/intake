@@ -446,3 +446,8 @@ This pattern looks more like::
 
 To toggle on and off this path as pattern behavior, the CSV and intake-xarray drivers
 uses the bool ``path_as_pattern`` keyword argument.
+
+.. raw:: html
+
+    <script data-goatcounter="https://distdatacats.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

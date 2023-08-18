@@ -690,3 +690,8 @@ Typically a matched pair of server-side plugin (called an "auth plugin") and a c
 auth plugin) need to be enabled for authorization checks to work.  This feature is still in early development, but see
 module ``intake.auth.secret`` for a demonstration pair of server and client classes implementation auth via a shared
 secret. See :doc:`auth-plugins`.
+
+.. raw:: html
+
+    <script data-goatcounter="https://distdatacats.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

@@ -10,3 +10,8 @@ Reference
     making-plugins.rst
     auth-plugins.rst
     data-packages.rst
+
+.. raw:: html
+
+    <script data-goatcounter="https://distdatacats.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

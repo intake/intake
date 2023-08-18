@@ -69,3 +69,8 @@ Released on January 9, 2022.
 - Add json and jsonl drivers.
 - Allow parameters to be passed through catalog.
 - Add mlist type which allows inputs from a known list of values.
+
+.. raw:: html
+
+    <script data-goatcounter="https://distdatacats.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
