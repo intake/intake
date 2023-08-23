@@ -1,5 +1,5 @@
-from intake.readers.datatypes import TiledService
-from intake.readers.entry import Catalog, ReaderDescription
+from intake.readers.datatypes import Service, TiledService
+from intake.readers.entry import Catalog, DataDescription, ReaderDescription
 from intake.readers.readers import BaseReader
 from intake.readers.utils import LazyDict
 
@@ -31,7 +31,7 @@ class TiledLazyEntries(LazyDict):
 
 class TiledCatalogReader(BaseReader):
     implements = {TiledService}
-    output_instance = {"intake.readers.entry:Catalog"}
+    output_instance = "intake.readers.entry:Catalog"
     imports = {"tiled"}
 
     def __init__(self, data, metadata=None, output_instane=None, **kwargs):
@@ -45,3 +45,25 @@ class TiledCatalogReader(BaseReader):
         client = from_uri(self.data.url, **opts)
         entries = TiledLazyEntries(client)
         return Catalog(entries=entries, aliases={k: k for k in sorted(client)}, metadata=client.item)
+
+
+class SQLAlchemyCatalog(BaseReader):
+    implements = {Service}
+    imports = {"sqlalchemy"}
+    output_instance = "intake.readers.entry:Catalog"
+
+    def __init__(self, data, metadata=None, views=True, schema=None, **kwargs):
+        super().__init__(data, metadata)
+        self.views = views  # maybe part of the data prescription
+        self.schema = schema
+        self.kwargs = kwargs
+
+    def read(self, **kwargs):
+        import sqlalchemy
+
+        engine = sqlalchemy.create_engine(self.data.url)
+        meta = sqlalchemy.MetaData()
+        meta.reflect(bind=engine, views=self.views, schema=self.schema)
+        tables = list(meta.tables)
+        entries = {name: DataDescription("intake.readers.datatypes:SQLQuery", kwargs={"conn": self.data.url, "query": name}) for name in tables}
+        return Catalog(data=entries)

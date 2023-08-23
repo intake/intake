@@ -36,3 +36,6 @@ dependencies:
   - click
   - rangehttpserver
   - pre-commit
+  - sqlalchemy
+  - python-duckdb
+  - pytest-postgresql

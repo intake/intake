@@ -38,3 +38,6 @@ dependencies:
   - moto
   - rangehttpserver
   - pre-commit
+  - sqlalchemy
+  - python-duckdb
+  - pytest-postgresql

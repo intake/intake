@@ -140,12 +140,15 @@ class LazyDict(Mapping):
         raise NotImplementedError
 
     def __len__(self):
-        return sum(1 for _ in self)
+        return len(self.keys())
 
-    def __contains__(self, item):
+    def keys(self):
         if self._keys is None:
             self._keys = set(self)
-        return item in self._keys
+        return self._keys
+
+    def __contains__(self, item):
+        return item in self.keys()
 
     def __iter__(self):
         raise NotImplementedError

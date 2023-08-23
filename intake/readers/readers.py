@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import importlib.metadata
 import inspect
-from itertools import chain
+import re
+
+import fsspec
 
 from intake import import_name
 from intake.readers import datatypes
+from intake.readers.mixins import PipelineMixin
 from intake.readers.utils import Tokenizable, find_funcs, subclasses
 
 
-class BaseReader(Tokenizable):
+class BaseReader(Tokenizable, PipelineMixin):
     imports: set[str] = set()  # allow for pip-style versions maybe
     implements: set[datatypes.BaseData] = set()
     optional_imports: set[str] = set()
@@ -42,35 +45,6 @@ class BaseReader(Tokenizable):
         kw.update(kwargs)
         return type(self)(self.data, **kw)
 
-    def __getattr__(self, item):
-        if item in self._namespaces:
-            return self._namespaces[item]
-        return self.transform.__getattr__(item)
-
-    def __getitem__(self, item):
-        from intake.readers.convert import Pipeline
-        from intake.readers.transform import getitem
-
-        outtype = self.output_instance
-        func = getitem
-        if isinstance(self, Pipeline):
-            return self.with_step((func, {"item": item}), out_instance=outtype)
-
-        return Pipeline(data=datatypes.ReaderData(reader=self), steps=[(func, {"item": item})], out_instances=[outtype])
-
-    def __dir__(self):
-        return list(sorted(chain(object.__dir__(self), dir(self.transform), self._namespaces)))
-
-    @property
-    def _namespaces(self):
-        from intake.readers.namespaces import get_namespaces
-
-        return get_namespaces(self)
-
-    def clone_new(self, **kwargs):
-        """Compatibility method from intake 1.0's Source"""
-        return self(**kwargs)
-
     @classmethod
     def check_imports(cls):
         """See if required packages are importable, but don't import them"""
@@ -80,12 +54,6 @@ class BaseReader(Tokenizable):
             return True
         except (ImportError, ModuleNotFoundError, NameError):
             return False
-
-    @classmethod
-    def output_doc(cls):
-        """Doc associated with output type"""
-        out = import_name(cls.output_instance)
-        return out.__doc__
 
     @classmethod
     def doc(cls):
@@ -111,10 +79,6 @@ class BaseReader(Tokenizable):
             return import_name(self.func)
         return self.func
 
-    @classmethod
-    def classname(cls):
-        return cls.__name__.lower()
-
     def read(self, **kwargs):
         """Produce data artefact
 
@@ -126,76 +90,11 @@ class BaseReader(Tokenizable):
         kw.update(kwargs)
         return self._func(self.data, **kw)
 
-    def apply(self, func, output_instance=None, **kwargs):
-        """Make a pipeline by applying a function to this reader's output"""
-        from intake.readers.convert import Pipeline
-
-        return Pipeline(datatypes.ReaderData(reader=self), [(func, kwargs)], [output_instance or self.output_instance])
-
-    @property
-    def transform(self):
-        from intake.readers.convert import convert_funcs
-
-        funcdict = convert_funcs(self.output_instance)
-        return Functioner(self, funcdict)
-
     def to_entry(self):
         """Create an entry with only this reader defined"""
         from intake.readers.entry import ReaderDescription
 
         return ReaderDescription(data=self.data.to_entry(), reader=self.qname(), kwargs=find_funcs(self.kwargs), output_instance=self.output_instance)
-
-
-class Functioner:
-    """Find and apply transform functions to reader output"""
-
-    def __init__(self, reader, funcdict):
-        self.reader = reader
-        self.funcdict = funcdict
-
-    def _ipython_key_completions_(self):
-        return list(self.funcdict)
-
-    def __getitem__(self, item):
-        from intake.readers.convert import Pipeline
-        from intake.readers.transform import getitem
-
-        if item in self.funcdict:
-            func = self.funcdict[item]
-            kw = {}
-        else:
-            func = getitem
-            kw = {"item": item}
-        if isinstance(self.reader, Pipeline):
-            return self.reader.with_step((func, kw), out_instance=item)
-
-        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, kw)], out_instances=[item])
-
-    def __repr__(self):
-        import pprint
-
-        # TODO: replace .*/SameType outputs with out output_instance
-        return f"Transformers for {self.reader.output_instance}:\n{pprint.pformat(self.funcdict)}"
-
-    def __dir__(self):
-        return list(sorted(f.__name__ for f in self.funcdict.values()))
-
-    def __getattr__(self, item):
-        from intake.readers.convert import Pipeline
-        from intake.readers.transform import method
-
-        out = [(outtype, func) for outtype, func in self.funcdict.items() if func.__name__ == item]
-        if not len(out):
-            outtype = self.reader.output_instance
-            func = method
-            kw = {"method_name": item}
-        else:
-            outtype, func = out[0]
-            kw = {}
-        if isinstance(self.reader, Pipeline):
-            return self.reader.with_step((func, kw), out_instance=outtype)
-
-        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, kw)], out_instances=[outtype])
 
 
 class FileReader(BaseReader):
@@ -232,14 +131,10 @@ class FileByteReader(FileReader):
     implements = {datatypes.FileData}
 
     def discover(self, **kwargs):
-        import fsspec
-
         with fsspec.open(self.data.url, mode="rb", **(self.data.storage_options or {})) as f:
             return f.read()
 
     def read(self, **kwargs):
-        import fsspec
-
         out = []
         for of in fsspec.open_files(self.data.url, mode="rb", **(self.data.storage_options or {})):
             with of as f:
@@ -259,6 +154,23 @@ class PandasParquet(Pandas):
     optional_imports = {"fastparquet", "pyarrow"}
     func = "pandas:read_parquet"
     url_arg = "path"
+
+
+class PandasSQLAlchemy(BaseReader):
+    implements = {datatypes.SQLQuery}
+    func = "pandas:read_sql"
+    imports = {"sqlalchemy", "pandas"}
+    output_instance = "pandas:DataFrame"
+
+    def discover(self, **kwargs):
+        if "chunksize" not in kwargs:
+            kwargs["chunksize"] = 10
+        read_sql = import_name(self.func)
+        return next(iter(read_sql(sql=self.data.query, con=self.data.conn, **kwargs)))
+
+    def read(self, **kwargs):
+        read_sql = import_name(self.func)
+        return read_sql(sql=self.data.query, con=self.data.conn, **kwargs)
 
 
 class DaskDF(FileReader):
@@ -289,11 +201,21 @@ class DuckDB(BaseReader):
         import duckdb
 
         conn = getattr(self.data, "conn", {})  # only SQL type normally has this
-        if conn not in self._dd:
-            if isinstance(conn, str):
+        if isinstance(conn, str):
+            # https://duckdb.org/docs/extensions/
+            if conn.startswith("sqlite:"):
+                duckdb.connect(":default:").execute("INSTALL sqlite;LOAD sqlite;")
+                conn = re.sub("^sqlite3?://", "", conn)
                 conn = {"database": conn}
-            self._dd[conn] = duckdb.connect(**conn)  # connection must be cached for results to be usable
-        return self._dd[conn]
+            elif conn.startswith("postgres"):
+                d = duckdb.connect()
+                d.execute("INSTALL postgres;LOAD postgres;")
+                # extra params possible here https://duckdb.org/docs/extensions/postgres_scanner#usage
+                d.execute(f"CALL postgres_attach('{conn}');")
+                self._dd[str(conn)] = d
+        if str(conn) not in self._dd:
+            self._dd[str(conn)] = duckdb.connect(**conn)  # connection must be cached for results to be usable
+        return self._dd[str(conn)]
 
 
 class DuckParquet(DuckDB, FileReader):
@@ -321,7 +243,9 @@ class DuckSQL(DuckDB):
     implements = {datatypes.SQLQuery}
 
     def read(self, **kwargs):
-        return self._duck().query(self.data.query)
+        words = len(self.data.query.split())
+        q = self.data.query if words > 1 else f"SELECT * FROM {self.data.query}"
+        return self._duck().query(q)
 
 
 class SparkDataFrame(FileReader):
@@ -487,8 +411,6 @@ class PythonModule(BaseReader):
     def read(self, module_name=None, **kwargs):
         from types import ModuleType
 
-        import fsspec
-
         if module_name is None:
             module_name = self.data.url.rsplit("/", 1)[-1].split(".", 1)[0]
         with fsspec.open(self.data.url, "rt", **(self.data.storage_options or {})) as f:
@@ -501,7 +423,7 @@ def recommend(data):
     """Show which readers claim to support the given data instance"""
     out = {"importable": set(), "not_importable": set()}
     for cls in subclasses(BaseReader):
-        if any(isinstance(data, imp) for imp in cls.implements):
+        if any(type(data) == imp for imp in cls.implements):
             if cls.check_imports():
                 out["importable"].add(cls)
             else:
