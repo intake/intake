@@ -18,5 +18,5 @@ how to use the graphical interface, plotting, etc.
 
 .. raw:: html
 
-    <script data-goatcounter="https://distdatacats.goatcounter.com/count"
+    <script data-goatcounter="https://intake.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
