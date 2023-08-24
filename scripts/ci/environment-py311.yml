@@ -39,3 +39,4 @@ dependencies:
   - pre-commit
   - pytest-postgresql
   - psycopg
+  - duckdb

@@ -2,6 +2,8 @@
 
 By convention, functions here do not change the data, just how it is held.
 """
+from __future__ import annotations
+
 import re
 
 from intake.readers import readers
@@ -51,9 +53,10 @@ def daskdf_to_pandas(x, **kw):
     return x.compute(**kw)
 
 
-@register_converter("pandas:DataFrame", "hvplot:hvPlotTabular")
-@register_converter("dask.dataframe:DataFrame", "hvplot:hvPlotTabular")
-def daskdf_to_hvplot(x, explorer=False, **kw):
+@register_converter("pandas:DataFrame", "holoviews.core.layout:Composable")
+@register_converter("dask.dataframe:DataFrame", "holoviews.core.layout:Composable")
+@register_converter("xarray:DataSet", "holoviews.core.layout:Composable")
+def hvplot(x, explorer=False, **kw):
     import hvplot
 
     if explorer:

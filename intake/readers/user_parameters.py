@@ -162,12 +162,20 @@ def data(match, up):
 
     Used in pipelines to point to the outputs of upstream readers
     """
+    from intake.readers.convert import Pipeline
     from intake.readers.entry import ReaderDescription
 
     var = match.groups()[0]
-    thing = up[var]
+    if "," in var:
+        var, part = var.split(",")
+    else:
+        part = None
+    thing = up[var.strip()]
     if isinstance(thing, ReaderDescription):
         thing = thing.to_reader(user_parameters=up)
+        if part and isinstance(thing, Pipeline):
+            thing = thing.first_n_stages(int(part))
+
     return thing
 
 

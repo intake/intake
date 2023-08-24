@@ -290,7 +290,7 @@ class Catalog(Tokenizable):
     def __getattr__(self, item):
         try:
             return self[item]
-        except RuntimeError:
+        except KeyError:
             pass
         raise AttributeError(item)
 
@@ -351,8 +351,21 @@ class Catalog(Tokenizable):
         else:
             raise KeyError(item)
 
+    def __delitem__(self, key):
+        # remove alias, data or entry with no further actions
+        # use .remove_entity for cleanup
+        self.aliases.pop(key)
+        self.data.pop(key)
+        self.entries.pop(key)
+
+    def __delattr__(self, item):
+        del self[item]
+
     def __call__(self, **kwargs):
-        """Set override values for any named user parameters"""
+        """Set override values for any named user parameters
+
+        Returns a new instance of Catalog with overrides set
+        """
         up_over = self._up_overrides.copy()
         up_over.update(kwargs)
 
