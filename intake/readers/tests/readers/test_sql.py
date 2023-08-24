@@ -3,6 +3,7 @@ import pytest
 from intake.readers import catalogs, datatypes, readers
 
 pytest.importorskip("pytest_postgresql")
+pytest.importorskip("psycopg")
 
 
 @pytest.fixture  # uses pytest-postgresql

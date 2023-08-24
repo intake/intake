@@ -39,3 +39,4 @@ dependencies:
   - sqlalchemy
   - python-duckdb
   - pytest-postgresql
+  - psycopg

@@ -38,3 +38,4 @@ dependencies:
   - rangehttpserver
   - pre-commit
   - pytest-postgresql
+  - psycopg
