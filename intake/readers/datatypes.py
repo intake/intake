@@ -126,6 +126,64 @@ class PNG(FileData):
     magic = {b"\x89PNG"}
 
 
+class NetCDF3(FileData):
+    filepattern = {"nc$", "netcdf3$", "nc3$"}
+    structure = {"array"}
+    mimetypes = {"application/x-netcdf"}
+    magic = {b"CDF"}
+
+
+class HDF5(FileData):
+    filepattern = {"hdf$", "h4$", "hdf5$"}  # many others by convention
+    structure = {"array", "table", "hierarchy"}
+    magic = {b"HDF"}
+    mimetypes = {"application/x-hdf5"}
+
+
+class Zarr(FileData):
+    filepattern = {"zarr$", "/$"}  # i.e., any directory might be
+    structure = {"array", "hierarchy"}
+
+
+class TIFF(FileData):
+    # includes geoTIFF/COG, or split out?
+    filepattern = {"tiff?$", "cog$"}
+    structure = {"array", "image"}
+    magic = {b"II*\x00", b"MM\x00*"}
+    mimetypes = {"image/tiff"}
+
+
+class GRIB2(FileData):
+    filepattern = {"grib2?$"}
+    structure = {"array"}
+    magic = {b"GRIB"}
+    mimetypes = {"application/wmo-grib"}
+
+
+class FITS(FileData):
+    filepattern = {"fits$"}  # other conventions too
+    structure = {"array", "table"}
+    magic = {b"SIMPLE"}
+    mimetypes = {"image/fits", "application/fits"}
+
+
+class DICOM(FileData):
+    filepattern = {"dicom$", "dcm$"}  # and others
+    structure = {"array", "image"}
+    magic = {(128, b"DICM")}
+    mimetypes = {"application/dicom"}
+
+
+class Nifti(FileData):
+    filepattern = {"nii$", "nii.gz$"}
+    structure = {"array", "image"}
+    magic = {(344, b"\x6E\x69\x31\x00"), (344, b"\x6E\x2B\x31\x00")}
+
+
+class OpenDAP(Service):
+    structure = {"array"}
+
+
 class SQLQuery(Service):
     structure = {"sequence", "table"}
     filepattern = {"^oracle", "^mssql", "^sqlite", "^mysql", "^postgres"}
@@ -179,6 +237,7 @@ class ReaderData(BaseData):
 
 
 class NumpyFile(FileData):
+    # NB: .npz is some .npy files within a ZIP
     magic = {b"\x93NUMPY"}
     filepattern = {"npy$", "text$"}
     structure = {"array"}
@@ -242,21 +301,35 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
         # urlparse to remove query parts?
         # try stripping compression extensions?
         for cls in subclasses(BaseData):
-            if any(re.findall(m, url) for m in cls.filepattern):
+            if any(re.findall(m, url.lower()) for m in cls.filepattern):
                 out.add(cls)
     if head:
         for cls in subclasses(FileData):
-            if any(head.startswith(m) for m in cls.magic):
-                out.add(cls)
+            for m in cls.magic:
+                if isinstance(m, tuple):
+                    off, m = m
+                else:
+                    off = 0
+                if head[off:].startswith(m):
+                    out.add(cls)
+                    break
     if out:
         return out
 
-    if head is None and url:
+    if head is None and mime is None and url:
+        try:
+            fs, url2 = fsspec.core.url_to_fs(url, **(storage_options or {}))
+            mime = fs.info(url2, refresh=True).get("ContentType", None)
+        except (IOError, TypeError, AttributeError):
+            mime = None
         try:
             with fsspec.open(url, "rb", **(storage_options or {})) as f:
                 head = f.read(2**20)
         except IOError:
-            return out
+            head = None
+        if mime or head:
+            return recommend(url, mime=mime, head=head, storage_options=storage_options)
+        return out
 
     for (off, mag), comp in comp_magic.items():
         if head[off:].startswith(mag):
@@ -273,4 +346,3 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
             if out:
                 print("Update url: ", url, "\nstorage_options: ", storage_options)
                 return out
-    return recommend(head=head)

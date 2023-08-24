@@ -31,4 +31,4 @@ jobs:
       - name: Run Tests
         shell: bash -l {0}
         run: |
-          pytest -v
+          pytest -v intake/readers

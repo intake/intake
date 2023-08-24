@@ -30,6 +30,12 @@ class TiledLazyEntries(LazyDict):
 
 
 class TiledCatalogReader(BaseReader):
+    """Creates a catalog of Tiled datasets from a root URL
+
+    The generated catalog is lazy, only the list of entries is got eagerly, but they are
+    fetched only on demand.
+    """
+
     implements = {TiledService}
     output_instance = "intake.readers.entry:Catalog"
     imports = {"tiled"}
@@ -48,13 +54,19 @@ class TiledCatalogReader(BaseReader):
 
 
 class SQLAlchemyCatalog(BaseReader):
+    """Uses SQLAlchemy to get the list of tables at some SQL URL
+
+    These tables are presented as data entries in a catalog, but could then be loaded by
+    any reader that implements SQLQuery.
+    """
+
     implements = {Service}
     imports = {"sqlalchemy"}
     output_instance = "intake.readers.entry:Catalog"
 
     def __init__(self, data, metadata=None, views=True, schema=None, **kwargs):
         super().__init__(data, metadata)
-        self.views = views  # maybe part of the data prescription
+        self.views = views  # maybe part of the data prescription, which has .options
         self.schema = schema
         self.kwargs = kwargs
 

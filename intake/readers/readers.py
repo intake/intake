@@ -419,6 +419,48 @@ class PythonModule(BaseReader):
             return mod
 
 
+class XArrayDatasetReader(FileReader):
+    output_instance = {"xarray:DataSet"}
+    imports = {"xarray"}
+    optional_imports = {"zarr", "h5netcdf", "cfgrib", "scipy"}  # and others
+    implements = {datatypes.NetCDF3, datatypes.HDF5, datatypes.GRIB2, datatypes.Zarr, datatypes.OpenDAP}  # DAP is not a file, maybe should be separate
+    func = "xarray:open_mfdataset"
+
+    def read(self, **kwargs):
+        kw = self.kwargs.copy()
+        kw.update(kwargs)
+        func = import_name(self.func)
+        if kw.get("engine", "") == "zarr":
+            # only zarr takes storage options
+            kw.setdefault("backend_kwargs", {})["storage_options"] = self.data.storage_options
+        return func(self.data.filelist, **kwargs)
+
+
+class RasterIOXarrayReader(FileReader):
+    output_instance = {"xarray:DataSet"}
+    imports = {"rioxarray"}
+    implements = {datatypes.TIFF}  # plus anything handled by GDAL https://gdal.org/drivers/raster/index.html
+    func = "rioxarray:open_rasterio"
+    url_arg = "filename"
+
+    def read(self, **kwargs):
+        func = import_name(self.func)
+        import xarray as xr
+
+        can_be_local = fsspec.utils.can_be_local(self.urlpath[0])
+        if can_be_local:
+            files = fsspec.open_local(self.data.url, **(self.data.storage_options or {}))
+        else:
+            files = self.data.filelist
+        if isinstance(files, str):
+            files = [files]
+        if len(files) == 1:
+            return func(files)
+        else:
+            # requires dim= in kwargs
+            return xr.concat([func(f) for f in files], dim=kwargs["dim"])
+
+
 def recommend(data):
     """Show which readers claim to support the given data instance"""
     out = {"importable": set(), "not_importable": set()}
