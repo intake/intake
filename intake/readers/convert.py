@@ -56,11 +56,11 @@ def daskdf_to_pandas(x, **kw):
 @register_converter("pandas:DataFrame", "holoviews.core.layout:Composable")
 @register_converter("dask.dataframe:DataFrame", "holoviews.core.layout:Composable")
 @register_converter("xarray:DataSet", "holoviews.core.layout:Composable")
-def hvplot(x, explorer=False, **kw):
+def to_hvplot(x, explorer=False, **kw):
     import hvplot
 
     if explorer:
-        # this is actually a hvplot.ui:hvPlotExplorer
+        # this is actually a hvplot.ui:hvPlotExplorer and only allows tabular data
         return hvplot.explorer(x, **kw)
     return hvplot.hvPlot(x, **kw)()
 

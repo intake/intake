@@ -41,7 +41,7 @@ def test_pg_duck_with_pandas_input(postgres_with_data):
 def sqlite_with_data(tmpdir):
     """Check main postgresql fixture."""
     pd = pytest.importorskip("pandas")
-    pytest.importorskip("sqlalchemy")
+    pytest.importorskip("sqlalchemy", minversion="2")
     import sqlite3
 
     fn = f"{tmpdir}/test.db"

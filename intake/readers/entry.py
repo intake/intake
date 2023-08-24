@@ -439,3 +439,5 @@ class Catalog(Tokenizable):
         if tok not in self.entries:
             raise KeyError
         self.aliases[name] = tok
+
+    # TODO: methods to split a pipeline into sequence of entries and to rejoin them
