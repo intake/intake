@@ -68,7 +68,7 @@ class FileData(BaseData):
 
     magic = set()  # bytes at file start to identify it
 
-    def __init__(self, url: str = "", storage_options: dict | None = None, metadata: dict | None = None):
+    def __init__(self, url, storage_options: dict | None = None, metadata: dict | None = None):
         self.url = url
         self.storage_options = storage_options
         self._filelist = None
@@ -114,9 +114,16 @@ class CSV(FileData):
 
 
 class Text(FileData):
-    filepattern = {"txt$", "text$"}
+    filepattern = {"txt$", "text$", "dat$", "ascii$"}
     mimetypes = {"text/.*"}
     structure = {"sequence"}
+
+
+class XML(FileData):
+    filepattern = {"xml[sx]?$"}
+    mimetypes = {"application/xml", "text/xml"}
+    structure = {"nested "}
+    magic = {b"<?xml "}
 
 
 class PNG(FileData):
@@ -165,6 +172,12 @@ class FITS(FileData):
     structure = {"array", "table"}
     magic = {b"SIMPLE"}
     mimetypes = {"image/fits", "application/fits"}
+
+
+class ASDF(FileData):
+    filepattern = {"asdf$"}
+    structure = {"array", "table"}
+    magic = {b"#ASDF"}
 
 
 class DICOM(FileData):
@@ -237,10 +250,21 @@ class ReaderData(BaseData):
 
 
 class NumpyFile(FileData):
-    # NB: .npz is some .npy files within a ZIP
+    # will also match .npz since it will be recognised as a ZIP archive
     magic = {b"\x93NUMPY"}
     filepattern = {"npy$", "text$"}
     structure = {"array"}
+
+
+class RawBuffer(FileData):
+    """A C or FORTRAN N-dimensional array buffer without metadata"""
+
+    filepattern = {"raw$"}
+    structure = {"array"}
+
+    def __init__(self, url: str, dtype: str, storage_options: dict | None = None, metadata: dict | None = None):
+        super().__init__(url, storage_options=storage_options, metadata=metadata)
+        self.dtype = dtype  # numpy-style
 
 
 class Feather2(FileData):
@@ -256,6 +280,16 @@ class Feather1(FileData):
 class PythonSourceCode(FileData):
     structure = {"code"}
     filepattern = {"py$"}
+
+
+class GDALRasterFile(FileData):
+    """One of the filetpes at https://gdal.org/drivers/raster/index.html
+
+    This class overlaps with some other types, so only use when necessary.
+    These must be local paths or use GDAL's own virtual file system.
+    """
+
+    structure = {"array"}
 
 
 comp_magic = {

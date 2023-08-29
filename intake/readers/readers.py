@@ -18,10 +18,11 @@ class BaseReader(Tokenizable, PipelineMixin):
     imports: set[str] = set()  # allow for pip-style versions maybe
     implements: set[datatypes.BaseData] = set()
     optional_imports: set[str] = set()
-    func: str = "builtins:NotImplementedError"
-    func_doc: str = None
-    concat_func: str = None
+    func: str = "builtins:NotImplementedError"  # usual function for loading data
+    func_doc: str = None  # docstring origin if not from func
+    concat_func: str = None  # for multi-file readers, this func can concatenate
     output_instance: str = None
+    other_funcs: set = set()  # function names to recognise
 
     def __init__(self, data, metadata: dict | None = None, output_instance: str | None = None, **kwargs):
         """
@@ -423,42 +424,49 @@ class XArrayDatasetReader(FileReader):
     output_instance = {"xarray:DataSet"}
     imports = {"xarray"}
     optional_imports = {"zarr", "h5netcdf", "cfgrib", "scipy"}  # and others
-    implements = {datatypes.NetCDF3, datatypes.HDF5, datatypes.GRIB2, datatypes.Zarr, datatypes.OpenDAP}  # DAP is not a file, maybe should be separate
+    # DAP is not a file but an API, maybe should be separate
+    implements = {datatypes.NetCDF3, datatypes.HDF5, datatypes.GRIB2, datatypes.Zarr, datatypes.OpenDAP}
+    # xarray also reads from images and tabular data
     func = "xarray:open_mfdataset"
+    other_funcs = {"xarray:open_dataset"}
+    url_arg = "paths"
 
     def read(self, **kwargs):
+        from xarray import open_dataset, open_mfdataset
+
         kw = self.kwargs.copy()
         kw.update(kwargs)
-        func = import_name(self.func)
         if kw.get("engine", "") == "zarr":
             # only zarr takes storage options
             kw.setdefault("backend_kwargs", {})["storage_options"] = self.data.storage_options
-        return func(self.data.filelist, **kwargs)
+        flist = self.data.filelist
+        # TODO: separate out one-dataset and multi? Would allow recognising multiple functions
+        if len(flist) > 1:
+            return open_mfdataset(self.data.filelist, **kwargs)
+        else:
+            return open_dataset(self.data.filelist, **kwargs)
 
 
 class RasterIOXarrayReader(FileReader):
     output_instance = {"xarray:DataSet"}
     imports = {"rioxarray"}
-    implements = {datatypes.TIFF}  # plus anything handled by GDAL https://gdal.org/drivers/raster/index.html
+    implements = {datatypes.TIFF, datatypes.GDALRasterFile}
     func = "rioxarray:open_rasterio"
     url_arg = "filename"
 
     def read(self, **kwargs):
-        func = import_name(self.func)
         import xarray as xr
+        from rioxarray import open_rasterio
 
-        can_be_local = fsspec.utils.can_be_local(self.urlpath[0])
-        if can_be_local:
-            files = fsspec.open_local(self.data.url, **(self.data.storage_options or {}))
-        else:
-            files = self.data.filelist
-        if isinstance(files, str):
-            files = [files]
-        if len(files) == 1:
-            return func(files)
+        concat_kwargs = {k: kwargs.pop(k) for k in {"dim", "data_vars", "coords", "compat", "position", "join"} if k in kwargs}
+
+        with fsspec.open(self.data.url, **(self.data.storage_options or {})) as ofs:
+            bits = [open_rasterio(of, **kwargs) for of in ofs]
+        if len(bits) == 1:
+            return bits
         else:
             # requires dim= in kwargs
-            return xr.concat([func(f) for f in files], dim=kwargs["dim"])
+            return xr.concat(bits, **concat_kwargs)
 
 
 def recommend(data):
@@ -507,8 +515,8 @@ def reader_from_call(func, *args, **kwargs):
             if cls.func == func:
                 found = cls
                 break
-        elif cls.check_imports() and cls.func.split(":", 1)[0].split(".", 1)[0] == package:
-            if import_name(cls.func) == func:
+        elif cls.check_imports() and any(f.split(":", 1)[0].split(".", 1)[0] == package for f in ({cls.func} | cls.other_funcs)):
+            if any(import_name(f) == func for f in ({cls.func} | cls.other_funcs)):
                 found = cls
                 break
     if not found:
@@ -526,7 +534,7 @@ def reader_from_call(func, *args, **kwargs):
     if len(cls.implements) == 1:
         datacls = next(iter(cls.implements))
     elif cls.url_arg:
-        clss = datatypes.recommend(kwargs[cls.url_arg], storage_options=(data_kw["url"] if cls.storage_options is not None else None))
+        clss = datatypes.recommend(kwargs[cls.url_arg], storage_options=(data_kw["storage_options"] if cls.storage_options is not None else None))
         if clss:
             datacls = next(iter(clss))
     if datacls:

@@ -11,6 +11,12 @@ def df_select_columns(x, columns, **_):
     return x[columns]
 
 
+@register_converter("xarray:DataSet", "xarray:Dataset")
+@register_converter("xarray:DataArray", "xarray:DataArray")
+def xarray_sel(x, indexers, **_):
+    return x.sel(indexers)
+
+
 @register_converter("pyspark.sql:DataFrame", "pyspark.sql:DataFrame")
 def pyspark_select_columns(x, columns, **_):
     return x.select(columns)
