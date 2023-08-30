@@ -166,8 +166,7 @@ class PandasSQLAlchemy(BaseReader):
     def discover(self, **kwargs):
         if "chunksize" not in kwargs:
             kwargs["chunksize"] = 10
-        read_sql = import_name(self.func)
-        return next(iter(read_sql(sql=self.data.query, con=self.data.conn, **kwargs)))
+        return next(iter(self.read(**kwargs)))
 
     def read(self, **kwargs):
         read_sql = import_name(self.func)
@@ -299,8 +298,8 @@ class AwkwardParquet(Awkward):
         return self.read(**kwargs)
 
 
-class DaskAwkwardParquet(AwkwardParquet, DaskDF):
-    imports = {"dask_awkward", "pyarrow"}
+class DaskAwkwardParquet(AwkwardParquet):
+    imports = {"dask_awkward", "pyarrow", "dask"}
     func = "dask_awkward:from_parquet"
     output_instance = "dask_awkward:Array"
 
@@ -314,8 +313,8 @@ class AwkwardJSON(Awkward):
     url_arg = "source"
 
 
-class DaskAwkwardJSON(Awkward, DaskDF):
-    imports = {"dask_awkward"}
+class DaskAwkwardJSON(Awkward):
+    imports = {"dask_awkward", "dask"}
     func = "dask_awkward:from_json"
     output_instance = "dask_awkward:Array"
     url_arg = "source"
@@ -330,7 +329,7 @@ class PandasCSV(Pandas):
     url_arg = "filepath_or_buffer"
 
     def discover(self, **kwargs):
-        kw = {"nrows": 10, self.url_arg: self.data.filelist[0]}
+        kw = {"nrows": 10, self.url_arg: self.data.filelist[0], "skipfooter": None, "chunksize": None}
         kw.update(kwargs)
         return self.read(**kw)
 

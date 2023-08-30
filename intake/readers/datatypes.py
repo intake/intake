@@ -150,6 +150,7 @@ class HDF5(FileData):
 class Zarr(FileData):
     filepattern = {"zarr$", "/$"}  # i.e., any directory might be
     structure = {"array", "hierarchy"}
+    mimetypes = {"application/vnd+zarr"}
 
 
 class TIFF(FileData):
@@ -205,6 +206,12 @@ class SQLQuery(Service):
         self.conn = conn
         self.query = query
         super().__init__(metadata)
+
+
+class SQLite(FileData):
+    structure = {"sequence", "table"}
+    filepattern = {"sqlite$", "sqlitedb$", "db$"}
+    magic = {b"SQLite format"}
 
 
 class CatalogFile(Catalog, FileData):
