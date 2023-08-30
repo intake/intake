@@ -142,12 +142,23 @@ class CSVSource(base.DataSource, base.PatternMixin):
             return self._schema
 
         nrows = self._csv_kwargs.get("nrows")
-        self._csv_kwargs["nrows"] = 10
+        skipfooter = self._csv_kwargs.get("skipfooter")
+        if skipfooter is not None:
+            try:
+                self._csv_kwargs["nrows"] = 10 + skipfooter
+            except TypeError:
+                raise TypeError("Non-numeric value passed for `skipfooter`.")
+            del self._csv_kwargs["skipfooter"]
+        else:
+            self._csv_kwargs["nrows"] = 10
         df = self._get_partition(0)
         if nrows is None:
             del self._csv_kwargs["nrows"]
         else:
             self._csv_kwargs["nrows"] = nrows
+        if skipfooter is not None:
+            df = df.iloc[0:-skipfooter]
+            self._csv_kwargs["skipfooter"] = skipfooter
 
         dtypes = {col: str(dtype) for col, dtype in df.dtypes.items()}
         self._schema = base.Schema(dtype=dtypes, shape=(None, len(dtypes)), npartitions=len(self.files()), extra_metadata={})
