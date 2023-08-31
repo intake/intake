@@ -37,7 +37,7 @@ class BaseData(Tokenizable):
         readers = self.possible_readers["importable"]
         return {r: r.output_instance for r in readers}
 
-    def to_reader(self, outtype: str | None = None, reader: str | type | None = None):
+    def to_reader_cls(self, outtype: str | None = None, reader: str | type | None = None):
         if outtype and reader:
             raise ValueError
         if isinstance(reader, str):
@@ -46,17 +46,18 @@ class BaseData(Tokenizable):
             except (ImportError, ModuleNotFoundError):
                 for cls, out in self.possible_outputs.items():
                     if re.findall(reader, cls.qname()):
-                        return cls(data=self)
+                        return cls
         if reader:
-            return reader(data=self)
+            return reader
         elif outtype:
             for reader, out in self.possible_outputs.items():
-                for o in out:
-                    if o == outtype or re.findall(outtype, o):
-                        return reader(data=self)
+                if out == outtype or re.findall(outtype, out):
+                    return reader
             raise ValueError("outtype not in available in importable readers")
-        reader = next(iter(self.possible_readers["importable"]))
-        return reader(data=self)
+        return next(iter(self.possible_readers["importable"]))
+
+    def to_reader(self, outtype: str | None = None, reader: str | type | None = None):
+        return self.to_reader_cls(outtype, reader)(data=self)
 
     def to_entry(self):
         from intake.readers.entry import DataDescription
@@ -93,12 +94,12 @@ class Service(BaseData):
 class Catalog(BaseData):
     """Datatypes that are groupings of other data"""
 
-    structure = "catalog"
+    structure = {"catalog"}
 
 
 class Parquet(FileData):
     filepattern = {"parq$", "parquet$", "/$"}
-    mimetypes = {"application/vnd.apache.parquet"}
+    mimetypes = {"application/vnd.apache.parquet", "application/parquet", "application/x-parquet"}
     structure = {"table", "nested"}
     magic = {b"PAR1"}
 
@@ -118,7 +119,7 @@ class Text(FileData):
 class XML(FileData):
     filepattern = {"xml[sx]?$"}
     mimetypes = {"application/xml", "text/xml"}
-    structure = {"nested "}
+    structure = {"nested"}
     magic = {b"<?xml "}
 
 
@@ -154,7 +155,7 @@ class TIFF(FileData):
     filepattern = {"tiff?$", "cog$"}
     structure = {"array", "image"}
     magic = {b"II*\x00", b"MM\x00*"}
-    mimetypes = {"image/tiff"}
+    mimetypes = {"image/tiff", "image/x.geotiff"}
 
 
 class GRIB2(FileData):

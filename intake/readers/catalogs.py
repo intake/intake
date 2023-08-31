@@ -129,6 +129,49 @@ class StacCatalog(BaseReader):
             )
         return cat
 
+    def stack_bands(self, bands, concat_dim="band"):
+        from pystac.extensions.eo import EOExtension
+
+        band_info = [band.to_dict() for band in EOExtension.ext(self._stac).bands]
+        metadatas = {}
+        titles = []
+        hrefs = []
+        types = []
+        assets = self._stac.assets
+        for band in bands:
+            # band can be band id, name or common_name
+            if band in assets:
+                info = next(
+                    (b for b in band_info if b.get("id", b.get("name")) == band),
+                    None,
+                )
+            else:
+                info = next((b for b in band_info if b.get("common_name") == band), None)
+                if info is not None:
+                    band = info.get("id", info.get("name"))
+
+            if band not in assets or info is None:
+                valid_band_names = []
+                for b in band_info:
+                    valid_band_names.append(b.get("id", b.get("name")))
+                    valid_band_names.append(b.get("common_name"))
+                raise ValueError(f"{band} not found in list of eo:bands in collection." f"Valid values: {sorted(list(set(valid_band_names)))}")
+            asset = assets.get(band)
+            metadatas[band] = asset.to_dict()
+            titles.append(band)
+            types.append(asset.media_type)
+            hrefs.append(asset.href)
+
+        unique_types = set(types)
+        if len(unique_types) != 1:
+            raise ValueError(f"Stacking failed: bands must have same type, multiple found: {unique_types}")
+        reader = StacCatalog._get_reader(asset)
+        reader.kwargs["concat_dim"] = concat_dim
+        reader.metadata.update(metadatas)
+        reader.metadata["description"] = ", ".join(titles)
+        reader.data.url = hrefs
+        return reader
+
     @staticmethod
     def _get_reader(asset):
         """

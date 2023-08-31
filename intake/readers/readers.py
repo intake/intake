@@ -458,7 +458,7 @@ class RasterIOXarrayReader(FileReader):
 
         concat_kwargs = {k: kwargs.pop(k) for k in {"dim", "data_vars", "coords", "compat", "position", "join"} if k in kwargs}
 
-        with fsspec.open(self.data.url, **(self.data.storage_options or {})) as ofs:
+        with fsspec.open_files(self.data.url, **(self.data.storage_options or {})) as ofs:
             bits = [open_rasterio(of, **kwargs) for of in ofs]
         if len(bits) == 1:
             return bits
