@@ -101,27 +101,15 @@ class BaseReader(Tokenizable, PipelineMixin):
 class FileReader(BaseReader):
     """Convenience superclass for readers of files"""
 
-    url_arg = None
+    url_arg = "url"
     storage_options = False
 
     def read(self, **kwargs):
         kw = self.kwargs.copy()
         kw.update(kwargs)
+        kw[self.url_arg] = self.data.url
         if self.storage_options:
             kw["storage_options"] = self.data.storage_options
-        if self.url_arg and self.url_arg not in kwargs and self.concat_func:
-            filelist = self.data.filelist
-            if len(filelist) > 1:
-                concat = import_name(self.concat_func)
-                parts = []
-                for afile in filelist:
-                    kw[self.url_arg] = afile
-                    # TODO: can apply file columns here
-                    parts.append(self.read(**kw))
-                return concat(parts)
-        if self.url_arg:
-            kw[self.url_arg] = self.data.url
-
         return self._func(**kw)
 
 
@@ -329,7 +317,7 @@ class PandasCSV(Pandas):
     url_arg = "filepath_or_buffer"
 
     def discover(self, **kwargs):
-        kw = {"nrows": 10, self.url_arg: self.data.filelist[0], "skipfooter": None, "chunksize": None}
+        kw = {"nrows": 10, self.url_arg: self.data.url, "skipfooter": None, "chunksize": None, "storage_options": self.data.storage_options}
         kw.update(kwargs)
         return self.read(**kw)
 
@@ -419,8 +407,16 @@ class PythonModule(BaseReader):
             return mod
 
 
+class SKImageReader(FileReader):
+    output_instance = "numpy:ndarray"
+    imports = {"scikit-image"}
+    implements = {datatypes.PNG, datatypes.TIFF}
+    func = "skimage.io:imread"
+    url_arg = "fname"
+
+
 class XArrayDatasetReader(FileReader):
-    output_instance = {"xarray:DataSet"}
+    output_instance = "xarray:DataSet"
     imports = {"xarray"}
     optional_imports = {"zarr", "h5netcdf", "cfgrib", "scipy"}  # and others
     # DAP is not a file but an API, maybe should be separate
@@ -435,19 +431,22 @@ class XArrayDatasetReader(FileReader):
 
         kw = self.kwargs.copy()
         kw.update(kwargs)
+        # manual default/preferred engines
+        if "engine" not in kw and isinstance(self.data, datatypes.Zarr):
+            kw["engine"] = "zarr"
         if kw.get("engine", "") == "zarr":
             # only zarr takes storage options
             kw.setdefault("backend_kwargs", {})["storage_options"] = self.data.storage_options
-        flist = self.data.filelist
-        # TODO: separate out one-dataset and multi? Would allow recognising multiple functions
-        if len(flist) > 1:
-            return open_mfdataset(self.data.filelist, **kwargs)
+        if isinstance(self.data.url, (tuple, set, list)) or "*" in self.data.url:
+            # use fsspec.open_files? (except for zarr)
+            return open_mfdataset(self.data.url, **kw)
         else:
-            return open_dataset(self.data.filelist, **kwargs)
+            # use fsspec.open? (except for zarr)
+            return open_dataset(self.data.url, **kw)
 
 
 class RasterIOXarrayReader(FileReader):
-    output_instance = {"xarray:DataSet"}
+    output_instance = "xarray:DataSet"
     imports = {"rioxarray"}
     implements = {datatypes.TIFF, datatypes.GDALRasterFile}
     func = "rioxarray:open_rasterio"

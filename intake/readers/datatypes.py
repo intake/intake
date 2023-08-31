@@ -41,13 +41,19 @@ class BaseData(Tokenizable):
         if outtype and reader:
             raise ValueError
         if isinstance(reader, str):
-            reader = import_name(reader)
+            try:
+                reader = import_name(reader)
+            except (ImportError, ModuleNotFoundError):
+                for cls, out in self.possible_outputs.items():
+                    if re.findall(reader, cls.qname()):
+                        return cls(data=self)
         if reader:
             return reader(data=self)
         elif outtype:
             for reader, out in self.possible_outputs.items():
-                if out == outtype or re.match(outtype, out):
-                    return reader(data=self)
+                for o in out:
+                    if o == outtype or re.findall(outtype, o):
+                        return reader(data=self)
             raise ValueError("outtype not in available in importable readers")
         reader = next(iter(self.possible_readers["importable"]))
         return reader(data=self)
@@ -73,16 +79,6 @@ class FileData(BaseData):
         self.storage_options = storage_options
         self._filelist = None
         super().__init__(metadata)
-
-    @property
-    def filelist(self):
-        """Expand any globs in the given URL"""
-        if self._filelist is None:
-            if isinstance(self.url, (list, tuple)):
-                self._filelist = self.url
-            else:
-                self._filelist = fsspec.core.get_fs_token_paths(self.url, storage_options=self.storage_options)[2]
-        return self._filelist
 
 
 class Service(BaseData):
@@ -144,13 +140,13 @@ class HDF5(FileData):
     filepattern = {"hdf$", "h4$", "hdf5$"}  # many others by convention
     structure = {"array", "table", "hierarchy"}
     magic = {b"HDF"}
-    mimetypes = {"application/x-hdf5"}
+    mimetypes = {"application/x-hdf5?"}
 
 
 class Zarr(FileData):
     filepattern = {"zarr$", "/$"}  # i.e., any directory might be
     structure = {"array", "hierarchy"}
-    mimetypes = {"application/vnd+zarr"}
+    mimetypes = {"application/vnd\\+zarr"}
 
 
 class TIFF(FileData):
@@ -274,6 +270,14 @@ class RawBuffer(FileData):
         self.dtype = dtype  # numpy-style
 
 
+class Literal(BaseData):
+    """A value that can be embedded directly to YAML (text, dict, list)"""
+
+    def __init__(self, data, metadata=None):
+        self.data = data
+        super().__init__(metadata=metadata)
+
+
 class Feather2(FileData):
     magic = {b"ARROW1"}
     structure = {"tabular", "structured"}
@@ -333,17 +337,17 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
     """
     # instead of returning datatype class, should we make instance with
     # storage_options, if known?
-    out = set()
+    out = []
     if mime:
         for cls in subclasses(BaseData):
             if any(re.match(m, mime) for m in cls.mimetypes):
-                out.add(cls)
+                out.append(cls)
     if url:
         # urlparse to remove query parts?
         # try stripping compression extensions?
         for cls in subclasses(BaseData):
             if any(re.findall(m, url.lower()) for m in cls.filepattern):
-                out.add(cls)
+                out.append(cls)
     if head:
         for cls in subclasses(FileData):
             for m in cls.magic:
@@ -352,7 +356,7 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
                 else:
                     off = 0
                 if head[off:].startswith(m):
-                    out.add(cls)
+                    out.append(cls)
                     break
     if out:
         return out
