@@ -233,6 +233,10 @@ class JSONFile(FileData):
     structure = {"nested", "table"}
 
 
+class STACJSON(JSONFile):
+    magic = {(None, b'"stac_version":')}  # None means "somewhere in the file head"
+
+
 class TiledService(CatalogAPI):
     ...
 
@@ -339,6 +343,20 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
     # instead of returning datatype class, should we make instance with
     # storage_options, if known?
     out = []
+    if head:
+        for cls in subclasses(FileData):
+            for m in cls.magic:
+                if isinstance(m, tuple):
+                    off, m = m
+                    if off is None:
+                        if m in head:
+                            out.append(cls)
+                            break
+                else:
+                    off = 0
+                if off is not None and head[off:].startswith(m):
+                    out.append(cls)
+                    break
     if mime:
         for cls in subclasses(BaseData):
             if any(re.match(m, mime) for m in cls.mimetypes):
@@ -349,16 +367,6 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
         for cls in subclasses(BaseData):
             if any(re.findall(m, url.lower()) for m in cls.filepattern):
                 out.append(cls)
-    if head:
-        for cls in subclasses(FileData):
-            for m in cls.magic:
-                if isinstance(m, tuple):
-                    off, m = m
-                else:
-                    off = 0
-                if head[off:].startswith(m):
-                    out.append(cls)
-                    break
     if out:
         return out
 

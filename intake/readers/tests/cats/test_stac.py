@@ -11,7 +11,7 @@ pytest.importorskip("pystac")
 
 
 def test_1():
-    data = intake.readers.datatypes.JSONFile(cat_url)
+    data = intake.readers.datatypes.STACJSON(cat_url)
     cat = data.to_reader(reader="StacCatalog").read()
     assert "test" in cat
     cat2 = cat.test.read()
@@ -20,7 +20,7 @@ def test_1():
 
 
 def test_bands():
-    data = intake.readers.datatypes.JSONFile(simple_item_url)
+    data = intake.readers.datatypes.STACJSON(simple_item_url)
     list_of_bands = ["B02", "B03"]
     cat = data.to_reader_cls(reader="StacCatalog")(data, cls="Item")
     reader = cat.stack_bands(list_of_bands)

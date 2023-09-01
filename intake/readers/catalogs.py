@@ -88,7 +88,7 @@ class StacCatalog(BaseReader):
     # also have ItemCollection (from searching a Catalog) and CombinedAsset (multi-layer data)
     # Asset and CombinedAsset are datasets, the rest are Catalogs
 
-    implements = {datatypes.JSONFile, datatypes.Literal}
+    implements = {datatypes.STACJSON, datatypes.Literal}
     imports = {"pystac"}
     output_instance = "intake.readers.entry:Catalog"
 
@@ -122,6 +122,7 @@ class StacCatalog(BaseReader):
         for subcatalog in items:
             subcls = type(subcatalog).__name__
 
+            # TODO: items may also be readable by stack_bands
             cat[subcatalog.id] = ReaderDescription(
                 data=datatypes.Literal(subcatalog.to_dict()).to_entry(),
                 reader=self.qname(),
@@ -130,6 +131,7 @@ class StacCatalog(BaseReader):
         return cat
 
     def stack_bands(self, bands, concat_dim="band"):
+        # this should be a separate reader for STACJSON,
         from pystac.extensions.eo import EOExtension
 
         band_info = [band.to_dict() for band in EOExtension.ext(self._stac).bands]

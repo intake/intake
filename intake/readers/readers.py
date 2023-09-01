@@ -468,14 +468,21 @@ class RasterIOXarrayReader(FileReader):
 
 
 def recommend(data):
-    """Show which readers claim to support the given data instance"""
-    out = {"importable": set(), "not_importable": set()}
-    for cls in subclasses(BaseReader):
-        if any(type(data) == imp for imp in cls.implements):
-            if cls.check_imports():
-                out["importable"].add(cls)
-            else:
-                out["not_importable"].add(cls)
+    """Show which readers claim to support the given data instance or a superclass
+
+    The ordering is more specific readers first
+    """
+    seen = set()
+    out = {"importable": [], "not_importable": []}
+    for datacls in type(data).mro():
+        for cls in subclasses(BaseReader):
+            if any(datacls == imp for imp in cls.implements):
+                if cls not in seen:
+                    seen.add(cls)
+                    if cls.check_imports():
+                        out["importable"].append(cls)
+                    else:
+                        out["not_importable"].append(cls)
     return out
 
 
