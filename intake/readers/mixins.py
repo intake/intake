@@ -21,7 +21,9 @@ class PipelineMixin:
 
         outtype = self.output_instance
         if "Catalog" in outtype:
-            # a better way to matk this condition, perhaps the datatype's structure?
+            # a better way to mark this condition, perhaps the datatype's structure?
+            # TODO: this prevents from doing a transform/convert on a cat, so must use
+            #  .transform for that
             return self.read()[item]
         func = getitem
         if isinstance(self, Pipeline):

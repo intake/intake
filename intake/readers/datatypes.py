@@ -123,6 +123,10 @@ class XML(FileData):
     magic = {b"<?xml "}
 
 
+class THREDDSCatalog(XML):
+    magic = {(None, b"<xml.*<catalog ")}
+
+
 class PNG(FileData):
     filepattern = {"png$"}
     structure = {"array", "image"}
@@ -349,7 +353,7 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
                 if isinstance(m, tuple):
                     off, m = m
                     if off is None:
-                        if m in head:
+                        if re.findall(m, head):
                             out.append(cls)
                             break
                 else:

@@ -83,7 +83,7 @@ class SQLAlchemyCatalog(BaseReader):
         return Catalog(data=entries)
 
 
-class StacCatalog(BaseReader):
+class StacCatalogReader(BaseReader):
     # STAC organisation: Catalog->Item->Asset. Catalogs can reference Catalogs.
     # also have ItemCollection (from searching a Catalog) and CombinedAsset (multi-layer data)
     # Asset and CombinedAsset are datasets, the rest are Catalogs
@@ -167,7 +167,7 @@ class StacCatalog(BaseReader):
         unique_types = set(types)
         if len(unique_types) != 1:
             raise ValueError(f"Stacking failed: bands must have same type, multiple found: {unique_types}")
-        reader = StacCatalog._get_reader(asset)
+        reader = StacCatalogReader._get_reader(asset)
         reader.kwargs["concat_dim"] = concat_dim
         reader.metadata.update(metadatas)
         reader.metadata["description"] = ", ".join(titles)
@@ -200,3 +200,31 @@ class StacCatalog(BaseReader):
                 return data.to_reader()
             else:
                 return data
+
+
+class THREDDSCatalog(Catalog):
+    ...
+
+
+class THREDDSCatalogReader(BaseReader):
+    implements = {datatypes.THREDDSCatalog}
+    output_instance = THREDDSCatalog.qname()
+    imports = {"siphon", "xarray"}
+
+    def __init__(self, data, **kwargs):
+        super().__init__(data, **kwargs)
+
+    def read(self, **kwargs):
+        from siphon.catalog import TDSCatalog
+
+        from intake.readers.readers import XArrayDatasetReader
+
+        thr = TDSCatalog(self.data.url)
+        cat = Catalog(metadata=thr.metadata)
+        for r in thr.catalog_refs.values():
+            cat[r.title] = THREDDSCatalogReader(datatypes.THREDDSCatalog(url=r.href))
+        for ds in thr.datasets.values():
+            cat[ds.id + "_DAP"] = XArrayDatasetReader(datatypes.Service(ds.access_urls["OpenDAP"]), engine="pydap")
+            cat[ds.id + "_CDF"] = XArrayDatasetReader(datatypes.HDF5(ds.access_urls["HTTPServer"]), engine="h5netcdf")
+
+        return cat

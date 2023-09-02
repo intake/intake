@@ -431,7 +431,7 @@ class XArrayDatasetReader(FileReader):
 
         kw = self.kwargs.copy()
         kw.update(kwargs)
-        # manual default/preferred engines
+
         if "engine" not in kw and isinstance(self.data, datatypes.Zarr):
             kw["engine"] = "zarr"
         if kw.get("engine", "") == "zarr":
@@ -441,7 +441,11 @@ class XArrayDatasetReader(FileReader):
             # use fsspec.open_files? (except for zarr)
             return open_mfdataset(self.data.url, **kw)
         else:
-            # use fsspec.open? (except for zarr)
+            # TODO: recognise fsspec URLs, and optionally use open_local for engines tha need it
+            if kw.get("engine", "") == "h5netcdf" and self.data.url.startswith("http"):
+                # special case, because xarray would assume a DAP endpoint
+                f = fsspec.open(self.data.url, **(self.data.storage_options or {})).open()
+                return open_dataset(f, **kw)
             return open_dataset(self.data.url, **kw)
 
 

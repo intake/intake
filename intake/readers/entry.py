@@ -418,7 +418,7 @@ class Catalog(Tokenizable):
             txt = txt + f"\n  parameters: {sorted(self.user_parameters)}"
         return txt
 
-    def __setitem__(self, name: str, entry: DataDescription | ReaderDescription):
+    def __setitem__(self, name: str, entry: DataDescription | ReaderDescription | BaseReader):
         """Add the entry to this catalog with the given alias name
 
         If the entry is already in the catalog, this effectively just adds an alias. Any existing alias of
