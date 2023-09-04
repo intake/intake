@@ -322,3 +322,8 @@ have a top-level whose contents are also catalogs.
 
 where your entry point might look something like: ``"my_cat = my_package:top_level"``. You could achieve the same
 with multiple YAML files.
+
+.. raw:: html
+
+    <script data-goatcounter="https://intake.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

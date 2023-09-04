@@ -330,3 +330,8 @@ If, instead, you have data in your session in one of the containers supported by
 (e.g., array, data-frame), you can use the ``intake.upload()`` function to save it to
 files in an appropriate format and a location you specify, and give you back a data-source
 instance, which, again, you can use with ``.yaml()`` or ``.add()``, as above.
+
+.. raw:: html
+
+    <script data-goatcounter="https://intake.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

@@ -185,3 +185,8 @@ API
    :members: __init__
 .. autoclass:: intake.source.derived.Columns
    :members: __init__
+
+.. raw:: html
+
+    <script data-goatcounter="https://intake.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

@@ -142,3 +142,8 @@ GUI
 
 .. autoclass:: intake.interface.source.select.SourceSelector
    :members:
+
+.. raw:: html
+
+    <script data-goatcounter="https://intake.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

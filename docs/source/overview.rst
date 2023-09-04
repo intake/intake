@@ -92,3 +92,8 @@ Future Directions
 Ongoing work for enhancements, as well as requests for plugins, etc., can be found at the
 `issue tracker <https://github.com/intake/intake/issues>`_. See the :ref:`roadmap`
 for general mid- and long-term goals.
+
+.. raw:: html
+
+    <script data-goatcounter="https://intake.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

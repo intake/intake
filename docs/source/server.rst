@@ -157,3 +157,8 @@ Parameters
 
 - ``accepted_formats``, ``accepted_compression``, list of strings (required): to specify how serialization of data happens. This
   is an expert feature, see docs in the module ``intake.container.serializer``. This is passed in the body of the request.
+
+.. raw:: html
+
+    <script data-goatcounter="https://intake.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

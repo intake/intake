@@ -53,3 +53,8 @@ This is a reference API class listing, useful mainly for developers.
 
 .. autoclass:: intake.container.persist.PersistStore
    :members: add, get_tok, remove, backtrack, refresh, needs_refresh
+
+.. raw:: html
+
+    <script data-goatcounter="https://intake.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
