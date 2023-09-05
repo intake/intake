@@ -7,7 +7,7 @@ on:
     branches: master
 
 jobs:
-  test:
+  test-linux:
     name: ${{ matrix.CONDA_ENV }}-pytest
     runs-on: ubuntu-latest
     strategy:
@@ -28,7 +28,33 @@ jobs:
         run: |
           pip install . --no-deps
 
-      - name: Run Tests
+      - name: Run Tests on Linux
+        shell: bash -l {0}
+        run: |
+          pytest -v
+
+  test-windows:
+    name: ${{ matrix.CONDA_ENV }}-pytest
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        CONDA_ENV: [py38, py39, py310, py311, pip]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup conda
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: scripts/ci/environment-${{ matrix.CONDA_ENV }}.yml
+
+      - name: pip-install
+        shell: bash -l {0}
+        run: |
+          pip install . --no-deps
+
+      - name: Run Tests on Windows
         shell: bash -l {0}
         run: |
           pytest -v
