@@ -189,6 +189,7 @@ def temp_cache(tempdir):
     old = intake.config.conf.copy()
     olddir = intake.config.confdir
     intake.config.confdir = tempdir
+    intake.config.conf = intake.config.Config()
     intake.config.conf.update({"cache_dir": make_path_posix(str(tempdir)), "cache_download_progress": False, "cache_disabled": False})
     intake.config.conf.save()
     store.__init__(os.path.join(tempdir, "persist"))
@@ -196,8 +197,7 @@ def temp_cache(tempdir):
         yield
     finally:
         intake.config.confdir = olddir
-        intake.config.conf.update(old)
-        intake.config.save_conf()
+        intake.config.conf = old
 
 
 @pytest.fixture(scope="function")
