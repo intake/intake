@@ -164,7 +164,6 @@ class CSVSource(base.DataSource, base.PatternMixin):
         else:
             self._csv_kwargs["nrows"] = nrows
         if skipfooter is not None:
-            df = df.iloc[0:-skipfooter]
             self._csv_kwargs["skipfooter"] = skipfooter
 
         dtypes = {col: str(dtype) for col, dtype in df.dtypes.items()}
