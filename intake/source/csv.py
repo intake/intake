@@ -141,17 +141,24 @@ class CSVSource(base.DataSource, base.PatternMixin):
             self._schema = base.Schema(dtype=dtypes, shape=(None, len(dtypes)), npartitions=self._dask_df.npartitions, extra_metadata={})
             return self._schema
 
-        nrows = self._csv_kwargs.get("nrows")
-        skipfooter = self._csv_kwargs.get("skipfooter")
+        nrows = self._csv_kwargs.pop("nrows", None)
+        skipfooter = self._csv_kwargs.pop("skipfooter", None)
         if skipfooter is not None:
             try:
                 self._csv_kwargs["nrows"] = 10 + skipfooter
             except TypeError:
                 raise TypeError("Non-numeric value passed for `skipfooter`.")
-            del self._csv_kwargs["skipfooter"]
         else:
             self._csv_kwargs["nrows"] = 10
         df = self._get_partition(0)
+        # If `skipfooter` is not None, we need to check whether there are less
+        # than `10+skipfooter`` rows in `df`. If so, we need to re-read the
+        # DataFrame with `nrows` equal to the total number of rows in `df` minus
+        # `skipfooter`, to avoid that the footers interfere with detecting the
+        # right dtypes.
+        if skipfooter is not None and len(df) < 10 + skipfooter:
+            self._csv_kwargs["nrows"] = len(df) - skipfooter
+            df = self._get_partition(0)
         if nrows is None:
             del self._csv_kwargs["nrows"]
         else:
