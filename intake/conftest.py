@@ -54,7 +54,7 @@ register_driver("test", TestSource)
 def tmp_config_path(tmp_path):
     key = "INTAKE_CONF_FILE"
     original = os.getenv(key)
-    temp_config_path = os.path.join(tmp_path, "test_config.yml")
+    temp_config_path = make_path_posix(os.path.join(tmp_path, "test_config.yml"))
     os.environ[key] = temp_config_path
     assert config.cfile() == temp_config_path
     yield temp_config_path
