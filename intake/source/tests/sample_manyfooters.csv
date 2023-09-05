@@ -1,0 +1,10 @@
+name,score,rank
+Alice,100.5,1
+Bob,50.3,2
+Charlie,25,3
+Eve,25,3
+1. This is footer #1
+2. This is another footer row, with a comma
+3. This a  third footer row. # With a hash
+4. And another one.
+5. And finally a last footer, to make sure we have more footers than data rows.
