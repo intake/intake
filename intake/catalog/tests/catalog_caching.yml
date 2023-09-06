@@ -40,10 +40,10 @@ sources:
     driver: csv
     cache:
       - argkey: urlpath
-        regex: '{{ CATALOG_DIR }}cache_data'
+        regex: '{{ CATALOG_DIR }}/cache_data'
         type: file
     args:
-      urlpath: ['{{ CATALOG_DIR }}cache_data/states.csv', '{{ CATALOG_DIR }}cache_data/states.csv']
+      urlpath: ['{{ CATALOG_DIR }}/cache_data/states.csv', '{{ CATALOG_DIR }}/cache_data/states.csv']
   test_bad_type_cache_spec:
     description: cache a csv file from the local filesystem
     driver: csv
