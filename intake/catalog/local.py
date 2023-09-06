@@ -11,7 +11,7 @@ import os
 import warnings
 
 import entrypoints
-from fsspec import get_filesystem_class, open_files
+from fsspec import open_files
 from fsspec.core import split_protocol
 
 from .. import __version__
