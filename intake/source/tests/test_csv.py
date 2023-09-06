@@ -26,7 +26,7 @@ def data_filenames():
         sample2_1=posixpath.join(basedir, "sample2_1.csv"),
         sample2_2=posixpath.join(basedir, "sample2_2.csv"),
         sample2_all=posixpath.join(basedir, "sample2_*.csv"),
-        sample_pattern=posixpath.join(basedir, "sample{num:d}_{dup:d}.csv")
+        sample_pattern=posixpath.join(basedir, "sample{num:d}_{dup:d}.csv"),
     )
 
 
@@ -70,14 +70,12 @@ def sample_pattern_datasource_with_cache(data_filenames):
 def footer_csv_dir():
     return make_path_posix(os.path.join(os.path.dirname(__file__), "footer_csvs"))
 
-@pytest.fixture(params=[('sample_fewfooters.csv', 2), ('sample_manyfooters.csv', 5)])
+
+@pytest.fixture(params=[("sample_fewfooters.csv", 2), ("sample_manyfooters.csv", 5)])
 def sample_datasource_with_skipfooter(request, footer_csv_dir):
     csv_filename, skipfooter = request.param
-    csv_path=posixpath.join(footer_csv_dir, csv_filename)
-    return csv.CSVSource(
-        csv_path,
-        csv_kwargs={"skipfooter": skipfooter}
-    )
+    csv_path = posixpath.join(footer_csv_dir, csv_filename)
+    return csv.CSVSource(csv_path, csv_kwargs={"skipfooter": skipfooter})
 
 
 def test_csv_plugin():
@@ -285,7 +283,7 @@ def test_pickle(sample1_datasource):
 
 
 def test_skipfooter(sample_datasource_with_skipfooter, footer_csv_dir):
-    csv_nofooters=posixpath.join(footer_csv_dir, "sample_nofooters.csv")
+    csv_nofooters = posixpath.join(footer_csv_dir, "sample_nofooters.csv")
     expected_source = csv.CSVSource(csv_nofooters)
     expected_schema = expected_source.discover()
     assert expected_schema == sample_datasource_with_skipfooter.discover()
