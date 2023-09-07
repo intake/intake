@@ -57,7 +57,6 @@ def method(x, method_name: str, *args, **kw):
 
     Assumes output type is the same as input.
     """
-    # TODO: there is no way to get args here right now
     return getattr(x, method_name)(*args, **kw)
 
 

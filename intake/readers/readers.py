@@ -61,9 +61,11 @@ class BaseReader(Tokenizable, PipelineMixin):
         """Doc associated with loading function"""
         f = cls.func_doc or cls.func
         if isinstance(f, str):
-            return import_name(f).__doc__
-        # if callable
-        return f.__doc__
+            f = import_name(f)
+        upstream = f.__doc__ if f is not NotImplementedError else ""
+        sig = str(inspect.signature(cls._read))
+        doc = cls._read.__doc__
+        return "\n\n".join(_ for _ in [cls.qname(), cls.__doc__, sig, doc, upstream] if _)
 
     def discover(self, **kwargs):
         """Part of the data
@@ -89,7 +91,10 @@ class BaseReader(Tokenizable, PipelineMixin):
         """
         kw = self.kwargs.copy()
         kw.update(kwargs)
-        return self._func(self.data, **kw)
+        return self._read(**kw)
+
+    def _read(self, **kwargs):
+        raise NotImplementedError
 
     def to_entry(self):
         """Create an entry with only this reader defined"""
@@ -104,11 +109,9 @@ class FileReader(BaseReader):
     url_arg = "url"
     storage_options = False
 
-    def read(self, **kwargs):
-        kw = self.kwargs.copy()
-        kw.update(kwargs)
+    def _read(self, **kw):
         kw[self.url_arg] = self.data.url
-        if self.storage_options:
+        if self.data.storage_options:
             kw["storage_options"] = self.data.storage_options
         return self._func(**kw)
 
@@ -123,7 +126,7 @@ class FileByteReader(FileReader):
         with fsspec.open(self.data.url, mode="rb", **(self.data.storage_options or {})) as f:
             return f.read()
 
-    def read(self, **kwargs):
+    def _read(self, **kwargs):
         out = []
         for of in fsspec.open_files(self.data.url, mode="rb", **(self.data.storage_options or {})):
             with of as f:
@@ -156,7 +159,7 @@ class PandasSQLAlchemy(BaseReader):
             kwargs["chunksize"] = 10
         return next(iter(self.read(**kwargs)))
 
-    def read(self, **kwargs):
+    def _read(self, **kwargs):
         read_sql = import_name(self.func)
         return read_sql(sql=self.data.query, con=self.data.conn, **kwargs)
 
@@ -209,28 +212,28 @@ class DuckDB(BaseReader):
 class DuckParquet(DuckDB, FileReader):
     implements = {datatypes.Parquet}
 
-    def read(self, **kwargs):
+    def _read(self, **kwargs):
         return self._duck().query(f"SELECT * FROM read_parquet('{self.data.url}')")
 
 
 class DuckCSV(DuckDB, FileReader):
     implements = {datatypes.CSV}
 
-    def read(self, **kwargs):
+    def _read(self, **kwargs):
         return self._duck().query(f"SELECT * FROM read_csv_auto('{self.data.url}')")
 
 
 class DuckJSON(DuckDB, FileReader):
     implements = {datatypes.JSONFile}
 
-    def read(self, **kwargs):
+    def _read(self, **kwargs):
         return self._duck().query(f"SELECT * FROM read_json_auto('{self.data.url}')")
 
 
 class DuckSQL(DuckDB):
     implements = {datatypes.SQLQuery}
 
-    def read(self, **kwargs):
+    def _read(self, **kwargs):
         words = len(self.data.query.split())
         q = self.data.query if words > 1 else f"SELECT * FROM {self.data.query}"
         return self._duck().query(q)
@@ -252,21 +255,21 @@ class SparkDataFrame(FileReader):
 class SparkCSV(SparkDataFrame):
     implements = {datatypes.CSV}
 
-    def read(self, **kwargs):
+    def _read(self, **kwargs):
         return self._spark().read.csv(self.data.url, **kwargs)
 
 
 class SparkParquet(SparkDataFrame):
     implements = {datatypes.Parquet}
 
-    def read(self, **kwargs):
+    def _read(self, **kwargs):
         return self._spark().read.parquet(self.data.url, **kwargs)
 
 
 class SparkText(SparkDataFrame):
     implements = {datatypes.Text}
 
-    def read(self, **kwargs):
+    def _read(self, **kwargs):
         return self._spark().read.text(self.data.url, **kwargs)
 
 
@@ -365,9 +368,8 @@ class TiledNode(BaseReader):
     output_instance = "tiled.client.node:Node"
     func = "tiled.client:from_uri"
 
-    def read(self, **kwargs):
+    def _read(self, **kwargs):
         opts = self.data.options.copy()
-        opts.update(self.kwargs)
         opts.update(kwargs)
         return self._func(self.data.url, **opts)
 
@@ -377,11 +379,10 @@ class TiledClient(BaseReader):
     implements = {datatypes.TiledDataset}
     output_instance = "tiled.client.base:BaseClient"
 
-    def read(self, as_client=True, dask=False, **kwargs):
+    def _read(self, as_client=True, dask=False, **kwargs):
         from tiled.client import from_uri
 
         opts = self.data.options.copy()
-        opts.update(self.kwargs)
         opts.update(kwargs)
         if dask:
             opts["structure_clients"] = "dask"
@@ -396,7 +397,7 @@ class PythonModule(BaseReader):
     output_instance = "builtins:module"
     implements = {datatypes.PythonSourceCode}
 
-    def read(self, module_name=None, **kwargs):
+    def _read(self, module_name=None, **kwargs):
         from types import ModuleType
 
         if module_name is None:
@@ -426,11 +427,8 @@ class XArrayDatasetReader(FileReader):
     other_funcs = {"xarray:open_dataset"}
     url_arg = "paths"
 
-    def read(self, **kwargs):
+    def _read(self, **kw):
         from xarray import open_dataset, open_mfdataset
-
-        kw = self.kwargs.copy()
-        kw.update(kwargs)
 
         if "engine" not in kw and isinstance(self.data, datatypes.Zarr):
             kw["engine"] = "zarr"
@@ -456,11 +454,11 @@ class RasterIOXarrayReader(FileReader):
     func = "rioxarray:open_rasterio"
     url_arg = "filename"
 
-    def read(self, **kwargs):
+    def _read(self, concat_kwargs=None, **kwargs):
         import xarray as xr
         from rioxarray import open_rasterio
 
-        concat_kwargs = {k: kwargs.pop(k) for k in {"dim", "data_vars", "coords", "compat", "position", "join"} if k in kwargs}
+        concat_kwargs = concat_kwargs or {k: kwargs.pop(k) for k in {"dim", "data_vars", "coords", "compat", "position", "join"} if k in kwargs}
 
         with fsspec.open_files(self.data.url, **(self.data.storage_options or {})) as ofs:
             bits = [open_rasterio(of, **kwargs) for of in ofs]
@@ -469,6 +467,51 @@ class RasterIOXarrayReader(FileReader):
         else:
             # requires dim= in kwargs
             return xr.concat(bits, **concat_kwargs)
+
+
+class Condition(BaseReader):
+    implements = {datatypes.ReaderData}
+
+    def _read(self, other: BaseReader, condition: callable[[BaseReader, ...], bool], **kwargs):
+        if self.condition(self.data.reader, **self.kwargs):
+            return self.data.reader.read()
+        else:
+            return self.other.read()
+
+
+class Retry(BaseReader):
+    implements = {datatypes.ReaderData}
+
+    def _read(self, max_tries=10, allowed_exceptions=(Exception,), backoff0=0.1, backoff_factor=1.3, start_stage=None, end_stage=None, **kw):
+        import time
+
+        from intake.readers.convert import Pipeline
+
+        reader = self.data if isinstance(self.data, BaseReader) else self.data.reader
+        if isinstance(reader, Pipeline) and (start_stage or end_stage):
+            if start_stage:
+                data = reader.first_n_stages(start_stage).read()
+            else:
+                data = reader.reader.read()
+            for i in range(start_stage, end_stage):
+                for i in range(max_tries):
+                    try:
+                        data = reader._read_stage_n(data, i)
+                    except allowed_exceptions:
+                        if i == max_tries - 1:
+                            raise
+                        time.sleep(backoff0 * backoff_factor**i)
+                for j in range(end_stage, len(reader.steps) - 1):
+                    data = reader._read_stage_n(data, j)
+                return data
+        else:
+            for i in range(max_tries):
+                try:
+                    return reader.read()
+                except allowed_exceptions:
+                    if i == max_tries - 1:
+                        raise
+                    time.sleep(backoff0 * backoff_factor**i)
 
 
 def recommend(data):

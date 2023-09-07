@@ -40,3 +40,4 @@ dependencies:
       - moto
       - toolz
       - pre-commit
+      - siphon

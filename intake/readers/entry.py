@@ -21,7 +21,6 @@ from intake.readers.utils import (
     Tokenizable,
     extract_by_path,
     extract_by_value,
-    find_readers,
     merge_dicts,
 )
 
@@ -108,7 +107,10 @@ class ReaderDescription(Tokenizable):
         # make data instance
         extra = self.data.user_parameters if isinstance(self.data, DataDescription) else {}
         kw_subset = {k: v for k, v in kwargs.items() if k in user_parameters or k in extra}
-        kw["data"] = self.data.to_data(user_parameters=user_parameters, **kw_subset)
+        if isinstance(self.data, DataDescription):
+            kw["data"] = self.data.to_data(user_parameters=user_parameters, **kw_subset)
+        else:
+            kw["data"] = self.data
         kw["output_instance"] = self.output_instance
 
         # now make reader
@@ -196,10 +198,10 @@ class Catalog(Tokenizable):
     def add_entry(self, entry, name=None):
         """Add entry/reader (and its requirements) in-place, with optional alias"""
         if isinstance(entry, BaseReader):
-            for reader in find_readers(entry.__dict__):
-                # process all readers hidden within the entry as instances
-                # In this case, the two if blocks below are moot, but not harmful
-                self += reader
+            # for reader in find_readers(entry.__dict__):
+            #     # process all readers hidden within the entry as instances
+            #     # In this case, the two if blocks below are moot, but not harmful
+            #     self += reader
             entry = entry.to_entry()
         self.entries[entry.token] = entry
 
@@ -214,7 +216,7 @@ class Catalog(Tokenizable):
 
         if entry.reader == "intake.readers.convert:Pipeline":
             # walk top-level arguments to functions looking for data deps
-            for func, kw in entry.kwargs["steps"]:
+            for func, _, kw in entry.kwargs["steps"]:
                 for k, v in kw.copy().items():
                     if isinstance(v, BaseReader):
                         tok = self.add_entry(v)

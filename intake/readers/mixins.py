@@ -8,12 +8,15 @@ from intake.readers import datatypes
 
 class PipelineMixin:
     def __getattr__(self, item):
+        if item in dir(self.transform):
+            return getattr(self.transform, item)
         if "Catalog" in self.output_instance:
-            # a better way to matk this condition, perhaps the datatype's structure?
+            # a better way to mark this condition, perhaps the datatype's structure?
             return self.read()[item]
         if item in self._namespaces:
             return self._namespaces[item]
-        return self.transform.__getattr__(item)
+        # the following can go very wrong - only allow via explicit opt-in?
+        return self.transform.__getattr__(item)  # arbitrary method call
 
     def __getitem__(self, item):
         from intake.readers.convert import Pipeline
@@ -27,9 +30,9 @@ class PipelineMixin:
             return self.read()[item]
         func = getitem
         if isinstance(self, Pipeline):
-            return self.with_step((func, {"item": item}), out_instance=outtype)
+            return self.with_step((func, (), {"item": item}), out_instance=outtype)
 
-        return Pipeline(data=datatypes.ReaderData(reader=self), steps=[(func, {"item": item})], out_instances=[outtype])
+        return Pipeline(data=datatypes.ReaderData(reader=self), steps=[(func, (), {"item": item})], out_instances=[outtype])
 
     def __dir__(self):
         return list(sorted(chain(object.__dir__(self), dir(self.transform), self._namespaces)))
@@ -46,11 +49,11 @@ class PipelineMixin:
         out = import_name(cls.output_instance)
         return out.__doc__
 
-    def apply(self, func, output_instance=None, **kwargs):
+    def apply(self, func, *args, output_instance=None, **kwargs):
         """Make a pipeline by applying a function to this reader's output"""
         from intake.readers.convert import Pipeline
 
-        return Pipeline(datatypes.ReaderData(reader=self), [(func, kwargs)], [output_instance or self.output_instance])
+        return Pipeline(datatypes.ReaderData(reader=self), steps=[(func, args, kwargs)], out_instances=[output_instance or self.output_instance])
 
     @property
     def transform(self):
@@ -81,9 +84,9 @@ class Functioner:
             func = getitem
             kw = {"item": item}
         if isinstance(self.reader, Pipeline):
-            return self.reader.with_step((func, kw), out_instance=item)
+            return self.reader.with_step((func, (), kw), out_instance=item)
 
-        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, kw)], out_instances=[item])
+        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, (), kw)], out_instances=[item])
 
     def __repr__(self):
         import pprint
@@ -107,6 +110,6 @@ class Functioner:
             outtype, func = out[0]
             kw = {}
         if isinstance(self.reader, Pipeline):
-            return self.reader.with_step((func, kw), out_instance=outtype)
+            return self.reader.with_step((func, (), kw), out_instance=outtype)
 
-        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, kw)], out_instances=[outtype])
+        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, (), kw)], out_instances=[outtype])

@@ -41,3 +41,4 @@ dependencies:
   - python-duckdb
   - pytest-postgresql
   - psycopg
+  - siphon

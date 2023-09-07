@@ -151,8 +151,14 @@ class Pipeline(readers.BaseReader):
     of operations.
     """
 
-    def __init__(self, data, steps: list[tuple[callable, dict]], out_instances: list[str], entry=None, **kwargs):
-        if isinstance(data.reader, Pipeline):
+    def __init__(self, data, steps: list[tuple[callable, tuple, dict]], out_instances: list[str], entry=None, **kwargs):
+        from intake.readers.readers import BaseReader
+
+        if isinstance(data, BaseReader):
+            self.reader = data
+            self.steps = steps
+            out_instances = out_instances
+        elif isinstance(data.reader, Pipeline):
             self.reader = data.reader.reader
             self.steps = data.reader.steps + steps
             out_instances = data.reader.output_instances + out_instances
@@ -170,17 +176,17 @@ class Pipeline(readers.BaseReader):
                 inst = prev
             prev = inst
             self.output_instances.append(inst)
-        steps[-1][1].update(kwargs)
+        steps[-1][2].update(kwargs)
         self.entry = entry
 
     def __repr__(self):
         start = f"PipelineReader: \nfrom {self.reader}"
-        bits = [f"  {i}: {f.__name__}, {kw} => {out}" for i, ((f, kw), out) in enumerate(zip(self.steps, self.output_instances))]
+        bits = [f"  {i}: {f.__name__}, {args} {kw} => {out}" for i, ((f, args, kw), out) in enumerate(zip(self.steps, self.output_instances))]
         return "\n".join([start] + bits)
 
     @property
     def tokens(self):
-        return [self.first_n_stages(n).token for n in range(len(self.steps))]
+        return [(self.token, n) for n in range(len(self.steps))]
 
     def output_doc(self):
         from intake import import_name
@@ -194,30 +200,31 @@ class Pipeline(readers.BaseReader):
     def doc_n(self, n):
         self.steps[n][0].__doc__
 
-    def discover(self, **kwargs):
+    def discover(self, **_):
         data = self.reader.discover()
-        for i, (func, kw) in enumerate(self.steps):
-            if i == len(self.steps) - 1:
-                # kwargs passed here override only the last stage
-                kw = dict(**kw, **kwargs)
-            data = func(data, **kw)
+        for i in range(len(self.steps)):
+            data = self._read_stage_n(data, i)
         return data
 
-    def read(self, **kwargs):
+    def _read_stage_n(self, data, stage, **kwargs):
         from intake.readers.readers import BaseReader
 
+        func, arg, kw = self.steps[stage]
+
+        kw2 = kw.copy()
+        kw2.update(kwargs)
+        for k, v in kw.items():
+            if isinstance(v, BaseReader):
+                kw2[k] = v.read()
+            else:
+                kw2[k] = v
+        return func(data, *arg, **kw2)
+
+    def _read(self, out_instance=None, out_instances=None, steps=None, **kwargs):
         data = self.reader.read()
-        for i, (func, kw) in enumerate(self.steps):
-            kw2 = kw.copy()
-            for k, v in kw.items():
-                if isinstance(v, BaseReader):
-                    kw2[k] = v.read()
-                else:
-                    kw2[k] = v
-            if i == len(self.steps) - 1:
-                # kwargs passed here override only the last stage
-                kw2 = dict(**kw2, **kwargs)
-            data = func(data, **kw2)
+        for i in range(len(self.steps)):
+            kw = kwargs if i == len(self.steps) - 1 else {}
+            data = self._read_stage_n(data, i, **kw)
         return data
 
     def apply(self, func, output_instance=None, **kwargs):
@@ -229,10 +236,14 @@ class Pipeline(readers.BaseReader):
 
         If n is equal to the number of steps, this is a simple copy.
         """
+        # TODO: allow n=0 to get the basic reader?
         if n < 1 or n > len(self.steps):
             raise ValueError(f"n must be between {1} and {len(self.steps)}")
 
-        return Pipeline(self.data, self.steps[:n], self.output_instances[:n], entry=self.entry, **self.kwargs)
+        pipe = Pipeline(self.data, self.steps[:n], self.output_instances[:n], entry=self.entry, **self.kwargs)
+        if n < len(self.steps):
+            pipe.token = (self.token, n)
+        return pipe
 
     def with_step(self, step, out_instance):
         if not isinstance(step, tuple):
