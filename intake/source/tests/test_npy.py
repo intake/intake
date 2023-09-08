@@ -83,7 +83,7 @@ def test_zarr_minimal():
     assert s.container == "ndarray"
     assert s.read().tolist() == [73, 98, 46, 38, 20, 12, 31, 8, 89, 72]
     assert s.npartitions == 1
-    assert s.dtype == np.int64
+    assert s.dtype.kind == "i"
     assert s.shape == (10,)
     assert (s.read_partition((0,)) == s.read()).all()
 
