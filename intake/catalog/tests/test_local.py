@@ -764,7 +764,7 @@ sources:
     driver: csv
     description: o
     args:
-      urlpath: "memory:///file.csv"
+      urlpath: "memory://file.csv"
   extra:
     driver: csv
     description: o
