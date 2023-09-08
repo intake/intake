@@ -77,6 +77,7 @@ class Functioner:
         from intake.readers.convert import Pipeline
         from intake.readers.transform import getitem
 
+        # TODO: allow pattern match
         if item in self.funcdict:
             func = self.funcdict[item]
             kw = {}

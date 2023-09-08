@@ -153,7 +153,7 @@ template_func = re.compile(r"func[(]([^)]+)[)]")
 @register_template(r"env")
 def env(match, up):
     """Value from an environment variable"""
-    return os.getenv(match.groups[0])
+    return os.getenv(match.groups()[0])
 
 
 @register_template(r"data")
@@ -162,6 +162,7 @@ def data(match, up):
 
     Used in pipelines to point to the outputs of upstream readers
     """
+    # TODO: this might never be called, since Catalog._rehydrate does this job
     from intake.readers.convert import Pipeline
     from intake.readers.entry import ReaderDescription
 

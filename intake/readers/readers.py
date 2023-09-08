@@ -111,7 +111,7 @@ class FileReader(BaseReader):
 
     def _read(self, **kw):
         kw[self.url_arg] = self.data.url
-        if self.data.storage_options:
+        if self.storage_options and self.data.storage_options:
             kw["storage_options"] = self.data.storage_options
         return self._func(**kw)
 
@@ -320,8 +320,10 @@ class PandasCSV(Pandas):
     url_arg = "filepath_or_buffer"
 
     def discover(self, **kwargs):
-        kw = {"nrows": 10, self.url_arg: self.data.url, "skipfooter": None, "chunksize": None, "storage_options": self.data.storage_options}
+        kw = {"nrows": 10, self.url_arg: self.data.url, "storage_options": self.data.storage_options}
         kw.update(kwargs)
+        kw.pop("skipfooter", None)
+        kw.pop("chuknsize", None)
         return self.read(**kw)
 
 

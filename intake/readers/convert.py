@@ -151,7 +151,7 @@ class Pipeline(readers.BaseReader):
     of operations.
     """
 
-    def __init__(self, data, steps: list[tuple[callable, tuple, dict]], out_instances: list[str], entry=None, **kwargs):
+    def __init__(self, data, steps: list[tuple[callable, tuple, dict]], out_instances: list[str], output_instance=None, **kwargs):
         from intake.readers.readers import BaseReader
 
         if isinstance(data, BaseReader):
@@ -167,7 +167,6 @@ class Pipeline(readers.BaseReader):
             self.reader = data.reader
             self.steps = steps
             out_instances = out_instances
-        # TODO: the output instance may be derivable for SameType or other dynamic use
         super().__init__(data=data, steps=steps, out_instances=out_instances, output_instance=out_instances[-1])
         self.output_instances = []
         prev = self.reader.output_instance
@@ -177,7 +176,6 @@ class Pipeline(readers.BaseReader):
             prev = inst
             self.output_instances.append(inst)
         steps[-1][2].update(kwargs)
-        self.entry = entry
 
     def __repr__(self):
         start = f"PipelineReader: \nfrom {self.reader}"
@@ -240,7 +238,7 @@ class Pipeline(readers.BaseReader):
         if n < 1 or n > len(self.steps):
             raise ValueError(f"n must be between {1} and {len(self.steps)}")
 
-        pipe = Pipeline(self.data, self.steps[:n], self.output_instances[:n], entry=self.entry, **self.kwargs)
+        pipe = Pipeline(self.data, self.steps[:n], self.output_instances[:n], **self.kwargs)
         if n < len(self.steps):
             pipe.token = (self.token, n)
         return pipe

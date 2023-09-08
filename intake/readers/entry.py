@@ -17,7 +17,6 @@ from intake.readers.user_parameters import (
     set_values,
 )
 from intake.readers.utils import (
-    LazyDict,
     Tokenizable,
     extract_by_path,
     extract_by_value,
@@ -137,6 +136,9 @@ class ReaderDescription(Tokenizable):
         self.user_parameters[name] = up
 
     def to_reader(self, user_parameters=None, **kwargs):
+        from intake.readers.convert import Pipeline
+        from intake.readers.datatypes import ReaderData
+
         cls = import_name(self.reader)
         if isinstance(self.data, DataDescription):
             # if not, is already a BaseData
@@ -146,6 +148,8 @@ class ReaderDescription(Tokenizable):
         ups.update(self.user_parameters)
         ups.update(user_parameters or {})
         kw = self.get_kwargs(user_parameters=ups, **kwargs)
+        if isinstance(kw["data"], BaseReader) and not isinstance(cls, Pipeline):
+            kw["data"] = ReaderData(kw["data"])
         return cls(**kw)
 
     def __call__(self, user_parameters=None, **kwargs):
@@ -337,25 +341,43 @@ class Catalog(Tokenizable):
             item = self.aliases[item]
         if item in self.entries:
             item = copy(self.entries[item])
-            if isinstance(item.data, str) and item.data.startswith("data(") and item.data.endswith(")"):
-                dname = item.data[5:-1]
-                if dname in self.data:
-                    # else, this is a pipeline
-                    ups.update(self.data[dname].user_parameters)
-                    item.data = self.data[dname]
-                else:
-                    item.data = self[dname]
-            if not isinstance(self.entries, LazyDict):
-                ups.update(self.entries)
+            # TODO: does not pass data's UPs to reader instantiation because data is still a str,
+            #  but could grab from self.data
+            # ups.update(item.data.user_parameters)
+            item = self._rehydrate(item)
             return item(user_parameters=ups, **(kw or {}))
         elif item in self.data:
-            return self.data[item].to_data(user_parameters=ups, **(kw or {}))
+            item = self.data[item]
+            item = self._rehydrate(item)
+            return item.to_data(user_parameters=ups, **(kw or {}))
         else:
             raise KeyError(item)
 
+    def _rehydrate(self, val):
+        """For any "data" references in the value, replace with"""
+        import re
+
+        from intake.readers.entry import DataDescription, ReaderDescription
+
+        if isinstance(val, dict):
+            return {k: self._rehydrate(v) for k, v in val.items()}
+        elif isinstance(val, str):
+            m = re.match(r"{?data[(]([^)]+)[)]}?", val)
+            if m:
+                return self[m.groups()[0]]
+            return val
+        elif isinstance(val, bytes):
+            return val
+        elif isinstance(val, (tuple, set, list)):
+            return type(val)(self._rehydrate(v) for v in val)
+        elif isinstance(val, (DataDescription, ReaderDescription)):
+            val2 = copy(val)
+            val2.__dict__ = self._rehydrate(val.__dict__)
+            return val2
+        return val
+
     def __delitem__(self, key):
         # remove alias, data or entry with no further actions
-        # use .remove_entity for cleanup
         self.aliases.pop(key)
         self.data.pop(key)
         self.entries.pop(key)
