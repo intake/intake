@@ -56,3 +56,10 @@ def test_parameters(dataframe_file, monkeypatch):
     monkeypatch.setenv("TEMP_TEST", "memory:")
     out = datadesc.to_data()
     assert out == data
+
+
+def test_namespace(dataframe_file):
+    data = intake.readers.datatypes.CSV(url=dataframe_file)
+    reader = intake.readers.readers.PandasCSV(data)
+    assert "np" in reader._namespaces
+    assert reader.apply(getattr, "beet").np.max().read() == 3

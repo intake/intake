@@ -307,7 +307,7 @@ class Catalog(Tokenizable):
     @staticmethod
     def from_yaml_file(path, **storage_options):
         with fsspec.open(path, **storage_options) as stream:
-            return Catalog.from_dict(yaml.load(stream))
+            return Catalog.from_dict(yaml.safe_load(stream))
 
     @classmethod
     def from_dict(cls, data):

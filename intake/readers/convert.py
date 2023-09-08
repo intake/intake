@@ -225,9 +225,9 @@ class Pipeline(readers.BaseReader):
             data = self._read_stage_n(data, i, **kw)
         return data
 
-    def apply(self, func, output_instance=None, **kwargs):
+    def apply(self, func, *arg, output_instance=None, **kwargs):
         """Add a pipeline stage applying function to the pipeline output so far"""
-        return self.with_step((func, kwargs), output_instance or self.output_instance)
+        return self.with_step((func, arg, kwargs), output_instance or self.output_instance)
 
     def first_n_stages(self, n: int):
         """Truncate pipeline to the given stage
@@ -246,5 +246,5 @@ class Pipeline(readers.BaseReader):
     def with_step(self, step, out_instance):
         if not isinstance(step, tuple):
             # must be a func - check?
-            step = (step, {})
+            step = (step, (), {})
         return Pipeline(data=self.data, steps=self.steps + [step], out_instances=self.output_instances + [out_instance])
