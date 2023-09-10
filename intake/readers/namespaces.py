@@ -16,6 +16,7 @@ class Namespace:
         self.reader = reader
 
     @classmethod
+    @cache
     def check_imports(cls):
         """See if required packages are importable, but don't import them"""
         # TODO: this is copied from readers.py, should refactor to utils
@@ -75,7 +76,7 @@ class xr(Namespace):
 
 
 class pd(Namespace):
-    acts_on = "pandas:DataFrame"  # numpy works with a wide variety of objects
+    acts_on = ("pandas:DataFrame",)
     imports = "pandas"
 
 

@@ -248,3 +248,27 @@ class Pipeline(readers.BaseReader):
             # must be a func - check?
             step = (step, (), {})
         return Pipeline(data=self.data, steps=self.steps + [step], out_instances=self.output_instances + [out_instance])
+
+
+def conversions_graph():
+    import networkx
+
+    from intake.readers.utils import subclasses
+
+    graph = networkx.DiGraph()
+
+    # transformers
+    nodes = (
+        set(_[0] for _ in _converted if ".*" not in _)
+        | set(_[1] for _ in _converted if ".*" not in _)
+        | set(cls.output_instance for cls in subclasses(readers.BaseReader) if cls.output_instance)
+    )
+    graph.add_nodes_from(nodes)
+    graph.add_edges_from(_ for _ in _converted if _[0] != _[1] and ".*" not in _)
+
+    # readers
+    for cls in subclasses(readers.BaseReader):
+        if cls.output_instance:
+            graph.add_nodes_from(_.__name__ for _ in cls.implements)
+            graph.add_edges_from((_.__name__, cls.output_instance) for _ in cls.implements)
+    return graph

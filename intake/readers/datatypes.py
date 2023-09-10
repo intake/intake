@@ -215,7 +215,13 @@ class SQLite(FileData):
     magic = {b"SQLite format"}
 
 
-class CatalogFile(Catalog, FileData):
+class YAMLFile(FileData):
+    filepattern = {"yaml$", "yml$"}
+    mimetypes = {"text/yaml"}
+    structure = {"nested"}
+
+
+class CatalogFile(Catalog, YAMLFile):
     filepattern = {"yaml$", "yml$"}
     mimetypes = {"text/yaml"}
 
@@ -223,12 +229,6 @@ class CatalogFile(Catalog, FileData):
 class CatalogAPI(Catalog, Service):
     filepattern = {"^(http|https):"}
     structure = {"catalog"}
-
-
-class YAMLFile(FileData):
-    filepattern = {"yaml$", "yml$"}
-    mimetypes = {"text/yaml"}
-    structure = {"nested"}
 
 
 class JSONFile(FileData):

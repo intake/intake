@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.metadata
 import inspect
 import re
+from functools import cache
 
 import fsspec
 
@@ -47,6 +48,7 @@ class BaseReader(Tokenizable, PipelineMixin):
         return type(self)(self.data, **kw)
 
     @classmethod
+    @cache
     def check_imports(cls):
         """See if required packages are importable, but don't import them"""
         try:

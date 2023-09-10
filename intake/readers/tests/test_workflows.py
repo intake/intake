@@ -4,13 +4,13 @@ import pytest
 import intake.readers
 
 pd = pytest.importorskip("pandas")
-data = b"apple,beet,carrot\n" + b"a,1,0.1\nb,2,0.2\nc,3,0.3\n" * 100
+bindata = b"apple,beet,carrot\n" + b"a,1,0.1\nb,2,0.2\nc,3,0.3\n" * 100
 
 
 @pytest.fixture()
 def dataframe_file():
     m = fsspec.filesystem("memory")
-    m.pipe("/data", data)
+    m.pipe("/data", bindata)
     return "memory://data"
 
 
