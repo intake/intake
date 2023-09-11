@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from functools import cache
 from typing import Any
 
 import fsspec
@@ -18,12 +19,22 @@ from intake.readers.utils import Tokenizable, subclasses
 class BaseData(Tokenizable):
     """Prototype dataset definition"""
 
-    mimetypes: set[str] = set()
-    filepattern: set[str] = set()
+    mimetypes: str = ""
+    filepattern: str = ""
     structure: set[str] = set()
 
     def __init__(self, metadata: dict[str, Any] | None = None):
         self.metadata: dict[str, Any] = metadata or {}  # arbitrary information
+
+    @classmethod
+    @cache
+    def _filepattern(cls):
+        return re.compile(cls.filepattern)
+
+    @classmethod
+    @cache
+    def _mimetypes(cls):
+        return re.compile(cls.mimetypes)
 
     @property
     def possible_readers(self):
@@ -78,7 +89,6 @@ class FileData(BaseData):
     def __init__(self, url, storage_options: dict | None = None, metadata: dict | None = None):
         self.url = url
         self.storage_options = storage_options
-        self._filelist = None
         super().__init__(metadata)
 
 
@@ -98,99 +108,100 @@ class Catalog(BaseData):
 
 
 class Parquet(FileData):
-    filepattern = {"parq$", "parquet$", "/$"}
-    mimetypes = {"application/vnd.apache.parquet", "application/parquet", "application/x-parquet"}
+    filepattern = "(parq$|parquet$|/$)"
+    mimetypes = "application/(vnd.apache.parquet|parquet|x-parquet)"
     structure = {"table", "nested"}
     magic = {b"PAR1"}
 
 
 class CSV(FileData):
-    filepattern = {"csv$", "txt$", "tsv$"}
-    mimetypes = {"text/csv", "application/csv", "application/vnd.ms-excel"}
+    filepattern = "(csv$|txt$|tsv$)"
+    mimetypes = "(text/csv|application/csv|application/vnd.ms-excel)"
     structure = {"table"}
 
 
 class Text(FileData):
-    filepattern = {"txt$", "text$", "dat$", "ascii$"}
-    mimetypes = {"text/.*"}
+    filepattern = "(txt$|text$|dat$|ascii$)"
+    mimetypes = "text/.*"
     structure = {"sequence"}
 
 
 class XML(FileData):
-    filepattern = {"xml[sx]?$"}
-    mimetypes = {"application/xml", "text/xml"}
+    filepattern = "xml[sx]?$"
+    mimetypes = "(application|text)/xml"
     structure = {"nested"}
     magic = {b"<?xml "}
 
 
 class THREDDSCatalog(XML):
     magic = {(None, b"<xml.*<catalog ")}
+    structure = {"catalog"}
 
 
 class PNG(FileData):
-    filepattern = {"png$"}
+    filepattern = "png$"
     structure = {"array", "image"}
-    mimetypes = {"image/png"}
+    mimetypes = "image/png"
     magic = {b"\x89PNG"}
 
 
 class NetCDF3(FileData):
-    filepattern = {"nc$", "netcdf3$", "nc3$"}
+    filepattern = "(netcdf3$|nc3?$)"
     structure = {"array"}
-    mimetypes = {"application/x-netcdf"}
+    mimetypes = "application/x-netcdf"
     magic = {b"CDF"}
 
 
 class HDF5(FileData):
-    filepattern = {"hdf$", "h4$", "hdf5$"}  # many others by convention
+    filepattern = "(hdf5?$|h4$)"  # many others by convention
     structure = {"array", "table", "hierarchy"}
     magic = {b"HDF"}
-    mimetypes = {"application/x-hdf5?"}
+    mimetypes = "application/x-hdf5?"
 
 
 class Zarr(FileData):
-    filepattern = {"zarr$", "/$"}  # i.e., any directory might be
+    filepattern = "(zarr$|/$)"  # i.e., any directory might be
     structure = {"array", "hierarchy"}
-    mimetypes = {"application/vnd\\+zarr"}
+    mimetypes = "application/vnd\\+zarr"
 
 
 class TIFF(FileData):
     # includes geoTIFF/COG, or split out?
-    filepattern = {"tiff?$", "cog$"}
+    filepattern = "(tiff?$|cog$)"
     structure = {"array", "image"}
     magic = {b"II*\x00", b"MM\x00*"}
-    mimetypes = {"image/tiff", "image/x.geotiff"}
+    mimetypes = "image/(geo)?tiff"
 
 
 class GRIB2(FileData):
-    filepattern = {"grib2?$"}
+    filepattern = "grib2?$"
     structure = {"array"}
     magic = {b"GRIB"}
-    mimetypes = {"application/wmo-grib"}
+    mimetypes = "application/wmo-grib"
 
 
 class FITS(FileData):
-    filepattern = {"fits$"}  # other conventions too
+    filepattern = "fits$"  # other conventions too
     structure = {"array", "table"}
     magic = {b"SIMPLE"}
-    mimetypes = {"image/fits", "application/fits"}
+    mimetypes = "(image|application)/fits"
 
 
 class ASDF(FileData):
-    filepattern = {"asdf$"}
+    filepattern = "asdf$"
     structure = {"array", "table"}
     magic = {b"#ASDF"}
 
 
 class DICOM(FileData):
-    filepattern = {"dicom$", "dcm$"}  # and others
+    filepattern = "(dicom$|dcm$)"  # and others
     structure = {"array", "image"}
     magic = {(128, b"DICM")}
-    mimetypes = {"application/dicom"}
+    mimetypes = "application/dicom"
 
 
 class Nifti(FileData):
-    filepattern = {"nii$", "nii.gz$"}
+    filepattern = "nii(\\.gz)?$"
     structure = {"array", "image"}
     magic = {(344, b"\x6E\x69\x31\x00"), (344, b"\x6E\x2B\x31\x00")}
 
@@ -201,7 +212,7 @@ class OpenDAP(Service):
 
 class SQLQuery(Service):
     structure = {"sequence", "table"}
-    filepattern = {"^oracle", "^mssql", "^sqlite", "^mysql", "^postgres"}
+    filepattern = "(^oracle|^mssql|^sqlite|^mysql|^postgres)"
 
     def __init__(self, conn, query, metadata=None):
         self.conn = conn
@@ -211,34 +222,48 @@ class SQLQuery(Service):
 
 class SQLite(FileData):
     structure = {"sequence", "table"}
-    filepattern = {"sqlite$", "sqlitedb$", "db$"}
+    filepattern = "sqlite$|sqlitedb$|db$"
     magic = {b"SQLite format"}
 
 
 class YAMLFile(FileData):
-    filepattern = {"yaml$", "yml$"}
-    mimetypes = {"text/yaml"}
+    filepattern = "ya?ml$"
+    mimetypes = "text/yaml"
     structure = {"nested"}
 
 
 class CatalogFile(Catalog, YAMLFile):
-    filepattern = {"yaml$", "yml$"}
-    mimetypes = {"text/yaml"}
+    ...
 
 
 class CatalogAPI(Catalog, Service):
-    filepattern = {"^(http|https):"}
-    structure = {"catalog"}
+    filepattern = "^https?:"
 
 
 class JSONFile(FileData):
-    filepattern = {"json$"}
-    mimetypes = {"text/json", "application/json"}
+    filepattern = "json$"
+    mimetypes = "(text|application)/json"
     structure = {"nested", "table"}
+    magic = {b"{"}
+
+
+class GeoJSON(JSONFile):
+    filepattern = "(?:geo)?json$"
+    magic = {(None, b'"type": "Feature')}  # not guaranteed, but good indicator
+
+
+class Shapefile(FileData):
+    # this would only be found as a member of a .ZIP, since you need all three mandatory
+    # files to make a dataset https://en.wikipedia.org/wiki/Shapefile#Overview
+    # However, Fiona can read some .shp files with env SHAPE_RESTORE_SHX=YES
+    filepattern = "shp$|shx$|dbf$"
+    mimetypes = "x-gis/x-shapefile"
+    magic = {b"\x00\x00\x27\x0a"}
 
 
 class STACJSON(JSONFile):
     magic = {(None, b'"stac_version":')}  # None means "somewhere in the file head"
+    mimetypes = "(text|application)/(geo\\+)?json"
 
 
 class TiledService(CatalogAPI):
@@ -264,14 +289,14 @@ class ReaderData(BaseData):
 class NumpyFile(FileData):
     # will also match .npz since it will be recognised as a ZIP archive
     magic = {b"\x93NUMPY"}
-    filepattern = {"npy$", "text$"}
+    filepattern = "(npy$|text$)"
     structure = {"array"}
 
 
 class RawBuffer(FileData):
     """A C or FORTRAN N-dimensional array buffer without metadata"""
 
-    filepattern = {"raw$"}
+    filepattern = "raw$"
     structure = {"array"}
 
     def __init__(self, url: str, dtype: str, storage_options: dict | None = None, metadata: dict | None = None):
@@ -289,17 +314,17 @@ class Literal(BaseData):
 
 class Feather2(FileData):
     magic = {b"ARROW1"}
-    structure = {"tabular", "structured"}
+    structure = {"tabular", "nested"}
 
 
 class Feather1(FileData):
     magic = {b"FEA1"}
-    structure = {"tabular", "structured"}
+    structure = {"tabular", "nested"}
 
 
 class PythonSourceCode(FileData):
     structure = {"code"}
-    filepattern = {"py$"}
+    filepattern = "py$"
 
 
 class GDALRasterFile(FileData):
@@ -310,6 +335,16 @@ class GDALRasterFile(FileData):
     """
 
     structure = {"array"}
+
+
+class GDALVectorFile(FileData):
+    """One of the filetypes at https://gdal.org/drivers/vector/index.html
+
+    This class overlaps with some other types, so only use when necessary.
+    These must be local paths or use GDAL's own virtual file system.
+    """
+
+    structure = {"nested", "tabular"}  # tabular when read by geopandas, could be called a conversion
 
 
 comp_magic = {
@@ -363,14 +398,19 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
                     break
     if mime:
         for cls in subclasses(BaseData):
-            if any(re.match(m, mime) for m in cls.mimetypes):
+            if cls.mimetypes and re.match(cls._mimetypes()):
                 out.append(cls)
     if url:
         # urlparse to remove query parts?
         # try stripping compression extensions?
+        # TODO: file patterns could be in leading part of fsspec-like URL
+        poss = {}
         for cls in subclasses(BaseData):
-            if any(re.findall(m, url.lower()) for m in cls.filepattern):
-                out.append(cls)
+            if cls.filepattern:
+                find = re.findall(cls._filepattern(), url.lower())
+                if find:
+                    poss[cls] = len(find[0])
+        out.extend(reversed(sorted(poss, key=lambda x: poss[x])))
     if out:
         return out
 

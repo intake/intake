@@ -473,6 +473,47 @@ class RasterIOXarrayReader(FileReader):
             return xr.concat(bits, **concat_kwargs)
 
 
+class GeoPandasReader(FileReader):
+    # TODO: geopandas also supports postGIS
+    output_instance = "geopandas:GeoDataFrame"
+    imports = {"geopandas"}
+    implements = {datatypes.GeoJSON, datatypes.CSV, datatypes.SQLite, datatypes.Shapefile, datatypes.GDALVectorFile}
+    func = "geopandas:read_file"
+    url_arg = "filename"
+
+    def _read(self, with_fsspec=None, **kwargs):
+        import geopandas
+
+        if with_fsspec is None:
+            with_fsspec = ("://" in self.data.url and "!" not in self.data.url) or "::" in self.data.url or self.data.storage_options
+        if with_fsspec:
+            with fsspec.open(self.data.url, **(self.data.storage_options or {})) as f:
+                return geopandas.read_file(f, **kwargs)
+        return geopandas.read_file(self.data.url, **kwargs)
+
+
+class GeoPandasTabular(FileReader):
+    output_instance = "geopandas:GeoDataFrame"
+    imports = {"geopandas", "pyarrow"}
+    implements = {datatypes.Parquet, datatypes.Feather2}
+    func = "geopands:read_parquet"
+    other_funcs = {"geopands:read_feather"}
+
+    def _read(self, **kwargs):
+        import geopandas
+
+        if "://" in self.data.url or "::" in self.data.url:
+            f = fsspec.open(self.data.url, **(self.data.storage_options or {})).open()
+        else:
+            f = self.data.url
+        if isinstance(self.data, datatypes.Parquet):
+            return geopandas.read_parquet(f, **kwargs)
+        elif isinstance(self.data, datatypes.Feather2):
+            return geopandas.read_feather(f, **kwargs)
+        else:
+            raise ValueError
+
+
 class Condition(BaseReader):
     implements = {datatypes.ReaderData}
 
