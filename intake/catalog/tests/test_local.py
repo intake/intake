@@ -121,21 +121,22 @@ def test_use_source_plugin_from_config(catalog1):
 
 
 def test_get_dir():
+    # Protocols must not be stripped
     assert get_dir("file:///path/catalog.yml") == "file:///path"
     assert get_dir("https://example.com/catalog.yml") == "https://example.com"
-    path = "example/catalog.yml"
-    out = get_dir(path)
+    assert get_dir("memory://file.txt") == "memory://"
+    
+    # Relative path must stay relative
+    relative_path = "superdir/example/catalog.yml"
+    out = get_dir(relative_path)
     assert not os.path.isabs(out)
     assert out.endswith("example")
-    path = "/example/catalog.yml"
-    out = get_dir(path)
-    # it's ok if the first two chars indicate drive for win (C:)
-    assert "/example" in [out, out[2:]]
-    path = "example"
-    out = get_dir(path)
-    assert not os.path.isabs(out)
-    assert not out.endswith("/example")
-    assert not out.endswith("/")
+
+    # Absolute path must stay absolute
+    absolute_path = "/superdir/example/catalog.yml"
+    out = get_dir(absolute_path)
+    assert os.path.isabs(out)
+    assert out.endswith("/example")
 
 
 def test_entry_dir_function(catalog1):
