@@ -502,18 +502,11 @@ def register_plugin_module(mod):
             register_driver(k, v, clobber=True)
 
 
-def get_dir(path):
-    if "://" in path:
-        protocol, _ = split_protocol(path)
-        out = get_filesystem_class(protocol)._parent(path)
-        if "://" not in out:
-            # some FSs strip this, some do not
-            out = protocol + "://" + out
-        return out
-    path = make_path_posix(os.path.join(os.getcwd(), os.path.dirname(path)))
-    if path[-1] != "/":
-        path += "/"
-    return path
+def get_dir(path: str) -> str:
+    """Get the directory path of the file"""
+    protocol, pure_path = split_protocol(path)
+    dirname = os.path.dirname(pure_path)
+    return f"{protocol}://{dirname}" if protocol else dirname
 
 
 class YAMLFileCatalog(Catalog):
