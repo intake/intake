@@ -125,17 +125,17 @@ def test_get_dir():
     assert get_dir("https://example.com/catalog.yml") == "https://example.com"
     path = "example/catalog.yml"
     out = get_dir(path)
-    assert os.path.isabs(out)
-    assert out.endswith("/example/")
+    assert not os.path.isabs(out)
+    assert out.endswith("example")
     path = "/example/catalog.yml"
     out = get_dir(path)
     # it's ok if the first two chars indicate drive for win (C:)
-    assert "/example/" in [out, out[2:]]
+    assert "/example" in [out, out[2:]]
     path = "example"
     out = get_dir(path)
-    assert os.path.isabs(out)
+    assert not os.path.isabs(out)
     assert not out.endswith("/example")
-    assert out.endswith("/")
+    assert not out.endswith("/")
 
 
 def test_entry_dir_function(catalog1):
