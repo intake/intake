@@ -125,13 +125,11 @@ def test_get_dir():
     assert get_dir("file:///path/catalog.yml") == "file:///path"
     assert get_dir("https://example.com/catalog.yml") == "https://example.com"
     assert get_dir("memory://file.txt") == "memory://"
-    
     # Relative path must stay relative
     relative_path = "superdir/example/catalog.yml"
     out = get_dir(relative_path)
     assert not os.path.isabs(out)
     assert out.endswith("example")
-
     # Absolute path must stay absolute
     absolute_path = "/superdir/example/catalog.yml"
     out = get_dir(absolute_path)
