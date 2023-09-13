@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import importlib.metadata
 import re
+from functools import cache
 from hashlib import md5
 from itertools import zip_longest
 from typing import Any, Callable, Iterable, Mapping
@@ -210,6 +212,18 @@ class FormatWithPassthrough(dict):
             return "{%s}" % item
 
 
+@cache
+def check_imports(*imports: Iterable[str]) -> bool:
+    """See if required packages are importable, but don't import them"""
+    try:
+        for package in imports:
+            if package:
+                importlib.metadata.distribution(package)
+        return True
+    except (ImportError, ModuleNotFoundError, NameError):
+        return False
+
+
 class Tokenizable:
     """Provides reliable hash/eq support to classes that hold dict attributes
 
@@ -248,6 +262,11 @@ class Tokenizable:
 
     def __eq__(self, other):
         return type(self) == type(other) and self.token == other.token
+
+    @classmethod
+    @cache
+    def check_imports(cls):
+        return check_imports(*getattr(cls, "imports"))
 
     @classmethod
     def qname(cls):
@@ -347,3 +366,28 @@ def replace_values(val, needle, replace):
     except (ValueError, TypeError):
         pass
     return val
+
+
+def one_to_one(it: Iterable) -> dict:
+    return {_: _ for _ in it}
+
+
+def all_to_one(it: Iterable, one: Any) -> dict:
+    return {_: one for _ in it}
+
+
+s1 = re.compile("(.)([A-Z][a-z]+)")
+s2 = re.compile("([a-z0-9])([A-Z])")
+
+
+@cache
+def camel_to_snake(name: str) -> str:
+    # https://stackoverflow.com/a/1176023/3821154
+    name = s1.sub(r"\1_\2", name)
+    return s2.sub(r"\1_\2", name).lower()
+
+
+@cache
+def snake_to_camel(name: str) -> str:
+    # https://stackoverflow.com/a/1176023/3821154
+    return "".join(word.title() for word in name.split("_"))

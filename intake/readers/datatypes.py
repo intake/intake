@@ -398,7 +398,7 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
                     break
     if mime:
         for cls in subclasses(BaseData):
-            if cls.mimetypes and re.match(cls._mimetypes()):
+            if cls.mimetypes and re.match(cls._mimetypes(), mime):
                 out.append(cls)
     if url:
         # urlparse to remove query parts?

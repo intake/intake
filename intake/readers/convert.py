@@ -5,143 +5,151 @@ By convention, functions here do not change the data, just how it is held.
 from __future__ import annotations
 
 import re
+from itertools import chain
+from typing import Optional
 
+from intake import import_name
 from intake.readers import readers
-
-_converted = {}
-
-
-def outtypes():
-    """All available types we can convert *to*"""
-    return set(_[1] for _ in _converted)
+from intake.readers.utils import Tokenizable, all_to_one, subclasses
 
 
-def can_provide(outtype: str):
-    """What input types can make the given output type"""
-    return set(intype for intype, out in _converted if out == outtype)
+class ImportsProperty:
+    def __get__(self, obj, cls):
+        # this asserts that ALL in and out types should be importable
+        cls.imports = set(_.split(":", 1)[0].split(".", 1)[0] for _ in chain(cls.instances, cls.instances.values()) if _ is not SameType)
+        return cls.imports
 
 
-# TODO: readers are found by the subclasses of a base and class attributes, but here we have a
-#  dict and simple functions. Should have same pattern? Many of these are simple delegation to
-#  a method/function, so at least should auto-generate docstring like with functools.wraps .
+class BaseConverter(Tokenizable):
+    instances: dict[str, str] = {}
+    func: str = ""
+    x_args: Optional[str] = None
+    imports = ImportsProperty()
 
+    @classmethod
+    def doc(cls):
+        start = cls.run.__doc__ or ""
+        func = import_name(cls.func).__doc__ or "" if cls.func else ""
+        return "\n\n".join([cls.__doc__, start, func])
 
-def register_converter(intype: str, outtype: str, clobber=True):
-    """Add a convert function to the list of known conversions"""
-    if not clobber and (intype, outtype) in _converted:
-        raise ValueError
-
-    def f(func):
-        _converted[(intype, outtype)] = func
-        return func
-
-    return f
+    def run(self, x, *args, **kwargs):
+        func = import_name(self.func)
+        if self.x_args is None:
+            return func(x, *args, **kwargs)
+        else:
+            kwargs[self.x_args] = x
+            return func(*args, **kwargs)
 
 
 class SameType:
     """Used to indicate that the output of a transform is the same as the input, which is arbitrary"""
 
 
-@register_converter("duckdb:DuckDBPyRelation", "pandas:DataFrame")
-def duck_to_pandas(x, **kw):
-    return x.df(**kw)
+class DuckToPands(BaseConverter):
+    instances = {"duckdb:DuckDBPyRelation": "pandas:DataFrame"}
+    func = "duckdb:DuckDBPyConnection.df"
 
 
-@register_converter("dask.dataframe:DataFrame", "pandas:DataFrame")
-@register_converter("dask.array:Array", "numpy:ndarray")
-def daskdf_to_pandas(x, **kw):
-    return x.compute(**kw)
+class DaskDFToPandas(BaseConverter):
+    instances = {"dask.dataframe:DataFrame": "pandas:DataFrame", "dask.array:Array": "numpy:ndarray"}
+    func = "dask:compute"
 
 
-@register_converter("pandas:DataFrame", "holoviews.core.layout:Composable")
-@register_converter("dask.dataframe:DataFrame", "holoviews.core.layout:Composable")
-@register_converter("xarray:DataSet", "holoviews.core.layout:Composable")
-@register_converter("xarray:DataArray", "holoviews.core.layout:Composable")
-def to_hvplot(x, explorer=False, **kw):
-    import hvplot
-
-    if explorer:
-        # this is actually a hvplot.ui:hvPlotExplorer and only allows tabular data
-        return hvplot.explorer(x, **kw)
-    return hvplot.hvPlot(x, **kw)()
+class PandasToGeopandas(BaseConverter):
+    instances = {"pandas:DataFrame": "geopandas:GeoDataFrame"}
+    func = "geopandas:GeoDataFrame"
 
 
-@register_converter("ray.data:Dataset", "pandas:DataFrame")
-def ray_to_pandas(x, **kw):
-    return x.to_pandas(**kw)
+class ToHvPlot(BaseConverter):
+    instances = all_to_one({"pandas:DataFrame", "dask.dataframe:DataFrame", "xarray:DataSet", "xarray:DataArray"}, "holoviews.core.layout:Composable")
+    func = "hvplot:hvPlot"
+
+    def run(self, x, explorer: bool = False, **kw):
+        """For tabular data only, pass explorer=True to get an interactive GUI"""
+        import hvplot
+
+        if explorer:
+            # this is actually a hvplot.ui:hvPlotExplorer and only allows tabular data
+            return hvplot.explorer(x, **kw)
+        return hvplot.hvPlot(x, **kw)()
 
 
-@register_converter("ray.data:Dataset", "dask.dataframe:DataFrame")
-def ray_to_daskdf(x, **kw):
-    return x.to_dask(**kw)
+class RayToPandas(BaseConverter):
+    instances = {"ray.data:Dataset": "pandas:DataFrame"}
+    func = "ray.data:Dataset.to_pandas"
 
 
-@register_converter("tiled.client.node:Node", "intake.readers.entry:Catalog")
-def tiled_node_to_cat(x, **kw):
-    # eager creation of entries from a node
-    from intake.readers.datatypes import TiledDataset, TiledService
-    from intake.readers.entry import Catalog
-    from intake.readers.readers import TiledClient, TiledNode
+class RayToDask(BaseConverter):
+    instances = {"ray.data:Dataset": "dask.dataframe:DataFrame"}
+    func = "ray.data:Dataset.to_dask"
 
-    cat = Catalog()
-    for k, client in x.items():
-        if type(client).__name__ == "Node":
-            data = TiledService(url=client.uri)
-            reader = TiledNode(data=data, metadata=client.item)
-            cat[k] = reader
-        else:
-            data = TiledDataset(url=client.uri)
-            reader = TiledClient(data, output_instance=f"{type(client).__module__}:{type(client).__name__}", metadata=client.item)
-            cat[k] = reader
-    return cat
+
+class TiledNodeToCatalog(BaseConverter):
+    instances = {"tiled.client.node:Node": "intake.readers.entry:Catalog"}
+
+    def run(self, x, **kw):
+        # eager creation of entries from a node
+        from intake.readers.datatypes import TiledDataset, TiledService
+        from intake.readers.entry import Catalog
+        from intake.readers.readers import TiledClient, TiledNode
+
+        cat = Catalog()
+        for k, client in x.items():
+            if type(client).__name__ == "Node":
+                data = TiledService(url=client.uri)
+                reader = TiledNode(data=data, metadata=client.item)
+                cat[k] = reader
+            else:
+                data = TiledDataset(url=client.uri)
+                reader = TiledClient(data, output_instance=f"{type(client).__module__}:{type(client).__name__}", metadata=client.item)
+                cat[k] = reader
+        return cat
 
 
 def converts_to(data):
     """What things can data convert to"""
     out = set()
     package = type(data).__module__.split(".", 1)[0]
-    for intype, outt in _converted:
-        if intype.split(".", 1)[0] != package:
-            continue
-        thing = readers.import_name(intype)
-        if isinstance(data, thing):
-            out.add(outt)
+    for cls in subclasses(BaseConverter):
+        for intype, outtype in cls.instances.items():
+            if intype.split(".", 1)[0] != package:
+                continue
+            thing = readers.import_name(intype)
+            if isinstance(data, thing):
+                out.add(outtype)
     return out
 
 
-def convert_func(data, outtype: str):
-    """Get conversion function from given data to outtype
+def convert_class(data, out_type: str):
+    """Get conversion class from given data to out_type
 
-    his works on concrete data, not a datatype or reader instance
+    This works on concrete data, not a datatype or reader instance. It returns the
+    first match. out_type will match on regex, e.g., "pandas" would match "pandas:DataFrame"
     """
     package = type(data).__module__.split(".", 1)[0]
-    for intype, out in _converted:
-        if out != outtype:
-            continue
-        if intype.split(".", 1)[0] != package:
-            continue
-        thing = readers.import_name(intype)
-        if isinstance(data, thing):
-            return _converted[(intype, out)]
+    for cls in subclasses(BaseConverter):
+        for intype, outtype in cls.instances.items():
+            if not re.findall(out_type, outtype):
+                continue
+            if intype.split(".", 1)[0] != package:
+                continue
+            thing = readers.import_name(intype)
+            if isinstance(data, thing):
+                return cls
     raise ValueError("Converter not found")
 
 
-def convert_funcs(in_type: str):
-    """Get available conversion functions for input type"""
+def convert_classes(in_type: str):
+    """Get available conversion classes for input type"""
     out_dict = {}
-    for intype, out in _converted:
-        if re.match(intype, in_type) or re.match(in_type, intype):
-            out_dict[out] = _converted[(intype, out)]
+    package = in_type.split(":", 1)[0].split(".", 1)[0]
+    for cls in subclasses(BaseConverter):
+        for intype, outtype in cls.instances.items():
+            if intype.split(".", 1)[0] != package:
+                continue
+            if re.findall(intype, in_type) or re.findall(in_type, intype):
+                out_dict[outtype] = cls
     return out_dict
-
-
-def convert(data, outtype: str, **kwargs):
-    """Convert this data to given type
-
-    This works on concrete data, not a datatype or reader instance
-    """
-    func = convert_func(data, outtype)
-    return func(data, **kwargs)
 
 
 class Pipeline(readers.BaseReader):
@@ -216,7 +224,10 @@ class Pipeline(readers.BaseReader):
                 kw2[k] = v.read()
             else:
                 kw2[k] = v
-        return func(data, *arg, **kw2)
+        if isinstance(func, type) and issubclass(func, BaseConverter):
+            return func().run(data, *arg, **kw2)
+        else:
+            return func(data, *arg, **kw2)
 
     def _read(self, out_instance=None, out_instances=None, steps=None, **kwargs):
         data = self.reader.read()
@@ -258,17 +269,25 @@ def conversions_graph():
     graph = networkx.DiGraph()
 
     # transformers
-    nodes = (
-        set(_[0] for _ in _converted if ".*" not in _)
-        | set(_[1] for _ in _converted if ".*" not in _)
-        | set(cls.output_instance for cls in subclasses(readers.BaseReader) if cls.output_instance)
-    )
-    graph.add_nodes_from(nodes)
-    graph.add_edges_from(_ for _ in _converted if _[0] != _[1] and ".*" not in _)
-
-    # readers
+    nodes = set(cls.output_instance for cls in subclasses(readers.BaseReader) if cls.output_instance)
+    edges = set()
     for cls in subclasses(readers.BaseReader):
         if cls.output_instance:
-            graph.add_nodes_from(_.__name__ for _ in cls.implements)
-            graph.add_edges_from((_.__name__, cls.output_instance) for _ in cls.implements)
+            nodes.update(_.qname() for _ in cls.implements)
+            edges.update((_.qname(), cls.output_instance) for _ in cls.implements)
+    for cls in subclasses(BaseConverter):
+        for inttype, outtype in cls.instances.items():
+            if inttype != ".*" and inttype != outtype:
+                nodes.update((inttype, outtype))
+                edges.add((inttype, outtype))
+    graph.add_edges_from(edges)
+
     return graph
+
+
+def plot_conversion_graph(filename):
+    import networkx as nx
+
+    g = conversions_graph()
+    a = nx.nx_agraph.to_agraph(g)  # requires pygraphviz
+    a.draw(filename, prog="fdp")

@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import importlib.metadata
 import inspect
 import re
-from functools import cache
 
 import fsspec
 
@@ -46,17 +44,6 @@ class BaseReader(Tokenizable, PipelineMixin):
         kw = self.kwargs.copy()
         kw.update(kwargs)
         return type(self)(self.data, **kw)
-
-    @classmethod
-    @cache
-    def check_imports(cls):
-        """See if required packages are importable, but don't import them"""
-        try:
-            for package in cls.imports:
-                importlib.metadata.distribution(package)
-            return True
-        except (ImportError, ModuleNotFoundError, NameError):
-            return False
 
     @classmethod
     def doc(cls):

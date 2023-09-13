@@ -20,7 +20,7 @@ class PipelineMixin:
 
     def __getitem__(self, item):
         from intake.readers.convert import Pipeline
-        from intake.readers.transform import getitem
+        from intake.readers.transform import GetItem
 
         outtype = self.output_instance
         if "Catalog" in outtype:
@@ -28,11 +28,10 @@ class PipelineMixin:
             # TODO: this prevents from doing a transform/convert on a cat, so must use
             #  .transform for that
             return self.read()[item]
-        func = getitem
         if isinstance(self, Pipeline):
-            return self.with_step((func, (), {"item": item}), out_instance=outtype)
+            return self.with_step((GetItem, (item,), {}), out_instance=outtype)
 
-        return Pipeline(data=datatypes.ReaderData(reader=self), steps=[(func, (), {"item": item})], out_instances=[outtype])
+        return Pipeline(data=datatypes.ReaderData(reader=self), steps=[(GetItem, (item,), {})], out_instances=[outtype])
 
     def __dir__(self):
         return list(sorted(chain(object.__dir__(self), dir(self.transform), self._namespaces)))
@@ -57,9 +56,9 @@ class PipelineMixin:
 
     @property
     def transform(self):
-        from intake.readers.convert import convert_funcs
+        from intake.readers.convert import convert_classes
 
-        funcdict = convert_funcs(self.output_instance)
+        funcdict = convert_classes(self.output_instance)
         return Functioner(self, funcdict)
 
 
@@ -75,24 +74,25 @@ class Functioner:
 
     def __getitem__(self, item):
         from intake.readers.convert import Pipeline
-        from intake.readers.transform import getitem
+        from intake.readers.transform import GetItem
 
         # TODO: allow pattern match
         if item in self.funcdict:
             func = self.funcdict[item]
+            arg = ()
             kw = {}
         else:
-            func = getitem
-            kw = {"item": item}
+            func = GetItem
+            arg = (item,)
+            kw = {}
         if isinstance(self.reader, Pipeline):
             return self.reader.with_step((func, (), kw), out_instance=item)
 
-        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, (), kw)], out_instances=[item])
+        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, arg, kw)], out_instances=[item])
 
     def __repr__(self):
         import pprint
 
-        # TODO: replace .*/SameType outputs with out output_instance
         return f"Transformers for {self.reader.output_instance}:\n{pprint.pformat(self.funcdict)}"
 
     def __dir__(self):
@@ -100,12 +100,12 @@ class Functioner:
 
     def __getattr__(self, item):
         from intake.readers.convert import Pipeline
-        from intake.readers.transform import method
+        from intake.readers.transform import Method
 
         out = [(outtype, func) for outtype, func in self.funcdict.items() if func.__name__ == item]
         if not len(out):
             outtype = self.reader.output_instance
-            func = method
+            func = Method
             kw = {"method_name": item}
         else:
             outtype, func = out[0]
