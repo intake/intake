@@ -188,8 +188,9 @@ class StacCatalogReader(BaseReader):
         # if mimetype not registered try rasterio driver
         storage_options = asset.extra_fields.get("xarray:storage_options", {})
         cls = datatypes.recommend(url, mime=mime, storage_options=storage_options)
+        meta = asset.to_dict()
         if cls:
-            data = cls[0](url=url, storage_options=storage_options)
+            data = cls[0](url=url, metadata=meta, storage_options=storage_options)
         else:
             raise ValueError
         try:
@@ -200,6 +201,34 @@ class StacCatalogReader(BaseReader):
                 return data.to_reader()
             else:
                 return data
+
+
+class StacSearch(BaseReader):
+    implements = {datatypes.STACJSON}
+    imports = {"pystac"}
+    output_instance = "intake.readers.entry:Catalog"
+
+    def __init__(self, data, query, metadata=None, **kwargs):
+        self.query = query
+        super().__init__(data, metadata=metadata)
+
+    def read(self, query=None, **kwargs):
+        import requests
+        from pystac import ItemCollection
+
+        query = query or self.query
+        req = requests.post(self.data.url + "/search", json=query)
+        out = req.json()
+        cat = Catalog(metadata=self.metadata)
+        items = ItemCollection.from_dict(out).items
+        for subcatalog in items:
+            subcls = type(subcatalog).__name__
+            cat[subcatalog.id] = ReaderDescription(
+                data=datatypes.Literal(subcatalog.to_dict()).to_entry(),
+                reader=StacCatalogReader.qname(),
+                kwargs={"cls": subcls},
+            )
+        return cat
 
 
 class THREDDSCatalog(Catalog):

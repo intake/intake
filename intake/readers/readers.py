@@ -32,7 +32,8 @@ class BaseReader(Tokenizable, PipelineMixin):
         """
         self.data = data
         self.kwargs = kwargs
-        self.metadata = metadata or {}
+        self.metadata = data.metadata.copy()
+        self.metadata.update(metadata or {})
         if output_instance:
             self.output_instance = output_instance
 

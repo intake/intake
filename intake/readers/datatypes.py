@@ -174,7 +174,7 @@ class TIFF(FileData):
 
 
 class GRIB2(FileData):
-    filepattern = "grib2?$"
+    filepattern = "gri?b2?$"
     structure = {"array"}
     magic = {b"GRIB"}
     mimetypes = "application/wmo-grib"
@@ -263,7 +263,7 @@ class Shapefile(FileData):
 
 class STACJSON(JSONFile):
     magic = {(None, b'"stac_version":')}  # None means "somewhere in the file head"
-    mimetypes = "(text|application)/(geo\\+)?json"
+    mimetypes = "(text|application)/geo\\+json"
 
 
 class TiledService(CatalogAPI):

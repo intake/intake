@@ -5,8 +5,8 @@ By convention, functions here do not change the data, just how it is held.
 from __future__ import annotations
 
 import re
+from functools import cache
 from itertools import chain
-from typing import Optional
 
 from intake import import_name
 from intake.readers import readers
@@ -14,6 +14,8 @@ from intake.readers.utils import Tokenizable, all_to_one, subclasses
 
 
 class ImportsProperty:
+    """Builds the .imports attribute from classes in the .instances class attribute"""
+
     def __get__(self, obj, cls):
         # this asserts that ALL in and out types should be importable
         cls.imports = set(_.split(":", 1)[0].split(".", 1)[0] for _ in chain(cls.instances, cls.instances.values()) if _ is not SameType)
@@ -21,9 +23,17 @@ class ImportsProperty:
 
 
 class BaseConverter(Tokenizable):
+    """Converts from one object type to another
+
+    Most often, subclasses call a single function on the data, but arbitrary complex transforms
+    are possible. This is designed to be one step in a Pipeline.
+
+    .run() will be called on the output object from the previous stage, subclasses will wither
+    override that, or just provide a func=.
+    """
+
     instances: dict[str, str] = {}
     func: str = ""
-    x_args: Optional[str] = None
     imports = ImportsProperty()
 
     @classmethod
@@ -34,11 +44,7 @@ class BaseConverter(Tokenizable):
 
     def run(self, x, *args, **kwargs):
         func = import_name(self.func)
-        if self.x_args is None:
-            return func(x, *args, **kwargs)
-        else:
-            kwargs[self.x_args] = x
-            return func(*args, **kwargs)
+        return func(x, *args, **kwargs)
 
 
 class SameType:
@@ -261,6 +267,7 @@ class Pipeline(readers.BaseReader):
         return Pipeline(data=self.data, steps=self.steps + [step], out_instances=self.output_instances + [out_instance])
 
 
+@cache
 def conversions_graph():
     import networkx
 
@@ -270,24 +277,58 @@ def conversions_graph():
 
     # transformers
     nodes = set(cls.output_instance for cls in subclasses(readers.BaseReader) if cls.output_instance)
-    edges = set()
+    graph.add_nodes_from(nodes)
+
     for cls in subclasses(readers.BaseReader):
         if cls.output_instance:
-            nodes.update(_.qname() for _ in cls.implements)
-            edges.update((_.qname(), cls.output_instance) for _ in cls.implements)
+            for impl in cls.implements:
+                graph.add_node(cls.output_instance)
+                graph.add_edge(impl.qname(), cls.output_instance, label=cls.qname())
     for cls in subclasses(BaseConverter):
         for inttype, outtype in cls.instances.items():
             if inttype != ".*" and inttype != outtype:
-                nodes.update((inttype, outtype))
-                edges.add((inttype, outtype))
-    graph.add_edges_from(edges)
+                graph.add_nodes_from((inttype, outtype))
+                graph.add_edge(inttype, outtype, label=cls.qname())
 
     return graph
 
 
-def plot_conversion_graph(filename):
+def plot_conversion_graph(filename) -> None:
+    # TODO: return a PNG datatype or something else?
     import networkx as nx
 
     g = conversions_graph()
     a = nx.nx_agraph.to_agraph(g)  # requires pygraphviz
     a.draw(filename, prog="fdp")
+
+
+def path(start: str, end: str, cutoff: int = 5) -> list:
+    import networkx as nx
+
+    alltypes = list(conversions_graph())
+    matchtypes = [_ for _ in alltypes if re.findall(start, _.lower)]
+    if not matchtypes:
+        raise ValueError("type found no match: %s", start)
+    start = matchtypes[0]
+    matchtypes = [_ for _ in alltypes if re.findall(end, _.lower)]
+    if not matchtypes:
+        raise ValueError("outtype found no match: %s", end)
+    end = matchtypes[0]
+    g = conversions_graph()
+    return sorted(nx.all_simple_edge_paths(g, start, end, cutoff=cutoff), key=len)
+
+
+def auto_pipeline(url: str, outtype: str, storage_options: dict | None = None) -> Pipeline:
+    """Create pipeline from given URL to desired output type"""
+    from intake.readers.datatypes import recommend
+
+    if storage_options:
+        data = recommend(url, storage_options=storage_options)[0](url=url, storage_options=storage_options)
+    else:
+        data = recommend(url)[0](url=url)
+    start = data.qname()
+    steps = path(start, outtype)
+    reader = data.to_reader(outtype=steps[0][0][1])
+    for s in steps[0][1:]:
+        reader = reader.transform[s[1]]
+    return reader

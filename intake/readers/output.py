@@ -8,7 +8,7 @@ which can then be used to produce new catalog entries.
 import fsspec
 
 from intake.readers.convert import BaseConverter
-from intake.readers.datatypes import PNG, Feather2, Parquet, recommend
+from intake.readers.datatypes import PNG, CatalogFile, Feather2, Parquet, recommend
 from intake.readers.utils import all_to_one
 
 # TODO: superclass for output, so they show up differently in any graph viz?
@@ -76,3 +76,14 @@ class Repr(BaseConverter):
 
     instances = {".*": "builtins:str"}
     func = "builtins.repr"
+
+
+class CatalogToJson(BaseConverter):
+    instances = {"intake.readers.entry:Catalog": "intake.readers.datatypes:CatalogFile"}
+    func = "intake.readers.entry:Catalog.to_yaml_file"
+
+    def run(self, x, url, metadata=None, storage_options=None, **kwargs):
+        if storage_options:
+            kwargs.update(storage_options)
+        x.to_yaml_file(url, **kwargs)
+        return CatalogFile(url=url, storage_options=storage_options, metadata=metadata)
