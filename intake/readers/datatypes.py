@@ -267,7 +267,7 @@ class STACJSON(JSONFile):
 
 
 class TiledService(CatalogAPI):
-    ...
+    magic = {(None, b"<title>Tiled</title>")}
 
 
 class TiledDataset(Service):
@@ -360,7 +360,7 @@ container_magic = {
 }
 
 
-def recommend(url=None, mime=None, head=None, storage_options=None):
+def recommend(url=None, mime=None, head=True, storage_options=None):
     """Show which data types match
 
     Parameters
@@ -369,8 +369,11 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
         Location of data
     mime: str
         MIME type, usually "x/y" form
-    head: bytes
-        A small number of bytes from the file head, for seeking magic bytes
+    head: bytes | bool | None
+        A small number of bytes from the file head, for seeking magic bytes. If it is
+        True, fetch these bytes from th given URL/storage_options and use them. If None,
+        only fetch bytes if there is no match by mime type or path, if False, don't
+        fetch at all.
     storage_options: dict | None
         If passing a URL which might be a remote file, storage_options can be used
         by fsspec.
@@ -379,10 +382,20 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
     -------
     set of matching datatype classes
     """
-    # instead of returning datatype class, should we make instance with
-    # storage_options, if known?
     out = []
-    if head:
+    if head is True and url:
+        try:
+            fs, url2 = fsspec.core.url_to_fs(url, **(storage_options or {}))
+            mime = mime or fs.info(url2, refresh=True).get("ContentType", None)
+        except (IOError, TypeError, AttributeError):
+            mime = mime or None
+        try:
+            with fsspec.open(url, "rb", **(storage_options or {})) as f:
+                head = f.read(2**20)
+        except IOError:
+            head = False
+
+    if isinstance(head, bytes):
         for cls in subclasses(FileData):
             for m in cls.magic:
                 if isinstance(m, tuple):
@@ -414,20 +427,8 @@ def recommend(url=None, mime=None, head=None, storage_options=None):
     if out:
         return out
 
-    if head is None and mime is None and url:
-        try:
-            fs, url2 = fsspec.core.url_to_fs(url, **(storage_options or {}))
-            mime = fs.info(url2, refresh=True).get("ContentType", None)
-        except (IOError, TypeError, AttributeError):
-            mime = None
-        try:
-            with fsspec.open(url, "rb", **(storage_options or {})) as f:
-                head = f.read(2**20)
-        except IOError:
-            head = None
-        if mime or head:
-            return recommend(url, mime=mime, head=head, storage_options=storage_options)
-        return out
+    if head is None and url:
+        return recommend(url, mime=mime, head=True, storage_options=storage_options)
 
     for (off, mag), comp in comp_magic.items():
         if head[off:].startswith(mag):

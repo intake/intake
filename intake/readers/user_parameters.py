@@ -190,6 +190,14 @@ def imp(match, up):
     return import_name(match.groups()[0])
 
 
+@register_template(r"pickle64")
+def unpickle(match, up):
+    import base64
+    import pickle
+
+    return pickle.loads(base64.b64decode(match.groups()[0].encode()))
+
+
 def _set_values(up, arguments):
     if isinstance(arguments, dict):
         return {k: _set_values(up, v) for k, v in arguments.copy().items()}

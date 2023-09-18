@@ -112,6 +112,15 @@ class TiledNodeToCatalog(BaseConverter):
         return cat
 
 
+class TiledSearch(BaseConverter):
+    """See https://blueskyproject.io/tiled/tutorials/search.html"""
+
+    instances = {"tiled.client.node:Node": "tiled.client.node:Node"}
+
+    def run(self, x, **kw):
+        return x.search(**kw)
+
+
 def converts_to(data):
     """What things can data convert to"""
     out = set()

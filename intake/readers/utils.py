@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.metadata
+import numbers
 import re
 from functools import cache
 from hashlib import md5
@@ -103,6 +104,9 @@ def _func_to_str(f: Callable) -> str:
 
 def find_funcs(val):
     """Walk nested dict/iterables, replacing functions with string package.mod:func form"""
+    import base64
+    import pickle
+
     if isinstance(val, dict):
         return {k: find_funcs(v) for k, v in val.items()}
     elif isinstance(val, (str, bytes)):
@@ -111,8 +115,10 @@ def find_funcs(val):
         return type(val)([find_funcs(v) for v in val])
     elif callable(val):
         return _func_to_str(val)
-    else:
+    elif isinstance(val, numbers.Number):
         return val
+    else:
+        return "{pickle64(%s)}" % base64.b64encode(pickle.dumps(val)).decode()
 
 
 def find_readers(val, out=None):

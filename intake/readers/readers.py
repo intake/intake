@@ -356,7 +356,6 @@ class RayText(Ray):
 class TiledNode(BaseReader):
     implements = {datatypes.TiledService}
     imports = {"tiled"}
-    # a Node can convert to a Catalog
     output_instance = "tiled.client.node:Node"
     func = "tiled.client:from_uri"
 

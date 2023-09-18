@@ -302,12 +302,15 @@ class Catalog(Tokenizable):
 
     def to_yaml_file(self, path, **storage_options):
         with fsspec.open(path, mode="wt", **storage_options) as stream:
-            yaml.dump(self.to_dict(), stream)
+            yaml.safe_dump(self.to_dict(), stream)
 
     @staticmethod
     def from_yaml_file(path, **storage_options):
         with fsspec.open(path, **storage_options) as stream:
-            return Catalog.from_dict(yaml.safe_load(stream))
+            cat = Catalog.from_dict(yaml.safe_load(stream))
+        cat.user_parameters["CAT_DIR"] = path.split("/", 1)[0]
+        cat.user_parameters["STORAGE_OPTIONS"] = storage_options
+        return cat
 
     @classmethod
     def from_dict(cls, data):
