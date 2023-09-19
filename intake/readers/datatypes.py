@@ -158,11 +158,30 @@ class HDF5(FileData):
     magic = {b"HDF"}
     mimetypes = "application/x-hdf5?"
 
+    def __init__(self, url, storage_options: dict | None = None, path: str = "", metadata: dict | None = None):
+        self.url = url
+        self.storage_options = storage_options
+        self.path = path
+        super().__init__(metadata)
+
 
 class Zarr(FileData):
     filepattern = "(zarr$|/$)"  # i.e., any directory might be
     structure = {"array", "hierarchy"}
     mimetypes = "application/vnd\\+zarr"
+
+    def __init__(self, url, storage_options: dict | None = None, root: str = "", metadata: dict | None = None):
+        self.url = url
+        self.storage_options = storage_options
+        self.root = root
+        super().__init__(metadata)
+
+
+class Excel(FileData):
+    filepattern = {"xls[xmb]?"}
+    structure = {"tabular"}
+    mimetypes = "application/.*(excel|xls)"
+    magic = {b"\x50\x4B\x03\x04", b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"}  # will match any office doc
 
 
 class TIFF(FileData):

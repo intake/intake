@@ -141,6 +141,20 @@ class PandasParquet(Pandas):
     url_arg = "path"
 
 
+class PandasFeather(Pandas):
+    implements = {datatypes.Feather2, datatypes.Feather1}
+    imports = {"pandas", "pyarrow"}
+    func = "pandas:read_feather"
+    url_arg = "path"
+
+
+class PandasExcel(Pandas):
+    implements = {datatypes.Excel}
+    imports = {"pandas", "openpyxl"}
+    func = "pandas:read_excel"
+    url_arg = "io"
+
+
 class PandasSQLAlchemy(BaseReader):
     implements = {datatypes.SQLQuery}
     func = "pandas:read_sql"
@@ -170,6 +184,34 @@ class DaskParquet(DaskDF):
     optional_imports = {"fastparquet", "pyarrow"}
     func = "dask.dataframe:read_parquet"
     url_arg = "path"
+
+
+class DaskNPYStack(FileReader):
+    implements = {datatypes.NumpyFile}
+    imports = {"dask", "numpy"}
+    func = "dask.array:from_npy_stack"
+    output_instance = "dask.array:Array"
+    url_arg = "dirname"
+
+
+class DaskZarr(FileReader):
+    implements = {datatypes.Zarr}
+    imports = {"dask", "zarr"}
+    output_instance = "dask.array:Array"
+    func = "dask.array:from_zarr"
+
+    def _read(self, **kwargs):
+        return self._func(url=self.data.url, component=self.data.path or None, storage_options=self.data.storage_options, **kwargs)
+
+
+class NumpyZarr(FileReader):
+    implements = {datatypes.Zarr}
+    imports = {"zarr"}
+    output_instance = "numpy:ndarray"
+    func = "zarr:open"
+
+    def _read(self, **kwargs):
+        return self._func(self.data.url, storage_options=kwargs.pop("storage_options"), path=self.data.path, **kwargs)[:]
 
 
 class DuckDB(BaseReader):
@@ -320,6 +362,18 @@ class PandasCSV(Pandas):
         return self.read(**kw)
 
 
+class PandasHDF5(Pandas):
+    implements = {datatypes.HDF5}
+    func = "pandas:read_hdf"
+    imports = {"pandas", "pytables"}
+
+    def _read(self, **kw):
+        if self.data.storage_options:  # or fsspec-like
+            with fsspec.open(self.data.url, "rb", **self.data.storage_options) as f:
+                self._func(f, self.data.path, **kw)
+        return self._func(self.data.url, **kw)
+
+
 class DaskCSV(DaskDF):
     implements = {datatypes.CSV}
     func = "dask.dataframe:read_csv"
@@ -410,6 +464,14 @@ class SKImageReader(FileReader):
     url_arg = "fname"
 
 
+class NumpyReader(FileReader):
+    output_instance = "numpy:ndarray"
+    implements = {datatypes.NumpyFile}
+    imports = {"numpy"}
+    func = "numpy:load"
+    url_arg = "file"
+
+
 class XArrayDatasetReader(FileReader):
     output_instance = "xarray:DataSet"
     imports = {"xarray"}
@@ -429,6 +491,8 @@ class XArrayDatasetReader(FileReader):
         if kw.get("engine", "") == "zarr":
             # only zarr takes storage options
             kw.setdefault("backend_kwargs", {})["storage_options"] = self.data.storage_options
+        if isinstance(self.data, datatypes.HDF5) and self.data.path:
+            kw["group"] = self.data.path
         if isinstance(self.data.url, (tuple, set, list)) or "*" in self.data.url:
             # use fsspec.open_files? (except for zarr)
             return open_mfdataset(self.data.url, **kw)

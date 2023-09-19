@@ -8,7 +8,15 @@ which can then be used to produce new catalog entries.
 import fsspec
 
 from intake.readers.convert import BaseConverter
-from intake.readers.datatypes import PNG, CatalogFile, Feather2, Parquet, recommend
+from intake.readers.datatypes import (
+    CSV,
+    HDF5,
+    PNG,
+    CatalogFile,
+    Feather2,
+    Parquet,
+    recommend,
+)
 from intake.readers.utils import all_to_one
 
 # TODO: superclass for output, so they show up differently in any graph viz?
@@ -23,12 +31,45 @@ class PandasToParquet(BaseConverter):
         return Parquet(url=url, storage_options=storage_options, metadata=metadata)
 
 
+class PandasToCSV(BaseConverter):
+    instances = all_to_one({"pandas:DataFrame", "dask.dataframe:DataFrame", "geopandas:DataFrame"}, "intake.readers.datatypes:CSV")
+
+    def run(self, x, url, storage_options=None, metadata=None, **kwargs):
+        x.to_csv(url, storage_options=storage_options, **kwargs)
+        return CSV(url=url, storage_options=storage_options, metadata=metadata)
+
+
+class PandasToHDF5(BaseConverter):
+    instances = all_to_one({"pandas:DataFrame", "dask.dataframe:DataFrame"}, "intake.readers.datatypes:HDF5")
+
+    def run(self, x, url, table, storage_options=None, metadata=None, **kwargs):
+        x.to_hdf(url, table, storage_options=storage_options, **kwargs)
+        return HDF5(url=url, path=table, storage_options=storage_options, metadata=metadata)
+
+
 class PandasToFeather(BaseConverter):
     instances = all_to_one({"pandas:DataFrame", "geopandas:DataFrame"}, "intake.readers.datatypes:Feather2")
 
     def run(self, x, url, storage_options=None, metadata=None, **kwargs):
+        # TODO: fsspec output
         x.to_feather(url, storage_options=storage_options, **kwargs)
         return Feather2(url=url, storage_options=storage_options, metadata=metadata)
+
+
+class XarrayToNetCDF(BaseConverter):
+    instances = {"xarray:DataSet": "intake.readers.datatypes:HDF5"}
+
+    def run(self, x, url, group="", metadata=None, **kwargs):
+        x.to_netcdf(path=url, group=group or None, **kwargs)
+        return HDF5(url, path=group, metadata=metadata)
+
+
+class XarrayToZarr(BaseConverter):
+    instances = {"xarray:DataSet": "intake.readers.datatypes:Zarr"}
+
+    def run(self, x, url, group="", storage_options=None, metadata=None, **kwargs):
+        x.to_zarr(store=url, group=group or None, storage_options=storage_options, **kwargs)
+        return HDF5(url, storage_options=storage_options, path=group, metadata=metadata)
 
 
 class ToMatplotlib(BaseConverter):
