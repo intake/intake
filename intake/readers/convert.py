@@ -117,8 +117,8 @@ class TiledSearch(BaseConverter):
 
     instances = {"tiled.client.node:Node": "tiled.client.node:Node"}
 
-    def run(self, x, **kw):
-        return x.search(**kw)
+    def run(self, x, *arg, **kw):
+        return x.search(*arg, **kw)
 
 
 def converts_to(data):
@@ -239,6 +239,7 @@ class Pipeline(readers.BaseReader):
                 kw2[k] = v.read()
             else:
                 kw2[k] = v
+        arg = kw2.pop("args", arg)
         if isinstance(func, type) and issubclass(func, BaseConverter):
             return func().run(data, *arg, **kw2)
         else:
@@ -264,7 +265,7 @@ class Pipeline(readers.BaseReader):
         if n < 1 or n > len(self.steps):
             raise ValueError(f"n must be between {1} and {len(self.steps)}")
 
-        pipe = Pipeline(self.data, self.steps[:n], self.output_instances[:n], **self.kwargs)
+        pipe = Pipeline(self.data, steps=self.steps[:n], out_instances=self.output_instances[:n], **self.kwargs)
         if n < len(self.steps):
             pipe.token = (self.token, n)
         return pipe

@@ -63,3 +63,55 @@ def test_namespace(dataframe_file):
     reader = intake.readers.readers.PandasCSV(data)
     assert "np" in reader._namespaces
     assert reader.apply(getattr, "beet").np.max().read() == 3
+
+
+calls = 0
+
+
+def fails(x):
+    global calls
+    if calls < 2:
+        calls += 1
+        raise RuntimeError
+    return x
+
+
+def test_retry(dataframe_file):
+    from intake.readers.readers import Retry
+
+    data = intake.readers.datatypes.CSV(url=dataframe_file)
+    reader = intake.readers.readers.PandasCSV(data)
+    pipe = Retry(intake.readers.datatypes.ReaderData(reader.apply(fails)), allowed_exceptions=(ValueError,))
+    cat = intake.readers.entry.Catalog()
+    cat["ret1"] = pipe
+
+    pipe = Retry(intake.readers.datatypes.ReaderData(reader.apply(fails)), allowed_exceptions=(RuntimeError,))
+    cat["ret2"] = pipe
+
+    with pytest.raises(RuntimeError):
+        cat["ret1"].read()
+    assert calls == 1
+
+    assert cat["ret2"].read() is not None
+    assert calls > 1
+
+
+def dir_non_empty(d):
+    import os
+
+    return os.path.exists(d) and os.path.isdir(d) and bool(os.listdir(d))
+
+
+# def test_custom_cache(dataframe_file, tmpdir):
+#     from intake.readers.readers import Condition
+#     cat = intake.readers.entry.Catalog()
+#
+#     data = intake.readers.datatypes.CSV(url=dataframe_file)
+#     part = intake.readers.readers.PandasCSV(data)
+#     cat["csv"] = part
+#     output = intake.readers.datatypes.ReaderData(part.PandasToParquet(str(tmpdir)))
+#     final = intake.readers.readers.PandasParquet(data2)
+#     data3 = intake.readers.datatypes.ReaderData(final)
+#     reader2 = Condition(data3, other=part)
+#
+#     out = reader2.read()

@@ -40,11 +40,13 @@ class BaseReader(Tokenizable, PipelineMixin):
     def __repr__(self):
         return f"{type(self).__name__} reader for {self.data} producing {self.output_instance}"
 
-    def __call__(self, **kwargs):
+    def __call__(self, *args, **kwargs):
         """New version of this instance with altered arguments"""
         kw = self.kwargs.copy()
         kw.update(kwargs)
-        return type(self)(self.data, **kw)
+        if args:
+            kw["args"] = args
+        return type(self)(data=self.data, **kw)
 
     @classmethod
     def doc(cls):
@@ -81,7 +83,8 @@ class BaseReader(Tokenizable, PipelineMixin):
         """
         kw = self.kwargs.copy()
         kw.update(kwargs)
-        return self._read(**kw)
+        args = kw.pop("args", ())
+        return self._read(*args, **kw)
 
     def _read(self, **kwargs):
         raise NotImplementedError

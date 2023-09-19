@@ -308,7 +308,7 @@ class Catalog(Tokenizable):
     def from_yaml_file(path, **storage_options):
         with fsspec.open(path, **storage_options) as stream:
             cat = Catalog.from_dict(yaml.safe_load(stream))
-        cat.user_parameters["CAT_DIR"] = path.split("/", 1)[0]
+        cat.user_parameters["CATALOG_DIR"] = path.split("/", 1)[0]
         cat.user_parameters["STORAGE_OPTIONS"] = storage_options
         return cat
 

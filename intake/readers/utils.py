@@ -107,6 +107,9 @@ def find_funcs(val):
     import base64
     import pickle
 
+    from intake.readers.datatypes import BaseData
+    from intake.readers.readers import BaseReader
+
     if isinstance(val, dict):
         return {k: find_funcs(v) for k, v in val.items()}
     elif isinstance(val, (str, bytes)):
@@ -115,7 +118,7 @@ def find_funcs(val):
         return type(val)([find_funcs(v) for v in val])
     elif callable(val):
         return _func_to_str(val)
-    elif isinstance(val, numbers.Number):
+    elif val is None or isinstance(val, (numbers.Number, BaseData, BaseReader)):
         return val
     else:
         return "{pickle64(%s)}" % base64.b64encode(pickle.dumps(val)).decode()

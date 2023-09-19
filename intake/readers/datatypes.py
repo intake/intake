@@ -62,7 +62,7 @@ class BaseData(Tokenizable):
             return reader
         elif outtype:
             for reader, out in self.possible_outputs.items():
-                if out == outtype or re.findall(outtype, out):
+                if out is not None and (out == outtype or re.findall(outtype, out)):
                     return reader
             raise ValueError("outtype not in available in importable readers")
         return next(iter(self.possible_readers["importable"]))

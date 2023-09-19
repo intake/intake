@@ -12,12 +12,13 @@ tiled = pytest.importorskip("tiled")
 @pytest.fixture()
 def tiled_server():
     t0 = time.time()
-    cmd = "tiled serve demo"
+    cmd = "tiled serve demo --port 8901"
     P = subprocess.Popen(shlex.split(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, bufsize=1, text=True)
     while True:
         line = P.stderr.readline()
         if "api_key=" in line:
             url = line.lstrip().rstrip()
+            # fails if another tiled server is already running
             yield url
             break
         time.sleep(0.01)

@@ -52,7 +52,7 @@ class PipelineMixin:
         """Make a pipeline by applying a function to this reader's output"""
         from intake.readers.convert import Pipeline
 
-        return Pipeline(datatypes.ReaderData(reader=self), steps=[(func, args, kwargs)], out_instances=[output_instance or self.output_instance])
+        return Pipeline(data=datatypes.ReaderData(reader=self), steps=[(func, args, kwargs)], out_instances=[output_instance or self.output_instance])
 
     @property
     def transform(self):
