@@ -15,6 +15,7 @@ from intake.readers.datatypes import (
     CatalogFile,
     Feather2,
     Parquet,
+    Zarr,
     recommend,
 )
 from intake.readers.utils import all_to_one
@@ -24,7 +25,7 @@ from intake.readers.utils import all_to_one
 
 
 class PandasToParquet(BaseConverter):
-    instances = all_to_one({"pandas:DataFrame", "dask.dataframe:DataFrame", "geopandas:DataFrame"}, "intake.readers.datatypes:Parquet")
+    instances = all_to_one({"pandas:DataFrame", "dask.dataframe:DataFrame", "geopandas:GeoDataFrame"}, "intake.readers.datatypes:Parquet")
 
     def run(self, x, url, storage_options=None, metadata=None, **kwargs):
         x.to_parquet(url, storage_options=storage_options, **kwargs)
@@ -32,7 +33,7 @@ class PandasToParquet(BaseConverter):
 
 
 class PandasToCSV(BaseConverter):
-    instances = all_to_one({"pandas:DataFrame", "dask.dataframe:DataFrame", "geopandas:DataFrame"}, "intake.readers.datatypes:CSV")
+    instances = all_to_one({"pandas:DataFrame", "dask.dataframe:DataFrame", "geopandas:GeoDataFrame"}, "intake.readers.datatypes:CSV")
 
     def run(self, x, url, storage_options=None, metadata=None, **kwargs):
         x.to_csv(url, storage_options=storage_options, **kwargs)
@@ -48,7 +49,7 @@ class PandasToHDF5(BaseConverter):
 
 
 class PandasToFeather(BaseConverter):
-    instances = all_to_one({"pandas:DataFrame", "geopandas:DataFrame"}, "intake.readers.datatypes:Feather2")
+    instances = all_to_one({"pandas:DataFrame", "geopandas:GeoDataFrame"}, "intake.readers.datatypes:Feather2")
 
     def run(self, x, url, storage_options=None, metadata=None, **kwargs):
         # TODO: fsspec output
@@ -69,7 +70,15 @@ class XarrayToZarr(BaseConverter):
 
     def run(self, x, url, group="", storage_options=None, metadata=None, **kwargs):
         x.to_zarr(store=url, group=group or None, storage_options=storage_options, **kwargs)
-        return HDF5(url, storage_options=storage_options, path=group, metadata=metadata)
+        return Zarr(url, storage_options=storage_options, path=group, metadata=metadata)
+
+
+class DaskArrayToZarr(BaseConverter):
+    instances = {"dask.array:Array": "intake.readers.datatypes:Zarr"}
+
+    def run(self, x, url, group="", storage_options=None, metadata=None, **kwargs):
+        x.to_zarr(store=url, component=group or None, storage_options=storage_options, **kwargs)
+        return Zarr(url, storage_options=storage_options, path=group, metadata=metadata)
 
 
 class ToMatplotlib(BaseConverter):

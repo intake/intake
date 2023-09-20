@@ -124,6 +124,9 @@ class Text(FileData):
     filepattern = "(txt$|text$|dat$|ascii$)"
     mimetypes = "text/.*"
     structure = {"sequence"}
+    # some optional byte order marks
+    # https://en.wikipedia.org/wiki/Byte_order_mark#Byte_order_marks_by_encoding
+    magic = {b"\xEF\xBB\xBF", b"\xFE\xFF", b"\xFF\xFE", b"\x00\x00\xFE\xFF"}
 
 
 class XML(FileData):
@@ -162,7 +165,7 @@ class HDF5(FileData):
         self.url = url
         self.storage_options = storage_options
         self.path = path
-        super().__init__(metadata)
+        super().__init__(url=url, storage_options=storage_options, metadata=metadata)
 
 
 class Zarr(FileData):
@@ -174,11 +177,11 @@ class Zarr(FileData):
         self.url = url
         self.storage_options = storage_options
         self.root = root
-        super().__init__(metadata)
+        super().__init__(url=url, storage_options=storage_options, metadata=metadata)
 
 
 class Excel(FileData):
-    filepattern = {"xls[xmb]?"}
+    filepattern = "xls[xmb]?"
     structure = {"tabular"}
     mimetypes = "application/.*(excel|xls)"
     magic = {b"\x50\x4B\x03\x04", b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"}  # will match any office doc
@@ -402,6 +405,8 @@ def recommend(url=None, mime=None, head=True, storage_options=None):
     set of matching datatype classes
     """
     out = []
+    if isinstance(url, (list, tuple)):
+        url = url[0]
     if head is True and url:
         try:
             fs, url2 = fsspec.core.url_to_fs(url, **(storage_options or {}))
@@ -409,9 +414,9 @@ def recommend(url=None, mime=None, head=True, storage_options=None):
         except (IOError, TypeError, AttributeError):
             mime = mime or None
         try:
-            with fsspec.open(url, "rb", **(storage_options or {})) as f:
+            with fsspec.open_files(url, "rb", **(storage_options or {}))[0] as f:
                 head = f.read(2**20)
-        except IOError:
+        except (IOError, IndexError):
             head = False
 
     if isinstance(head, bytes):

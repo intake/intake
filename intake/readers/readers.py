@@ -100,6 +100,7 @@ class FileReader(BaseReader):
     """Convenience superclass for readers of files"""
 
     url_arg = "url"
+    other_urls = {}  # if we have other_funcs, may have different url_args for each
     storage_options = False
 
     def _read(self, **kw):
@@ -481,6 +482,7 @@ class XArrayDatasetReader(FileReader):
     # xarray also reads from images and tabular data
     func = "xarray:open_mfdataset"
     other_funcs = {"xarray:open_dataset"}
+    other_urls = {"xarray:open_dataset": "filename_or_obj"}
     url_arg = "paths"
 
     def _read(self, **kw):
@@ -647,6 +649,7 @@ def reader_from_call(func, *args, **kwargs):
     """
 
     import re
+    from itertools import chain
 
     if isinstance(func, str):
         frame = inspect.currentframe().f_back
@@ -662,34 +665,33 @@ def reader_from_call(func, *args, **kwargs):
 
     found = False
     for cls in subclasses(BaseReader):
-        if callable(cls.func):
-            if cls.func == func:
+        if cls.check_imports() and any(f.split(":", 1)[0].split(".", 1)[0] == package for f in ({cls.func} | cls.other_funcs)):
+            ffs = [f for f in ({cls.func} | cls.other_funcs) if import_name(f) == func]
+            if ffs:
                 found = cls
-                break
-        elif cls.check_imports() and any(f.split(":", 1)[0].split(".", 1)[0] == package for f in ({cls.func} | cls.other_funcs)):
-            if any(import_name(f) == func for f in ({cls.func} | cls.other_funcs)):
-                found = cls
+                func_name = ffs[0]
                 break
     if not found:
         raise ValueError("Function not found in the set of readers")
 
     pars = inspect.signature(func).parameters
     kw = dict(zip(pars, args), **kwargs)
-    # TODO: unwrap args to make datatype class; url/storage_options are easy but what about others?
-    #  For a reader implementing multiple types, can we know which one - guess from URL, if given?
     data_kw = {}
     if issubclass(cls, FileReader):
         data_kw["storage_options"] = kw.pop("storage_options", None)
-        data_kw["url"] = kw.pop(cls.url_arg)
+        data_kw["url"] = kw.pop(getattr(cls, "other_urls", {}).get(func_name, cls.url_arg))
     datacls = None
     if len(cls.implements) == 1:
         datacls = next(iter(cls.implements))
-    elif cls.url_arg:
-        clss = datatypes.recommend(kwargs[cls.url_arg], storage_options=(data_kw["storage_options"] if cls.storage_options is not None else None))
+    elif getattr(cls, "url_arg", None):
+        clss = datatypes.recommend(data_kw["url"], storage_options=data_kw["storage_options"])
+        clss2 = [c for c in clss if c in cls.implements]
         if clss:
-            datacls = next(iter(clss))
+            datacls = next(iter(chain(clss2, clss)))
     if datacls:
         datacls = datacls(**data_kw)
+        if data_kw["storage_options"] is None:
+            del data_kw["storage_options"]
         cls = cls(datacls, **kwargs)
 
     return {"reader": cls, "kwargs": kw, "data": datacls}
