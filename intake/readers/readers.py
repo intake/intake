@@ -653,13 +653,13 @@ def reader_from_call(func, *args, **kwargs):
 
     if isinstance(func, str):
         frame = inspect.currentframe().f_back
-        match = re.match("^(.*?)[(](.*)[)]", func)
+        match = re.match("^(.*=)?(.*?)[(](.*)[)]", func)
         if match:
             groups = match.groups()
         else:
             raise ValueError
-        func = eval(groups[0], frame.f_globals, frame.f_locals)
-        args, kwargs = eval(f"""(lambda *args, **kwargs: (args, kwargs))({groups[1]})""", frame.f_globals, frame.f_locals)
+        func = eval(groups[1], frame.f_globals, frame.f_locals)
+        args, kwargs = eval(f"""(lambda *args, **kwargs: (args, kwargs))({groups[2]})""", frame.f_globals, frame.f_locals)
 
     package = func.__module__.split(".", 1)[0]
 

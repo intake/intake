@@ -160,9 +160,11 @@ def convert_classes(in_type: str):
     package = in_type.split(":", 1)[0].split(".", 1)[0]
     for cls in subclasses(BaseConverter):
         for intype, outtype in cls.instances.items():
-            if intype.split(".", 1)[0] != package:
+            if intype.split(":", 1)[0].split(".", 1)[0] != package:
                 continue
-            if re.findall(intype, in_type) or re.findall(in_type, intype):
+            if re.findall(intype.lower(), in_type.lower()) or re.findall(in_type.lower(), intype.lower()):
+                if outtype == SameType:
+                    outtype = intype
                 out_dict[outtype] = cls
     return out_dict
 
@@ -316,11 +318,11 @@ def path(start: str, end: str, cutoff: int = 5) -> list:
     import networkx as nx
 
     alltypes = list(conversions_graph())
-    matchtypes = [_ for _ in alltypes if re.findall(start, _.lower)]
+    matchtypes = [_ for _ in alltypes if re.findall(start, _)]
     if not matchtypes:
         raise ValueError("type found no match: %s", start)
     start = matchtypes[0]
-    matchtypes = [_ for _ in alltypes if re.findall(end, _.lower)]
+    matchtypes = [_ for _ in alltypes if re.findall(end, _)]
     if not matchtypes:
         raise ValueError("outtype found no match: %s", end)
     end = matchtypes[0]

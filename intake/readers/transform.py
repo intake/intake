@@ -84,7 +84,7 @@ class PysparkColumns(BaseConverter):
 class Method(BaseConverter):
     instances = {".*": SameType}
 
-    def run(self, x, method_name: str, *args, **kw):
+    def run(self, x, *args, method_name: str = "", **kw):
         """Call named method on object
 
         Assumes output type is the same as input.
