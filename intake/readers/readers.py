@@ -634,7 +634,7 @@ def recommend(data):
     return out
 
 
-def reader_from_call(func, *args, **kwargs):
+def reader_from_call(func, *args, join_lines=False, **kwargs):
     """Attempt to construct a reader instance by finding one that matches the function call
 
     Fails for readers that don't define a func, probably because it depends on the file
@@ -652,6 +652,8 @@ def reader_from_call(func, *args, **kwargs):
     from itertools import chain
 
     if isinstance(func, str):
+        if join_lines:
+            func = func.replace("\n", "")
         frame = inspect.currentframe().f_back
         match = re.match("^(.*=)?(.*?)[(](.*)[)]", func)
         if match:

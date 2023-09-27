@@ -40,7 +40,7 @@ class BaseConverter(Tokenizable):
     def doc(cls):
         start = cls.run.__doc__ or ""
         func = import_name(cls.func).__doc__ or "" if cls.func else ""
-        return "\n\n".join([cls.__doc__, start, func])
+        return "\n\n".join([_ for _ in [cls.__doc__, start, func] if _])
 
     def run(self, x, *args, **kwargs):
         func = import_name(self.func)
@@ -221,7 +221,7 @@ class Pipeline(readers.BaseReader):
         return self.doc_n(-1)
 
     def doc_n(self, n):
-        self.steps[n][0].__doc__
+        return self.steps[n][0].doc()
 
     def discover(self, **_):
         data = self.reader.discover()

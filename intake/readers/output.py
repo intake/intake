@@ -67,18 +67,20 @@ class XarrayToNetCDF(BaseConverter):
 
 class XarrayToZarr(BaseConverter):
     instances = {"xarray:DataSet": "intake.readers.datatypes:Zarr"}
+    func = "xarray:Dataset.to_zarr"
 
     def run(self, x, url, group="", storage_options=None, metadata=None, **kwargs):
         x.to_zarr(store=url, group=group or None, storage_options=storage_options, **kwargs)
-        return Zarr(url, storage_options=storage_options, path=group, metadata=metadata)
+        return Zarr(url, storage_options=storage_options, root=group, metadata=metadata)
 
 
 class DaskArrayToZarr(BaseConverter):
     instances = {"dask.array:Array": "intake.readers.datatypes:Zarr"}
+    func = "xarray:Dataset.to_zarr"
 
     def run(self, x, url, group="", storage_options=None, metadata=None, **kwargs):
         x.to_zarr(store=url, component=group or None, storage_options=storage_options, **kwargs)
-        return Zarr(url, storage_options=storage_options, path=group, metadata=metadata)
+        return Zarr(url, storage_options=storage_options, root=group, metadata=metadata)
 
 
 class ToMatplotlib(BaseConverter):
