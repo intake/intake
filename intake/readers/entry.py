@@ -91,7 +91,7 @@ class ReaderDescription(Tokenizable):
         else:
             output_instance = import_name(reader).output_instance
         self.output_instance = output_instance
-        self.user_parameters = user_parameters or dict[str | BaseUserParameter]()
+        self.user_parameters: dict[str | BaseUserParameter] = user_parameters or {}
         self.metadata = metadata or {}
 
     def get_kwargs(self, user_parameters=None, **kwargs) -> dict[str, Any]:
