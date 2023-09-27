@@ -56,3 +56,8 @@ likelihood of quickly getting a good answer.
     verifiable examples <https://stackoverflow.com/help/mcve>`_.  This
     significantly reduces the time that answerers spend understanding your
     situation, resulting in higher quality answers more quickly.
+
+.. raw:: html
+
+    <script data-goatcounter="https://intake.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

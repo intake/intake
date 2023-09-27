@@ -214,3 +214,8 @@ datashaded scatter plot of the dropoff locations in the NYC taxi dataset.
 
 Of course the three metadata fields may also be used together, declaring global defaults under the `plot` field,
 annotations for the data `fields` under the `fields` key and custom plots via the `plots` field.
+
+.. raw:: html
+
+    <script data-goatcounter="https://intake.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

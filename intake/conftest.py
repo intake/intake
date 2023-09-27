@@ -23,6 +23,11 @@ MIN_PORT = 7480
 MAX_PORT = 7489
 PORT = MIN_PORT
 
+# ensures "object" dtype on strings in dask, which is still the default for pandas
+import dask
+
+dask.config.set({"dataframe.convert-string": False})
+
 
 class TestSource(DataSource):
     name = "test"
@@ -43,7 +48,7 @@ register_driver("test", TestSource)
 def tmp_config_path(tmp_path):
     key = "INTAKE_CONF_FILE"
     original = os.getenv(key)
-    temp_config_path = os.path.join(tmp_path, "test_config.yml")
+    temp_config_path = make_path_posix(os.path.join(tmp_path, "test_config.yml"))
     os.environ[key] = temp_config_path
     assert config.cfile() == temp_config_path
     yield temp_config_path

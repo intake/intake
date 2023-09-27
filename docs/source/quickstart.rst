@@ -218,3 +218,8 @@ A graphical data browser is available in the Jupyter notebook environment or sta
 It will show the
 contents of any installed catalogs, plus allows for selecting local and remote catalogs,
 to browse and select entries from these. See :doc:`gui`.
+
+.. raw:: html
+
+    <script data-goatcounter="https://intake.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

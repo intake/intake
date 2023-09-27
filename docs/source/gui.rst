@@ -175,3 +175,8 @@ as with any catalog entry:
 
    In [ ]: source_entry.plot()  # or skip data source step
    Out   : < graphics>
+
+.. raw:: html
+
+    <script data-goatcounter="https://intake.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>

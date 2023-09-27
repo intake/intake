@@ -85,3 +85,8 @@ Of these, only the first three are really necessary for a iminal interface, so
 Intake might do well to publish this *protocol specification*, so that new drivers
 can be written that can be used by Intake but do not need Intake, and so help
 adoption.
+
+.. raw:: html
+
+    <script data-goatcounter="https://intake.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
