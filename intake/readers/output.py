@@ -5,6 +5,8 @@ This is how to "export" data from Intake.
 By convention, functions here produce an instance of FileData (or other data type),
 which can then be used to produce new catalog entries.
 """
+from __future__ import annotations
+
 import fsspec
 
 from intake.readers.convert import BaseConverter

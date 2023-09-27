@@ -2,6 +2,8 @@
 
 By convention, functions that change the data but not the container type
 """
+from __future__ import annotations
+
 from intake.readers.convert import BaseConverter, SameType
 from intake.readers.utils import one_to_one
 

@@ -4,6 +4,7 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
+from __future__ import annotations
 
 from intake.readers.datatypes import CSV
 from intake.readers.readers import DaskCSV, PandasCSV, SparkDataFrame
