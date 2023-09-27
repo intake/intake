@@ -46,6 +46,8 @@ register_driver("test", TestSource)
 
 @pytest.fixture
 def tmp_config_path(tmp_path):
+    from fsspec.implementations.local import make_path_posix
+
     key = "INTAKE_CONF_FILE"
     original = os.getenv(key)
     temp_config_path = make_path_posix(os.path.join(tmp_path, "test_config.yml"))

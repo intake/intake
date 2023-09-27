@@ -16,7 +16,7 @@ jobs:
         CONDA_ENV: [py38, py39, py310, py311, pip]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup conda
         uses: mamba-org/setup-micromamba@v1
