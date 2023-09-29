@@ -296,18 +296,6 @@ class TiledDataset(Service):
     structure = {"array", "table", "nested"}
 
 
-class ReaderData(BaseData):
-    """Represents the output of another reader as a data entity
-
-    This type is special, as it will lead to a reference being created when any
-    reader using it is included in a catalog.
-    """
-
-    def __init__(self, reader, metadata=None):
-        self.reader = reader
-        super().__init__(metadata)
-
-
 class NumpyFile(FileData):
     # will also match .npz since it will be recognised as a ZIP archive
     magic = {b"\x93NUMPY"}

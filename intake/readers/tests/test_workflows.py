@@ -43,7 +43,7 @@ def test_parameters(dataframe_file, monkeypatch):
     assert ent.user_parameters["index_key"].default == "beet"
 
     assert str(ent.to_dict()).count("{index_key}") == 2  # once in select, once in set_index
-    assert intake.readers.utils.descend_to_path("steps.1.2.keys", ent.kwargs) == "{index_key}"
+    assert intake.readers.utils.descend_to_path("steps.2.2.keys", ent.kwargs) == "{index_key}"
 
     assert ent.to_reader() == reader2
 
@@ -81,17 +81,16 @@ def test_retry(dataframe_file):
 
     data = intake.readers.datatypes.CSV(url=dataframe_file)
     reader = intake.readers.readers.PandasCSV(data)
-    pipe = Retry(intake.readers.datatypes.ReaderData(reader.apply(fails)), allowed_exceptions=(ValueError,))
+    pipe = Retry(reader.apply(fails), allowed_exceptions=(ValueError,))
     cat = intake.readers.entry.Catalog()
     cat["ret1"] = pipe
 
-    pipe = Retry(intake.readers.datatypes.ReaderData(reader.apply(fails)), allowed_exceptions=(RuntimeError,))
+    pipe = Retry(reader.apply(fails), allowed_exceptions=(RuntimeError,))
     cat["ret2"] = pipe
 
     with pytest.raises(RuntimeError):
         cat["ret1"].read()
     assert calls == 1
-
     assert cat["ret2"].read() is not None
     assert calls > 1
 

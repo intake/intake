@@ -6,7 +6,7 @@ import re
 from functools import cache
 from hashlib import md5
 from itertools import zip_longest
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any, Iterable, Mapping
 
 from intake import import_name
 
@@ -90,57 +90,31 @@ def nested_keys_to_dict(kw: dict[str, Any]) -> dict:
 func_or_method = re.compile(r"<(function|method) ([^ ]+) at 0x[0-9a-f]+>")
 
 
-def _func_to_str(f: Callable) -> str:
-    from intake.readers.readers import BaseReader
-
-    if isinstance(f, BaseReader):
-        return "{data(%s)}" % f.to_entry().token
-    if isinstance(f, Tokenizable):
-        # TODO: not covered, probably wrong, may need separate Data, DataDescription
-        #  and
-        return "{%s}" % f.token
-    return "{func(%s)}" % f"{f.__module__}:{f.__name__}"
-
-
-def find_funcs(val):
+def find_funcs(val, tokens={}):
     """Walk nested dict/iterables, replacing functions with string package.mod:func form"""
     import base64
     import pickle
 
-    from intake.readers.datatypes import BaseData
-    from intake.readers.readers import BaseReader
+    from intake.readers import BaseData, BaseReader
 
     if isinstance(val, dict):
-        return {k: find_funcs(v) for k, v in val.items()}
+        return {k: find_funcs(v, tokens=tokens) for k, v in val.items()}
     elif isinstance(val, (str, bytes)):
         return val
     elif isinstance(val, Iterable):
-        return type(val)([find_funcs(v) for v in val])
+        return type(val)([find_funcs(v, tokens=tokens) for v in val])
+    if isinstance(val, (BaseReader, BaseData)):
+        tok = val.to_entry().token
+        tokens[tok] = val
+        return "{data(%s)}" % tok
+    if isinstance(val, Tokenizable):
+        return val.to_dict()
     elif callable(val):
-        return _func_to_str(val)
+        return "{func(%s)}" % f"{val.__module__}:{val.__name__}"
     elif val is None or isinstance(val, (numbers.Number, BaseData, BaseReader)):
         return val
     else:
         return "{pickle64(%s)}" % base64.b64encode(pickle.dumps(val)).decode()
-
-
-def find_readers(val, out=None):
-    """Walk nested dict/iterables, finding all BaseReader instances"""
-    from intake.readers.readers import BaseReader
-
-    if out is None:
-        out = set()
-    if isinstance(val, dict):
-        [find_readers(v, out) for k, v in val.items()]
-    elif isinstance(val, (str, bytes)):
-        pass
-    elif isinstance(val, Iterable):
-        [find_readers(v, out) for v in val]
-    elif isinstance(val, BaseReader):
-        out.add(val)
-        # recurse to find readers depending on more readers
-        find_readers(val.__dict__, out)
-    return out
 
 
 class LazyDict(Mapping):

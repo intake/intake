@@ -44,15 +44,12 @@ class TiledCatalogReader(BaseReader):
     output_instance = "intake.readers.entry:Catalog"
     imports = {"tiled"}
 
-    def __init__(self, data, metadata=None, output_instane=None, **kwargs):
-        super().__init__(data, metadata=metadata, output_instane=output_instane)
-
-    def read(self, **kwargs):
+    def _read(self, data, **kwargs):
         from tiled.client import from_uri
 
-        opts = self.data.options.copy()
+        opts = data.options.copy()
         opts.update(kwargs)
-        client = from_uri(self.data.url, **opts)
+        client = from_uri(data.url, **opts)
         entries = TiledLazyEntries(client)
         return Catalog(entries=entries, aliases={k: k for k in sorted(client)}, metadata=client.item)
 
@@ -68,20 +65,14 @@ class SQLAlchemyCatalog(BaseReader):
     imports = {"sqlalchemy"}
     output_instance = "intake.readers.entry:Catalog"
 
-    def __init__(self, data, metadata=None, views=True, schema=None, **kwargs):
-        super().__init__(data, metadata)
-        self.views = views  # maybe part of the data prescription, which has .options
-        self.schema = schema
-        self.kwargs = kwargs
-
-    def read(self, **kwargs):
+    def _read(self, data, views=True, schema=None, **kwargs):
         import sqlalchemy
 
-        engine = sqlalchemy.create_engine(self.data.url)
+        engine = sqlalchemy.create_engine(data.url)
         meta = sqlalchemy.MetaData()
-        meta.reflect(bind=engine, views=self.views, schema=self.schema)
+        meta.reflect(bind=engine, views=views, schema=schema)
         tables = list(meta.tables)
-        entries = {name: DataDescription("intake.readers.datatypes:SQLQuery", kwargs={"conn": self.data.url, "query": name}) for name in tables}
+        entries = {name: DataDescription("intake.readers.datatypes:SQLQuery", kwargs={"conn": data.url, "query": name}) for name in tables}
         return Catalog(data=entries)
 
 
@@ -94,20 +85,17 @@ class StacCatalogReader(BaseReader):
     imports = {"pystac"}
     output_instance = "intake.readers.entry:Catalog"
 
-    def __init__(self, data, cls: str = "Catalog", metadata=None, **kwargs):
+    def _read(self, data, cls: str = "Catalog", **kwargs):
         import pystac
 
         cls = getattr(pystac, cls)
-        super().__init__(data, metadata, **kwargs)
-        if isinstance(self.data, datatypes.JSONFile):
-            self._stac = cls.from_file(self.data.url)
+        if isinstance(data, datatypes.JSONFile):
+            self._stac = cls.from_file(data.url)
         else:
-            self._stac = cls.from_dict(self.data.data)
+            self._stac = cls.from_dict(data.data)
         metadata = self._stac.to_dict()
         metadata.pop("links")
         self.metadata.update(metadata)
-
-    def read(self, **kwargs):
         import pystac
 
         cat = Catalog(metadata=self.metadata)
@@ -126,15 +114,55 @@ class StacCatalogReader(BaseReader):
 
             # TODO: items may also be readable by stack_bands
             cat[subcatalog.id] = ReaderDescription(
-                data=datatypes.Literal(subcatalog.to_dict()).to_entry(),
                 reader=self.qname(),
-                kwargs={"cls": subcls},
+                kwargs={"cls": subcls, "data": datatypes.Literal(subcatalog.to_dict())},
             )
         return cat
 
-    def stack_bands(self, bands, concat_dim="band"):
+    @staticmethod
+    def _get_reader(asset):
+        """
+        Assign intake driver for data I/O
+        """
+        url = asset.href
+        mime = asset.media_type
+
+        if mime in ["", "null"]:
+            mime = None
+
+        # if mimetype not registered try rasterio driver
+        storage_options = asset.extra_fields.get("xarray:storage_options", {})
+        cls = datatypes.recommend(url, mime=mime, storage_options=storage_options)
+        meta = asset.to_dict()
+        if cls:
+            data = cls[0](url=url, metadata=meta, storage_options=storage_options)
+        else:
+            raise ValueError
+        try:
+            return data.to_reader(outtype="xarray:DataSet")
+        except ValueError:
+            # no xarray reader
+            if data.possible_readers:
+                return data.to_reader()
+            else:
+                return data
+
+
+class StackBands(BaseReader):
+    implements = {datatypes.STACJSON, datatypes.Literal}
+    imports = {"pystac", "xarray"}
+    output_instance = "intake.readers.readers:XarrayReader"
+
+    def _read(self, data, bands, concat_dim="band"):
         # this should be a separate reader for STACJSON,
+        import pystac
         from pystac.extensions.eo import EOExtension
+
+        cls = pystac.Item
+        if isinstance(data, datatypes.JSONFile):
+            self._stac = cls.from_file(data.url)
+        else:
+            self._stac = cls.from_dict(data.data)
 
         band_info = [band.to_dict() for band in EOExtension.ext(self._stac).bands]
         metadatas = {}
@@ -171,38 +199,8 @@ class StacCatalogReader(BaseReader):
             raise ValueError(f"Stacking failed: bands must have same type, multiple found: {unique_types}")
         reader = StacCatalogReader._get_reader(asset)
         reader.kwargs["concat_dim"] = concat_dim
-        reader.metadata.update(metadatas)
-        reader.metadata["description"] = ", ".join(titles)
-        reader.data.url = hrefs
+        reader.kwargs["data"].url = hrefs
         return reader
-
-    @staticmethod
-    def _get_reader(asset):
-        """
-        Assign intake driver for data I/O
-        """
-        url = asset.href
-        mime = asset.media_type
-
-        if mime in ["", "null"]:
-            mime = None
-
-        # if mimetype not registered try rasterio driver
-        storage_options = asset.extra_fields.get("xarray:storage_options", {})
-        cls = datatypes.recommend(url, mime=mime, storage_options=storage_options)
-        meta = asset.to_dict()
-        if cls:
-            data = cls[0](url=url, metadata=meta, storage_options=storage_options)
-        else:
-            raise ValueError
-        try:
-            return data.to_reader(outtype="xarray:DataSet")
-        except ValueError:
-            # no xarray reader
-            if data.possible_readers:
-                return data.to_reader()
-            else:
-                return data
 
 
 class StacSearch(BaseReader):
@@ -210,16 +208,16 @@ class StacSearch(BaseReader):
     imports = {"pystac"}
     output_instance = "intake.readers.entry:Catalog"
 
-    def __init__(self, data, query, metadata=None, **kwargs):
+    def __init__(self, query, metadata=None, **kwargs):
         self.query = query
-        super().__init__(data, metadata=metadata)
+        super().__init__(metadata=metadata, **kwargs)
 
-    def read(self, query=None, **kwargs):
+    def _read(self, data, query=None, **kwargs):
         import requests
         from pystac import ItemCollection
 
         query = query or self.query
-        req = requests.post(self.data.url + "/search", json=query)
+        req = requests.post(data.url + "/search", json=query)
         out = req.json()
         cat = Catalog(metadata=self.metadata)
         items = ItemCollection.from_dict(out).items
@@ -242,15 +240,12 @@ class THREDDSCatalogReader(BaseReader):
     output_instance = THREDDSCatalog.qname()
     imports = {"siphon", "xarray"}
 
-    def __init__(self, data, **kwargs):
-        super().__init__(data, **kwargs)
-
-    def read(self, **kwargs):
+    def _read(self, data, **kwargs):
         from siphon.catalog import TDSCatalog
 
         from intake.readers.readers import XArrayDatasetReader
 
-        thr = TDSCatalog(self.data.url)
+        thr = TDSCatalog(data.url)
         cat = Catalog(metadata=thr.metadata)
         for r in thr.catalog_refs.values():
             cat[r.title] = THREDDSCatalogReader(datatypes.THREDDSCatalog(url=r.href))

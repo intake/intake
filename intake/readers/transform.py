@@ -102,3 +102,6 @@ class GetItem(BaseConverter):
 
     instances = {".*": SameType}
     func = "operator:getitem"
+
+    def _read(self, item, data=None):
+        return data[item]

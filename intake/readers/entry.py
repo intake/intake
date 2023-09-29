@@ -10,7 +10,6 @@ import fsspec
 import yaml
 
 from intake import import_name
-from intake.readers.readers import BaseReader
 from intake.readers.user_parameters import (
     BaseUserParameter,
     SimpleUserParameter,
@@ -76,20 +75,14 @@ class DataDescription(Tokenizable):
 class ReaderDescription(Tokenizable):
     def __init__(
         self,
-        data: DataDescription,
         reader: str,
         kwargs: dict[str, Any] | None = None,
         user_parameters: dict[str | BaseUserParameter] | None = None,
         metadata: dict | None = None,
         output_instance: str | None = None,
     ):
-        self.data = data
         self.reader = reader
         self.kwargs = kwargs or dict[str, Any]()
-        if output_instance:
-            kwargs["output_instance"] = output_instance
-        else:
-            output_instance = import_name(reader).output_instance
         self.output_instance = output_instance
         self.user_parameters: dict[str | BaseUserParameter] = user_parameters or {}
         self.metadata = metadata or {}
@@ -102,22 +95,21 @@ class ReaderDescription(Tokenizable):
         """
         kw = self.kwargs.copy()
         user_parameters = user_parameters or {}
+        kw.update(kwargs)
 
         # make data instance
-        extra = self.data.user_parameters if isinstance(self.data, DataDescription) else {}
-        kw_subset = {k: v for k, v in kwargs.items() if k in user_parameters or k in extra}
-        if isinstance(self.data, DataDescription):
-            kw["data"] = self.data.to_data(user_parameters=user_parameters, **kw_subset)
+        up = user_parameters or {}  # global/catalog
+        if "data" in kw and isinstance(kw["data"], DataDescription):
+            extra = kw["data"]
+            up.update(kw["data"].user_parameters)
+            kw_subset = {k: v for k, v in kwargs.items() if k in user_parameters or k in extra}
+            kw["data"] = kw["data"].to_data(user_parameters=user_parameters, **kw_subset)
         else:
-            kw["data"] = self.data
+            extra = {}
         kw["output_instance"] = self.output_instance
 
         # now make reader
-        kw.update(kwargs)
-        up = user_parameters or {}  # global/catalog
-        if isinstance(self.data, DataDescription):
-            up.update(self.data.user_parameters)
-        up.update(self.user_parameters)
+        up.update(user_parameters)
         kw = set_values(up, kw)
         return kw
 
@@ -136,49 +128,31 @@ class ReaderDescription(Tokenizable):
         self.user_parameters[name] = up
 
     def to_reader(self, user_parameters=None, **kwargs):
-        from intake.readers.convert import Pipeline
-        from intake.readers.datatypes import ReaderData
-
         cls = import_name(self.reader)
-        if isinstance(self.data, DataDescription):
+        if "data" in kwargs and isinstance(kwargs["data"], DataDescription):
             # if not, is already a BaseData
-            ups = self.data.user_parameters.copy()
+            ups = kwargs["data"].user_parameters.copy()
         else:
             ups = {}
         ups.update(self.user_parameters)
         ups.update(user_parameters or {})
         kw = self.get_kwargs(user_parameters=ups, **kwargs)
-        if isinstance(kw["data"], BaseReader) and not isinstance(cls, Pipeline):
-            kw["data"] = ReaderData(kw["data"])
         return cls(**kw)
 
     def __call__(self, user_parameters=None, **kwargs):
         return self.to_reader(user_parameters=user_parameters, **kwargs)
 
-    def to_data(self, user_parameters=None):
-        """Make data instance for what this reader produces"""
-        # or should this return a DataDescription?
-        from intake.readers.datatypes import ReaderData
-
-        return ReaderData(self.to_reader(user_parameters=user_parameters))
-
     @classmethod
     def from_dict(cls, data):
+        # note that there should never be any embedded intake classes in kwargs, as they get pulled out
+        # when any reader is added to to a catalog
         obj = super().from_dict(data)
         obj.user_parameters = {k: BaseUserParameter.from_dict(v) for k, v in data["user_parameters"].items()}
         return obj
 
     def __repr__(self):
         extra = f"\n  parameters: {self.user_parameters}" if self.user_parameters else ""
-        return f"Entry for {self.data}\n  reader: {self.reader}\n  kwargs: {self.kwargs}\n" f"  producing: {self.output_instance}" + extra
-
-    def __add__(self, other: DataDescription | BaseReader):
-        """makes a catalog from any two descriptions"""
-        if not isinstance(other, (BaseReader, ReaderDescription)):
-            raise TypeError
-        if isinstance(other, BaseReader):
-            other = other.to_entry()
-        return Catalog(entries=(self, other))
+        return f"Entry for reader: {self.reader}\n  kwargs: {self.kwargs}\n" f"  producing: {self.output_instance}" + extra
 
 
 class Catalog(Tokenizable):
@@ -194,37 +168,35 @@ class Catalog(Tokenizable):
         self.version = 2
         self.data: dict = data or {}
         self.aliases: dict = aliases or {}
-        self.entries = entries or {}
         self.metadata: dict = metadata or {}
         self.user_parameters: dict[str, BaseUserParameter] = user_parameters or {}
         self._up_overrides: dict = parameter_overrides or {}
+        if isinstance(entries, Mapping) or entries is None:
+            self.entries = entries or {}
+        else:
+            self.entries = {}
+            [self.add_entry(e) for e in entries]
 
     def add_entry(self, entry, name=None):
         """Add entry/reader (and its requirements) in-place, with optional alias"""
-        if isinstance(entry, BaseReader):
-            # for reader in find_readers(entry.__dict__):
-            #     # process all readers hidden within the entry as instances
-            #     # In this case, the two if blocks below are moot, but not harmful
-            #     self += reader
+        from intake.readers import BaseData, BaseReader
+        from intake.readers.utils import find_funcs
+
+        tokens = {}
+        if isinstance(entry, (BaseReader, BaseData)):
+            # process all readers hidden within the entry as instances
+            # Maybe only for readers, not data?
             entry = entry.to_entry()
-        self.entries[entry.token] = entry
-
-        # assume if entry.data is str must be a "data(...)" and already in self.data - could check
-        if isinstance(entry.data, DataDescription):
-            if entry.data.datatype == "intake.readers.datatypes:ReaderData":
-                tok = self.add_entry(entry.data.kwargs["reader"])
-                entry.data = "data(%s)" % tok
-            else:
-                self.data[entry.data.token] = entry.data
-                entry.data = "data(%s)" % entry.data.token
-
-        if entry.reader == "intake.readers.convert:Pipeline":
-            # walk top-level arguments to functions looking for data deps
-            for func, _, kw in entry.kwargs["steps"]:
-                for k, v in kw.copy().items():
-                    if isinstance(v, BaseReader):
-                        tok = self.add_entry(v)
-                        kw[k] = "{data(%s)}" % tok
+            entry.kwargs = find_funcs(entry.kwargs, tokens)
+        for thing in tokens.values():
+            if thing not in self:
+                self.add_entry(thing)
+        if isinstance(entry, ReaderDescription):
+            self.entries[entry.token] = entry
+        elif isinstance(entry, DataDescription):
+            self.data[entry.token] = entry
+        else:
+            raise ValueError
 
         if name:
             self.aliases[name] = entry.token
@@ -246,7 +218,7 @@ class Catalog(Tokenizable):
         if store_to is None:
             return
         elif store_to == "data" and isinstance(entity, ReaderDescription):
-            entity.data.user_parameters[name] = entity.user_parameters.pop(name)
+            entity.kwargs["data"].user_parameters[name] = entity.user_parameters.pop(name)
         else:
             self.move_parameter(item, store_to, name)
 
@@ -290,7 +262,7 @@ class Catalog(Tokenizable):
         if level == "cat":
             self.user_parameters[parameter_name] = up
         else:
-            entity0.data.user_parameters[parameter_name] = up
+            entity0.kwargs["data"].user_parameters[parameter_name] = up
         return self
 
     def __getattr__(self, item):
@@ -388,6 +360,11 @@ class Catalog(Tokenizable):
     def __delattr__(self, item):
         del self[item]
 
+    def __contains__(self, thing):
+        if hasattr(thing, "token"):
+            thing = thing.token
+        return thing in self.data or thing in self.entries or thing in self.aliases
+
     def __call__(self, **kwargs):
         """Set override values for any named user parameters
 
@@ -423,9 +400,7 @@ class Catalog(Tokenizable):
             metadata=merge_dicts(self.metadata, other.metadata),
         )
 
-    def __iadd__(self, other: Catalog | ReaderDescription | BaseReader):
-        if not isinstance(other, (Catalog, ReaderDescription, BaseReader)):
-            raise TypeError
+    def __iadd__(self, other: Catalog | ReaderDescription):
         if not isinstance(other, Catalog):
             other = Catalog([other])
         self.entries.update(other.entries)
@@ -434,18 +409,13 @@ class Catalog(Tokenizable):
         self.metadata.update(other.metadata)
         return self
 
-    def __contains__(self, item: str | DataDescription):
-        if isinstance(item, DataDescription):
-            item = item.token
-        return item in self.entries or item in self.aliases
-
     def __repr__(self):
         txt = f"{type(self).__name__}\n named datasets: {sorted(self.aliases)}"
         if self.user_parameters:
             txt = txt + f"\n  parameters: {sorted(self.user_parameters)}"
         return txt
 
-    def __setitem__(self, name: str, entry: DataDescription | ReaderDescription | BaseReader):
+    def __setitem__(self, name: str, entry):
         """Add the entry to this catalog with the given alias name
 
         If the entry is already in the catalog, this effectively just adds an alias. Any existing alias of

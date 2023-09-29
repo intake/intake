@@ -3,7 +3,6 @@ from __future__ import annotations
 from itertools import chain
 
 from intake import import_name
-from intake.readers import datatypes
 
 
 class PipelineMixin:
@@ -31,7 +30,7 @@ class PipelineMixin:
         if isinstance(self, Pipeline):
             return self.with_step((GetItem, (item,), {}), out_instance=outtype)
 
-        return Pipeline(data=datatypes.ReaderData(reader=self), steps=[(GetItem, (item,), {})], out_instances=[outtype])
+        return Pipeline(steps=[(self, (), {}), (GetItem, (item,), {})], out_instances=[self.output_instance, outtype])
 
     def __dir__(self):
         return list(sorted(chain(object.__dir__(self), dir(self.transform), self._namespaces)))
@@ -50,9 +49,11 @@ class PipelineMixin:
 
     def apply(self, func, *args, output_instance=None, **kwargs):
         """Make a pipeline by applying a function to this reader's output"""
-        from intake.readers.convert import Pipeline
+        from intake.readers.convert import GenericFunc, Pipeline
 
-        return Pipeline(data=datatypes.ReaderData(reader=self), steps=[(func, args, kwargs)], out_instances=[output_instance or self.output_instance])
+        kwargs["func"] = func
+
+        return Pipeline(steps=[(self, (), {}), (GenericFunc, args, kwargs)], out_instances=[self.output_instance, output_instance or self.output_instance])
 
     @property
     def transform(self):
@@ -88,7 +89,7 @@ class Functioner:
         if isinstance(self.reader, Pipeline):
             return self.reader.with_step((func, (), kw), out_instance=item)
 
-        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, arg, kw)], out_instances=[item])
+        return Pipeline(steps=[(self.reader, (), {}), (func, arg, kw)], out_instances=[self.reader.output_instance, item])
 
     def __repr__(self):
         import pprint
@@ -113,4 +114,4 @@ class Functioner:
         if isinstance(self.reader, Pipeline):
             return self.reader.with_step((func, (), kw), out_instance=outtype)
 
-        return Pipeline(data=datatypes.ReaderData(reader=self.reader), steps=[(func, (), kw)], out_instances=[outtype])
+        return Pipeline(steps=[(self.reader, (), {}), (func, (), kw)], out_instances=[self.reader.output_instance, outtype])

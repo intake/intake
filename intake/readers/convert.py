@@ -9,8 +9,8 @@ from functools import cache
 from itertools import chain
 
 from intake import import_name
-from intake.readers import readers
-from intake.readers.utils import Tokenizable, all_to_one, subclasses
+from intake.readers import BaseReader, readers
+from intake.readers.utils import all_to_one, subclasses
 
 
 class ImportsProperty:
@@ -22,7 +22,7 @@ class ImportsProperty:
         return cls.imports
 
 
-class BaseConverter(Tokenizable):
+class BaseConverter(BaseReader):
     """Converts from one object type to another
 
     Most often, subclasses call a single function on the data, but arbitrary complex transforms
@@ -45,6 +45,24 @@ class BaseConverter(Tokenizable):
     def run(self, x, *args, **kwargs):
         func = import_name(self.func)
         return func(x, *args, **kwargs)
+
+    def _read(self, data, *args, **kwargs):
+        if isinstance(data, BaseReader):
+            data = data.read()
+        return self.run(data, *args, **kwargs)
+
+
+class GenericFunc(BaseConverter):
+    def _read(self, *args, data=None, func=None, data_kwarg=None, **kwargs):
+        if data is not None and isinstance(data, BaseReader):
+            data = data.read()
+        if data is not None:
+            if data_kwarg is None:
+                return func(data, *args, **kwargs)
+            else:
+                kwargs[data_kwarg] = data
+                return func(*args, **kwargs)
+        return func(*args, **kwargs)
 
 
 class SameType:
@@ -176,35 +194,32 @@ class Pipeline(readers.BaseReader):
     of operations.
     """
 
-    def __init__(self, data, steps: list[tuple[callable, tuple, dict]], out_instances: list[str], output_instance=None, **kwargs):
-        from intake.readers.readers import BaseReader
+    from intake.readers.readers import BaseReader
 
-        if isinstance(data, BaseReader):
-            self.reader = data
-            self.steps = steps
-            out_instances = out_instances
-        elif isinstance(data.reader, Pipeline):
-            self.reader = data.reader.reader
-            self.steps = data.reader.steps + steps
-            out_instances = data.reader.output_instances + out_instances
-            data = data.reader.data
-        else:
-            self.reader = data.reader
-            self.steps = steps
-            out_instances = out_instances
-        super().__init__(data=data, steps=steps, out_instances=out_instances, output_instance=out_instances[-1])
+    def __init__(self, steps: list[tuple[BaseReader, tuple, dict]], out_instances: list[str], output_instance=None, metadata=None, **kwargs):
         self.output_instances = []
-        prev = self.reader.output_instance
+        prev = out_instances[0]
         for inst in out_instances:
             if inst is SameType:
                 inst = prev
             prev = inst
             self.output_instances.append(inst)
+        super().__init__(output_instance=output_instance or self.output_instances[-1], metadata=metadata, steps=steps, out_instances=self.output_instances)
         steps[-1][2].update(kwargs)
 
+    @property
+    def steps(self):
+        return self.kwargs["steps"]
+
+    def __call__(self, *args, **kwargs):
+        return super().__call__(steps=self.steps, out_instances=self.output_instances, metadata=self.metadata, **kwargs)
+
     def __repr__(self):
-        start = f"PipelineReader: \nfrom {self.reader}"
-        bits = [f"  {i}: {f.__name__}, {args} {kw} => {out}" for i, ((f, args, kw), out) in enumerate(zip(self.steps, self.output_instances))]
+        start = "PipelineReader: \n"
+        bits = [
+            f"  {i}: {f.qname() if isinstance(f, BaseReader) else f.__name__}, {args} {kw} => {out}"
+            for i, ((f, args, kw), out) in enumerate(zip(self.steps, self.output_instances))
+        ]
         return "\n".join([start] + bits)
 
     @property
@@ -223,13 +238,7 @@ class Pipeline(readers.BaseReader):
     def doc_n(self, n):
         return self.steps[n][0].doc()
 
-    def discover(self, **_):
-        data = self.reader.discover()
-        for i in range(len(self.steps)):
-            data = self._read_stage_n(data, i)
-        return data
-
-    def _read_stage_n(self, data, stage, **kwargs):
+    def _read_stage_n(self, stage, **kwargs):
         from intake.readers.readers import BaseReader
 
         func, arg, kw = self.steps[stage]
@@ -242,21 +251,27 @@ class Pipeline(readers.BaseReader):
             else:
                 kw2[k] = v
         arg = kw2.pop("args", arg)
-        if isinstance(func, type) and issubclass(func, BaseConverter):
-            return func().run(data, *arg, **kw2)
+        if isinstance(func, type) and issubclass(func, BaseReader):
+            return func().read(*arg, **kw2)
         else:
-            return func(data, *arg, **kw2)
+            return func(*arg, **kw2)
 
-    def _read(self, out_instance=None, out_instances=None, steps=None, **kwargs):
-        data = self.reader.read()
-        for i in range(len(self.steps)):
-            kw = kwargs if i == len(self.steps) - 1 else {}
-            data = self._read_stage_n(data, i, **kw)
+    def _read(self, **kwargs):
+        data = None
+        for i, step in enumerate(self.steps):
+            kw = kwargs if i == len(self.steps) else {}
+            if i:
+                data = self._read_stage_n(i, data=data, **kw)
+            else:
+                data = self._read_stage_n(i, **kw)
         return data
 
     def apply(self, func, *arg, output_instance=None, **kwargs):
         """Add a pipeline stage applying function to the pipeline output so far"""
-        return self.with_step((func, arg, kwargs), output_instance or self.output_instance)
+        from intake.readers.convert import GenericFunc
+
+        kwargs["func"] = func
+        return self.with_step((GenericFunc, arg, kwargs), output_instance or self.output_instance)
 
     def first_n_stages(self, n: int):
         """Truncate pipeline to the given stage
@@ -267,7 +282,7 @@ class Pipeline(readers.BaseReader):
         if n < 1 or n > len(self.steps):
             raise ValueError(f"n must be between {1} and {len(self.steps)}")
 
-        pipe = Pipeline(self.data, steps=self.steps[:n], out_instances=self.output_instances[:n], **self.kwargs)
+        pipe = Pipeline(steps=self.steps[:n], out_instances=self.output_instances[:n], **self.kwargs)
         if n < len(self.steps):
             pipe.token = (self.token, n)
         return pipe
@@ -276,7 +291,7 @@ class Pipeline(readers.BaseReader):
         if not isinstance(step, tuple):
             # must be a func - check?
             step = (step, (), {})
-        return Pipeline(data=self.data, steps=self.steps + [step], out_instances=self.output_instances + [out_instance])
+        return Pipeline(steps=self.steps + [step], out_instances=self.output_instances + [out_instance])
 
 
 @cache
