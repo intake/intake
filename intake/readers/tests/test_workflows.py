@@ -1,3 +1,5 @@
+import os
+
 import fsspec
 import pytest
 
@@ -101,16 +103,30 @@ def dir_non_empty(d):
     return os.path.exists(d) and os.path.isdir(d) and bool(os.listdir(d))
 
 
-# def test_custom_cache(dataframe_file, tmpdir):
-#     from intake.readers.readers import Condition
-#     cat = intake.readers.entry.Catalog()
-#
-#     data = intake.readers.datatypes.CSV(url=dataframe_file)
-#     part = intake.readers.readers.PandasCSV(data)
-#     cat["csv"] = part
-#     output = intake.readers.datatypes.ReaderData(part.PandasToParquet(str(tmpdir)))
-#     final = intake.readers.readers.PandasParquet(data2)
-#     data3 = intake.readers.datatypes.ReaderData(final)
-#     reader2 = Condition(data3, other=part)
-#
-#     out = reader2.read()
+def test_custom_cache(dataframe_file, tmpdir, df):
+    from intake.readers.readers import Condition, PandasCSV, PandasParquet
+
+    fn = f"{tmpdir}/file.parquet"
+    data = intake.readers.datatypes.CSV(url=dataframe_file)
+    part = PandasCSV(data)
+
+    output = part.PandasToParquet(url=fn).transform(PandasParquet)
+    cached = PandasParquet(data=intake.readers.datatypes.Parquet(url=fn))
+    reader2 = Condition(output, other=cached, condition=lambda: not os.listdir(tmpdir))
+
+    assert os.listdir(tmpdir) == []
+    out = reader2.read()
+    assert os.listdir(tmpdir)
+
+    assert df.equals(out)
+
+    m = fsspec.filesystem("memory")
+    m.rm(dataframe_file)
+
+    with pytest.raises(IOError):
+        # file has gone
+        part.read()
+
+    # but condition still picks read from cache
+    out = reader2.read()
+    assert df.equals(out)

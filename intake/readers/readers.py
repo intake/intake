@@ -565,11 +565,11 @@ class GeoPandasTabular(FileReader):
 
 
 class Condition(BaseReader):
-    def _read(self, data, other: BaseReader, condition: callable[[BaseReader, ...], bool], **kwargs):
-        if self.condition(data.reader, **self.kwargs):
-            return data.reader.read()
+    def _read(self, data, other, condition: callable[[BaseReader, ...], bool], **kwargs):
+        if condition(**kwargs):
+            return data.read() if isinstance(data, BaseReader) else data
         else:
-            return self.other.read()
+            return other.read() if isinstance(other, BaseReader) else other
 
 
 class Retry(BaseReader):

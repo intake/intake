@@ -96,6 +96,15 @@ class Functioner:
 
         return f"Transformers for {self.reader.output_instance}:\n{pprint.pformat(self.funcdict)}"
 
+    def __call__(self, func, *args, output_instance=None, **kwargs):
+        from intake.readers.convert import Pipeline
+
+        if isinstance(self.reader, Pipeline):
+            return self.reader.with_step((func, args, kwargs), out_instance=output_instance)
+        # TODO: get output_instance from func, if possible
+
+        return Pipeline(steps=[(self.reader, (), {}), (func, args, kwargs)], out_instances=[self.reader.output_instance, output_instance])
+
     def __dir__(self):
         return list(sorted(f.__name__ for f in self.funcdict.values()))
 

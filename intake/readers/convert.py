@@ -139,20 +139,6 @@ class TiledSearch(BaseConverter):
         return x.search(*arg, **kw)
 
 
-def converts_to(data):
-    """What things can data convert to"""
-    out = set()
-    package = type(data).__module__.split(".", 1)[0]
-    for cls in subclasses(BaseConverter):
-        for intype, outtype in cls.instances.items():
-            if intype.split(".", 1)[0] != package:
-                continue
-            thing = readers.import_name(intype)
-            if isinstance(data, thing):
-                out.add(outtype)
-    return out
-
-
 def convert_class(data, out_type: str):
     """Get conversion class from given data to out_type
 
