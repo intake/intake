@@ -357,6 +357,17 @@ class GDALVectorFile(FileData):
     structure = {"nested", "tabular"}  # tabular when read by geopandas, could be called a conversion
 
 
+class HuggingfaceDataset(BaseData):
+    """https://github.com/huggingface/datasets"""
+
+    structure = {"nested", "text"}
+
+    def __init__(self, name, split=None, metadata=None):
+        super().__init__(metadata)
+        self.name = name
+        self.split = split
+
+
 comp_magic = {
     # These are a bit like datatypes making raw bytes/file object output
     (0, b"\x1f\x8b"): "gzip",

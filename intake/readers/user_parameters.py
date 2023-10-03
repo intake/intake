@@ -215,7 +215,12 @@ def _set_values(up, arguments):
         envdict = {f"env({k})": os.getenv(k) for k in template_env.findall(arguments)}
         data = FormatWithPassthrough(**up)
         data.update(envdict)
-        return arguments.format_map(data)  # missing keys remain unformatted, but don't raise
+        try:
+            out = arguments.format_map(data)  # missing keys remain unformatted, but don't raise
+        except ValueError:
+            # in case this is a string with genuine "{"s
+            out = arguments
+        return out
     elif isinstance(arguments, Iterable):
         return type(arguments)([_set_values(up, v) for v in arguments])
     return arguments

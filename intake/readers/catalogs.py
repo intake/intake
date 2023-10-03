@@ -4,7 +4,7 @@ import itertools
 
 from intake.readers import datatypes
 from intake.readers.entry import Catalog, DataDescription, ReaderDescription
-from intake.readers.readers import BaseReader
+from intake.readers.readers import BaseReader, HuggingfaceReader
 from intake.readers.utils import LazyDict
 
 
@@ -253,4 +253,21 @@ class THREDDSCatalogReader(BaseReader):
             cat[ds.id + "_DAP"] = XArrayDatasetReader(datatypes.Service(ds.access_urls["OpenDAP"]), engine="pydap")
             cat[ds.id + "_CDF"] = XArrayDatasetReader(datatypes.HDF5(ds.access_urls["HTTPServer"]), engine="h5netcdf")
 
+        return cat
+
+
+class HuggingfaceHubCatalog(BaseReader):
+    output_instance = "datasets.arrow_dataset:Dataset"
+    imports = {"datasets"}
+
+    def _read(self, *args, with_community_datasets=False, **kwargs):
+        from intake.readers.datatypes import HuggingfaceDataset
+        import huggingface_hub
+
+        datasets = huggingface_hub.list_datasets(full=False)
+        if not with_community_datasets:
+            datasets = [dataset for dataset in datasets if "/" not in dataset.id]
+        entries = [HuggingfaceReader(data=HuggingfaceDataset(d.id, metadata=d.__dict__)) for d in datasets]
+        cat = Catalog(entries=entries)
+        cat.aliases = {d.id: e for d, e in zip(datasets, cat.entries)}
         return cat

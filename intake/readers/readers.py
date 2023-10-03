@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+import itertools
 import re
 
 import fsspec
@@ -26,7 +27,12 @@ class BaseReader(Tokenizable, PipelineMixin):
         self.kwargs = kwargs
         if args:
             self.kwargs["args"] = args
-        self.metadata = metadata or {}
+        met = {}
+        for a in itertools.chain(reversed(kwargs.get("args", [])), reversed(kwargs.values()), reversed(args)):
+            if isinstance(a, datatypes.BaseData):
+                met.update(a.metadata)
+        met.update(metadata or {})
+        self.metadata = met
         if output_instance:
             self.output_instance = output_instance
 
@@ -323,6 +329,16 @@ class SparkText(SparkDataFrame):
 
     def _read(self, data, **kwargs):
         return self._spark().read.text(data.url, **kwargs)
+
+
+class HuggingfaceReader(BaseReader):
+    imports = {"datasets"}
+    implements = {datatypes.HuggingfaceDataset}
+    func = "datasets:load_dataset"
+    output_instance = "datasets.arrow_dataset:Dataset"
+
+    def _read(self, data, *args, **kwargs):
+        return self._func(data.name, split=data.split, **kwargs)
 
 
 class Awkward(FileReader):

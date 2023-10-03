@@ -107,7 +107,12 @@ class RayToDask(BaseConverter):
 
 class DaskToRay(BaseConverter):
     instances = {"dask.dataframe:DataFrame": "ray.data:Dataset"}
-    func = "ray.data:Dataset.from_dask"
+    func = "ray.data:from_dask"
+
+
+class HuggingfaceToRay(BaseConverter):
+    instances = {"datasets.arrow_dataset:Dataset": "ray.data:Dataset"}
+    func = "ray.data:from_huggingface"
 
 
 class SparkDFToRay(BaseConverter):
