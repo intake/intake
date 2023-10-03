@@ -33,14 +33,6 @@ class BaseConverter(BaseReader):
     """
 
     instances: dict[str, str] = {}
-    func: str = ""
-    imports = ImportsProperty()
-
-    @classmethod
-    def doc(cls):
-        start = cls.run.__doc__ or ""
-        func = import_name(cls.func).__doc__ or "" if cls.func else ""
-        return "\n\n".join([_ for _ in [cls.__doc__, start, func] if _])
 
     def run(self, x, *args, **kwargs):
         func = import_name(self.func)
@@ -106,6 +98,11 @@ class RayToPandas(BaseConverter):
 class RayToDask(BaseConverter):
     instances = {"ray.data:Dataset": "dask.dataframe:DataFrame"}
     func = "ray.data:Dataset.to_dask"
+
+
+class DaskToRay(BaseConverter):
+    instances = {"dask.dataframe:DataFrame": "ray.data:Dataset"}
+    func = "ray.data:Dataset.from_dask"
 
 
 class TiledNodeToCatalog(BaseConverter):
@@ -224,7 +221,7 @@ class Pipeline(readers.BaseReader):
     def doc_n(self, n):
         return self.steps[n][0].doc()
 
-    def _read_stage_n(self, stage, **kwargs):
+    def _read_stage_n(self, stage, discover=False, **kwargs):
         from intake.readers.readers import BaseReader
 
         func, arg, kw = self.steps[stage]
@@ -237,19 +234,28 @@ class Pipeline(readers.BaseReader):
             else:
                 kw2[k] = v
         arg = kw2.pop("args", arg)
+        # TODO: these conditions can probably be combined
         if isinstance(func, type) and issubclass(func, BaseReader):
-            return func().read(*arg, **kw2)
+            if discover:
+                return func().discover(*arg, **kw2)
+            else:
+                return func().read(*arg, **kw2)
+        elif isinstance(func, BaseReader):
+            if discover:
+                return func.discover(*arg, **kw2)
+            else:
+                return func.read(*arg, **kw2)
         else:
             return func(*arg, **kw2)
 
-    def _read(self, **kwargs):
+    def _read(self, discover=False, **kwargs):
         data = None
         for i, step in enumerate(self.steps):
             kw = kwargs if i == len(self.steps) else {}
             if i:
                 data = self._read_stage_n(i, data=data, **kw)
             else:
-                data = self._read_stage_n(i, **kw)
+                data = self._read_stage_n(i, discover=discover, **kw)
         return data
 
     def apply(self, func, *arg, output_instance=None, **kwargs):
@@ -272,6 +278,9 @@ class Pipeline(readers.BaseReader):
         if n < len(self.steps):
             pipe.token = (self.token, n)
         return pipe
+
+    def discover(self, **kwargs):
+        return self.read(discover=True)
 
     def with_step(self, step, out_instance):
         if not isinstance(step, tuple):

@@ -19,7 +19,6 @@ class BaseReader(Tokenizable, PipelineMixin):
     optional_imports: set[str] = set()
     func: str = "builtins:NotImplementedError"  # usual function for loading data
     func_doc: str = None  # docstring origin if not from func
-    concat_func: str = None  # for multi-file readers, this func can concatenate
     output_instance: str = None
     other_funcs: set = set()  # function names to recognise
 
@@ -124,7 +123,6 @@ class FileByteReader(FileReader):
 
 class Pandas(FileReader):
     imports = {"pandas"}
-    concat_func = "pandas:concat"
     output_instance = "pandas:DataFrame"
     storage_options = True
 
@@ -169,9 +167,6 @@ class PandasSQLAlchemy(BaseReader):
 class DaskDF(FileReader):
     imports = {"dask", "pandas"}
     output_instance = "dask.dataframe:DataFrame"
-
-    def to_dask(self, **kwargs):
-        return self.read(**kwargs)
 
 
 class DaskParquet(DaskDF):
