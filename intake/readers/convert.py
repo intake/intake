@@ -95,6 +95,11 @@ class RayToPandas(BaseConverter):
     func = "ray.data:Dataset.to_pandas"
 
 
+class PandasToRay(BaseConverter):
+    instances = {"pandas:DataFrame": "ray.data:Dataset"}
+    func = "ray.data:from_pandas"
+
+
 class RayToDask(BaseConverter):
     instances = {"ray.data:Dataset": "dask.dataframe:DataFrame"}
     func = "ray.data:Dataset.to_dask"
@@ -103,6 +108,16 @@ class RayToDask(BaseConverter):
 class DaskToRay(BaseConverter):
     instances = {"dask.dataframe:DataFrame": "ray.data:Dataset"}
     func = "ray.data:Dataset.from_dask"
+
+
+class SparkDFToRay(BaseConverter):
+    instances = {"pyspark.sql:DataFrame": "ray.data:Dataset"}
+    func = "ray.data:from_spark"
+
+
+class RayToSpark(BaseConverter):
+    instances = {"ray.data:Dataset": "pyspark.sql:DataFrame"}
+    func = "ray.data:Dataset.to_spark"
 
 
 class TiledNodeToCatalog(BaseConverter):

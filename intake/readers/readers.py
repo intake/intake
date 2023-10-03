@@ -109,7 +109,8 @@ class FileByteReader(FileReader):
     output_instance = "builtin:bytes"
     implements = {datatypes.FileData}
 
-    def discover(self, data, **kwargs):
+    def discover(self, data=None, **kwargs):
+        data = data or self.kwargs["data"]
         with fsspec.open(data.url, mode="rb", **(data.storage_options or {})) as f:
             return f.read()
 
@@ -174,6 +175,32 @@ class DaskParquet(DaskDF):
     optional_imports = {"fastparquet", "pyarrow"}
     func = "dask.dataframe:read_parquet"
     url_arg = "path"
+
+
+class DaskHDF(DaskDF):
+    implements = {datatypes.HDF5}
+    optional_imports = {"h5py"}
+    func = "dask.dataframe:read_hdf"
+    url_arg = "pattern"
+
+    def _read(self, data, **kw):
+        return self._func(data.url, key=data.path, **kw)
+
+
+class DaskJSON(DaskDF):
+    implements = {datatypes.JSONFile}
+    func = "dask.dataframe:read_json"
+    url_arg = "url_path"
+
+
+class DaskSQL(BaseReader):
+    implements = {datatypes.SQLQuery}
+    imports = {"dask", "pandas", "sqlalchemy"}
+    func = "dask.dataframe:read_sql"
+
+    def _read(self, data, index_col, **kw):
+        """Dask requires `index_col` to partition the dataframe on."""
+        return self._func(data.quary, data.conn, index_col, **kw)
 
 
 class DaskNPYStack(FileReader):
@@ -344,9 +371,8 @@ class PandasCSV(Pandas):
     func = "pandas:read_csv"
     url_arg = "filepath_or_buffer"
 
-    def discover(self, data, **kwargs):
-        kw = {"nrows": 10, self.url_arg: data.url, "storage_options": data.storage_options}
-        kw.update(kwargs)
+    def discover(self, **kw):
+        kw["nrows"] = 10
         kw.pop("skipfooter", None)
         kw.pop("chuknsize", None)
         return self.read(**kw)

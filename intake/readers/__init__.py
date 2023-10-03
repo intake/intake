@@ -3,5 +3,6 @@ from intake.readers.readers import BaseReader
 from intake.readers.convert import Pipeline
 from intake.readers.entry import Catalog
 from intake.readers.transform import BaseConverter
-import intake.readers.output
 from intake.readers.user_parameters import BaseUserParameter, SimpleUserParameter
+import intake.readers.output
+import intake.readers.catalogs

@@ -216,7 +216,7 @@ class ASDF(FileData):
 
 
 class DICOM(FileData):
-    filepattern = "(dicom$|dcm$)"  # and others
+    filepattern = "(dicom|dcm|ct|mri)$"  # and others
     structure = {"array", "image"}
     magic = {(128, b"DICM")}
     mimetypes = "application/dicom"
