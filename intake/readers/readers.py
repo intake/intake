@@ -92,7 +92,7 @@ class BaseReader(Tokenizable, PipelineMixin):
         """Create an entry with only this reader defined"""
         from intake.readers.entry import ReaderDescription
 
-        return ReaderDescription(reader=self.qname(), kwargs=self.kwargs, output_instance=self.output_instance)
+        return ReaderDescription(reader=self.qname(), kwargs=self.kwargs, output_instance=self.output_instance, metadata=self.metadata)
 
 
 class FileReader(BaseReader):
@@ -339,6 +339,29 @@ class HuggingfaceReader(BaseReader):
 
     def _read(self, data, *args, **kwargs):
         return self._func(data.name, split=data.split, **kwargs)
+
+
+class SKLearnExampleReader(BaseReader):
+    func = "sklearn:datasets"
+    imports = {"sklearn"}
+    output_instance = "sklearn.utils:Bunch"
+
+    def _read(self, name, **kw):
+        import sklearn.datasets
+
+        loader = getattr(sklearn.datasets, f"load_{name}")
+        return loader()
+
+
+class TorchDataset(BaseReader):
+    output_instance = "torch.utils.data:Dataset"
+
+    def _read(self, modname, funcname, rootdir, **kw):
+        import importlib
+
+        mod = importlib.import_module(f"torch{modname}")
+        func = getattr(mod.datasets, funcname)
+        return func(rootdir, download=True)
 
 
 class Awkward(FileReader):

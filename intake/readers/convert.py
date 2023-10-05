@@ -115,6 +115,11 @@ class HuggingfaceToRay(BaseConverter):
     func = "ray.data:from_huggingface"
 
 
+class TorchToRay(BaseConverter):
+    instances = {"torch.utils.data:Dataset": "ray.data:Dataset"}
+    func = "ray.data:from_torch"
+
+
 class SparkDFToRay(BaseConverter):
     instances = {"pyspark.sql:DataFrame": "ray.data:Dataset"}
     func = "ray.data:from_spark"

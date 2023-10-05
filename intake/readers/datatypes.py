@@ -381,7 +381,7 @@ container_magic = {
 }
 
 
-def recommend(url=None, mime=None, head=True, storage_options=None):
+def recommend(url=None, mime=None, head=True, storage_options=None) -> set:
     """Show which data types match
 
     Parameters
@@ -447,6 +447,10 @@ def recommend(url=None, mime=None, head=True, storage_options=None):
                 if find:
                     poss[cls] = len(find[0])
         out.extend(reversed(sorted(poss, key=lambda x: poss[x])))
+    if url:
+        for ext in {".gz", ".gzip", ".bzip2", "bz2", ".zstd", ".tar", ".tgz"}:
+            if url.endswith(ext):
+                out.extend(recommend(url[: -len(ext)], head=False))
     if out:
         return out
 

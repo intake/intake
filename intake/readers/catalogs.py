@@ -4,7 +4,7 @@ import itertools
 
 from intake.readers import datatypes
 from intake.readers.entry import Catalog, DataDescription, ReaderDescription
-from intake.readers.readers import BaseReader, HuggingfaceReader
+from intake.readers.readers import BaseReader
 from intake.readers.utils import LazyDict
 
 
@@ -257,11 +257,12 @@ class THREDDSCatalogReader(BaseReader):
 
 
 class HuggingfaceHubCatalog(BaseReader):
-    output_instance = "datasets.arrow_dataset:Dataset"
+    output_instance = "intake.readers.entry:Catalog"
     imports = {"datasets"}
 
     def _read(self, *args, with_community_datasets=False, **kwargs):
         from intake.readers.datatypes import HuggingfaceDataset
+        from intake.readers.readers import HuggingfaceReader
         import huggingface_hub
 
         datasets = huggingface_hub.list_datasets(full=False)
@@ -270,4 +271,41 @@ class HuggingfaceHubCatalog(BaseReader):
         entries = [HuggingfaceReader(data=HuggingfaceDataset(d.id, metadata=d.__dict__)) for d in datasets]
         cat = Catalog(entries=entries)
         cat.aliases = {d.id: e for d, e in zip(datasets, cat.entries)}
+        return cat
+
+
+class SKLearnExamplesCatalog(BaseReader):
+    output_instance = "intake.readers.entry:Catalog"
+    imports = {"sklearn"}
+
+    def _read(self, **kw):
+        from intake.readers.readers import SKLearnExampleReader
+        import sklearn.datasets
+
+        names = [funcname[5:] for funcname in dir(sklearn.datasets) if funcname.startswith("load_")]
+        entries = [SKLearnExampleReader(name=name) for name in names]
+        cat = Catalog(entries=entries)
+        cat.aliases = {name: e for name, e in zip(names, cat.entries)}
+        return cat
+
+
+class TorchDatasetsCatalog(BaseReader):
+    output_instance = "intake.readers.entry:Catalog"
+    imports = {"datasets"}
+
+    def _read(self, rootdir, *args, **kwargs):
+        from intake.readers.readers import TorchDataset
+        import importlib
+
+        cat = Catalog()
+        for name in ("vision", "audio", "text"):
+            try:
+                mod = importlib.import_module(f"torch{name}")
+                for func in mod.datasets.__all__:
+                    f = getattr(mod.datasets, func)
+                    metadata = {"description": f.__doc__.split("\n", 1)[0]} if f.__doc__ else None
+                    tok = cat.add_entry(TorchDataset(name, func, rootdir, metadata=metadata))
+                    cat.aliases[func] = tok
+            except (ImportError, ModuleNotFoundError):
+                pass
         return cat
