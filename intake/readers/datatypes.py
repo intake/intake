@@ -109,7 +109,7 @@ class Catalog(BaseData):
 
 class Parquet(FileData):
     filepattern = "(parq$|parquet$|/$)"
-    mimetypes = "application/(vnd.apache.parquet|parquet|x-parquet)"
+    mimetypes = "application/(vnd.apache.parquet|parquet|x-parquet)/"
     structure = {"table", "nested"}
     magic = {b"PAR1"}
 
@@ -410,7 +410,7 @@ def recommend(url=None, mime=None, head=True, storage_options=None) -> set:
         try:
             fs, url2 = fsspec.core.url_to_fs(url, **(storage_options or {}))
             mime = mime or fs.info(url2, refresh=True).get("ContentType", None)
-        except (IOError, TypeError, AttributeError):
+        except (IOError, TypeError, AttributeError, ValueError):
             mime = mime or None
         try:
             with fsspec.open_files(url, "rb", **(storage_options or {}))[0] as f:

@@ -161,6 +161,30 @@ class TiledSearch(BaseConverter):
         return x.search(*arg, **kw)
 
 
+class DeltaQueryToDask(BaseConverter):
+    instances = {"deltalake:DeltaTable": "dask.dataframe:DataFrame"}
+    func = "deltalake:DeltaTable.file_uris"
+
+    def _read(self, reader, query, *args, **kwargs):
+        import dask.dataframe as dd
+
+        file_uris = reader.read().file_uris(query)
+
+        return dd.read_parquet(file_uris, storage_options=reader.kwargs["data"].storage_options)
+
+
+class DeltaQueryToDaskGeopandas(BaseConverter):
+    instances = {"deltalake:DeltaTable": "dask_geopandas:GeoDataFrame"}
+    func = "deltalake:DeltaTable.file_uris"
+
+    def _read(self, reader, query, *args, **kwargs):
+        import dask_geopandas
+
+        file_uris = reader.read().file_uris(query)
+
+        return dask_geopandas.read_parquet(file_uris, storage_options=reader.kwargs["data"].storage_options)
+
+
 def convert_class(data, out_type: str):
     """Get conversion class from given data to out_type
 

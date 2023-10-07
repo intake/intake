@@ -16,6 +16,7 @@ from intake.readers.datatypes import (
     PNG,
     CatalogFile,
     Feather2,
+    NumpyFile,
     Parquet,
     Zarr,
     recommend,
@@ -83,6 +84,21 @@ class DaskArrayToZarr(BaseConverter):
     def run(self, x, url, group="", storage_options=None, metadata=None, **kwargs):
         x.to_zarr(store=url, component=group or None, storage_options=storage_options, **kwargs)
         return Zarr(url, storage_options=storage_options, root=group, metadata=metadata)
+
+
+class NumpyToNumpyFile(BaseConverter):
+    """Save a single array into a single binary file"""
+
+    instances = {"numpy:ndarray": "intake.readers.datatypes.NumpyFile"}
+    func = "numpy:save"
+
+    def run(self, x, path, *args, storage_options=None, metadata=None, **kwargs):
+        if storage_options or "://" in path or "::" in path:
+            with fsspec.open(path, **storage_options) as f:
+                self._func(x, f)
+        else:
+            self._func(x, path)
+        return NumpyFile(path, storage_options, metadata=metadata)
 
 
 class ToMatplotlib(BaseConverter):

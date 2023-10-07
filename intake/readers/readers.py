@@ -174,6 +174,7 @@ class PandasSQLAlchemy(BaseReader):
 class DaskDF(FileReader):
     imports = {"dask", "pandas"}
     output_instance = "dask.dataframe:DataFrame"
+    storage_options = True
 
 
 class DaskParquet(DaskDF):
@@ -210,6 +211,9 @@ class DaskSQL(BaseReader):
 
 
 class DaskNPYStack(FileReader):
+    """Requires a directory with .npy files and an "info" pickle file"""
+
+    # TODO: single npy file, or stack without info (which can be read from any one file)
     implements = {datatypes.NumpyFile}
     imports = {"dask", "numpy"}
     func = "dask.array:from_npy_stack"
@@ -224,7 +228,7 @@ class DaskZarr(FileReader):
     func = "dask.array:from_zarr"
 
     def _read(self, data, **kwargs):
-        return self._func(url=data.url, component=data.path or None, storage_options=data.storage_options, **kwargs)
+        return self._func(url=data.url, component=data.root or None, storage_options=data.storage_options, **kwargs)
 
 
 class NumpyZarr(FileReader):
@@ -234,7 +238,7 @@ class NumpyZarr(FileReader):
     func = "zarr:open"
 
     def _read(self, data, **kwargs):
-        return self._func(data.url, storage_options=kwargs.pop("storage_options"), path=data.path, **kwargs)[:]
+        return self._func(data.url, storage_options=data.storage_options, path=data.root, **kwargs)[:]
 
 
 class DuckDB(BaseReader):
@@ -364,6 +368,15 @@ class TorchDataset(BaseReader):
         return func(rootdir, download=True)
 
 
+class TFPublicDataset(BaseReader):
+    # contains ({split: tensorflow.data.Dataset}, data_info) by default
+    output_instance = "builtins:tuple"
+    func = "tensorflow_datasets:load"
+
+    def _read(self, name, *args, **kwargs):
+        return self._func(name, download=True, with_info=True, **kwargs)
+
+
 class Awkward(FileReader):
     imports = {"awkward"}
     output_instance = "awkward:Array"
@@ -465,6 +478,15 @@ class RayText(Ray):
     func = "ray.data:read_text"
 
 
+class DeltaReader(FileReader):
+    implements = {datatypes.Parquet}
+    imports = {"deltalake"}
+    func = "deltalake:DeltaTable"
+    url_arg = "table_uri"
+    storage_options = True
+    output_instance = "deltalake:DeltaTable"
+
+
 class TiledNode(BaseReader):
     implements = {datatypes.TiledService}
     imports = {"tiled"}
@@ -524,7 +546,12 @@ class NumpyReader(FileReader):
     implements = {datatypes.NumpyFile}
     imports = {"numpy"}
     func = "numpy:load"
-    url_arg = "file"
+
+    def _read(self, data, **kw):
+        if data.storage_options or "://" in data.url or "::" in data.url:
+            with fsspec.open(data.url, **(data.storage_options or {})) as f:
+                return self._func(f, **kw)
+        return self._func(data.url, **kw)
 
 
 class XArrayDatasetReader(FileReader):
@@ -544,6 +571,8 @@ class XArrayDatasetReader(FileReader):
 
         if "engine" not in kw and isinstance(data, datatypes.Zarr):
             kw["engine"] = "zarr"
+            if data.root and "group" not in kw:
+                kw["group"] = data.root
         if kw.get("engine", "") == "zarr":
             # only zarr takes storage options
             kw.setdefault("backend_kwargs", {})["storage_options"] = data.storage_options

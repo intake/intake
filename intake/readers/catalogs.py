@@ -85,7 +85,7 @@ class StacCatalogReader(BaseReader):
     imports = {"pystac"}
     output_instance = "intake.readers.entry:Catalog"
 
-    def _read(self, data, cls: str = "Catalog", **kwargs):
+    def _read(self, data, cls: str = "Catalog", signer=None, **kwargs):
         import pystac
 
         cls = getattr(pystac, cls)
@@ -100,22 +100,24 @@ class StacCatalogReader(BaseReader):
 
         cat = Catalog(metadata=self.metadata)
         items = []
+
+        # the following can be slow and could be deferred to lazy entries, if we can get
+        # the names without details cheaply
         if isinstance(self._stac, pystac.Catalog):
             items = itertools.chain(self._stac.get_children(), self._stac.get_items())
         elif isinstance(self._stac, pystac.ItemCollection):
             items = self._stac.items
-        elif isinstance(self._stac, pystac.Item):
-            # these make assets, which are not catalogs
+        if hasattr(self._stac, "assets"):
             for key, value in self._stac.assets.items():
+                if signer:
+                    signer(value)
                 cat[key] = self._get_reader(value).to_entry()
 
         for subcatalog in items:
             subcls = type(subcatalog).__name__
 
-            # TODO: items may also be readable by stack_bands
             cat[subcatalog.id] = ReaderDescription(
-                reader=self.qname(),
-                kwargs={"cls": subcls, "data": datatypes.Literal(subcatalog.to_dict())},
+                reader=self.qname(), kwargs=dict({"cls": subcls, "data": datatypes.Literal(subcatalog.to_dict()), "signer": signer}, **kwargs)
             )
         return cat
 
@@ -131,8 +133,8 @@ class StacCatalogReader(BaseReader):
             mime = None
 
         # if mimetype not registered try rasterio driver
-        storage_options = asset.extra_fields.get("xarray:storage_options", {})
-        cls = datatypes.recommend(url, mime=mime, storage_options=storage_options)
+        storage_options = asset.extra_fields.get("table:storage_options", {})
+        cls = datatypes.recommend(url, mime=mime, storage_options=storage_options, head=False)
         meta = asset.to_dict()
         if cls:
             data = cls[0](url=url, metadata=meta, storage_options=storage_options)
@@ -304,8 +306,21 @@ class TorchDatasetsCatalog(BaseReader):
                 for func in mod.datasets.__all__:
                     f = getattr(mod.datasets, func)
                     metadata = {"description": f.__doc__.split("\n", 1)[0]} if f.__doc__ else None
-                    tok = cat.add_entry(TorchDataset(name, func, rootdir, metadata=metadata))
-                    cat.aliases[func] = tok
+                    cat[func] = TorchDataset(name, func, rootdir, metadata=metadata)
             except (ImportError, ModuleNotFoundError):
                 pass
+        return cat
+
+
+class TensorFlowDatasetsCatalog(BaseReader):
+    output_instance = "intake.readers.entry:Catalog"
+    imports = {"tensorflow_datasets"}
+
+    def _read(self, *args, **kwargs):
+        from intake.readers.readers import TFPublicDataset
+        from tensorflow_datasets.core import community
+
+        cat = Catalog()
+        for name in community.registry.registered._DATASET_REGISTRY:
+            cat[name] = TFPublicDataset(name=name)
         return cat
