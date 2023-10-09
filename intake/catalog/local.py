@@ -12,7 +12,7 @@ import warnings
 
 import entrypoints
 from fsspec import open_files
-from fsspec.core import split_protocol
+from fsspec.core import split_protocol, url_to_fs
 
 from .. import __version__
 from ..source import get_plugin_class, register_driver
@@ -504,9 +504,8 @@ def register_plugin_module(mod):
 
 def get_dir(path: str) -> str:
     """Get the directory path of the file"""
-    protocol, pure_path = split_protocol(path)
-    dirname = os.path.dirname(pure_path)
-    return f"{protocol}://{dirname}" if protocol else dirname
+    fs, fspath = url_to_fs(path)
+    return fs._parent(fspath)
 
 
 class YAMLFileCatalog(Catalog):
