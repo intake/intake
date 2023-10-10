@@ -3,7 +3,7 @@ sources:
     description: a local data file
     driver: csv
     args:
-      urlpath: '{{ CATALOG_DIR }}cache_data/states.csv'
+      urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
   arr_cache:
     description: small array
     driver: numpy
