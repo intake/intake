@@ -32,11 +32,11 @@ class CSVSource(base.DataSource, base.PatternMixin):
             such as ``'s3://'``. May include glob wildcards or format pattern strings.
             Some examples:
 
-            - ``{{ CATALOG_DIR }}data/precipitation.csv``
+            - ``{{ CATALOG_DIR }}/data/precipitation.csv``
             - ``s3://data/*.csv``
             - ``s3://data/precipitation_{state}_{zip}.csv``
             - ``s3://data/{year}/{month}/{day}/precipitation.csv``
-            - ``{{ CATALOG_DIR }}data/precipitation_{date:%Y-%m-%d}.csv``
+            - ``{{ CATALOG_DIR }}/data/precipitation_{date:%Y-%m-%d}.csv``
         csv_kwargs : dict
             Any further arguments to pass to Dask's read_csv (such as block size)
             or to the `CSV parser <https://pandas.pydata.org/pandas-docs/stable/generated/pandas.read_csv.html>`_
