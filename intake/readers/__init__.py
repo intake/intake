@@ -6,3 +6,4 @@ from intake.readers.transform import BaseConverter
 from intake.readers.user_parameters import BaseUserParameter, SimpleUserParameter
 import intake.readers.output
 import intake.readers.catalogs
+import intake.readers.importlist

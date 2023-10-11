@@ -5,8 +5,8 @@ import os
 import re
 from typing import Any, Iterable
 
-from intake import import_name
-from intake.readers.utils import FormatWithPassthrough, Tokenizable
+from intake import import_name, conf
+from intake.readers.utils import FormatWithPassthrough, SecurityError, Tokenizable
 
 
 class BaseUserParameter(Tokenizable):
@@ -187,11 +187,17 @@ def imp(match, up):
 
     Format of the input string is like "{import(package.module:object)}"
     """
+    if not conf["allow_import"]:
+        from intake.readers.utils import SecurityError
+
+        raise SecurityError("Arbitrary imports are not allowed by the Intake config")
     return import_name(match.groups()[0])
 
 
 @register_template(r"pickle64")
 def unpickle(match, up):
+    if not conf["allow_pickle"]:
+        raise SecurityError("Unpickling is disallowed by the Intake config")
     import base64
     import pickle
 

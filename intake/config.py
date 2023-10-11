@@ -5,6 +5,8 @@
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
 
+import contextlib
+import copy
 import logging
 import os
 import posixpath
@@ -21,15 +23,14 @@ confdir = make_path_posix(os.getenv("INTAKE_CONF_DIR", os.path.join(expanduser("
 
 
 defaults = {
-    "auth": {"cls": "intake.auth.base.BaseAuth"},
-    "port": 5000,
-    "cache_dir": posixpath.join(confdir, "cache"),
-    "cache_disabled": False,
-    "cache_download_progress": True,
     "logging": "INFO",
     "catalog_path": [],
-    "persist_path": posixpath.join(confdir, "persisted"),
-    "package_scan": False,
+    "allow_import": True,
+    "allow_templates": True,
+    "allow_pickle": False,
+    "import_on_startup": True,
+    "extra_imports": [],
+    "import_block_list": [],
 }
 
 
@@ -38,9 +39,15 @@ def cfile():
 
 
 class Config(dict):
+    """Intake's dict-like config system
+
+    Instance ``intake.conf`` is globally used throughout the package
+    """
+
     def __init__(self, filename=None, **kwargs):
         self.filename = filename if filename is not None else cfile()
         self.reload_all()
+        self.temp = None
         super().__init__(**kwargs)
 
     def reset(self):
@@ -51,7 +58,7 @@ class Config(dict):
     def save(self):
         """Save current configuration to file as YAML
 
-        Uses ``.filename`` for target location
+        Uses ``self.filename`` for target location
         """
         if self.filename is False:
             return
@@ -61,6 +68,57 @@ class Config(dict):
             pass
         with open(self.filename, "w") as f:
             yaml.dump(dict(self), f)
+
+    @contextlib.contextmanager
+    def _unset(self, temp):
+        yield
+        self.clear()
+        self.update(temp)
+
+    def set(self, update_dict=None, **kw):
+        """Change config values within a context or for the session
+
+        values: dict
+            This can be deeply nested to set only leaf values
+
+        See also: ``intake.readers.utils.nested_keys_to_dict``
+
+        Examples
+        --------
+
+        Value resets after context ends
+
+        >>> with intake.conf.set(mybval=5):
+        ...     ...
+
+        Set for whole session
+
+        >>> intake.conf.set(myval=5)
+
+        Set only a single leaf value within a nested dict
+
+        >>> intake.conf.set(intake.readers.utils.nested_keys_to_dict({"deep.2.key": True})
+        """
+        temp = copy.deepcopy(self)
+        if update_dict:
+            kw.update(update_dict)
+        from intake.readers.utils import merge_dicts
+
+        self.update(merge_dicts(self, kw))
+        return self._unset(temp)
+
+    def __getitem__(self, item):
+        if item in self:
+            return super().__getitem__(item)
+        elif item in defaults:
+            return defaults[item]
+        else:
+            raise KeyError(item)
+
+    def get(self, key, default=None):
+        if key in self:
+            return super().__getitem__(key)
+        return default
 
     def reload_all(self):
         self.reset()
@@ -94,6 +152,7 @@ class Config(dict):
                 self[key] = os.environ[envvar].lower() in ["true", "t", "y", "yes"]
         if "INTAKE_LOG_LEVEL" in os.environ:
             self["logging"] = os.environ["INTAKE_LOG_LEVEL"]
+        logger.setLevel(self["logging"])
 
 
 def intake_path_dirs(path):
@@ -115,10 +174,3 @@ conf = Config()
 conf.reload_all()
 save_conf = conf.save
 load_cond = conf.load
-
-logger.setLevel(conf["logging"].upper())
-ch = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - " "%(filename)s:%(funcName)s:L%(lineno)d - " "%(message)s")
-ch.setFormatter(formatter)
-logger.addHandler(ch)
-logger.debug("Intake logger set to debug")

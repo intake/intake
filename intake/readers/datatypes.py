@@ -67,8 +67,8 @@ class BaseData(Tokenizable):
             raise ValueError("outtype not in available in importable readers")
         return next(iter(self.possible_readers["importable"]))
 
-    def to_reader(self, outtype: str | None = None, reader: str | type | None = None):
-        return self.to_reader_cls(outtype, reader)(data=self)
+    def to_reader(self, outtype: str | None = None, reader: str | type | None = None, **kw):
+        return self.to_reader_cls(outtype, reader)(data=self, **kw)
 
     def to_entry(self):
         from intake.readers.entry import DataDescription
@@ -108,7 +108,7 @@ class Catalog(BaseData):
 
 
 class Parquet(FileData):
-    filepattern = "(parq$|parquet$|/$)"
+    filepattern = "(parq|parquet|/$)"
     mimetypes = "application/(vnd.apache.parquet|parquet|x-parquet)/"
     structure = {"table", "nested"}
     magic = {b"PAR1"}
@@ -457,18 +457,20 @@ def recommend(url=None, mime=None, head=True, storage_options=None) -> set:
     if head is None and url:
         return recommend(url, mime=mime, head=True, storage_options=storage_options)
 
-    for (off, mag), comp in comp_magic.items():
-        if head[off:].startswith(mag):
-            storage_options = (storage_options or {}).copy()
-            storage_options["compression"] = comp
-            out = recommend(url, storage_options=storage_options)
-            if out:
-                print("Update storage_options: ", storage_options)
-                return out
-    for (off, mag), comp in container_magic.items():
-        if head[off:].startswith(mag):
-            prot = fsspec.core.split_protocol(url)[0]
-            out = recommend(f"{comp}://*::{url}", storage_options={prot: storage_options})
-            if out:
-                print("Update url: ", url, "\nstorage_options: ", storage_options)
-                return out
+    if isinstance(head, bytes):
+        for (off, mag), comp in comp_magic.items():
+            if head[off:].startswith(mag):
+                storage_options = (storage_options or {}).copy()
+                storage_options["compression"] = comp
+                out = recommend(url, storage_options=storage_options)
+                if out:
+                    print("Update storage_options: ", storage_options)
+                    return out
+        for (off, mag), comp in container_magic.items():
+            if head[off:].startswith(mag):
+                prot = fsspec.core.split_protocol(url)[0]
+                out = recommend(f"{comp}://*::{url}", storage_options={prot: storage_options})
+                if out:
+                    print("Update url: ", url, "\nstorage_options: ", storage_options)
+                    return out
+    return []

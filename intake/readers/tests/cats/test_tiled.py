@@ -37,5 +37,7 @@ def test_catalog_workflow(tiled_server):
     cat["cat"] = node.TiledSearch(query=FullText("dog")).TiledSearch(query=FullText("red")).TiledNodeToCatalog
     cat.to_yaml_file("memory://cat.yaml")
     cat2 = intake.readers.entry.Catalog.from_yaml_file("memory://cat.yaml")
-    scat = cat2["cat"].read()
+    with intake.conf.set(allow_pickle=True):
+        # tiled query instances are pickled
+        scat = cat2["cat"].read()
     assert "short_table" in scat

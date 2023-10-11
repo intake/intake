@@ -8,7 +8,7 @@ import re
 
 import fsspec
 
-from intake import import_name
+from intake import import_name, logger
 from intake.readers import datatypes
 from intake.readers.mixins import PipelineMixin
 from intake.readers.utils import Tokenizable, subclasses
@@ -80,6 +80,7 @@ class BaseReader(Tokenizable, PipelineMixin):
 
         Output type is given by the .output_instance attribute
         """
+        logger.debug("Reading %s", self)
         kw = self.kwargs.copy()
         kw.update(kwargs)
         args = kw.pop("args", ()) or args
@@ -380,6 +381,7 @@ class TFPublicDataset(BaseReader):
 class Awkward(FileReader):
     imports = {"awkward"}
     output_instance = "awkward:Array"
+    storage_options = True
 
 
 class AwkwardParquet(Awkward):

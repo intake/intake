@@ -7,6 +7,8 @@ from intake import import_name
 
 class PipelineMixin:
     def __getattr__(self, item):
+        if item in {"_ipython_canary_method_should_not_exist_"}:
+            raise AttributeError
         if item in dir(self.transform):
             return getattr(self.transform, item)
         if "Catalog" in self.output_instance:

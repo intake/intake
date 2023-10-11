@@ -11,6 +11,10 @@ from typing import Any, Iterable, Mapping
 from intake import import_name
 
 
+class SecurityError(RuntimeError):
+    ...
+
+
 def subclasses(cls: type) -> set:
     """Find all direct and indirect subclasses"""
     out = set()

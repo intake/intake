@@ -158,6 +158,8 @@ class TiledSearch(BaseConverter):
     instances = {"tiled.client.node:Node": "tiled.client.node:Node"}
 
     def run(self, x, *arg, **kw):
+        # TODO: expects instances of classes in tiled.queries, which must be pickled, but
+        #  could allow (name, args) or something else
         return x.search(*arg, **kw)
 
 

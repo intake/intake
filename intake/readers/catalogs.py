@@ -85,7 +85,7 @@ class StacCatalogReader(BaseReader):
     imports = {"pystac"}
     output_instance = "intake.readers.entry:Catalog"
 
-    def _read(self, data, cls: str = "Catalog", signer=None, **kwargs):
+    def _read(self, data, cls: str = "Catalog", signer=None, prefer=None, **kwargs):
         import pystac
 
         cls = getattr(pystac, cls)
@@ -111,7 +111,7 @@ class StacCatalogReader(BaseReader):
             for key, value in self._stac.assets.items():
                 if signer:
                     signer(value)
-                cat[key] = self._get_reader(value).to_entry()
+                cat[key] = self._get_reader(value, prefer=prefer).to_entry()
 
         for subcatalog in items:
             subcls = type(subcatalog).__name__
@@ -122,9 +122,12 @@ class StacCatalogReader(BaseReader):
         return cat
 
     @staticmethod
-    def _get_reader(asset):
+    def _get_reader(asset, prefer=None):
         """
         Assign intake driver for data I/O
+
+        prefer: str
+            passed to .to_reader to inform what class of reader would be preferable, if any
         """
         url = asset.href
         mime = asset.media_type
@@ -141,11 +144,11 @@ class StacCatalogReader(BaseReader):
         else:
             raise ValueError
         try:
-            return data.to_reader(outtype="xarray:DataSet")
+            return data.to_reader(outtype="xarray:DataSet", reader=prefer)
         except ValueError:
             # no xarray reader
             if data.possible_readers:
-                return data.to_reader()
+                return data.to_reader(reader=prefer)
             else:
                 return data
 
@@ -155,7 +158,7 @@ class StackBands(BaseReader):
     imports = {"pystac", "xarray"}
     output_instance = "intake.readers.readers:XarrayReader"
 
-    def _read(self, data, bands, concat_dim="band"):
+    def _read(self, data, bands, concat_dim="band", **kw):
         # this should be a separate reader for STACJSON,
         import pystac
         from pystac.extensions.eo import EOExtension
@@ -202,6 +205,7 @@ class StackBands(BaseReader):
         reader = StacCatalogReader._get_reader(asset)
         reader.kwargs["concat_dim"] = concat_dim
         reader.kwargs["data"].url = hrefs
+        reader.kwargs.update(kw)
         return reader
 
 
@@ -210,8 +214,7 @@ class StacSearch(BaseReader):
     imports = {"pystac"}
     output_instance = "intake.readers.entry:Catalog"
 
-    def __init__(self, query, metadata=None, **kwargs):
-        self.query = query
+    def __init__(self, metadata=None, **kwargs):
         super().__init__(metadata=metadata, **kwargs)
 
     def _read(self, data, query=None, **kwargs):
@@ -226,9 +229,7 @@ class StacSearch(BaseReader):
         for subcatalog in items:
             subcls = type(subcatalog).__name__
             cat[subcatalog.id] = ReaderDescription(
-                data=datatypes.Literal(subcatalog.to_dict()).to_entry(),
-                reader=StacCatalogReader.qname(),
-                kwargs={"cls": subcls},
+                reader=StacCatalogReader.qname(), kwargs=dict(**{"cls": subcls, "data": datatypes.Literal(subcatalog.to_dict())}, **kwargs)
             )
         return cat
 

@@ -18,6 +18,7 @@ del get_versions
 
 from .catalog.base import Catalog
 from .source import registry
+from intake.config import conf
 
 imports = {
     "DataSource": "intake.source.base:DataSource",
