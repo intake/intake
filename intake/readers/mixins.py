@@ -3,12 +3,12 @@ from __future__ import annotations
 from itertools import chain
 
 from intake import import_name
+from intake.readers.utils import Completable
 
 
-class PipelineMixin:
+class PipelineMixin(Completable):
     def __getattr__(self, item):
-        if item in {"_ipython_canary_method_should_not_exist_"}:
-            raise AttributeError
+        super().tab_completion_fixer(item)
         if item in dir(self.transform):
             return getattr(self.transform, item)
         if "Catalog" in self.output_instance:
@@ -65,7 +65,7 @@ class PipelineMixin:
         return Functioner(self, funcdict)
 
 
-class Functioner:
+class Functioner(Completable):
     """Find and apply transform functions to reader output"""
 
     def __init__(self, reader, funcdict):
@@ -111,6 +111,7 @@ class Functioner:
         return list(sorted(f.__name__ for f in self.funcdict.values()))
 
     def __getattr__(self, item):
+        super().tab_completion_fixer(item)
         from intake.readers.convert import Pipeline
         from intake.readers.transform import Method
 

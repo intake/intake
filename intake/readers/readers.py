@@ -655,6 +655,35 @@ class GeoPandasTabular(FileReader):
             raise ValueError
 
 
+class ScipyMatlabReader(FileReader):
+    output_instance = "numpy:ndarray"
+    implements = {datatypes.MatlabArray}
+    imports = {"scipy"}
+    func = "scipy.io:loadmat"
+
+    def _read(self, data, **kwargs):
+        return self._func(data.path, appendmat=False, **kwargs)[data.variable]
+
+
+class ScipyMatrixMarketReader(FileReader):
+    output_instance = "scipy.sparse:coo_matrix"  # numpy-like
+    implements = {datatypes.MatrixMarket}
+    imports = {"scipy"}
+    func = "scipy.io:mmread"
+
+    def _read(self, data, **kw):
+        with fsspec.open(data.url, **data.storage_options) as f:
+            return self._func(f)
+
+
+class NibabelNiftiReader(FileReader):
+    # method img.get_fdata() gets the contents as numpy
+    output_instance = "nibabel:Nifti2Image"
+    implements = {datatypes.Nifti}
+    imports = {"nibabel"}
+    func = "nibabel:load"
+
+
 class Condition(BaseReader):
     def _read(self, data, other, condition: callable[[BaseReader, ...], bool], **kwargs):
         if condition(**kwargs):

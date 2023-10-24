@@ -5,10 +5,10 @@ import re
 from functools import cache
 from typing import Iterable
 
-from intake.readers.utils import subclasses
+from intake.readers.utils import Completable, subclasses
 
 
-class Namespace:
+class Namespace(Completable):
     """A set of functions as an accessor on a Reader, producing a Pipeline"""
 
     acts_on = ()
@@ -43,6 +43,7 @@ class Namespace:
         return self._funcs()
 
     def __getattr__(self, item):
+        super().tab_completion_fixer(item)
         dir(self)
         func = getattr(self.mod, item)
         return FuncHolder(self.reader, func)

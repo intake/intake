@@ -117,7 +117,7 @@ class StacCatalogReader(BaseReader):
             subcls = type(subcatalog).__name__
 
             cat[subcatalog.id] = ReaderDescription(
-                reader=self.qname(), kwargs=dict({"cls": subcls, "data": datatypes.Literal(subcatalog.to_dict()), "signer": signer}, **kwargs)
+                reader=self.qname(), kwargs=dict({"cls": subcls, "data": datatypes.Literal(subcatalog.to_dict()), "signer": signer, "prefer": prefer}, **kwargs)
             )
         return cat
 
@@ -137,6 +137,9 @@ class StacCatalogReader(BaseReader):
 
         # if mimetype not registered try rasterio driver
         storage_options = asset.extra_fields.get("table:storage_options", {})
+        if "credential" in storage_options:
+            # MS-ABFS specific argument; look for MS identifier?
+            storage_options["sas_token"] = storage_options["credential"]
         cls = datatypes.recommend(url, mime=mime, storage_options=storage_options, head=False)
         meta = asset.to_dict()
         if cls:

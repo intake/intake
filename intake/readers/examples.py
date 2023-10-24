@@ -9,10 +9,12 @@ def ms_building_parquet():
     cat = intake.readers.datatypes.STACJSON("https://planetarycomputer.microsoft.com/api/stac/v1").to_reader(
         reader="StacSearch", query={"collections": ["ms-buildings"]}, signer=planetary_computer.sign_inplace, prefer="Awkward"
     )
-    return cat.apply(operator.getitem, "USVirginIslands_32300213_2023-04-25").apply(operator.getitem, "data")
+    return cat.apply(operator.getitem, "USVirginIslands_32300213_2023-04-25").apply(
+        operator.getitem, "data", output_instance="intake.readers.readers:AwkwardParquet"
+    )
 
 
-mv_us_virgin_cat = """
+ms_us_virgin_cat = """
 aliases:
   building_outlines: 1e150595b4343b5a
 data:
@@ -61,3 +63,14 @@ metadata: {}
 user_parameters: {}
 version: 2
 """
+
+
+def ms_delta_buildings():
+    # replicates https://planetarycomputer.microsoft.com/dataset/ms-buildings#Example-Notebook
+    import intake.readers
+    import planetary_computer
+
+    cat = intake.readers.datatypes.STACJSON("https://planetarycomputer.microsoft.com/api/stac/v1").to_reader(
+        reader="StacCatalog", signer=planetary_computer.sign_inplace, prefer="Delta"
+    )
+    return cat.apply(operator.getitem, "ms-buildings").apply(operator.getitem, "delta", output_instance="deltalake:DeltaTable")

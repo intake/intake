@@ -58,7 +58,7 @@ class BaseData(Tokenizable):
                 for cls, out in self.possible_outputs.items():
                     if re.findall(reader, cls.qname()):
                         return cls
-        if reader:
+        if isinstance(reader, type):
             return reader
         elif outtype:
             for reader, out in self.possible_outputs.items():
@@ -180,6 +180,22 @@ class Zarr(FileData):
         super().__init__(url=url, storage_options=storage_options, metadata=metadata)
 
 
+class MatlabArray(FileData):
+    """A single array in a .mat file"""
+
+    filepattern = "mat$"
+    magic = {b"MATLAB"}
+
+    def __init__(self, path, variable=None):
+        """If variable is None, takes first non-underscored variable found"""
+        self.path = path
+        self.variable = variable
+
+
+class MatrixMarket(FileData):
+    magic = {b"%%MatrixMarket"}
+
+
 class Excel(FileData):
     filepattern = "xls[xmb]?"
     structure = {"tabular"}
@@ -234,7 +250,7 @@ class OpenDAP(Service):
 
 class SQLQuery(Service):
     structure = {"sequence", "table"}
-    filepattern = "(^oracle|^mssql|^sqlite|^mysql|^postgres)"
+    filepattern = "^(oracle|mssql|sqlite|mysql|postgres)"
 
     def __init__(self, conn, query, metadata=None):
         self.conn = conn

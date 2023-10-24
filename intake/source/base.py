@@ -227,3 +227,7 @@ class DataSource(DataSourceBase):
     """
 
     pass
+
+
+class PatternMixin:
+    ...

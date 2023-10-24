@@ -16,3 +16,11 @@ def tokenize(*args, **kwargs):
     if kwargs:
         hasher.update(str(args).encode())
     return hasher.hexdigest()
+
+
+def reverse_formats(*_, **__):
+    ...
+
+
+def reverse_format(*_, **__):
+    ...

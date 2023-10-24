@@ -187,6 +187,11 @@ class DeltaQueryToDaskGeopandas(BaseConverter):
         return dask_geopandas.read_parquet(file_uris, storage_options=reader.kwargs["data"].storage_options)
 
 
+class PandasToMetagraph(BaseConverter):
+    instances = {"pd:DataFrame": "metagraph.wrappers.EdgeSet:PandasEdgeSet"}
+    func = "metagraph.wrappers.EdgeSet:PandasEdgeSet"
+
+
 def convert_class(data, out_type: str):
     """Get conversion class from given data to out_type
 

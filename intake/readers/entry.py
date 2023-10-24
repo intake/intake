@@ -266,6 +266,7 @@ class Catalog(Tokenizable):
         return self
 
     def __getattr__(self, item):
+        super().tab_completion_fixer(item)
         try:
             return self[item]
         except KeyError:

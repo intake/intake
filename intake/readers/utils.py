@@ -211,7 +211,13 @@ def check_imports(*imports: Iterable[str]) -> bool:
         return False
 
 
-class Tokenizable:
+class Completable:
+    def tab_completion_fixer(self, item):
+        if item in {"_ipython_key_completions_", "_ipython_display_", "__wrapped__", "_ipython_canary_method_should_not_exist_"}:
+            raise AttributeError
+
+
+class Tokenizable(Completable):
     """Provides reliable hash/eq support to classes that hold dict attributes
 
     The convention is, that attributes starting with _ are not included in the

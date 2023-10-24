@@ -37,7 +37,7 @@ logger = logging.getLogger("intake")
 
 def import_name(name):
     modname = name.split(":", 1)[0]
-    logger.debug("Importing: %s" % modname)
+    logger.debug("Importing: '%s'" % modname)
     mod = importlib.import_module(modname)
     if ":" in name:
         end = name.split(":")[1]
