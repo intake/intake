@@ -36,3 +36,4 @@ dependencies:
   - click
   - rangehttpserver
   - pre-commit
+  - universal_pathlib
