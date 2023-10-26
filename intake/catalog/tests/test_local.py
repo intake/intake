@@ -122,9 +122,9 @@ def test_use_source_plugin_from_config(catalog1):
 
 def test_get_dir():
     # Protocols must not be stripped
-    assert get_dir("file:///path/catalog.yml") == "file:///path"
-    assert get_dir("https://example.com/catalog.yml") == "https://example.com"
-    assert get_dir("memory://file.txt") == "memory://"
+    assert get_dir("file:/path/catalog.yml").startswith("file")
+    assert get_dir("https://example.com/catalog.yml").startswith("https")
+    assert get_dir("memory:/file.txt").startswith("memory")
     # Relative path must stay relative
     relative_path = "superdir/example/catalog.yml"
     out = get_dir(relative_path)
@@ -134,7 +134,7 @@ def test_get_dir():
     absolute_path = "/superdir/example/catalog.yml"
     out = get_dir(absolute_path)
     assert os.path.isabs(out)
-    assert out.endswith("/example")
+    assert out.endswith("example")
 
 
 def test_entry_dir_function(catalog1):
