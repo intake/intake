@@ -113,4 +113,4 @@ def test_pathdirs():
     assert config.intake_path_dirs(["paths"]) == ["paths"]
     assert config.intake_path_dirs("") == [""]
     assert config.intake_path_dirs("path1:path2") == ["path1", "path2"]
-    assert config.intake_path_dirs("memory://path1:memory://path2") == ["memory://path1", "memory://path2"]
+    assert config.intake_path_dirs("memory:///path1:memory:///path2") == ["memory:///path1", "memory:///path2"]

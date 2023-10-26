@@ -763,7 +763,7 @@ sources:
     driver: csv
     description: o
     args:
-      urlpath: "memory://file.csv"
+      urlpath: "memory:///file.csv"
   extra:
     driver: csv
     description: o
@@ -774,7 +774,7 @@ sources:
     with mem.open("/file.csv", "wt") as f:
         f.write("a,b\n0,1")
     expected = pd.DataFrame({"a": [0], "b": [1]})
-    cat = open_catalog("memory://cat.yaml")
+    cat = open_catalog("memory:///cat.yaml")
     assert list(cat) == ["implicit", "explicit", "extra"]
     assert cat.implicit.read().equals(expected)
     assert cat.explicit.read().equals(expected)
