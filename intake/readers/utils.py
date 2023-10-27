@@ -212,8 +212,12 @@ def check_imports(*imports: Iterable[str]) -> bool:
 
 
 class Completable:
-    def tab_completion_fixer(self, item):
-        if item in {"_ipython_key_completions_", "_ipython_display_", "__wrapped__", "_ipython_canary_method_should_not_exist_"}:
+    @staticmethod
+    def tab_completion_fixer(item):
+        # just make this a function?
+        if item in {"_ipython_key_completions_", "_ipython_display_", "__wrapped__", "_ipython_canary_method_should_not_exist_", "_render_traceback_"}:
+            raise AttributeError
+        if item.startswith("_repr_"):
             raise AttributeError
 
 

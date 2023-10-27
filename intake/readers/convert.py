@@ -192,6 +192,19 @@ class PandasToMetagraph(BaseConverter):
     func = "metagraph.wrappers.EdgeSet:PandasEdgeSet"
 
 
+class NibabelToNumpy(BaseConverter):
+    instances = {"nibabel.spatialimages:SpatialImage": "numpy:ndimage"}
+    func = "nibabel.spatialimages:SpatialImage.get_fdata"
+
+
+class DicomToNumpy(BaseConverter):
+    instances = {"pydicom.dataset:FileDataset": "numpy:ndarray"}
+    func = "pydicom.dataset:FileDataset.pixel_array"
+
+    def run(self, x, *args, **kwargs):
+        return x.pixel_array
+
+
 def convert_class(data, out_type: str):
     """Get conversion class from given data to out_type
 

@@ -148,6 +148,20 @@ class PNG(FileData):
     magic = {b"\x89PNG"}
 
 
+class JPEG(FileData):
+    filepattern = "jpe?g$"
+    structure = {"array", "image"}
+    mimetypes = "image/jpeg"
+    magic = {b"\xFF\xD8\xFF"}
+
+
+class WAV(FileData):
+    filepattern = "wav$"
+    structure = {"array", "timeseries"}
+    mimetypes = "audio/wav"
+    magic = {(8, b"WAVE")}
+
+
 class NetCDF3(FileData):
     filepattern = "(netcdf3$|nc3?$)"
     structure = {"array"}
@@ -232,14 +246,15 @@ class ASDF(FileData):
 
 
 class DICOM(FileData):
-    filepattern = "(dicom|dcm|ct|mri)$"  # and others
+    filepattern = "(dicom|dcm|ct|mri|DCM)$"  # and others
     structure = {"array", "image"}
     magic = {(128, b"DICM")}
     mimetypes = "application/dicom"
 
 
 class Nifti(FileData):
-    filepattern = "nii(\\.gz)?$"
+    # https://brainder.org/2012/09/23/the-nifti-file-format/
+    filepattern = "(hdr|nii)(\\.gz)?$"
     structure = {"array", "image"}
     magic = {(344, b"\x6E\x69\x31\x00"), (344, b"\x6E\x2B\x31\x00")}
 
@@ -384,6 +399,24 @@ class HuggingfaceDataset(BaseData):
         self.split = split
 
 
+class TFRecord(FileData):
+    structure = {"nested"}
+    filepattern = "tfrec$"
+
+
+class KerasModel(FileData):
+    structure = {"model"}  # complex
+    filepattern = "pb$"  # possibly protobuf
+
+
+class PickleFile(FileData):
+    structure = {}
+
+
+class SKLearnPickleModel(PickleFile):
+    ...
+
+
 comp_magic = {
     # These are a bit like datatypes making raw bytes/file object output
     (0, b"\x1f\x8b"): "gzip",
@@ -397,7 +430,7 @@ container_magic = {
 }
 
 
-def recommend(url=None, mime=None, head=True, storage_options=None) -> set:
+def recommend(url=None, mime=None, head=True, storage_options=None, ignore=None) -> set:
     """Show which data types match
 
     Parameters
@@ -414,11 +447,14 @@ def recommend(url=None, mime=None, head=True, storage_options=None) -> set:
     storage_options: dict | None
         If passing a URL which might be a remote file, storage_options can be used
         by fsspec.
+    ignore: set | None
+        Don't include these in the output
 
     Returns
     -------
     set of matching datatype classes
     """
+    outs = ignore or set()
     out = []
     if isinstance(url, (list, tuple)):
         url = url[0]
@@ -436,28 +472,35 @@ def recommend(url=None, mime=None, head=True, storage_options=None) -> set:
 
     if isinstance(head, bytes):
         for cls in subclasses(FileData):
+            if cls in outs:
+                continue
             for m in cls.magic:
                 if isinstance(m, tuple):
                     off, m = m
                     if off is None:
                         if re.findall(m, head):
                             out.append(cls)
+                            outs.add(cls)
                             break
                 else:
                     off = 0
                 if off is not None and head[off:].startswith(m):
                     out.append(cls)
+                    outs.add(cls)
                     break
     if mime:
         for cls in subclasses(BaseData):
-            if cls.mimetypes and re.match(cls._mimetypes(), mime):
+            if cls not in outs and cls.mimetypes and re.match(cls._mimetypes(), mime):
                 out.append(cls)
+                outs.add(cls)
     if url:
         # urlparse to remove query parts?
         # try stripping compression extensions?
         # TODO: file patterns could be in leading part of fsspec-like URL
         poss = {}
         for cls in subclasses(BaseData):
+            if cls in outs:
+                continue
             if cls.filepattern:
                 find = re.findall(cls._filepattern(), url.lower())
                 if find:
@@ -466,7 +509,7 @@ def recommend(url=None, mime=None, head=True, storage_options=None) -> set:
     if url:
         for ext in {".gz", ".gzip", ".bzip2", "bz2", ".zstd", ".tar", ".tgz"}:
             if url.endswith(ext):
-                out.extend(recommend(url[: -len(ext)], head=False))
+                out.extend(recommend(url[: -len(ext)], head=False, ignore=outs))
     if out:
         return out
 
@@ -489,4 +532,5 @@ def recommend(url=None, mime=None, head=True, storage_options=None) -> set:
                 if out:
                     print("Update url: ", url, "\nstorage_options: ", storage_options)
                     return out
+        # TODO: if directory, look inside files?
     return []

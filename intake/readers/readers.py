@@ -378,6 +378,67 @@ class TFPublicDataset(BaseReader):
         return self._func(name, download=True, with_info=True, **kwargs)
 
 
+class TFTextreader(FileReader):
+    imports = {"tensorflow"}
+    implements = {datatypes.Text}
+    func = "tensorflow.data:TextLineDataset"
+    output_instance = "tensorflow.data:TextLineDataset"
+    url_arg = "filenames"
+
+
+class KerasImageReader(FileReader):
+    imports = {"keras"}
+    implements = {datatypes.PNG, datatypes.JPEG}  # others
+    func = "keras.utils:image_dataset_from_directory"
+    output_instance = "tensorflow.data:Dataset"
+    url_arg = "directory"
+
+
+class KerasText(FileReader):
+    imports = {"keras"}
+    implements = {datatypes.Text}
+    func = "keras.utils:text_dataset_from_directory"
+    output_instance = "tensorflow.data:Dataset"
+    url_arg = "directory"
+
+
+class KerasAudio(FileReader):
+    imports = {"keras"}
+    implements = {datatypes.WAV}
+    func = "keras.utils:audio_dataset_from_directory"
+    output_instance = "tensorflow.data:Dataset"
+    url_arg = "directory"
+
+
+class KerasModelReader(FileReader):
+    imports = {"keras"}
+    implements = {datatypes.KerasModel}
+    func = "tensorflow.keras.models:load_model"
+    url_arg = "filepath"
+    output_instance = "keras.engine.training:Model"
+
+
+class TFRecordReader(FileReader):
+    imports = {"tensorflow"}
+    implements = {datatypes.TFRecord}
+    func = "tensorflow.data:TFRecordDataset"
+    output_instance = "tensorflow.data:TFRecordDataset"
+    url_arg = "filenames"
+
+
+class SKLearnModelReader(FileReader):
+    # https://scikit-learn.org/stable/model_persistence.html
+    # recommends skops, which seems little used
+    imports = {"sklearn"}
+    implements = {datatypes.SKLearnModel}
+    func = "pickle:load"
+    output_instance = "sklearn.base:BaseEstimator"
+
+    def _read(self, data, **kw):
+        with fsspec.open(data.url, **(data.storage_options or {})) as f:
+            return self._func(f)
+
+
 class Awkward(FileReader):
     imports = {"awkward"}
     output_instance = "awkward:Array"
@@ -553,6 +614,7 @@ class NumpyReader(FileReader):
         if data.storage_options or "://" in data.url or "::" in data.url:
             with fsspec.open(data.url, **(data.storage_options or {})) as f:
                 return self._func(f, **kw)
+        # use of fsspec prevents mmap, so provide alternative for simple local paths
         return self._func(data.url, **kw)
 
 
@@ -678,10 +740,29 @@ class ScipyMatrixMarketReader(FileReader):
 
 class NibabelNiftiReader(FileReader):
     # method img.get_fdata() gets the contents as numpy
-    output_instance = "nibabel:Nifti2Image"
-    implements = {datatypes.Nifti}
+    output_instance = "nibabel.spatialimages:SpatialImage"
+    implements = {datatypes.Nifti}  # and other medical image types
     imports = {"nibabel"}
     func = "nibabel:load"
+    url_arg = "filename"
+    storage_options = True
+
+    def _read(self, data, **kw):
+        with fsspec.open(data.url, **(data.storage_options or {})) as f:
+            return self._func(f, **kw)
+
+
+class DicomReader(FileReader):
+    output_instance = "pydicom.dataset:FileDataset"
+    implements = {datatypes.DICOM}
+    imports = {"pydicom"}
+    func = "pydicom:read_file"
+    url_arg = "fp"  # can be file-like
+    storage_options = True
+
+    def _read(self, data, **kw):
+        with fsspec.open(data.url, **(data.storage_options or {})) as f:
+            return self._func(f, **kw)
 
 
 class Condition(BaseReader):
