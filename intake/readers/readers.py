@@ -430,7 +430,7 @@ class SKLearnModelReader(FileReader):
     # https://scikit-learn.org/stable/model_persistence.html
     # recommends skops, which seems little used
     imports = {"sklearn"}
-    implements = {datatypes.SKLearnModel}
+    implements = {datatypes.SKLearnPickleModel}
     func = "pickle:load"
     output_instance = "sklearn.base:BaseEstimator"
 
@@ -599,7 +599,7 @@ class PythonModule(BaseReader):
 class SKImageReader(FileReader):
     output_instance = "numpy:ndarray"
     imports = {"scikit-image"}
-    implements = {datatypes.PNG, datatypes.TIFF}
+    implements = {datatypes.PNG, datatypes.TIFF, datatypes.JPEG}
     func = "skimage.io:imread"
     url_arg = "fname"
 

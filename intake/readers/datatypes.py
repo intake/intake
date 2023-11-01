@@ -170,7 +170,7 @@ class NetCDF3(FileData):
 
 
 class HDF5(FileData):
-    filepattern = "(hdf5?$|h4$)"  # many others by convention
+    filepattern = "(hdf5?|h4|nc)$"  # many others by convention
     structure = {"array", "table", "hierarchy"}
     magic = {b"HDF"}
     mimetypes = "application/x-hdf5?"
@@ -452,8 +452,9 @@ def recommend(url=None, mime=None, head=True, storage_options=None, ignore=None)
 
     Returns
     -------
-    set of matching datatype classes
+    set of matching datatype classes.
     """
+    # TODO: more complex returns defining which type of match hit what, or some kind of score
     outs = ignore or set()
     out = []
     if isinstance(url, (list, tuple)):

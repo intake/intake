@@ -1,3 +1,21 @@
+"""Imports made my intake when it itself is imported
+
+Since "plugins" are just subclasses of things like intake.readers.readers.BaseReader,
+importing them is enough for registration.
+
+To include imports from a package in the list of things to import, the canonical thing
+to do is include an entry under "intake.imports" in the package entrypoints; the value
+of each item will be imported.
+
+The following config keys define behaviour:
+
+- import_on_startup: if False, makes no automatic imports
+- entrypoints_block_list: if an entrypoints import has a top-level package name
+  in this list, it will be skipped
+- import_extras: values in this list will be imported after processing entrypoints. This is
+  a way to include imports without installing packages/entrypoints.
+"""
+
 from intake import conf, import_name, logger
 from importlib.metadata import entry_points
 

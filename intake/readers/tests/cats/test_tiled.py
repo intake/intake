@@ -13,6 +13,7 @@ tiled = pytest.importorskip("tiled")
 def tiled_server():
     t0 = time.time()
     cmd = "tiled serve demo --port 8901"
+    fail = False
     P = subprocess.Popen(shlex.split(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, bufsize=1, text=True)
     while True:
         line = P.stderr.readline()
@@ -23,9 +24,11 @@ def tiled_server():
             break
         time.sleep(0.01)
         if time.time() - t0 > 5:
-            break
+            fail = True
     P.kill()
     P.wait()
+    if fail:
+        raise RuntimeError("tiled fixture did not start")
 
 
 def test_catalog_workflow(tiled_server):

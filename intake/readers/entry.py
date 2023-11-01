@@ -17,6 +17,7 @@ from intake.readers.user_parameters import (
 )
 from intake.readers.utils import (
     Tokenizable,
+    check_imports,
     extract_by_path,
     extract_by_value,
     merge_dicts,
@@ -86,6 +87,13 @@ class ReaderDescription(Tokenizable):
         self.output_instance = output_instance
         self.user_parameters: dict[str | BaseUserParameter] = user_parameters or {}
         self.metadata = metadata or {}
+
+    def check_imports(self):
+        """Are the packages listed in the "imports" key of the metadata available?"""
+        cls = import_name(self.reader)
+        class_import = cls.check_imports()
+        meta_imports = check_imports(*self.metadata.get("imports", set()))
+        return class_import & meta_imports
 
     def get_kwargs(self, user_parameters=None, **kwargs) -> dict[str, Any]:
         """Get set of kwargs for given reader, based on prescription, new args and user parameters
@@ -309,6 +317,32 @@ class Catalog(Tokenizable):
             return self.data[item]
         else:
             raise KeyError(item)
+
+    def get_aliases(self, entity: str):
+        """Return those alias names that point to the given opaque key"""
+        return {k for k, v in self.aliases.items() if v == entity}
+
+    def search(self, expr) -> Catalog:
+        """Make new catalog with a subset of this catalog
+
+        The new catalog will have those entries which pass the filter `expr`, which
+        is an instance of `intake.readers.search.BaseSearch` (i.e., has a method
+        like `filter(entry) -> bool`).
+
+        In the special case that expr is just a string, the `Text` search expression
+        will be used.
+        """
+        from intake.readers.search import Text
+
+        if isinstance(expr, str):
+            expr = Text(expr)
+        cat = Catalog()
+        for e, v in self.entries.items():
+            if expr.filter(v):
+                cat.add_entry(v)
+                aliases = self.get_aliases(e)
+                cat.aliases.update({a: e for a in aliases})
+        return cat
 
     def __getitem__(self, item):
         ups = self.user_parameters.copy()
