@@ -4,7 +4,8 @@ from intake.readers.search import Importable, Text
 
 
 class NotImportable(BaseReader):
-    # TODO: this will show up in the class hierarchy throughout testing
+    # TODO: this will show up in the class hierarchy throughout testing - make a temporary mock?
+    #  see https://stackoverflow.com/a/52428851/3821154
     imports = {"unknown_package"}
 
 
