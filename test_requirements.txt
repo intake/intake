@@ -7,3 +7,5 @@ bokeh
 aiohttp
 requests
 pandas
+universal-pathlib
+pytest

@@ -6,3 +6,4 @@ jinja2
 msgpack
 pyyaml
 requests
+universal-pathlib
