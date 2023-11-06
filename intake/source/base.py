@@ -64,7 +64,11 @@ class DataSourceBase(DictSerialiseMixin):
         raise NotImplementedError
 
     def __eq__(self, other):
-        return type(self) is type(other) and self._captured_init_args == other._captured_init_args and self._captured_init_kwargs == other._captured_init_kwargs
+        return (
+            type(self) is type(other)
+            and self._captured_init_args == other._captured_init_args
+            and self._captured_init_kwargs == other._captured_init_kwargs
+        )
 
     def __hash__(self):
         return hash((type(self), str(self._captured_init_args), str(self._captured_init_kwargs)))
@@ -87,8 +91,24 @@ class DataSourceBase(DictSerialiseMixin):
 
         kwargs = self._captured_init_kwargs.copy()
         meta = kwargs.pop("metadata", self.metadata) or {}
-        kwargs.update(dict(zip(inspect.signature(self.__init__).parameters, self._captured_init_args)))
-        data = {"sources": {self.name: {"driver": self.classname, "description": self.description or "", "metadata": meta, "args": kwargs}}}
+        kwargs.update(
+            dict(
+                zip(
+                    inspect.signature(self.__init__).parameters,
+                    self._captured_init_args,
+                )
+            )
+        )
+        data = {
+            "sources": {
+                self.name: {
+                    "driver": self.classname,
+                    "description": self.description or "",
+                    "metadata": meta,
+                    "args": kwargs,
+                }
+            }
+        }
         return data
 
     def yaml(self):
@@ -106,7 +126,11 @@ class DataSourceBase(DictSerialiseMixin):
 
         data = self._yaml()["sources"]
         contents = dump(data, default_flow_style=False)
-        display({"application/yaml": contents, "text/plain": pretty_describe(contents)}, metadata={"application/json": {"root": self.name}}, raw=True)
+        display(
+            {"application/yaml": contents, "text/plain": pretty_describe(contents)},
+            metadata={"application/json": {"root": self.name}},
+            raw=True,
+        )
 
     def __repr__(self):
         return self.yaml()
@@ -129,7 +153,12 @@ class DataSourceBase(DictSerialiseMixin):
         """Open resource and populate the source attributes."""
         self._load_metadata()
 
-        return dict(dtype=self.dtype, shape=self.shape, npartitions=self.npartitions, metadata=self.metadata)
+        return dict(
+            dtype=self.dtype,
+            shape=self.shape,
+            npartitions=self.npartitions,
+            metadata=self.metadata,
+        )
 
     def read(self):
         """Load entire dataset into a container and return it"""

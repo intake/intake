@@ -1,8 +1,8 @@
 [tool.black]
-line-length = 165
+line-length = 100
 
 [tool.ruff]
-line-length = 165
+line-length = 130
 ignore = ["E402"]  # top of file imports
 
 [tool.ruff.per-file-ignores]
@@ -12,3 +12,39 @@ ignore = ["E402"]  # top of file imports
 
 [tool.isort]
 profile = "black"
+
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "intake"
+dynamic = ["version"]
+description = "Data catalog, search and load"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+  {name = "Martin Durant", email = "martin.durant@alumni.utoronto.ca"},
+]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Development Status :: 4 - Beta",
+]
+
+[tool.setuptools_scm]
+version_file = "intake/_version.py"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+exclude = ["test*"]
+
+[flake8]
+exclude = "__init__.py"
+ignore = "E,W"
+select = "F,E101,E111,E501"
+max-line-length = 100

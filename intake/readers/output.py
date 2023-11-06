@@ -23,12 +23,16 @@ from intake.readers.datatypes import (
 )
 from intake.readers.utils import all_to_one
 
+
 # TODO: superclass for output, so they show up differently in any graph viz?
 #  *most* things here produce a datatypes:BaseData, but not all
 
 
 class PandasToParquet(BaseConverter):
-    instances = all_to_one({"pandas:DataFrame", "dask.dataframe:DataFrame", "geopandas:GeoDataFrame"}, "intake.readers.datatypes:Parquet")
+    instances = all_to_one(
+        {"pandas:DataFrame", "dask.dataframe:DataFrame", "geopandas:GeoDataFrame"},
+        "intake.readers.datatypes:Parquet",
+    )
 
     def run(self, x, url, storage_options=None, metadata=None, **kwargs):
         x.to_parquet(url, storage_options=storage_options, **kwargs)
@@ -36,7 +40,10 @@ class PandasToParquet(BaseConverter):
 
 
 class PandasToCSV(BaseConverter):
-    instances = all_to_one({"pandas:DataFrame", "dask.dataframe:DataFrame", "geopandas:GeoDataFrame"}, "intake.readers.datatypes:CSV")
+    instances = all_to_one(
+        {"pandas:DataFrame", "dask.dataframe:DataFrame", "geopandas:GeoDataFrame"},
+        "intake.readers.datatypes:CSV",
+    )
 
     def run(self, x, url, storage_options=None, metadata=None, **kwargs):
         x.to_csv(url, storage_options=storage_options, **kwargs)
@@ -44,7 +51,10 @@ class PandasToCSV(BaseConverter):
 
 
 class PandasToHDF5(BaseConverter):
-    instances = all_to_one({"pandas:DataFrame", "dask.dataframe:DataFrame"}, "intake.readers.datatypes:HDF5")
+    instances = all_to_one(
+        {"pandas:DataFrame", "dask.dataframe:DataFrame"},
+        "intake.readers.datatypes:HDF5",
+    )
 
     def run(self, x, url, table, storage_options=None, metadata=None, **kwargs):
         x.to_hdf(url, table, storage_options=storage_options, **kwargs)
@@ -52,7 +62,10 @@ class PandasToHDF5(BaseConverter):
 
 
 class PandasToFeather(BaseConverter):
-    instances = all_to_one({"pandas:DataFrame", "geopandas:GeoDataFrame"}, "intake.readers.datatypes:Feather2")
+    instances = all_to_one(
+        {"pandas:DataFrame", "geopandas:GeoDataFrame"},
+        "intake.readers.datatypes:Feather2",
+    )
 
     def run(self, x, url, storage_options=None, metadata=None, **kwargs):
         # TODO: fsspec output
@@ -82,7 +95,12 @@ class DaskArrayToZarr(BaseConverter):
     func = "xarray:Dataset.to_zarr"
 
     def run(self, x, url, group="", storage_options=None, metadata=None, **kwargs):
-        x.to_zarr(store=url, component=group or None, storage_options=storage_options, **kwargs)
+        x.to_zarr(
+            store=url,
+            component=group or None,
+            storage_options=storage_options,
+            **kwargs,
+        )
         return Zarr(url, storage_options=storage_options, root=group, metadata=metadata)
 
 
@@ -102,7 +120,10 @@ class NumpyToNumpyFile(BaseConverter):
 
 
 class ToMatplotlib(BaseConverter):
-    instances = all_to_one({"pandas:DataFrame", "geopandas:GeoDataFrame", "xarray:DataSet"}, "matplotlib.pyplot:Figure")
+    instances = all_to_one(
+        {"pandas:DataFrame", "geopandas:GeoDataFrame", "xarray:DataSet"},
+        "matplotlib.pyplot:Figure",
+    )
 
     def run(self, x, **kwargs):
         import matplotlib.pyplot as plt

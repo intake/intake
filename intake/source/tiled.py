@@ -122,7 +122,12 @@ class TiledSource(DataSource):
         x = self.to_dask()
         dt = getattr(x, "dtype", None) or getattr(x, "dtypes", None)
         parts = getattr(x, "npartitions", None) or x.data.npartitions
-        return dict(dtype=dt, shape=getattr(self.instance.structure().macro, "shape", x.shape), npartitions=parts, metadata=self.metadata)
+        return dict(
+            dtype=dt,
+            shape=getattr(self.instance.structure().macro, "shape", x.shape),
+            npartitions=parts,
+            metadata=self.metadata,
+        )
 
     def to_dask(self):
         # cache this?

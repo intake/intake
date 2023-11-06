@@ -1,9 +1,0 @@
-intake-parquet
-zarr
-notebook
-panel
-hvplot
-bokeh
-aiohttp
-requests
-pandas

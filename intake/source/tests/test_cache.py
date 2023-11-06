@@ -88,7 +88,12 @@ def test_path(file_cache):
 
 def test_dir_cache(tempdir, temp_cache):
     [os.makedirs(os.path.join(tempdir, d)) for d in ["main", "main/sub1", "main/sub2"]]
-    for f in ["main/afile", "main/sub1/subfile", "main/sub2/subfile1", "main/sub2/subfile2"]:
+    for f in [
+        "main/afile",
+        "main/sub1/subfile",
+        "main/sub2/subfile1",
+        "main/sub2/subfile2",
+    ]:
         fn = os.path.join(tempdir, f)
         with open(fn, "w") as fo:
             fo.write(f)
@@ -132,7 +137,10 @@ def test_compressed_cache(temp_cache):
 def test_filtered_compressed_cache(temp_cache):
     cat = intake.open_catalog(os.path.join(here, "cached.yaml"))
     s = cat.calvert_filter()
-    old, intake.config.conf["cache_download_progress"] = intake.config.conf["cache_download_progress"], False
+    old, intake.config.conf["cache_download_progress"] = (
+        intake.config.conf["cache_download_progress"],
+        False,
+    )
     try:
         df = s.read()
         assert len(df)
@@ -151,7 +159,13 @@ def test_cache_to_cat(tempdir):
     old = intake.config.conf.copy()
     olddir = intake.config.confdir
     intake.config.confdir = str(tempdir)
-    intake.config.conf.update({"cache_dir": "catdir", "cache_download_progress": False, "cache_disabled": False})
+    intake.config.conf.update(
+        {
+            "cache_dir": "catdir",
+            "cache_download_progress": False,
+            "cache_disabled": False,
+        }
+    )
     try:
         fn0 = os.path.join(here, "calvert_uk.zip")
         fn1 = os.path.join(tempdir, "calvert_uk.zip")

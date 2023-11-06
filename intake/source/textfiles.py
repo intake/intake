@@ -25,7 +25,16 @@ class TextFilesSource(base.DataSource):
     container = "python"
     partition_access = True
 
-    def __init__(self, urlpath, text_mode=True, text_encoding="utf8", compression=None, decoder=None, metadata=None, storage_options=None):
+    def __init__(
+        self,
+        urlpath,
+        text_mode=True,
+        text_encoding="utf8",
+        compression=None,
+        decoder=None,
+        metadata=None,
+        storage_options=None,
+    ):
         """
 
         Parameters

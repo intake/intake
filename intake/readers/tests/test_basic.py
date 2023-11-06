@@ -17,7 +17,10 @@ def test1():
 def test_recommend_filetype():
     assert datatypes.Parquet in datatypes.recommend(url="myfile.parq")
     assert datatypes.Parquet in datatypes.recommend(head=b"PAR1")
-    assert all(p in datatypes.recommend(mime="text/yaml") for p in {datatypes.YAMLFile, datatypes.CatalogFile, datatypes.Text})
+    assert all(
+        p in datatypes.recommend(mime="text/yaml")
+        for p in {datatypes.YAMLFile, datatypes.CatalogFile, datatypes.Text}
+    )
 
 
 def test_recommend_reader():
@@ -25,6 +28,9 @@ def test_recommend_reader():
     rec = readers.recommend(pp)
     assert all(p not in rec["importable"] for p in rec["not_importable"])
     assert all(p not in rec["not_importable"] for p in rec["importable"])
-    assert all(p in rec["importable"] + rec["not_importable"] for p in {readers.PandasParquet, readers.AwkwardParquet, readers.DaskParquet})
+    assert all(
+        p in rec["importable"] + rec["not_importable"]
+        for p in {readers.PandasParquet, readers.AwkwardParquet, readers.DaskParquet}
+    )
     pp = datatypes.CSV("")
     assert readers.PandasCSV in readers.recommend(pp)["importable"]

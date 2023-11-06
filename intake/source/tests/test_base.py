@@ -21,7 +21,11 @@ def test_datasource_base_method_exceptions():
     # Unimplemented methods should raise exceptions
     d = base.DataSource()
 
-    for method_name, args in [("_get_schema", []), ("_get_partition", [1]), ("_close", [])]:
+    for method_name, args in [
+        ("_get_schema", []),
+        ("_get_partition", [1]),
+        ("_close", []),
+    ]:
         method = getattr(d, method_name)
         with pytest.raises(NotImplementedError):
             method(*args)
@@ -63,7 +67,12 @@ class MockDataSourceDataFrame(base.DataSource):
     def _get_schema(self):
         self.call_count["_get_schema"] += 1
 
-        return base.Schema(dtype=np.dtype([("x", np.int64), ("y", np.int64)]), shape=(6,), npartitions=2, extra_metadata=dict(c=3, d=4))
+        return base.Schema(
+            dtype=np.dtype([("x", np.int64), ("y", np.int64)]),
+            shape=(6,),
+            npartitions=2,
+            extra_metadata=dict(c=3, d=4),
+        )
 
     def _get_partition(self, i):
         self.call_count["_get_partition"] += 1
@@ -82,7 +91,9 @@ class MockDataSourceDataFrame(base.DataSource):
         import dask
         import dask.dataframe as dd
 
-        return dd.from_delayed([dask.delayed(self._get_partition)(i) for i in range(self.npartitions)])
+        return dd.from_delayed(
+            [dask.delayed(self._get_partition)(i) for i in range(self.npartitions)]
+        )
 
     def _close(self):
         self.call_count["_close"] += 1
@@ -226,7 +237,9 @@ class MockDataSourcePython(base.DataSource):
         import dask
         import dask.bag as db
 
-        return db.from_delayed([dask.delayed(self._get_partition)(i) for i in range(self.npartitions)])
+        return db.from_delayed(
+            [dask.delayed(self._get_partition)(i) for i in range(self.npartitions)]
+        )
 
     def _close(self):
         self.call_count["_close"] += 1
@@ -264,13 +277,23 @@ def test_datasource_python_discover(source_python):
 def test_datasource_python_read(source_python):
     data = source_python.read()
 
-    assert data == [{"x": "foo", "y": "bar"}, {"x": "foo", "y": "bar", "z": "baz"}, {"x": 1}, {}]
+    assert data == [
+        {"x": "foo", "y": "bar"},
+        {"x": "foo", "y": "bar", "z": "baz"},
+        {"x": 1},
+        {},
+    ]
 
 
 def test_datasource_python_to_dask(source_python):
     db = list(source_python.to_dask())
 
-    assert db == [{"x": "foo", "y": "bar"}, {"x": "foo", "y": "bar", "z": "baz"}, {"x": 1}, {}]
+    assert db == [
+        {"x": "foo", "y": "bar"},
+        {"x": "foo", "y": "bar", "z": "baz"},
+        {"x": 1},
+        {},
+    ]
 
 
 def test_yaml_method(source_python):

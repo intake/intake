@@ -8,16 +8,10 @@
 import importlib
 import logging
 import os
-import re
-import warnings
 
-from ._version import get_versions
-
-__version__ = get_versions()["version"]
-del get_versions
-
-from .catalog.base import Catalog
-from .source import registry
+from intake._version import __version__
+from intake.catalog.base import Catalog
+from intake.source import registry
 from intake.config import conf
 
 imports = {
@@ -131,7 +125,9 @@ def open_catalog(uri=None, **kwargs):
         uri = os.fspath(uri)
     if driver is None:
         if uri:
-            if (isinstance(uri, str) and "*" in uri) or ((isinstance(uri, (list, tuple))) and len(uri) > 1):
+            if (isinstance(uri, str) and "*" in uri) or (
+                (isinstance(uri, (list, tuple))) and len(uri) > 1
+            ):
                 # glob string or list of files/globs
                 driver = "yaml_files_cat"
             elif isinstance(uri, (list, tuple)) and len(uri) == 1:

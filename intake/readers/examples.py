@@ -6,11 +6,18 @@ def ms_building_parquet():
     import intake.readers
     import planetary_computer
 
-    cat = intake.readers.datatypes.STACJSON("https://planetarycomputer.microsoft.com/api/stac/v1").to_reader(
-        reader="StacSearch", query={"collections": ["ms-buildings"]}, signer=planetary_computer.sign_inplace, prefer="Awkward"
+    cat = intake.readers.datatypes.STACJSON(
+        "https://planetarycomputer.microsoft.com/api/stac/v1"
+    ).to_reader(
+        reader="StacSearch",
+        query={"collections": ["ms-buildings"]},
+        signer=planetary_computer.sign_inplace,
+        prefer="Awkward",
     )
     return cat.apply(operator.getitem, "USVirginIslands_32300213_2023-04-25").apply(
-        operator.getitem, "data", output_instance="intake.readers.readers:AwkwardParquet"
+        operator.getitem,
+        "data",
+        output_instance="intake.readers.readers:AwkwardParquet",
     )
 
 
@@ -70,7 +77,9 @@ def ms_delta_buildings():
     import intake.readers
     import planetary_computer
 
-    cat = intake.readers.datatypes.STACJSON("https://planetarycomputer.microsoft.com/api/stac/v1").to_reader(
-        reader="StacCatalog", signer=planetary_computer.sign_inplace, prefer="Delta"
+    cat = intake.readers.datatypes.STACJSON(
+        "https://planetarycomputer.microsoft.com/api/stac/v1"
+    ).to_reader(reader="StacCatalog", signer=planetary_computer.sign_inplace, prefer="Delta")
+    return cat.apply(operator.getitem, "ms-buildings").apply(
+        operator.getitem, "delta", output_instance="deltalake:DeltaTable"
     )
-    return cat.apply(operator.getitem, "ms-buildings").apply(operator.getitem, "delta", output_instance="deltalake:DeltaTable")

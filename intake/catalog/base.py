@@ -97,7 +97,10 @@ class Catalog(DataSource):
         if isinstance(user_parameters, dict) and user_parameters:
             from .local import UserParameter
 
-            self.user_parameters = {name: (UserParameter(name=name, **up) if isinstance(up, dict) else up) for name, up in user_parameters.items()}
+            self.user_parameters = {
+                name: (UserParameter(name=name, **up) if isinstance(up, dict) else up)
+                for name, up in user_parameters.items()
+            }
         elif isinstance(user_parameters, (list, tuple)):
             self.user_parameters = {up["name"]: up for up in user_parameters}
         else:
@@ -193,7 +196,11 @@ class Catalog(DataSource):
         import copy
 
         words = text.lower().split()
-        entries = {k: copy.copy(v) for k, v in self.walk(depth=depth).items() if any(word in str(v.describe().values()).lower() for word in words)}
+        entries = {
+            k: copy.copy(v)
+            for k, v in self.walk(depth=depth).items()
+            if any(word in str(v.describe().values()).lower() for word in words)
+        }
         cat = Catalog.from_dict(
             entries,
             name=self.name + "_search",
@@ -238,7 +245,9 @@ class Catalog(DataSource):
         Catalog
            New catalog with Entries that still refer to their parents
         """
-        return Catalog.from_dict({key: entry for key, entry in self._entries.items() if func(entry)})
+        return Catalog.from_dict(
+            {key: entry for key, entry in self._entries.items() if func(entry)}
+        )
 
     @reload_on_change
     def walk(self, sofar=None, prefix=None, depth=2):
@@ -292,11 +301,18 @@ class Catalog(DataSource):
         """
         import yaml
 
-        output = {"metadata": self.metadata, "sources": {}, "name": self.name, "description": self.description}
+        output = {
+            "metadata": self.metadata,
+            "sources": {},
+            "name": self.name,
+            "description": self.description,
+        }
         for key, entry in self._entries.items():
             kw = entry._captured_init_kwargs.copy()
             kw.pop("catalog", None)
-            kw["parameters"] = {k.name: k.__getstate__()["kwargs"] for k in kw.get("parameters", [])}
+            kw["parameters"] = {
+                k.name: k.__getstate__()["kwargs"] for k in kw.get("parameters", [])
+            }
             try:
                 if issubclass(kw["driver"], DataSourceBase):
                     kw["driver"] = ".".join([kw["driver"].__module__, kw["driver"].__name__])
@@ -327,7 +343,9 @@ class Catalog(DataSource):
         entry._catalog = self
         entry._pmode = self.pmode
 
-        up_names = set((up["name"] if isinstance(up, dict) else up.name) for up in entry._user_parameters)
+        up_names = set(
+            (up["name"] if isinstance(up, dict) else up.name) for up in entry._user_parameters
+        )
         ups = [up for name, up in self.user_parameters.items() if name not in up_names]
         entry._user_parameters = ups + (entry._user_parameters or [])
         return entry()
@@ -380,7 +398,10 @@ class Catalog(DataSource):
     def __dir__(self):
         # Include tab-completable entries and normal attributes.
         return [
-            entry for entry in self if re.match("[_A-Za-z][_a-zA-Z0-9]*$", entry) and not keyword.iskeyword(entry)  # valid Python identifer
+            entry
+            for entry in self
+            if re.match("[_A-Za-z][_a-zA-Z0-9]*$", entry)
+            and not keyword.iskeyword(entry)  # valid Python identifer
         ] + list(  # not a Python keyword
             self.__dict__.keys()
         )
@@ -475,7 +496,12 @@ class Catalog(DataSource):
         raise KeyError(key)
 
     def discover(self):
-        return {"container": "catalog", "shape": None, "dtype": None, "metadata": self.metadata}
+        return {
+            "container": "catalog",
+            "shape": None,
+            "dtype": None,
+            "metadata": self.metadata,
+        }
 
     def _close(self):
         # TODO: maybe close all entries?

@@ -10,7 +10,9 @@ pytest.importorskip("psycopg")
 def postgres_with_data(postgresql):
     """Check main postgresql fixture."""
     cur = postgresql.cursor()
-    cur.execute("create table t_random as select s, md5(random()::text) from generate_Series(1,50) s;")
+    cur.execute(
+        "create table t_random as select s, md5(random()::text) from generate_Series(1,50) s;"
+    )
     postgresql.commit()
     cur.close()
     return int(cur._conn.pgconn.port)  # this is the one I found to be dynamic
@@ -20,7 +22,10 @@ def test_pg_pandas(postgres_with_data):
     pytest.importorskip("psycopg2")
     pytest.importorskip("sqlalchemy")
 
-    data = datatypes.SQLQuery(conn=f"postgresql://postgres@127.0.0.1:{postgres_with_data}/tests", query="t_random")
+    data = datatypes.SQLQuery(
+        conn=f"postgresql://postgres@127.0.0.1:{postgres_with_data}/tests",
+        query="t_random",
+    )
     reader = readers.PandasSQLAlchemy(data)
     out = reader.read()
     assert len(out) == 50
@@ -29,7 +34,10 @@ def test_pg_pandas(postgres_with_data):
 
 
 def test_pg_duck_with_pandas_input(postgres_with_data):
-    data = datatypes.SQLQuery(conn=f"postgresql://postgres@127.0.0.1:{postgres_with_data}/tests", query="t_random")
+    data = datatypes.SQLQuery(
+        conn=f"postgresql://postgres@127.0.0.1:{postgres_with_data}/tests",
+        query="t_random",
+    )
     reader = readers.DuckSQL(data)
     out = reader.read()
     assert len(out) == 50

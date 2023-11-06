@@ -22,7 +22,9 @@ from .test_utils import copy_test_file
 
 @pytest.fixture
 def user_catalog():
-    target_catalog = copy_test_file("catalog1.yml", appdirs.user_data_dir(appname="intake", appauthor="intake"))
+    target_catalog = copy_test_file(
+        "catalog1.yml", appdirs.user_data_dir(appname="intake", appauthor="intake")
+    )
     yield target_catalog
     # Remove the file, but not the directory (because there might be other
     # files already there)
@@ -126,7 +128,13 @@ def test_no_imports():
 
     assert "intake" in sys.modules
 
-    for mod in ["intake.tests", "intake.interface", "intake.source.csv", "intake.cli", "intake.auth"]:
+    for mod in [
+        "intake.tests",
+        "intake.interface",
+        "intake.source.csv",
+        "intake.cli",
+        "intake.auth",
+    ]:
         assert mod not in sys.modules
 
 

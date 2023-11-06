@@ -14,12 +14,17 @@ def do_import():
         import hvplot
         import panel as pn
 
-        error = Version(pn.__version__) < Version("1") or Version(hvplot.__version__) < Version("0.8.1")
+        error = Version(pn.__version__) < Version("1") or Version(hvplot.__version__) < Version(
+            "0.8.1"
+        )
     except ImportError:
         error = True
 
     if error:
-        raise RuntimeError("Please install panel and hvplot to use the GUI\n" "`conda install -c conda-forge 'panel>=1' 'hvplot>=0.8.1'`")
+        raise RuntimeError(
+            "Please install panel and hvplot to use the GUI\n"
+            "`conda install -c conda-forge 'panel>=1' 'hvplot>=0.8.1'`"
+        )
 
     from .gui import GUI
 

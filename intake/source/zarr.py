@@ -39,7 +39,12 @@ class ZarrArraySource(DataSource):
             array at this location in the hierarchy; components are separated
             by the "/" character.
         """
-        self.data = Zarr(url=urlpath, storage_options=storage_options, root=component, metadata=metadata)
+        self.data = Zarr(
+            url=urlpath,
+            storage_options=storage_options,
+            root=component,
+            metadata=metadata,
+        )
         self.metadata = metadata
 
     def to_dask(self):

@@ -215,7 +215,13 @@ class Completable:
     @staticmethod
     def tab_completion_fixer(item):
         # just make this a function?
-        if item in {"_ipython_key_completions_", "_ipython_display_", "__wrapped__", "_ipython_canary_method_should_not_exist_", "_render_traceback_"}:
+        if item in {
+            "_ipython_key_completions_",
+            "_ipython_display_",
+            "__wrapped__",
+            "_ipython_canary_method_should_not_exist_",
+            "_render_traceback_",
+        }:
             raise AttributeError
         if item.startswith("_repr_"):
             raise AttributeError
@@ -235,7 +241,11 @@ class Tokenizable(Completable):
     def _dic_for_comp(self):
         # TODO: we don't consider metadata part of the token. Any others?
         #  Do we just want to exclude others?
-        return {k: find_funcs(v) for k, v in self.__dict__.items() if not k.startswith("_") and k not in self._avoid}
+        return {
+            k: find_funcs(v)
+            for k, v in self.__dict__.items()
+            if not k.startswith("_") and k not in self._avoid
+        }
 
     def _token(self):
         dic = self._dic_for_comp()

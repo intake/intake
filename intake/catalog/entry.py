@@ -85,7 +85,12 @@ class CatalogEntry(DictSerialiseMixin):
 
         contents = self.describe()
         display(
-            {"application/json": json.dumps(contents), "text/plain": pretty_describe(contents)}, metadata={"application/json": {"root": contents["name"]}}, raw=True
+            {
+                "application/json": json.dumps(contents),
+                "text/plain": pretty_describe(contents),
+            },
+            metadata={"application/json": {"root": contents["name"]}},
+            raw=True,
         )
 
     def _yaml(self):

@@ -18,7 +18,9 @@ path = os.path.dirname(__file__)
 
 def test_idempotent(temp_cache):
     pytest.importorskip("zarr")
-    cat = intake.open_catalog(os.path.abspath(os.path.join(path, "..", "..", "source", "tests", "sources.yaml")))
+    cat = intake.open_catalog(
+        os.path.abspath(os.path.join(path, "..", "..", "source", "tests", "sources.yaml"))
+    )
     s = cat.zarr1()
     assert not s.has_been_persisted
     s2 = s.persist()

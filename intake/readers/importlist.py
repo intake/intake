@@ -34,12 +34,20 @@ def process_entries():
         try:
             import_name(spec.value)
         except Exception as e:
-            logger.warning("Importing %s as part of processing intake entrypoints failed\n(%s)", spec.value, e)
+            logger.warning(
+                "Importing %s as part of processing intake entrypoints failed\n(%s)",
+                spec.value,
+                e,
+            )
     for impname in conf["extra_imports"]:
         try:
             import_name(impname)
         except Exception as e:
-            logger.warning("Importing %s as part of processing intake extra_imports failed\n(%s)", impname, e)
+            logger.warning(
+                "Importing %s as part of processing intake extra_imports failed\n(%s)",
+                impname,
+                e,
+            )
 
 
 if conf["import_on_startup"]:

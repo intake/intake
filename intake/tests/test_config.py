@@ -89,7 +89,15 @@ def test_conf():
 
 
 def test_conf_auth():
-    with temp_conf({"port": 5556, "auth": {"cls": "intake.auth.secret.SecretAuth", "kwargs": {"secret": "test"}}}) as fn:
+    with temp_conf(
+        {
+            "port": 5556,
+            "auth": {
+                "cls": "intake.auth.secret.SecretAuth",
+                "kwargs": {"secret": "test"},
+            },
+        }
+    ) as fn:
         env = os.environ.copy()
         env["INTAKE_CONF_FILE"] = fn
         with server(env=env, wait=5556):
@@ -103,7 +111,10 @@ def test_conf_auth():
             with pytest.raises(Exception):
                 intake.open_catalog("intake://localhost:5556")
 
-            cat = intake.open_catalog("intake://localhost:5556", storage_options={"headers": {"intake-secret": "test"}})
+            cat = intake.open_catalog(
+                "intake://localhost:5556",
+                storage_options={"headers": {"intake-secret": "test"}},
+            )
             assert "entry1" in cat
 
 
@@ -113,4 +124,7 @@ def test_pathdirs():
     assert config.intake_path_dirs(["paths"]) == ["paths"]
     assert config.intake_path_dirs("") == [""]
     assert config.intake_path_dirs("path1:path2") == ["path1", "path2"]
-    assert config.intake_path_dirs("memory://path1:memory://path2") == ["memory://path1", "memory://path2"]
+    assert config.intake_path_dirs("memory://path1:memory://path2") == [
+        "memory://path1",
+        "memory://path2",
+    ]

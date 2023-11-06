@@ -13,6 +13,7 @@ from intake.readers.utils import Tokenizable, subclasses
 
 # TODO: make "structure" possibilities an enum?
 
+
 # https://en.wikipedia.org/wiki/List_of_file_signatures
 
 
@@ -175,7 +176,13 @@ class HDF5(FileData):
     magic = {b"HDF"}
     mimetypes = "application/x-hdf5?"
 
-    def __init__(self, url, storage_options: dict | None = None, path: str = "", metadata: dict | None = None):
+    def __init__(
+        self,
+        url,
+        storage_options: dict | None = None,
+        path: str = "",
+        metadata: dict | None = None,
+    ):
         self.url = url
         self.storage_options = storage_options
         self.path = path
@@ -187,7 +194,13 @@ class Zarr(FileData):
     structure = {"array", "hierarchy"}
     mimetypes = "application/vnd\\+zarr"
 
-    def __init__(self, url, storage_options: dict | None = None, root: str = "", metadata: dict | None = None):
+    def __init__(
+        self,
+        url,
+        storage_options: dict | None = None,
+        root: str = "",
+        metadata: dict | None = None,
+    ):
         self.url = url
         self.storage_options = storage_options
         self.root = root
@@ -340,7 +353,13 @@ class RawBuffer(FileData):
     filepattern = "raw$"
     structure = {"array"}
 
-    def __init__(self, url: str, dtype: str, storage_options: dict | None = None, metadata: dict | None = None):
+    def __init__(
+        self,
+        url: str,
+        dtype: str,
+        storage_options: dict | None = None,
+        metadata: dict | None = None,
+    ):
         super().__init__(url, storage_options=storage_options, metadata=metadata)
         self.dtype = dtype  # numpy-style
 
@@ -385,7 +404,10 @@ class GDALVectorFile(FileData):
     These must be local paths or use GDAL's own virtual file system.
     """
 
-    structure = {"nested", "tabular"}  # tabular when read by geopandas, could be called a conversion
+    structure = {
+        "nested",
+        "tabular",
+    }  # tabular when read by geopandas, could be called a conversion
 
 
 class HuggingfaceDataset(BaseData):

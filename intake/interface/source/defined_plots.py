@@ -68,13 +68,22 @@ class Plots(BaseView):
 
     def setup(self):
         self.instructions = pn.pane.Markdown("**Select Plot**", align="center", width=70)
-        self.select = pn.widgets.Select(options=self.options, height=30, align="center", min_width=200)
+        self.select = pn.widgets.Select(
+            options=self.options, height=30, align="center", min_width=200
+        )
         # Add spaces in front of each option to make it render correctly.
         # This is a bit of a hack to make a Select which only displays the down arrow.
-        self.edit_options = pn.widgets.Select(options=["  Edit", "  Clone", "  Rename", "  Delete"], align="center", width=25, margin=(5, -10))
+        self.edit_options = pn.widgets.Select(
+            options=["  Edit", "  Clone", "  Rename", "  Delete"],
+            align="center",
+            width=25,
+            margin=(5, -10),
+        )
         self.pane = pn.pane.HoloViews(self._plot_object(self.selected), name="Plot")
 
-        self.interact_label = pn.pane.Markdown("Name", align="center", width_policy="max", min_width=100)
+        self.interact_label = pn.pane.Markdown(
+            "Name", align="center", width_policy="max", min_width=100
+        )
         self.interact_name = pn.widgets.TextInput(placeholder="Name of new plot...")
         self.interact_cancel = pn.widgets.Button(name="Cancel", width=100)
         self.interact_save = pn.widgets.Button(name="Save", button_type="primary", width=100)
@@ -307,8 +316,12 @@ class Plots(BaseView):
     def _clone(self):
         plot_name = self.interact_name.value
         # Clone plot metadata for both DataSource and CatalogEntry
-        self.source.metadata["plots"][plot_name] = self.source.metadata["plots"][self.selected].copy()
-        self.source.entry._metadata["plots"][plot_name] = self.source.entry._metadata["plots"][self.selected].copy()
+        self.source.metadata["plots"][plot_name] = self.source.metadata["plots"][
+            self.selected
+        ].copy()
+        self.source.entry._metadata["plots"][plot_name] = self.source.entry._metadata["plots"][
+            self.selected
+        ].copy()
         # Add new plot name to self.options
         self.select.options = self.options
         # Select new graph
@@ -319,7 +332,9 @@ class Plots(BaseView):
         plot_name = self.interact_name.value
         # Rename plot metadata for both DataSource and CatalogEntry
         self.source.metadata["plots"][plot_name] = self.source.metadata["plots"].pop(self.selected)
-        self.source.entry._metadata["plots"][plot_name] = self.source.entry._metadata["plots"].pop(self.selected)
+        self.source.entry._metadata["plots"][plot_name] = self.source.entry._metadata["plots"].pop(
+            self.selected
+        )
         # Update available options in dropdown
         self.select.options = self.options
         # Select renamed graph

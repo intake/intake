@@ -258,4 +258,7 @@ def set_values(user_parameters: dict[str, BaseUserParameter], arguments: dict[st
             #     var = m.groups()[0]
             #     up[k] = up[k].with_default(import_name(var))
 
-    return _set_values({k: (u.default if isinstance(u, BaseUserParameter) else u) for k, u in up.items()}, arguments)
+    return _set_values(
+        {k: (u.default if isinstance(u, BaseUserParameter) else u) for k, u in up.items()},
+        arguments,
+    )

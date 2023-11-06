@@ -20,7 +20,10 @@ class TiledLazyEntries(LazyDict):
         if type(client).__name__ == "Node":
             reader = TiledCatalogReader(data=data)
         else:
-            reader = TiledClient(data, output_instance=f"{type(client).__module__}:{type(client).__name__}")
+            reader = TiledClient(
+                data,
+                output_instance=f"{type(client).__module__}:{type(client).__name__}",
+            )
         return reader.to_entry()
 
     def __len__(self):
@@ -51,7 +54,11 @@ class TiledCatalogReader(BaseReader):
         opts.update(kwargs)
         client = from_uri(data.url, **opts)
         entries = TiledLazyEntries(client)
-        return Catalog(entries=entries, aliases={k: k for k in sorted(client)}, metadata=client.item)
+        return Catalog(
+            entries=entries,
+            aliases={k: k for k in sorted(client)},
+            metadata=client.item,
+        )
 
 
 class SQLAlchemyCatalog(BaseReader):
@@ -72,7 +79,13 @@ class SQLAlchemyCatalog(BaseReader):
         meta = sqlalchemy.MetaData()
         meta.reflect(bind=engine, views=views, schema=schema)
         tables = list(meta.tables)
-        entries = {name: DataDescription("intake.readers.datatypes:SQLQuery", kwargs={"conn": data.url, "query": name}) for name in tables}
+        entries = {
+            name: DataDescription(
+                "intake.readers.datatypes:SQLQuery",
+                kwargs={"conn": data.url, "query": name},
+            )
+            for name in tables
+        }
         return Catalog(data=entries)
 
 
@@ -117,7 +130,16 @@ class StacCatalogReader(BaseReader):
             subcls = type(subcatalog).__name__
 
             cat[subcatalog.id] = ReaderDescription(
-                reader=self.qname(), kwargs=dict({"cls": subcls, "data": datatypes.Literal(subcatalog.to_dict()), "signer": signer, "prefer": prefer}, **kwargs)
+                reader=self.qname(),
+                kwargs=dict(
+                    {
+                        "cls": subcls,
+                        "data": datatypes.Literal(subcatalog.to_dict()),
+                        "signer": signer,
+                        "prefer": prefer,
+                    },
+                    **kwargs,
+                ),
             )
         return cat
 
@@ -195,7 +217,10 @@ class StackBands(BaseReader):
                 for b in band_info:
                     valid_band_names.append(b.get("id", b.get("name")))
                     valid_band_names.append(b.get("common_name"))
-                raise ValueError(f"{band} not found in list of eo:bands in collection." f"Valid values: {sorted(list(set(valid_band_names)))}")
+                raise ValueError(
+                    f"{band} not found in list of eo:bands in collection."
+                    f"Valid values: {sorted(list(set(valid_band_names)))}"
+                )
             asset = assets.get(band)
             metadatas[band] = asset.to_dict()
             titles.append(band)
@@ -204,7 +229,9 @@ class StackBands(BaseReader):
 
         unique_types = set(types)
         if len(unique_types) != 1:
-            raise ValueError(f"Stacking failed: bands must have same type, multiple found: {unique_types}")
+            raise ValueError(
+                f"Stacking failed: bands must have same type, multiple found: {unique_types}"
+            )
         reader = StacCatalogReader._get_reader(asset)
         reader.kwargs["concat_dim"] = concat_dim
         reader.kwargs["data"].url = hrefs
@@ -232,7 +259,11 @@ class StacSearch(BaseReader):
         for subcatalog in items:
             subcls = type(subcatalog).__name__
             cat[subcatalog.id] = ReaderDescription(
-                reader=StacCatalogReader.qname(), kwargs=dict(**{"cls": subcls, "data": datatypes.Literal(subcatalog.to_dict())}, **kwargs)
+                reader=StacCatalogReader.qname(),
+                kwargs=dict(
+                    **{"cls": subcls, "data": datatypes.Literal(subcatalog.to_dict())},
+                    **kwargs,
+                ),
             )
         return cat
 
@@ -256,8 +287,12 @@ class THREDDSCatalogReader(BaseReader):
         for r in thr.catalog_refs.values():
             cat[r.title] = THREDDSCatalogReader(datatypes.THREDDSCatalog(url=r.href))
         for ds in thr.datasets.values():
-            cat[ds.id + "_DAP"] = XArrayDatasetReader(datatypes.Service(ds.access_urls["OpenDAP"]), engine="pydap")
-            cat[ds.id + "_CDF"] = XArrayDatasetReader(datatypes.HDF5(ds.access_urls["HTTPServer"]), engine="h5netcdf")
+            cat[ds.id + "_DAP"] = XArrayDatasetReader(
+                datatypes.Service(ds.access_urls["OpenDAP"]), engine="pydap"
+            )
+            cat[ds.id + "_CDF"] = XArrayDatasetReader(
+                datatypes.HDF5(ds.access_urls["HTTPServer"]), engine="h5netcdf"
+            )
 
         return cat
 
@@ -274,7 +309,9 @@ class HuggingfaceHubCatalog(BaseReader):
         datasets = huggingface_hub.list_datasets(full=False)
         if not with_community_datasets:
             datasets = [dataset for dataset in datasets if "/" not in dataset.id]
-        entries = [HuggingfaceReader(data=HuggingfaceDataset(d.id, metadata=d.__dict__)) for d in datasets]
+        entries = [
+            HuggingfaceReader(data=HuggingfaceDataset(d.id, metadata=d.__dict__)) for d in datasets
+        ]
         cat = Catalog(entries=entries)
         cat.aliases = {d.id: e for d, e in zip(datasets, cat.entries)}
         return cat

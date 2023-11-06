@@ -14,7 +14,13 @@ def tiled_server():
     t0 = time.time()
     cmd = "tiled serve demo --port 8901"
     fail = False
-    P = subprocess.Popen(shlex.split(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, bufsize=1, text=True)
+    P = subprocess.Popen(
+        shlex.split(cmd),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        bufsize=1,
+        text=True,
+    )
     while True:
         line = P.stderr.readline()
         if "api_key=" in line:
@@ -37,7 +43,11 @@ def test_catalog_workflow(tiled_server):
     data = intake.readers.datatypes.TiledService(tiled_server)
     node = data.to_reader("tiled")
     cat = intake.readers.entry.Catalog()
-    cat["cat"] = node.TiledSearch(query=FullText("dog")).TiledSearch(query=FullText("red")).TiledNodeToCatalog
+    cat["cat"] = (
+        node.TiledSearch(query=FullText("dog"))
+        .TiledSearch(query=FullText("red"))
+        .TiledNodeToCatalog
+    )
     cat.to_yaml_file("memory://cat.yaml")
     cat2 = intake.readers.entry.Catalog.from_yaml_file("memory://cat.yaml")
     with intake.conf.set(allow_pickle=True):

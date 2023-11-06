@@ -32,7 +32,10 @@ class PipelineMixin(Completable):
         if isinstance(self, Pipeline):
             return self.with_step((GetItem, (item,), {}), out_instance=outtype)
 
-        return Pipeline(steps=[(self, (), {}), (GetItem, (item,), {})], out_instances=[self.output_instance, outtype])
+        return Pipeline(
+            steps=[(self, (), {}), (GetItem, (item,), {})],
+            out_instances=[self.output_instance, outtype],
+        )
 
     def __dir__(self):
         return list(sorted(chain(object.__dir__(self), dir(self.transform), self._namespaces)))
@@ -55,7 +58,13 @@ class PipelineMixin(Completable):
 
         kwargs["func"] = func
 
-        return Pipeline(steps=[(self, (), {}), (GenericFunc, args, kwargs)], out_instances=[self.output_instance, output_instance or self.output_instance])
+        return Pipeline(
+            steps=[(self, (), {}), (GenericFunc, args, kwargs)],
+            out_instances=[
+                self.output_instance,
+                output_instance or self.output_instance,
+            ],
+        )
 
     @property
     def transform(self):
@@ -91,7 +100,10 @@ class Functioner(Completable):
         if isinstance(self.reader, Pipeline):
             return self.reader.with_step((func, (), kw), out_instance=item)
 
-        return Pipeline(steps=[(self.reader, (), {}), (func, arg, kw)], out_instances=[self.reader.output_instance, item])
+        return Pipeline(
+            steps=[(self.reader, (), {}), (func, arg, kw)],
+            out_instances=[self.reader.output_instance, item],
+        )
 
     def __repr__(self):
         import pprint
@@ -105,7 +117,10 @@ class Functioner(Completable):
             return self.reader.with_step((func, args, kwargs), out_instance=output_instance)
         # TODO: get output_instance from func, if possible
 
-        return Pipeline(steps=[(self.reader, (), {}), (func, args, kwargs)], out_instances=[self.reader.output_instance, output_instance])
+        return Pipeline(
+            steps=[(self.reader, (), {}), (func, args, kwargs)],
+            out_instances=[self.reader.output_instance, output_instance],
+        )
 
     def __dir__(self):
         return list(sorted(f.__name__ for f in self.funcdict.values()))
@@ -126,4 +141,7 @@ class Functioner(Completable):
         if isinstance(self.reader, Pipeline):
             return self.reader.with_step((func, (), kw), out_instance=outtype)
 
-        return Pipeline(steps=[(self.reader, (), {}), (func, (), kw)], out_instances=[self.reader.output_instance, outtype])
+        return Pipeline(
+            steps=[(self.reader, (), {}), (func, (), kw)],
+            out_instances=[self.reader.output_instance, outtype],
+        )

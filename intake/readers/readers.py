@@ -23,12 +23,20 @@ class BaseReader(Tokenizable, PipelineMixin):
     output_instance: str = None
     other_funcs: set = set()  # function names to recognise
 
-    def __init__(self, *args, metadata: dict | None = None, output_instance: str | None = None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        metadata: dict | None = None,
+        output_instance: str | None = None,
+        **kwargs,
+    ):
         self.kwargs = kwargs
         if args:
             self.kwargs["args"] = args
         met = {}
-        for a in itertools.chain(reversed(kwargs.get("args", [])), reversed(kwargs.values()), reversed(args)):
+        for a in itertools.chain(
+            reversed(kwargs.get("args", [])), reversed(kwargs.values()), reversed(args)
+        ):
             if isinstance(a, datatypes.BaseData):
                 met.update(a.metadata)
         met.update(metadata or {})
@@ -93,7 +101,12 @@ class BaseReader(Tokenizable, PipelineMixin):
         """Create an entry with only this reader defined"""
         from intake.readers.entry import ReaderDescription
 
-        return ReaderDescription(reader=self.qname(), kwargs=self.kwargs, output_instance=self.output_instance, metadata=self.metadata)
+        return ReaderDescription(
+            reader=self.qname(),
+            kwargs=self.kwargs,
+            output_instance=self.output_instance,
+            metadata=self.metadata,
+        )
 
 
 class FileReader(BaseReader):
@@ -229,7 +242,12 @@ class DaskZarr(FileReader):
     func = "dask.array:from_zarr"
 
     def _read(self, data, **kwargs):
-        return self._func(url=data.url, component=data.root or None, storage_options=data.storage_options, **kwargs)
+        return self._func(
+            url=data.url,
+            component=data.root or None,
+            storage_options=data.storage_options,
+            **kwargs,
+        )
 
 
 class NumpyZarr(FileReader):
@@ -239,7 +257,9 @@ class NumpyZarr(FileReader):
     func = "zarr:open"
 
     def _read(self, data, **kwargs):
-        return self._func(data.url, storage_options=data.storage_options, path=data.root, **kwargs)[:]
+        return self._func(data.url, storage_options=data.storage_options, path=data.root, **kwargs)[
+            :
+        ]
 
 
 class DuckDB(BaseReader):
@@ -268,7 +288,9 @@ class DuckDB(BaseReader):
                 d.execute(f"CALL postgres_attach('{conn}');")
                 self._dd[str(conn)] = d
         if str(conn) not in self._dd:
-            self._dd[str(conn)] = duckdb.connect(**conn)  # connection must be cached for results to be usable
+            self._dd[str(conn)] = duckdb.connect(
+                **conn
+            )  # connection must be cached for results to be usable
         return self._dd[str(conn)]
 
 
@@ -623,7 +645,13 @@ class XArrayDatasetReader(FileReader):
     imports = {"xarray"}
     optional_imports = {"zarr", "h5netcdf", "cfgrib", "scipy"}  # and others
     # DAP is not a file but an API, maybe should be separate
-    implements = {datatypes.NetCDF3, datatypes.HDF5, datatypes.GRIB2, datatypes.Zarr, datatypes.OpenDAP}
+    implements = {
+        datatypes.NetCDF3,
+        datatypes.HDF5,
+        datatypes.GRIB2,
+        datatypes.Zarr,
+        datatypes.OpenDAP,
+    }
     # xarray also reads from images and tabular data
     func = "xarray:open_mfdataset"
     other_funcs = {"xarray:open_dataset"}
@@ -665,7 +693,11 @@ class RasterIOXarrayReader(FileReader):
         import xarray as xr
         from rioxarray import open_rasterio
 
-        concat_kwargs = concat_kwargs or {k: kwargs.pop(k) for k in {"dim", "data_vars", "coords", "compat", "position", "join"} if k in kwargs}
+        concat_kwargs = concat_kwargs or {
+            k: kwargs.pop(k)
+            for k in {"dim", "data_vars", "coords", "compat", "position", "join"}
+            if k in kwargs
+        }
 
         with fsspec.open_files(data.url, **(data.storage_options or {})) as ofs:
             bits = [open_rasterio(of, **kwargs) for of in ofs]
@@ -680,7 +712,13 @@ class GeoPandasReader(FileReader):
     # TODO: geopandas also supports postGIS
     output_instance = "geopandas:GeoDataFrame"
     imports = {"geopandas"}
-    implements = {datatypes.GeoJSON, datatypes.CSV, datatypes.SQLite, datatypes.Shapefile, datatypes.GDALVectorFile}
+    implements = {
+        datatypes.GeoJSON,
+        datatypes.CSV,
+        datatypes.SQLite,
+        datatypes.Shapefile,
+        datatypes.GDALVectorFile,
+    }
     func = "geopandas:read_file"
     url_arg = "filename"
 
@@ -688,7 +726,11 @@ class GeoPandasReader(FileReader):
         import geopandas
 
         if with_fsspec is None:
-            with_fsspec = ("://" in data.url and "!" not in data.url) or "::" in data.url or data.storage_options
+            with_fsspec = (
+                ("://" in data.url and "!" not in data.url)
+                or "::" in data.url
+                or data.storage_options
+            )
         if with_fsspec:
             with fsspec.open(data.url, **(data.storage_options or {})) as f:
                 return geopandas.read_file(f, **kwargs)
@@ -774,7 +816,17 @@ class Condition(BaseReader):
 
 
 class Retry(BaseReader):
-    def _read(self, data, max_tries=10, allowed_exceptions=(Exception,), backoff0=0.1, backoff_factor=1.3, start_stage=None, end_stage=None, **kw):
+    def _read(
+        self,
+        data,
+        max_tries=10,
+        allowed_exceptions=(Exception,),
+        backoff0=0.1,
+        backoff_factor=1.3,
+        start_stage=None,
+        end_stage=None,
+        **kw,
+    ):
         import time
 
         from intake.readers.convert import Pipeline
@@ -852,13 +904,19 @@ def reader_from_call(func, *args, join_lines=False, **kwargs):
         else:
             raise ValueError
         func = eval(groups[1], frame.f_globals, frame.f_locals)
-        args, kwargs = eval(f"""(lambda *args, **kwargs: (args, kwargs))({groups[2]})""", frame.f_globals, frame.f_locals)
+        args, kwargs = eval(
+            f"""(lambda *args, **kwargs: (args, kwargs))({groups[2]})""",
+            frame.f_globals,
+            frame.f_locals,
+        )
 
     package = func.__module__.split(".", 1)[0]
 
     found = False
     for cls in subclasses(BaseReader):
-        if cls.check_imports() and any(f.split(":", 1)[0].split(".", 1)[0] == package for f in ({cls.func} | cls.other_funcs)):
+        if cls.check_imports() and any(
+            f.split(":", 1)[0].split(".", 1)[0] == package for f in ({cls.func} | cls.other_funcs)
+        ):
             ffs = [f for f in ({cls.func} | cls.other_funcs) if import_name(f) == func]
             if ffs:
                 found = cls

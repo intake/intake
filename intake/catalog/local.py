@@ -51,7 +51,16 @@ class UserParameter(DictSerialiseMixin):
         for validation of user input
     """
 
-    def __init__(self, name, description=None, type=None, default=None, min=None, max=None, allowed=None):
+    def __init__(
+        self,
+        name,
+        description=None,
+        type=None,
+        default=None,
+        min=None,
+        max=None,
+        allowed=None,
+    ):
         self.name = name
         self.description = description
         self.type = type or __builtins__["type"](default).__name__
@@ -99,7 +108,9 @@ class UserParameter(DictSerialiseMixin):
         if not isinstance(self._default, str):
             self.expanded_default = self._default
         else:
-            self.expanded_default = coerce(self.type, expand_defaults(self._default, client, getenv, getshell))
+            self.expanded_default = coerce(
+                self.type, expand_defaults(self._default, client, getenv, getshell)
+            )
 
     def validate(self, value):
         """Does value meet parameter requirements?"""
@@ -117,7 +128,10 @@ class UserParameter(DictSerialiseMixin):
         if self.max is not None and value > self.max:
             raise ValueError("%s=%s is greater than %s" % (self.name, value, self.max))
         if self.allowed is not None and value not in self.allowed:
-            raise ValueError("%s=%s is not one of the allowed values: %s" % (self.name, value, ",".join(map(str, self.allowed))))
+            raise ValueError(
+                "%s=%s is not one of the allowed values: %s"
+                % (self.name, value, ",".join(map(str, self.allowed)))
+            )
 
         return value
 
@@ -126,7 +140,19 @@ class LocalCatalogEntry(CatalogEntry):
     """A catalog entry on the local system"""
 
     def __init__(
-        self, name, description, driver, direct_access=True, args={}, cache=[], parameters=[], metadata={}, catalog_dir="", getenv=True, getshell=True, catalog=None
+        self,
+        name,
+        description,
+        driver,
+        direct_access=True,
+        args={},
+        cache=[],
+        parameters=[],
+        metadata={},
+        catalog_dir="",
+        getenv=True,
+        getshell=True,
+        catalog=None,
     ):
         """
 
@@ -238,9 +264,21 @@ class LocalCatalogEntry(CatalogEntry):
             "CATALOG_DIR": self._catalog_dir,
         }
         params.update(self._open_args)
-        if "storage_options" not in params and self._filesystem is not None and self._filesystem.storage_options and _has_catalog_dir(params):
+        if (
+            "storage_options" not in params
+            and self._filesystem is not None
+            and self._filesystem.storage_options
+            and _has_catalog_dir(params)
+        ):
             params["storage_options"] = self._filesystem.storage_options
-        open_args = merge_pars(params, user_parameters, self._user_parameters, getshell=self.getshell, getenv=self.getenv, client=False)
+        open_args = merge_pars(
+            params,
+            user_parameters,
+            self._user_parameters,
+            getshell=self.getshell,
+            getenv=self.getenv,
+            client=False,
+        )
 
         if len(self._plugin) == 0:
             raise ValueError(
@@ -261,7 +299,10 @@ class LocalCatalogEntry(CatalogEntry):
             try:
                 plugin = self._plugin[plugin]
             except KeyError:
-                raise ValueError("Attempt to select unavailable plugin %s, " "perhaps import of plugin failed" % plugin)
+                raise ValueError(
+                    "Attempt to select unavailable plugin %s, "
+                    "perhaps import of plugin failed" % plugin
+                )
         return plugin, open_args
 
     def get(self, **user_parameters):
@@ -347,7 +388,11 @@ class CatalogParser(object):
 
         for plugin_source in data["plugins"]["source"]:
             if not isinstance(plugin_source, dict):
-                self.error("value in list of plugins sources must be a " "dictionary", data["plugins"], "source")
+                self.error(
+                    "value in list of plugins sources must be a " "dictionary",
+                    data["plugins"],
+                    "source",
+                )
                 continue
 
             if "module" in plugin_source:
@@ -366,11 +411,19 @@ class CatalogParser(object):
         if key in obj:
             if isinstance(obj[key], dtype):
                 if choices and obj[key] not in choices:
-                    self.error("value '{}' is invalid (choose from {})".format(obj[key], choices), obj, key)
+                    self.error(
+                        "value '{}' is invalid (choose from {})".format(obj[key], choices),
+                        obj,
+                        key,
+                    )
                 else:
                     return obj[key]
             else:
-                self.error("value '{}' is not expected type '{}'".format(obj[key], dtype.__name__), obj, key)
+                self.error(
+                    "value '{}' is not expected type '{}'".format(obj[key], dtype.__name__),
+                    obj,
+                    key,
+                )
             return None
         elif required:
             self.error("missing required key '{}'".format(key), obj)
@@ -415,7 +468,14 @@ class CatalogParser(object):
             "name": name,
             "description": self._getitem(data, "description", str, required=False),
             "driver": self._getitem(data, "driver", object),
-            "direct_access": self._getitem(data, "direct_access", str, required=False, default="forbid", choices=["forbid", "allow", "force"]),
+            "direct_access": self._getitem(
+                data,
+                "direct_access",
+                str,
+                required=False,
+                default="forbid",
+                choices=["forbid", "allow", "force"],
+            ),
             "args": self._getitem(data, "args", dict, required=False),
             "cache": self._getitem(data, "cache", list, required=False),
             "metadata": self._getitem(data, "metadata", dict, required=False),
@@ -436,18 +496,31 @@ class CatalogParser(object):
 
             for name, parameter in data["parameters"].items():
                 if not isinstance(name, str):
-                    self.error("key '{}' must be a string".format(name), data["parameters"], name)
+                    self.error(
+                        "key '{}' must be a string".format(name),
+                        data["parameters"],
+                        name,
+                    )
                     continue
 
                 if not isinstance(parameter, dict):
-                    self.error("value of key '{}' must be a dictionary" "".format(name), data["parameters"], name)
+                    self.error(
+                        "value of key '{}' must be a dictionary" "".format(name),
+                        data["parameters"],
+                        name,
+                    )
                     continue
 
                 obj = self._parse_user_parameter(name, parameter)
                 if obj:
                     ds["parameters"].append(obj)
 
-        return LocalCatalogEntry(catalog_dir=self._context["root"], getenv=self.getenv, getshell=self.getshell, **ds)
+        return LocalCatalogEntry(
+            catalog_dir=self._context["root"],
+            getenv=self.getenv,
+            getshell=self.getshell,
+            **ds,
+        )
 
     def _parse_data_sources(self, data):
         sources = []
@@ -469,7 +542,11 @@ class CatalogParser(object):
                 continue
 
             if not isinstance(source, dict):
-                self.error("value of key '{}' must be a dictionary" "".format(name), data["sources"], name)
+                self.error(
+                    "value of key '{}' must be a dictionary" "".format(name),
+                    data["sources"],
+                    name,
+                )
                 continue
 
             obj = self._parse_data_source(name, source)
@@ -564,7 +641,9 @@ class YAMLFileCatalog(Catalog):
             options = self.storage_options or {}
             if hasattr(self.path, "path") or hasattr(self.path, "read"):
                 file_open = self.path
-                self.path = make_path_posix(getattr(self.path, "path", getattr(self.path, "name", "file")))
+                self.path = make_path_posix(
+                    getattr(self.path, "path", getattr(self.path, "name", "file"))
+                )
             elif self.filesystem is None:
                 file_open = open_files(self.path, mode="rb", **options)
                 assert len(file_open) == 1
@@ -633,7 +712,9 @@ class YAMLFileCatalog(Catalog):
         if path:
             return self
         else:
-            return YAMLFileCatalog(self.path, storage_options=storage_options, autoreload=self.autoreload)
+            return YAMLFileCatalog(
+                self.path, storage_options=storage_options, autoreload=self.autoreload
+            )
 
     def parse(self, text):
         """Create entries from catalog text
@@ -657,13 +738,19 @@ class YAMLFileCatalog(Catalog):
         context = dict(root=self._dir)
         result = CatalogParser(data, context=context, getenv=self.getenv, getshell=self.getshell)
         if result.errors:
-            raise exceptions.ValidationError("Catalog '{}' has validation errors:\n\n{}" "".format(self.path, "\n".join(result.errors)), result.errors)
+            raise exceptions.ValidationError(
+                "Catalog '{}' has validation errors:\n\n{}"
+                "".format(self.path, "\n".join(result.errors)),
+                result.errors,
+            )
 
         cfg = result.data
 
         self._entries = {}
         shared_parameters = data.get("metadata", {}).get("parameters", {})
-        self.user_parameters.update({name: UserParameter(name, **attrs) for name, attrs in shared_parameters.items()})
+        self.user_parameters.update(
+            {name: UserParameter(name, **attrs) for name, attrs in shared_parameters.items()}
+        )
 
         for entry in cfg["data_sources"]:
             entry._catalog = self
@@ -734,7 +821,9 @@ class YAMLFilesCatalog(Catalog):
             files = open_files(self.path, mode="rb", **options)
             self.path = make_path_posix(self.path)
             self.name = self.name or self.path
-            self.description = self.description or f"Catalog generated from all files found in {self.path}"
+            self.description = (
+                self.description or f"Catalog generated from all files found in {self.path}"
+            )
         if not set(f.path for f in files) == set(f.path for f in self._cat_files):
             # glob changed, reload all
             self._cat_files = files
@@ -745,7 +834,17 @@ class YAMLFilesCatalog(Catalog):
             kwargs["path"] = f.path
             d = make_path_posix(os.path.dirname(f.path))
             if f.path not in self._cats:
-                entry = LocalCatalogEntry(name, "YAML file: %s" % name, "yaml_file_cat", True, kwargs, [], [], self.metadata, d)
+                entry = LocalCatalogEntry(
+                    name,
+                    "YAML file: %s" % name,
+                    "yaml_file_cat",
+                    True,
+                    kwargs,
+                    [],
+                    [],
+                    self.metadata,
+                    d,
+                )
                 if self._flatten:
                     # store a concrete Catalog
                     try:
@@ -764,7 +863,11 @@ class YAMLFilesCatalog(Catalog):
                 entry.reload()
                 inter = set(entry._entries).intersection(entries)
                 if inter:
-                    raise ValueError("Conflicting names when flattening multiple" " catalogs. Sources %s exist in more than" " one" % inter)
+                    raise ValueError(
+                        "Conflicting names when flattening multiple"
+                        " catalogs. Sources %s exist in more than"
+                        " one" % inter
+                    )
                 entries.update(entry._entries)
             else:
                 entries[entry._name] = entry

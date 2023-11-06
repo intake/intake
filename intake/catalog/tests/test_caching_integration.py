@@ -78,7 +78,9 @@ def test_load_arr(catalog_cache):
     cache.clear_all()
 
 
-@pytest.mark.parametrize("section", ["test_no_regex", "test_regex_no_match", "test_regex_partial_match"])
+@pytest.mark.parametrize(
+    "section", ["test_no_regex", "test_regex_no_match", "test_regex_partial_match"]
+)
 def test_regex(catalog_cache, section):
     cat = catalog_cache[section]
     cache = cat.cache[0]

@@ -15,7 +15,10 @@ except ImportError:
             pass
 
         def __repr__(self):
-            raise RuntimeError("Please install panel to use the GUI (`conda " "install -c conda-forge panel>0.8.0`)")
+            raise RuntimeError(
+                "Please install panel to use the GUI (`conda "
+                "install -c conda-forge panel>0.8.0`)"
+            )
 
 except Exception:
 

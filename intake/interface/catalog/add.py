@@ -57,7 +57,9 @@ class FileSelector(Base):
 
     def setup(self):
         self.path_text = pn.widgets.TextInput(value=os.getcwd() + "/", width_policy="max")
-        self.protocol = pn.widgets.Select(options=list(sorted(known_implementations)), value="file", name="protocol")
+        self.protocol = pn.widgets.Select(
+            options=list(sorted(known_implementations)), value="file", name="protocol"
+        )
         self.storage_options = pn.widgets.TextInput(name="kwargs", value="{}")
         self.go = pn.widgets.Button(name="⇨")
         self.validator = pn.pane.SVG(None, width=25)
@@ -77,7 +79,11 @@ class FileSelector(Base):
             self.main.param.watch(self.move_down, ["value"]),
         ]
 
-        self.children = [pn.Row(self.protocol, self.storage_options), pn.Row(self.home, self.up, self.path_text, self.go, margin=0), self.main]
+        self.children = [
+            pn.Row(self.protocol, self.storage_options),
+            pn.Row(self.home, self.up, self.path_text, self.go, margin=0),
+            self.main,
+        ]
 
     def protocol_changed(self, *_):
         self.path_text.value = ""
@@ -85,7 +91,9 @@ class FileSelector(Base):
         self.main.value = []
 
     def go_clicked(self, *_):
-        self.fs = fsspec.filesystem(self.protocol.value, **ast.literal_eval(self.storage_options.value))
+        self.fs = fsspec.filesystem(
+            self.protocol.value, **ast.literal_eval(self.storage_options.value)
+        )
         self.make_options()
 
     @property
@@ -223,7 +231,9 @@ class CatAdder(Base):
 
     def __init__(self, done_callback=None, **kwargs):
         self.done_callback = done_callback
-        self.panel = pn.Column(name="Add Catalog", width_policy="max", max_width=MAX_WIDTH, margin=0)
+        self.panel = pn.Column(
+            name="Add Catalog", width_policy="max", max_width=MAX_WIDTH, margin=0
+        )
         self.widget = pn.widgets.Button(name="Add Catalog", disabled=True, width_policy="min")
         self.fs = FileSelector(done_callback=partial(enable_widget, self.widget))
         self.url = URLSelector()

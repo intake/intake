@@ -27,7 +27,13 @@ from intake.readers.utils import (
 class DataDescription(Tokenizable):
     """Defines some data and a single way to load it, with parameters not yet resolved"""
 
-    def __init__(self, datatype: str, kwargs: dict = None, metadata: dict = None, user_parameters: dict = None):
+    def __init__(
+        self,
+        datatype: str,
+        kwargs: dict = None,
+        metadata: dict = None,
+        user_parameters: dict = None,
+    ):
         self.datatype = datatype
         self.kwargs = kwargs or {}
         self.metadata = metadata or {}
@@ -49,7 +55,9 @@ class DataDescription(Tokenizable):
     def __call__(self, **kwargs):
         return self.to_data(**kwargs)
 
-    def get_kwargs(self, user_parameters: dict[str | BaseUserParameter] | None = None, **kwargs) -> dict[str, Any]:
+    def get_kwargs(
+        self, user_parameters: dict[str | BaseUserParameter] | None = None, **kwargs
+    ) -> dict[str, Any]:
         """Get set of kwargs for given reader, based on prescription, new args and user parameters
 
         Here, `user_parameters` is intended to come from the containing catalog. To provide values
@@ -62,7 +70,13 @@ class DataDescription(Tokenizable):
         kw = set_values(up, kw)
         return kw
 
-    def extract_parameter(self, name: str, path: str | None = None, value: Any = None, cls: type = SimpleUserParameter):
+    def extract_parameter(
+        self,
+        name: str,
+        path: str | None = None,
+        value: Any = None,
+        cls: type = SimpleUserParameter,
+    ):
         if not ((path is None) ^ (value is None)):
             raise ValueError
         if path is not None:
@@ -155,12 +169,17 @@ class ReaderDescription(Tokenizable):
         # note that there should never be any embedded intake classes in kwargs, as they get pulled out
         # when any reader is added to to a catalog
         obj = super().from_dict(data)
-        obj.user_parameters = {k: BaseUserParameter.from_dict(v) for k, v in data["user_parameters"].items()}
+        obj.user_parameters = {
+            k: BaseUserParameter.from_dict(v) for k, v in data["user_parameters"].items()
+        }
         return obj
 
     def __repr__(self):
         extra = f"\n  parameters: {self.user_parameters}" if self.user_parameters else ""
-        return f"Entry for reader: {self.reader}\n  kwargs: {self.kwargs}\n" f"  producing: {self.output_instance}" + extra
+        return (
+            f"Entry for reader: {self.reader}\n  kwargs: {self.kwargs}\n"
+            f"  producing: {self.output_instance}" + extra
+        )
 
 
 class Catalog(Tokenizable):
@@ -251,7 +270,10 @@ class Catalog(Tokenizable):
                 ups = entity.user_parameters[parameter_name]
                 up = entity.user_parameters[parameter_name]
                 entity0 = entity
-            elif parameter_name in entity.user_parameters and up == entity.user_parameters[parameter_name]:
+            elif (
+                parameter_name in entity.user_parameters
+                and up == entity.user_parameters[parameter_name]
+            ):
                 continue
             elif parameter_name in entity.user_parameters:
                 ups[parameter_name] = up  # rewind
@@ -261,7 +283,10 @@ class Catalog(Tokenizable):
                 assert level == "cat"
                 ups = entity.user_parameters[parameter_name]
                 up = entity.user_parameters[parameter_name]
-            elif parameter_name in entity.user_parameters and up == entity.user_parameters[parameter_name]:
+            elif (
+                parameter_name in entity.user_parameters
+                and up == entity.user_parameters[parameter_name]
+            ):
                 continue
             elif parameter_name in entity.user_parameters:
                 ups[parameter_name] = up  # rewind
@@ -297,7 +322,10 @@ class Catalog(Tokenizable):
     def from_dict(cls, data):
         """Assemble catalog from dict representation"""
         cat = cls()
-        for key, clss in zip(["entries", "data", "user_parameters"], [ReaderDescription, DataDescription, BaseUserParameter]):
+        for key, clss in zip(
+            ["entries", "data", "user_parameters"],
+            [ReaderDescription, DataDescription, BaseUserParameter],
+        ):
             for k, v in data[key].items():
                 desc = clss.from_dict(v)
                 desc._tok = k
@@ -409,7 +437,12 @@ class Catalog(Tokenizable):
         up_over.update(kwargs)
 
         new = Catalog(
-            entries=self.entries, aliases=self.aliases, data=self.data, user_parameters=self.user_parameters, parameter_overrides=up_over, metadata=self.metadata
+            entries=self.entries,
+            aliases=self.aliases,
+            data=self.data,
+            user_parameters=self.user_parameters,
+            parameter_overrides=up_over,
+            metadata=self.metadata,
         )
         return new
 

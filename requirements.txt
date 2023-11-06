@@ -1,8 +1,4 @@
 appdirs
-dask
 entrypoints
-fsspec >=2021.7.0
-jinja2
-msgpack
-requests
-ruamel.yaml
+fsspec >=2023.0.0
+pyyaml

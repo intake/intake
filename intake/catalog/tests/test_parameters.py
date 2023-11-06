@@ -90,18 +90,39 @@ def test_user_explicit_override():
 
 def test_auto_env_expansion():
     os.environ["INTAKE_TEST_VAR"] = "oi"
-    e = LocalCatalogEntry("", "", driver, args={"arg1": "{{env(INTAKE_TEST_VAR)}}"}, parameters=[], getenv=False)
+    e = LocalCatalogEntry(
+        "",
+        "",
+        driver,
+        args={"arg1": "{{env(INTAKE_TEST_VAR)}}"},
+        parameters=[],
+        getenv=False,
+    )
     s = e()
 
     # when getenv is False, you pass through the text
     assert s.kwargs["arg1"] == "{{env(INTAKE_TEST_VAR)}}"
 
-    e = LocalCatalogEntry("", "", driver, args={"arg1": "{{env(INTAKE_TEST_VAR)}}"}, parameters=[], getenv=True)
+    e = LocalCatalogEntry(
+        "",
+        "",
+        driver,
+        args={"arg1": "{{env(INTAKE_TEST_VAR)}}"},
+        parameters=[],
+        getenv=True,
+    )
     s = e()
     assert s.kwargs["arg1"] == "oi"
 
     # same, but with quoted environment name
-    e = LocalCatalogEntry("", "", driver, args={"arg1": '{{env("INTAKE_TEST_VAR")}}'}, parameters=[], getenv=True)
+    e = LocalCatalogEntry(
+        "",
+        "",
+        driver,
+        args={"arg1": '{{env("INTAKE_TEST_VAR")}}'},
+        parameters=[],
+        getenv=True,
+    )
     s = e()
     assert s.kwargs["arg1"] == "oi"
 
@@ -112,7 +133,14 @@ def test_auto_env_expansion():
     s = e()
     assert s.kwargs["arg1"] == ""
 
-    e = LocalCatalogEntry("", "", driver, args={"arg1": "{{env(INTAKE_TEST_VAR)}}"}, parameters=[], getenv=False)
+    e = LocalCatalogEntry(
+        "",
+        "",
+        driver,
+        args={"arg1": "{{env(INTAKE_TEST_VAR)}}"},
+        parameters=[],
+        getenv=False,
+    )
     s = e()
     assert s.kwargs["arg1"] == "{{env(INTAKE_TEST_VAR)}}"
 

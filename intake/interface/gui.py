@@ -30,12 +30,19 @@ class GUI:
     def __init__(self, cats=None):
         # state
         self._children = {}  # cat name in the selector to child catalogs' names: cat objects
-        self._cats = cats or {"builtin": intake.cat}  # mapping of name in the selector to catalog object
+        # mapping of name in the selector to catalog object
+        self._cats = cats or {"builtin": intake.cat}
         self._sources = {}  # source name: source instance
 
         # layout
         col0 = pn.Column(pn.pane.PNG(ICONS["logo"], align="center"), margin=(25, 0, 0, 0), width=50)
-        self.catsel = pn.widgets.MultiSelect(name="Catalogs", options=list(self._cats), value=[], size=13, styles={"width": "25%"})
+        self.catsel = pn.widgets.MultiSelect(
+            name="Catalogs",
+            options=list(self._cats),
+            value=[],
+            size=13,
+            styles={"width": "25%"},
+        )
         self.catsel.param.watch(self.cat_selected, "value")
         add = pn.widgets.Button(name="+")
         sub = pn.widgets.Button(name="-")
@@ -51,7 +58,9 @@ class GUI:
         self.sourcesel.param.watch(self.source_selected, "value")
         col2 = pn.Column(self.sourcesel, plot)
 
-        self.sourceinf = pn.widgets.CodeEditor(readonly=True, language="yaml", print_margin=False, annotations=[])
+        self.sourceinf = pn.widgets.CodeEditor(
+            readonly=True, language="yaml", print_margin=False, annotations=[]
+        )
         col3 = pn.Column(self.sourceinf)
 
         row0 = pn.Row(col0, col1, col2, col3, styles={"width": "100%"})

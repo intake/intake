@@ -61,7 +61,9 @@ class DriverSouces:
     def from_conf(self):
         return [
             entrypoints.EntryPoint(
-                name=k, module_name=v.rsplit(":", 1)[0] if ":" in v else v.rsplit(".", 1)[0], object_name=v.rsplit(":", 1)[1] if ":" in v else v.rsplit(".", 1)[1]
+                name=k,
+                module_name=v.rsplit(":", 1)[0] if ":" in v else v.rsplit(".", 1)[0],
+                object_name=v.rsplit(":", 1)[1] if ":" in v else v.rsplit(".", 1)[1],
             )
             for k, v in self.conf.get("drivers", {}).items()
             if v
@@ -107,7 +109,9 @@ class DriverSouces:
         return {k: v for k, v in self.registered().items() if k not in self.disabled()}
 
     def register_driver(self, name, value, clobber=False, do_enable=False):
-        """Add runtime driver definition to list of registered drivers (drivers in global scope with corresponding ``intake.open_*`` function)
+        """Add runtime driver definition to list of registered drivers
+
+        (drivers in global scope with corresponding ``intake.open_*`` function)
 
         Parameters
         ----------
@@ -190,7 +194,10 @@ def _load_entrypoint(entrypoint):
     try:
         return entrypoint.load()
     except ImportError as err:
-        raise ConfigurationError(f"Failed to load {entrypoint.name} driver because module " f"{entrypoint.module_name} could not be imported.") from err
+        raise ConfigurationError(
+            f"Failed to load {entrypoint.name} driver because module "
+            f"{entrypoint.module_name} could not be imported."
+        ) from err
     except AttributeError as err:
         raise ConfigurationError(
             f"Failed to load {entrypoint.name} driver because no object "

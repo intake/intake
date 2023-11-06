@@ -143,11 +143,18 @@ class Config(dict):
     def load_env(self):
         """Analyse environment variables and update conf accordingly"""
         # environment variables take precedence over conf file
-        for key, envvar in [["cache_dir", "INTAKE_CACHE_DIR"], ["catalog_path", "INTAKE_PATH"], ["persist_path", "INTAKE_PERSIST_PATH"]]:
+        for key, envvar in [
+            ["cache_dir", "INTAKE_CACHE_DIR"],
+            ["catalog_path", "INTAKE_PATH"],
+            ["persist_path", "INTAKE_PERSIST_PATH"],
+        ]:
             if envvar in os.environ:
                 self[key] = make_path_posix(os.environ[envvar])
         self["catalog_path"] = intake_path_dirs(self["catalog_path"])
-        for key, envvar in [["cache_disabled", "INTAKE_DISABLE_CACHING"], ["cache_download_progress", "INTAKE_CACHE_PROGRESS"]]:
+        for key, envvar in [
+            ["cache_disabled", "INTAKE_DISABLE_CACHING"],
+            ["cache_download_progress", "INTAKE_CACHE_PROGRESS"],
+        ]:
             if envvar in os.environ:
                 self[key] = os.environ[envvar].lower() in ["true", "t", "y", "yes"]
         if "INTAKE_LOG_LEVEL" in os.environ:

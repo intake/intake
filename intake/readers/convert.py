@@ -18,7 +18,11 @@ class ImportsProperty:
 
     def __get__(self, obj, cls):
         # this asserts that ALL in and out types should be importable
-        cls.imports = set(_.split(":", 1)[0].split(".", 1)[0] for _ in chain(cls.instances, cls.instances.values()) if _ is not SameType)
+        cls.imports = set(
+            _.split(":", 1)[0].split(".", 1)[0]
+            for _ in chain(cls.instances, cls.instances.values())
+            if _ is not SameType
+        )
         return cls.imports
 
 
@@ -67,7 +71,10 @@ class DuckToPands(BaseConverter):
 
 
 class DaskDFToPandas(BaseConverter):
-    instances = {"dask.dataframe:DataFrame": "pandas:DataFrame", "dask.array:Array": "numpy:ndarray"}
+    instances = {
+        "dask.dataframe:DataFrame": "pandas:DataFrame",
+        "dask.array:Array": "numpy:ndarray",
+    }
     func = "dask:compute"
 
 
@@ -77,7 +84,15 @@ class PandasToGeopandas(BaseConverter):
 
 
 class ToHvPlot(BaseConverter):
-    instances = all_to_one({"pandas:DataFrame", "dask.dataframe:DataFrame", "xarray:DataSet", "xarray:DataArray"}, "holoviews.core.layout:Composable")
+    instances = all_to_one(
+        {
+            "pandas:DataFrame",
+            "dask.dataframe:DataFrame",
+            "xarray:DataSet",
+            "xarray:DataArray",
+        },
+        "holoviews.core.layout:Composable",
+    )
     func = "hvplot:hvPlot"
 
     def run(self, x, explorer: bool = False, **kw):
@@ -147,7 +162,11 @@ class TiledNodeToCatalog(BaseConverter):
                 cat[k] = reader
             else:
                 data = TiledDataset(url=client.uri)
-                reader = TiledClient(data, output_instance=f"{type(client).__module__}:{type(client).__name__}", metadata=client.item)
+                reader = TiledClient(
+                    data,
+                    output_instance=f"{type(client).__module__}:{type(client).__name__}",
+                    metadata=client.item,
+                )
                 cat[k] = reader
         return cat
 
@@ -184,7 +203,9 @@ class DeltaQueryToDaskGeopandas(BaseConverter):
 
         file_uris = reader.read().file_uris(query)
 
-        return dask_geopandas.read_parquet(file_uris, storage_options=reader.kwargs["data"].storage_options)
+        return dask_geopandas.read_parquet(
+            file_uris, storage_options=reader.kwargs["data"].storage_options
+        )
 
 
 class PandasToMetagraph(BaseConverter):
@@ -232,7 +253,9 @@ def convert_classes(in_type: str):
         for intype, outtype in cls.instances.items():
             if intype.split(":", 1)[0].split(".", 1)[0] != package:
                 continue
-            if re.findall(intype.lower(), in_type.lower()) or re.findall(in_type.lower(), intype.lower()):
+            if re.findall(intype.lower(), in_type.lower()) or re.findall(
+                in_type.lower(), intype.lower()
+            ):
                 if outtype == SameType:
                     outtype = intype
                 out_dict[outtype] = cls
@@ -248,7 +271,14 @@ class Pipeline(readers.BaseReader):
 
     from intake.readers.readers import BaseReader
 
-    def __init__(self, steps: list[tuple[BaseReader, tuple, dict]], out_instances: list[str], output_instance=None, metadata=None, **kwargs):
+    def __init__(
+        self,
+        steps: list[tuple[BaseReader, tuple, dict]],
+        out_instances: list[str],
+        output_instance=None,
+        metadata=None,
+        **kwargs,
+    ):
         self.output_instances = []
         prev = out_instances[0]
         for inst in out_instances:
@@ -256,7 +286,12 @@ class Pipeline(readers.BaseReader):
                 inst = prev
             prev = inst
             self.output_instances.append(inst)
-        super().__init__(output_instance=output_instance or self.output_instances[-1], metadata=metadata, steps=steps, out_instances=self.output_instances)
+        super().__init__(
+            output_instance=output_instance or self.output_instances[-1],
+            metadata=metadata,
+            steps=steps,
+            out_instances=self.output_instances,
+        )
         steps[-1][2].update(kwargs)
 
     @property
@@ -264,7 +299,12 @@ class Pipeline(readers.BaseReader):
         return self.kwargs["steps"]
 
     def __call__(self, *args, **kwargs):
-        return super().__call__(steps=self.steps, out_instances=self.output_instances, metadata=self.metadata, **kwargs)
+        return super().__call__(
+            steps=self.steps,
+            out_instances=self.output_instances,
+            metadata=self.metadata,
+            **kwargs,
+        )
 
     def __repr__(self):
         start = "PipelineReader: \n"
@@ -343,7 +383,9 @@ class Pipeline(readers.BaseReader):
         if n < 1 or n > len(self.steps):
             raise ValueError(f"n must be between {1} and {len(self.steps)}")
 
-        pipe = Pipeline(steps=self.steps[:n], out_instances=self.output_instances[:n], **self.kwargs)
+        pipe = Pipeline(
+            steps=self.steps[:n], out_instances=self.output_instances[:n], **self.kwargs
+        )
         if n < len(self.steps):
             pipe.token = (self.token, n)
         return pipe
@@ -355,7 +397,10 @@ class Pipeline(readers.BaseReader):
         if not isinstance(step, tuple):
             # must be a func - check?
             step = (step, (), {})
-        return Pipeline(steps=self.steps + [step], out_instances=self.output_instances + [out_instance])
+        return Pipeline(
+            steps=self.steps + [step],
+            out_instances=self.output_instances + [out_instance],
+        )
 
 
 @cache
@@ -367,7 +412,9 @@ def conversions_graph():
     graph = networkx.DiGraph()
 
     # transformers
-    nodes = set(cls.output_instance for cls in subclasses(readers.BaseReader) if cls.output_instance)
+    nodes = set(
+        cls.output_instance for cls in subclasses(readers.BaseReader) if cls.output_instance
+    )
     graph.add_nodes_from(nodes)
 
     for cls in subclasses(readers.BaseReader):
@@ -414,7 +461,9 @@ def auto_pipeline(url: str, outtype: str, storage_options: dict | None = None) -
     from intake.readers.datatypes import recommend
 
     if storage_options:
-        data = recommend(url, storage_options=storage_options)[0](url=url, storage_options=storage_options)
+        data = recommend(url, storage_options=storage_options)[0](
+            url=url, storage_options=storage_options
+        )
     else:
         data = recommend(url)[0](url=url)
     start = data.qname()

@@ -13,7 +13,9 @@ def test_1():
     cat = Catalog()
     cat["en1"] = ReaderDescription("intake.readers.readers:BaseReader", kwargs={"allow_me": True})
     cat["en2"] = ReaderDescription("intake.readers.readers:BaseReader", kwargs={"nope": True})
-    cat["en3"] = ReaderDescription("intake.readers.tests.test_search:NotImportable", kwargs={"allow_me": True})
+    cat["en3"] = ReaderDescription(
+        "intake.readers.tests.test_search:NotImportable", kwargs={"allow_me": True}
+    )
 
     # simple text
     cat2 = cat.search("allow")

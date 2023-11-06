@@ -23,11 +23,30 @@ TEST_CATALOG_PATH = os.path.join(os.path.dirname(__file__), "catalog1.yml")
 def test_info_describe(intake_server):
     catalog = open_catalog(intake_server)
 
-    assert_items_equal(list(catalog), ["use_example1", "nested", "entry1", "entry1_part", "remote_env", "local_env", "text", "arr", "datetime"])
+    assert_items_equal(
+        list(catalog),
+        [
+            "use_example1",
+            "nested",
+            "entry1",
+            "entry1_part",
+            "remote_env",
+            "local_env",
+            "text",
+            "arr",
+            "datetime",
+        ],
+    )
 
     info = catalog["entry1"].describe()
 
-    expected = {"container": "dataframe", "description": "entry1 full", "name": "entry1", "direct_access": "forbid", "user_parameters": []}
+    expected = {
+        "container": "dataframe",
+        "description": "entry1 full",
+        "name": "entry1",
+        "direct_access": "forbid",
+        "user_parameters": [],
+    }
     for k in expected:
         assert info[k] == expected[k]
 
@@ -54,7 +73,19 @@ def test_nested_remote(intake_server):
     from intake.catalog.local import LocalCatalogEntry
 
     catalog = open_catalog()
-    catalog._entries = {"server": LocalCatalogEntry("server", "remote test", "intake_remote", True, {"url": intake_server}, [], [], {}, None)}
+    catalog._entries = {
+        "server": LocalCatalogEntry(
+            "server",
+            "remote test",
+            "intake_remote",
+            True,
+            {"url": intake_server},
+            [],
+            [],
+            {},
+            None,
+        )
+    }
     assert "entry1" in catalog.server()
 
 
@@ -65,7 +96,14 @@ def test_remote_direct(intake_server):
     s0 = catalog.entry1()
     s0.discover()
     s = RemoteDataFrame(
-        intake_server.replace("intake", "http"), {}, name="entry1", parameters={}, npartitions=s0.npartitions, shape=s0.shape, metadata=s0.metadata, dtype=s0.dtype
+        intake_server.replace("intake", "http"),
+        {},
+        name="entry1",
+        parameters={},
+        npartitions=s0.npartitions,
+        shape=s0.shape,
+        metadata=s0.metadata,
+        dtype=s0.dtype,
     )
     assert s0.read().equals(s.read())
 
