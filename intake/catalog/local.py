@@ -16,7 +16,6 @@ from fsspec.core import split_protocol
 
 from .. import __version__
 from ..source import get_plugin_class, register_driver
-from ..source.discovery import load_plugins_from_module
 from ..utils import DictSerialiseMixin, classname, make_path_posix, yaml_load
 from . import exceptions
 from .base import Catalog, DataSource
@@ -395,8 +394,6 @@ class CatalogParser(object):
                 )
                 continue
 
-            if "module" in plugin_source:
-                register_plugin_module(plugin_source["module"])
             elif "dir" in plugin_source:
                 self.error(
                     "The key 'dir', and in general the feature of registering "
@@ -567,16 +564,6 @@ class CatalogParser(object):
             name=data.get("name"),
             description=data.get("description"),
         )
-
-
-def register_plugin_module(mod):
-    """Find plugins in given module"""
-    for k, v in load_plugins_from_module(mod).items():
-        if k:
-            if isinstance(k, (list, tuple)):
-                k = k[0]
-            # we clobber by default here
-            register_driver(k, v, clobber=True)
 
 
 def get_dir(path):

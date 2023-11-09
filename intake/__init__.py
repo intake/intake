@@ -18,7 +18,6 @@ imports = {
     "DataSource": "intake.source.base:DataSource",
     "Schema": "intake.source.base:Schema",
     "load_combo_catalog": "intake.catalog.default:load_combo_catalog",
-    "upload": "intake.container:upload",
     "gui": "intake.interface:instance",
     "interface": "intake.interface",
     "cat": "intake.catalog:builtin",
