@@ -380,17 +380,37 @@ class EarthdataReader(BaseReader):
     func = "earthaccess:search_data"
     func_doc = "earthaccess:open"
 
-    def _read(self, doi, **kwargs):
+    def _read(self, concept, **kwargs):
         import earthaccess
         import xarray as xr
 
-        granules = self._func(doi=doi, **kwargs)
+        granules = self._func(concept_id=concept, **kwargs)
         files = earthaccess.open(granules)
         return xr.open_mfdataset(files, engine="h5netcdf")
 
 
 class EarthdataCatalogReader(BaseReader):
-    """Finds the earthdata datasets that contain some data in the given query bounds"""
+    """Finds the earthdata datasets that contain some data in the given query bounds
+
+    Example
+    -------
+
+    >>> import intake.readers.catalogs
+    >>> cat = intake.readers.catalogs.EarthdataCatalogReader(temporal=("2002-01-01", "2002-01-02")).read()
+    >>> reader = cat['C2723754864-GES_DISC']
+    >>> reader.read()
+    <xarray.Dataset>
+    Dimensions:                         (time: 2, lon: 3600, lat: 1800, nv: 2)
+    Coordinates:
+      * lon                             (lon) float32 -179.9 -179.9 ... 179.9 179.9
+      * lat                             (lat) float64 -89.95 -89.85 ... 89.85 89.95
+      * time                            (time) datetime64[ns] 2002-01-01 2002-01-02
+    Dimensions without coordinates: nv
+    Data variables:
+        precipitation                   (time, lon, lat) float32 dask.array<chunksize=(1, 3600, 900), meta=np.ndarray>
+        precipitation_cnt               (time, lon, lat) int8 dask.array<chunksize=(1, 3600, 900), meta=np.ndarray>
+    ...
+    """
 
     output_instance = "intake.readers.entry:Catalog"
     imports = {"earthdata", "xarray"}
@@ -400,12 +420,11 @@ class EarthdataCatalogReader(BaseReader):
         cat = Catalog()
         dss = self._func(temporal=temporal, cloud_hosted=True, **kwargs)
         for ds in dss:
-            if ds["umm"]["DOI"].get("DOI"):
-                cat[ds["umm"]["DOI"]["DOI"]] = ReaderDescription(
-                    reader="intake.readers.catalogs:EarthdataReader",
-                    metadata=dict(ds),
-                    kwargs=dict(
-                        doi=ds["umm"]["DOI"]["DOI"], temporal=temporal, cloud_hosted=True, **kwargs
-                    ),
-                )
+            cat[ds["meta"]["concept-id"]] = ReaderDescription(
+                reader="intake.readers.catalogs:EarthdataReader",
+                metadata=dict(ds),
+                kwargs=dict(
+                    concept=ds["meta"]["concept-id"], temporal=temporal, cloud_hosted=True, **kwargs
+                ),
+            )
         return cat
