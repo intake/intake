@@ -171,7 +171,7 @@ class NetCDF3(FileData):
 
 
 class HDF5(FileData):
-    filepattern = "(hdf5?|h4|nc)$"  # many others by convention
+    filepattern = "(hdf5?|h4|nc4?)$"  # many others by convention
     structure = {"array", "table", "hierarchy"}
     magic = {b"HDF"}
     mimetypes = "application/x-hdf5?"

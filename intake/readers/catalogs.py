@@ -365,3 +365,47 @@ class TensorFlowDatasetsCatalog(BaseReader):
         for name in community.registry.registered._DATASET_REGISTRY:
             cat[name] = TFPublicDataset(name=name)
         return cat
+
+
+class EarthdataReader(BaseReader):
+    """Read particular earthdata dataset by DOI and parameter bounds
+
+    Requires registration at https://urs.earthdata.nasa.gov/ and calling
+    earthaccess.login() before access. Will attempt to read all data
+    with xarray as netCDF4/HDF5 files.
+    """
+
+    output_instance = {"xarray:Dataset"}
+    imports = {"earthdata", "xarray"}
+    func = "earthaccess:search_data"
+    func_doc = "earthaccess:open"
+
+    def _read(self, doi, **kwargs):
+        import earthaccess
+        import xarray as xr
+
+        granules = self._func(doi=doi, **kwargs)
+        files = earthaccess.open(granules)
+        return xr.open_mfdataset(files, engine="h5netcdf")
+
+
+class EarthdataCatalogReader(BaseReader):
+    """Finds the earthdata datasets that contain some data in the given query bounds"""
+
+    output_instance = "intake.readers.entry:Catalog"
+    imports = {"earthdata", "xarray"}
+    func = "earthaccess:search_datasets"
+
+    def _read(self, temporal=("1980-01-01", "2023-11-10"), **kwargs):
+        cat = Catalog()
+        dss = self._func(temporal=temporal, cloud_hosted=True, **kwargs)
+        for ds in dss:
+            if ds["umm"]["DOI"].get("DOI"):
+                cat[ds["umm"]["DOI"]["DOI"]] = ReaderDescription(
+                    reader="intake.readers.catalogs:EarthdataReader",
+                    metadata=dict(ds),
+                    kwargs=dict(
+                        doi=ds["umm"]["DOI"]["DOI"], temporal=temporal, cloud_hosted=True, **kwargs
+                    ),
+                )
+        return cat
