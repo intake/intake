@@ -25,7 +25,12 @@ from intake.readers.utils import (
 
 
 class DataDescription(Tokenizable):
-    """Defines some data and a single way to load it, with parameters not yet resolved"""
+    """Defines some data: class and arguments. This may be laoded in a number of ways
+
+    A DataDescription normally resides in a Catalog, and can contain templated arguments.
+    When there are user_parameters, these will also be applied to any reader that
+    depends on this data.
+    """
 
     def __init__(
         self,
@@ -88,6 +93,13 @@ class DataDescription(Tokenizable):
 
 
 class ReaderDescription(Tokenizable):
+    """
+    A serialisable description of a reader or pipeline
+
+    This class is typically stored inside Catalogs, and can contain templated arguments
+    which get evaluated at the time that it is accessed from a Catalog.
+    """
+
     def __init__(
         self,
         reader: str,
@@ -183,6 +195,8 @@ class ReaderDescription(Tokenizable):
 
 
 class Catalog(Tokenizable):
+    """A collection of data and reader descriptions."""
+
     def __init__(
         self,
         entries: Iterable[ReaderDescription] | Mapping | None = None,

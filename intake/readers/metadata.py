@@ -2,6 +2,7 @@
 
 metadata_fields = {
     "description": (str, "one-line description of the dataset"),
+    "text": (str, "long-dorm prose description of the dataset"),
     "imports": (list[str, ...], "top-level packages needed to read this"),
     "environment": (str, "YAML string or URL of a conda env spec"),  # or requirements.txt
     "references": (list[str], "URLs with further information relating to this"),

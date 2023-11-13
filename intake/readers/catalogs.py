@@ -9,6 +9,8 @@ from intake.readers.utils import LazyDict
 
 
 class TiledLazyEntries(LazyDict):
+    """A dictionary-like, which only loads a key's value from Tiled on demand"""
+
     def __init__(self, client):
         self.client = client
 
@@ -90,6 +92,11 @@ class SQLAlchemyCatalog(BaseReader):
 
 
 class StacCatalogReader(BaseReader):
+    """Create a Catalog from a STAC endpoint or file
+
+    https://stacspec.org/en
+    """
+
     # STAC organisation: Catalog->Item->Asset. Catalogs can reference Catalogs.
     # also have ItemCollection (from searching a Catalog) and CombinedAsset (multi-layer data)
     # Asset and CombinedAsset are datasets, the rest are Catalogs
@@ -98,7 +105,28 @@ class StacCatalogReader(BaseReader):
     imports = {"pystac"}
     output_instance = "intake.readers.entry:Catalog"
 
-    def _read(self, data, cls: str = "Catalog", signer=None, prefer=None, **kwargs):
+    def _read(
+        self,
+        data,
+        cls: str = "Catalog",
+        signer: callable | None = None,
+        prefer: str | None = None,
+        **kwargs,
+    ):
+        """
+        Parameters
+        ----------
+        data:
+            JSON-like STAC response, or the actual URL to fetch this from
+        cls:
+            the class of STAC object this should be, Catalog, Item, Asset, ItemCollection
+        signer:
+            if given, apply this function to assets and derived items, to add signature/
+            auth information to HTTP calls
+        prefer:
+            if given, select readers matching this spec from those that might apply to
+            a given asset; e.g., "xarray" for those data that can be read into xarray.
+        """
         import pystac
 
         cls = getattr(pystac, cls)
@@ -179,11 +207,32 @@ class StacCatalogReader(BaseReader):
 
 
 class StackBands(BaseReader):
+    """Reimplementation of "StackBandsSource" from intake-stac
+
+    Takes the subitems of a given collection and concatenates them using xarray
+    on the given dimension.
+    """
+
     implements = {datatypes.STACJSON, datatypes.Literal}
     imports = {"pystac", "xarray"}
     output_instance = "intake.readers.readers:XarrayReader"
 
-    def _read(self, data, bands, concat_dim="band", **kw):
+    def _read(self, data, bands: list[str], concat_dim: str = "band", **kw):
+        """
+        Parameters
+        ----------
+        data:
+            STAC endpoint, file, or dict literal
+        bands:
+            band_id, name or common_name to select from contained items
+        concat_dim:
+            concat dimansion inthe xarray sense
+
+        Returns
+        -------
+        Configured reader, so that you can persist it. Call .read() again to execute
+        the read and concat operation.
+        """
         # this should be a separate reader for STACJSON,
         import pystac
         from pystac.extensions.eo import EOExtension
@@ -240,6 +289,10 @@ class StackBands(BaseReader):
 
 
 class StacSearch(BaseReader):
+    """
+    Get stac objects matching a search spec from a STAC endpoint
+    """
+
     implements = {datatypes.STACJSON}
     imports = {"pystac"}
     output_instance = "intake.readers.entry:Catalog"
@@ -248,6 +301,15 @@ class StacSearch(BaseReader):
         super().__init__(metadata=metadata, **kwargs)
 
     def _read(self, data, query=None, **kwargs):
+        """
+        Parameters
+        ----------
+        query:
+            See https://pystac-client.readthedocs.io/en/latest/api.html#item-search
+            for a description of the available fields
+        kwargs:
+            passed to the resulting readers, e.g., for auth information
+        """
         import requests
         from pystac import ItemCollection
 
@@ -273,11 +335,23 @@ class THREDDSCatalog(Catalog):
 
 
 class THREDDSCatalogReader(BaseReader):
+    """
+    Read from THREDDS endpoint
+
+    https://www.unidata.ucar.edu/software/tds/
+    """
+
     implements = {datatypes.THREDDSCatalog}
     output_instance = THREDDSCatalog.qname()
     imports = {"siphon", "xarray"}
 
     def _read(self, data, **kwargs):
+        """
+        Parameters
+        ----------
+        data:
+            Service URL endpoint
+        """
         from siphon.catalog import TDSCatalog
 
         from intake.readers.readers import XArrayDatasetReader
@@ -298,10 +372,45 @@ class THREDDSCatalogReader(BaseReader):
 
 
 class HuggingfaceHubCatalog(BaseReader):
+    """
+    Datasets from HuggingfaceHub
+
+    To actually access datasets which are not public, you will need to supply
+    and appropriate token. By default, you will be able to read any public/example
+    data.
+
+    Example
+    -------
+    >>> hf = intake.readers.catalogs.HuggingfaceHubCatalog().read()
+    >>> hf['acronym_identification'].read()
+    DatasetDict({
+        train: Dataset({
+            features: ['id', 'tokens', 'labels'],
+            num_rows: 14006
+        })
+        validation: Dataset({
+            features: ['id', 'tokens', 'labels'],
+            num_rows: 1717
+        })
+        test: Dataset({
+            features: ['id', 'tokens', 'labels'],
+            num_rows: 1750
+        })
+    })
+
+    """
+
     output_instance = "intake.readers.entry:Catalog"
     imports = {"datasets"}
+    func = "huggingface_hub:list_datasets"
 
-    def _read(self, *args, with_community_datasets=False, **kwargs):
+    def _read(self, *args, with_community_datasets: bool = False, **kwargs):
+        """
+        Parameters
+        ----------
+        with_community_datasets:
+            If False, only includes official public data, and retrieves fewer entries.
+        """
         from intake.readers.datatypes import HuggingfaceDataset
         from intake.readers.readers import HuggingfaceReader
         import huggingface_hub
@@ -318,6 +427,33 @@ class HuggingfaceHubCatalog(BaseReader):
 
 
 class SKLearnExamplesCatalog(BaseReader):
+    """
+    Example datasets from sklearn.datasets
+
+    https://scikit-learn.org/stable/datasets/toy_dataset.html
+
+    Each entry has some specific parameters, please read the linked page. Note that the metadata
+    is only available in the final dataset after .read(), not before.
+
+    Examples
+    --------
+    >>> import intake.readers.catalogs
+    >>> cat = intake.readers.catalogs.SKLearnExamplesCatalog().read()
+    >>> list(cat)
+    ['breast_cancer',
+     'diabetes',
+     'digits',
+     ...]
+    >>> cat.olivetti_faces.read()
+    downloading Olivetti faces from https://ndownloader.figshare.com/files/5976027 to TMP
+    {'data': array([[0.30991736, 0.3677686 , 0.41735536, ..., 0.15289256, 0.16115703,
+             0.1570248 ],
+            [0.45454547, 0.47107437, 0.5123967 , ..., 0.15289256, 0.15289256,
+             0.15289256],
+            [0.3181818 , 0.40082645, 0.49173555, ..., 0.14049587, 0.14876033,
+            ...
+    """
+
     output_instance = "intake.readers.entry:Catalog"
     imports = {"sklearn"}
 
@@ -326,6 +462,9 @@ class SKLearnExamplesCatalog(BaseReader):
         import sklearn.datasets
 
         names = [funcname[5:] for funcname in dir(sklearn.datasets) if funcname.startswith("load_")]
+        names.extend(
+            [funcname[6:] for funcname in dir(sklearn.datasets) if funcname.startswith("fetch_")]
+        )
         entries = [SKLearnExampleReader(name=name) for name in names]
         cat = Catalog(entries=entries)
         cat.aliases = {name: e for name, e in zip(names, cat.entries)}
@@ -333,10 +472,36 @@ class SKLearnExamplesCatalog(BaseReader):
 
 
 class TorchDatasetsCatalog(BaseReader):
+    """
+    Standard example PyTorch datasets
+
+    Includes all the entries in packages torchvision, torchaudio, torchtext . The
+    types of these data when read are all torch.utils.data:Dataset, but the contents
+    are quite different.
+
+    Examples
+    --------
+    >>> cat = intake.readers.catalogs.TorchDatasetsCatalog(rootdir="here").read()
+    >>> cat.RTE.read()
+    (ShardingFilterIterDataPipe,
+     ShardingFilterIterDataPipe,
+     ShardingFilterIterDataPipe)
+    """
+
+    # TODO: the load function can be used for a wide variety of local files
     output_instance = "intake.readers.entry:Catalog"
     imports = {"datasets"}
 
-    def _read(self, rootdir, *args, **kwargs):
+    def _read(self, rootdir: str, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        rootdir:
+            A local directory to store cached files
+
+        Some datasets require further kwargs, such as subset (e.g., "train") or other
+        selector.
+        """
         from intake.readers.readers import TorchDataset
         import importlib
 
@@ -346,14 +511,38 @@ class TorchDatasetsCatalog(BaseReader):
                 mod = importlib.import_module(f"torch{name}")
                 for func in mod.datasets.__all__:
                     f = getattr(mod.datasets, func)
-                    metadata = {"description": f.__doc__.split("\n", 1)[0]} if f.__doc__ else None
-                    cat[func] = TorchDataset(name, func, rootdir, metadata=metadata)
+                    metadata = (
+                        {"description": f.__doc__.split("\n", 1)[0], "text": f.__doc__}
+                        if f.__doc__
+                        else {}
+                    )
+                    metadata["section"] = name
+                    cat[func] = TorchDataset(
+                        modname=name, funcname=func, rootdir=rootdir, metadata=metadata
+                    )
             except (ImportError, ModuleNotFoundError):
                 pass
         return cat
 
 
 class TensorFlowDatasetsCatalog(BaseReader):
+    """
+    Datasets from the TensorFlow public registry
+
+    See https://github.com/tensorflow/datasets/tree/master/tensorflow_datasets for
+    full decriptions. Data will be cached locally on load, and metadata is only fetched
+    at that time.
+
+    Examples
+    --------
+    >>> tf = intake.readers.catalogs.TensorFlowDatasetsCatalog().read(
+    >>> tf.xnli.read()
+    Downloading and preparin ...
+    Dataset xnli downloaded and prepared to <>>. Subsequent calls will reuse this data.
+    Out[13]:
+    ({Split('test'): <PrefetchDataset element_spec={'hypothesis': ...
+    """
+
     output_instance = "intake.readers.entry:Catalog"
     imports = {"tensorflow_datasets"}
 
@@ -368,7 +557,7 @@ class TensorFlowDatasetsCatalog(BaseReader):
 
 
 class EarthdataReader(BaseReader):
-    """Read particular earthdata dataset by DOI and parameter bounds
+    """Read particular earthdata dataset by ID and parameter bounds
 
     Requires registration at https://urs.earthdata.nasa.gov/ and calling
     earthaccess.login() before access. Will attempt to read all data

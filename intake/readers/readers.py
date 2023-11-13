@@ -376,7 +376,9 @@ class SKLearnExampleReader(BaseReader):
     def _read(self, name, **kw):
         import sklearn.datasets
 
-        loader = getattr(sklearn.datasets, f"load_{name}")
+        loader = getattr(sklearn.datasets, f"load_{name}", None) or getattr(
+            sklearn.datasets, f"fetch_{name}"
+        )
         return loader()
 
 
@@ -388,7 +390,10 @@ class TorchDataset(BaseReader):
 
         mod = importlib.import_module(f"torch{modname}")
         func = getattr(mod.datasets, funcname)
-        return func(rootdir, download=True)
+        try:
+            return func(rootdir, download=True)
+        except TypeError:
+            return func(rootdir)
 
 
 class TFPublicDataset(BaseReader):
