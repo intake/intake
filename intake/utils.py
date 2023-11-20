@@ -8,6 +8,8 @@
 import collections
 import collections.abc
 import datetime
+import importlib
+import logging
 import os
 import sys
 import warnings
@@ -15,6 +17,20 @@ from collections import OrderedDict
 from contextlib import contextmanager
 
 import yaml
+
+logger = logging.getLogger("intake")
+
+
+def import_name(name):
+    # TODO: move to a utils module
+    modname = name.split(":", 1)[0]
+    logger.debug("Importing: '%s'" % modname)
+    mod = importlib.import_module(modname)
+    if ":" in name:
+        end = name.split(":")[1]
+        for bit in end.split("."):
+            mod = getattr(mod, bit)
+    return mod
 
 
 def make_path_posix(path):

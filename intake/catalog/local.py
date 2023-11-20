@@ -450,9 +450,7 @@ class CatalogParser(object):
 
     def _parse_data_source(self, name, data):
         if data.pop("remote", False):
-            from intake.catalog.remote import RemoteCatalogEntry
-
-            return RemoteCatalogEntry(getenv=self.getenv, getshell=self.getshell, **data)
+            return
         elif "cls" in data:
             from intake.utils import remake_instance
 

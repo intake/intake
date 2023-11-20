@@ -20,8 +20,8 @@ from intake.readers.utils import Tokenizable, subclasses
 class BaseData(Tokenizable):
     """Prototype dataset definition"""
 
-    mimetypes: str = ""
-    filepattern: str = ""
+    mimetypes: str = ""  # regex
+    filepattern: str = ""  # regex
     structure: set[str] = set()
 
     def __init__(self, metadata: dict[str, Any] | None = None):
@@ -290,6 +290,19 @@ class SQLite(FileData):
     structure = {"sequence", "table"}
     filepattern = "sqlite$|sqlitedb$|db$"
     magic = {b"SQLite format"}
+
+
+class AVRO(FileData):
+    structure = {"nested"}
+    filepattern = "avro$"
+    magic = {b"Obj\x01"}
+    mimetypes = "avro/binary"
+
+
+class ORC(FileData):
+    structure = {"nested", "tabular"}
+    filepattern = "orc$"
+    magic = {b"ORC"}
 
 
 class YAMLFile(FileData):

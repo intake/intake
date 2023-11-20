@@ -67,6 +67,8 @@ class All(SearchBase):
 
 
 class Text(SearchBase):
+    """Search for given string anywhere in the text repr of an entry."""
+
     def __init__(self, text: str):
         self.text = text
 
@@ -75,20 +77,40 @@ class Text(SearchBase):
 
 
 class Importable(SearchBase):
+    """Check if the packages listed in "imports" field exist in the environment
+
+    This only checks for top-level packages, and does not actually import anything.
+    If any package is not found, the filter fails.
+    """
+
     def filter(self, entry: ReaderDescription) -> bool:
         return entry.check_imports()
 
 
 class EnvironmentSatisfied(SearchBase):
-    def filter(self, entry: ReaderDescription, output=False) -> bool:
-        # TODO: this is quite slow, should cache?
-        import fsspec
-        import os
+    """Compare the "environment" metadata field to the current information in conda
 
+    The value of "environment" can be a URL to load from (and environment.yml file),
+    or literal YAML text. See
+    https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
+    for specs.
+
+    The filter passes if the environment is satisfied, i.e., the packages and versions in
+    the current environment are allowed by the spec.
+    """
+
+    def filter(self, entry: ReaderDescription) -> bool:
         env = entry.metadata.get("environment")
         if not env:
             # no env restrictions means a pass
             return True
+        return self._is_consistent(env)
+
+    @staticmethod
+    def _is_consistent(env, output=False):
+        # TODO: this is quite slow, should cache?
+        import fsspec
+        import os
         import subprocess
         import tempfile
         import shlex

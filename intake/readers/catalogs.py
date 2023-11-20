@@ -560,7 +560,10 @@ class EarthdataReader(BaseReader):
     """Read particular earthdata dataset by ID and parameter bounds
 
     Requires registration at https://urs.earthdata.nasa.gov/ and calling
-    earthaccess.login() before access. Will attempt to read all data
+    earthaccess.login() before access. For some specific providers, you also
+    must allow access within the online portal before loading data.
+
+    Will attempt to read all data
     with xarray as netCDF4/HDF5 files.
     """
 
@@ -580,6 +583,9 @@ class EarthdataReader(BaseReader):
 
 class EarthdataCatalogReader(BaseReader):
     """Finds the earthdata datasets that contain some data in the given query bounds
+
+    Each entry returns an ``EarthdataReader`` - see further documentation there. The
+    keys are the "concept-id" of each dataset, a unieque string.
 
     Example
     -------

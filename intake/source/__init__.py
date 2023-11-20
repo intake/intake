@@ -10,8 +10,8 @@ from collections.abc import MappingView
 
 import entrypoints
 
-from .base import DataSource
-from .discovery import drivers
+from intake.source.base import DataSource
+from intake.source.discovery import drivers
 
 logger = logging.getLogger("intake")
 

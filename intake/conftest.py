@@ -9,8 +9,8 @@ import os
 import posixpath
 import tempfile
 
+import dask
 import pytest
-import requests
 
 from intake import config, open_catalog, register_driver
 from intake.source.base import DataSource, Schema
@@ -18,14 +18,7 @@ from intake.tests.test_utils import copy_test_file
 
 here = os.path.dirname(__file__)
 
-
-MIN_PORT = 7480
-MAX_PORT = 7489
-PORT = MIN_PORT
-
 # ensures "object" dtype on strings in dask, which is still the default for pandas
-import dask
-
 dask.config.set({"dataframe.convert-string": False})
 
 
@@ -60,29 +53,6 @@ def tmp_config_path(tmp_path):
     else:
         del os.environ[key]
     assert config.cfile() != temp_config_path
-
-
-def ping_server(url, swallow_exception, head=None):
-    try:
-        r = requests.get(url)
-    except Exception as e:
-        if swallow_exception:
-            return False
-        else:
-            raise e
-
-    return r.status_code in (200, 403)  # allow forbidden as well
-
-
-def pick_port():
-    global PORT
-    port = PORT
-    if port == MAX_PORT:
-        PORT = MIN_PORT
-    else:
-        PORT += 1
-
-    return port
 
 
 @pytest.fixture(scope="function")

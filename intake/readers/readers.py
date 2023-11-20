@@ -95,6 +95,7 @@ class BaseReader(Tokenizable, PipelineMixin):
         return self._read(*args, **kw)
 
     def _read(self, *args, **kwargs):
+        """This is the method subclasses will tend to override"""
         raise NotImplementedError
 
     def to_entry(self):
@@ -159,6 +160,13 @@ class PandasFeather(Pandas):
     implements = {datatypes.Feather2, datatypes.Feather1}
     imports = {"pandas", "pyarrow"}
     func = "pandas:read_feather"
+    url_arg = "path"
+
+
+class PandasORC(Pandas):
+    implements = {datatypes.ORC}
+    imports = {"pandas", "pyarrow"}
+    func = "pandas:read_orc"
     url_arg = "path"
 
 
@@ -409,8 +417,26 @@ class TFTextreader(FileReader):
     imports = {"tensorflow"}
     implements = {datatypes.Text}
     func = "tensorflow.data:TextLineDataset"
-    output_instance = "tensorflow.data:TextLineDataset"
+    output_instance = "tensorflow.data:Dataset"
     url_arg = "filenames"
+
+
+class TFORC(FileReader):
+    imports = {"tensorflow_io"}
+    implements = {datatypes.ORC}
+    func = "tensorflow_io:IODataset.from_orc"
+    url_arg = "filename"
+    output_instance = "tensorflow.data:Dataset"
+
+
+class TFSQL(BaseReader):
+    implements = {"tensorflow_io"}
+    imports = {datatypes.SQLQuery}
+    func = "tfio.experimental:IODataset.from_sql"
+    output_instance = "tensorflow.data:Dataset"
+
+    def _read(self, data, **kwargs):
+        return self._func(endpoint=data["conn"], query=data["query"], **kwargs)
 
 
 class KerasImageReader(FileReader):
@@ -496,6 +522,12 @@ class AwkwardJSON(Awkward):
     implements = {datatypes.JSONFile}
     func = "awkward:from_json"
     url_arg = "source"
+
+
+class AwkwardAVRO(Awkward):
+    implements = {datatypes.AVRO}
+    func = "awkward:from_avro_file"
+    url_arg = "file"
 
 
 class DaskAwkwardJSON(Awkward):
@@ -631,18 +663,34 @@ class SKImageReader(FileReader):
     url_arg = "fname"
 
 
-class NumpyReader(FileReader):
+class NumpyText(FileReader):
     output_instance = "numpy:ndarray"
-    implements = {datatypes.NumpyFile}
+    implements = {datatypes.Text}
     imports = {"numpy"}
-    func = "numpy:load"
+    func = "numpy:loadtxt"
 
     def _read(self, data, **kw):
         if data.storage_options or "://" in data.url or "::" in data.url:
             with fsspec.open(data.url, **(data.storage_options or {})) as f:
                 return self._func(f, **kw)
-        # use of fsspec prevents mmap, so provide alternative for simple local paths
         return self._func(data.url, **kw)
+
+
+class NumpyReader(NumpyText):
+    func = "numpy:load"
+    implements = {datatypes.NumpyFile}
+
+
+class CupyNumpyReader(NumpyText):
+    output_instance = "cupy:ndarray"
+    implements = {datatypes.NumpyFile}
+    imports = {"cupy"}
+    func = "cupy:loadtxt"
+
+
+class CupyTextReader(CupyNumpyReader):
+    implements = {datatypes.Text}
+    func = "numpy:loadtxt"
 
 
 class XArrayDatasetReader(FileReader):

@@ -5,15 +5,18 @@
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
 
-import importlib
-import logging
 import os
 
 from intake._version import __version__
+
+# legacy immediate imports
+from intake.utils import import_name, logger
 from intake.catalog.base import Catalog
 from intake.source import registry
 from intake.config import conf
+from intake.readers import BaseReader, entry, BaseData, BaseUserParameter, BaseConverter
 
+# legacy on-demand imports
 imports = {
     "DataSource": "intake.source.base:DataSource",
     "Schema": "intake.source.base:Schema",
@@ -25,18 +28,7 @@ imports = {
     "register_driver": "intake.source:register_driver",
     "unregister_driver": "intake.source:unregister_driver",
 }
-logger = logging.getLogger("intake")
-
-
-def import_name(name):
-    modname = name.split(":", 1)[0]
-    logger.debug("Importing: '%s'" % modname)
-    mod = importlib.import_module(modname)
-    if ":" in name:
-        end = name.split(":")[1]
-        for bit in end.split("."):
-            mod = getattr(mod, bit)
-    return mod
+from_yaml_file = entry.Catalog.from_yaml_file
 
 
 def __getattr__(attr):

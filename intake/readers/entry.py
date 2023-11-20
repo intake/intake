@@ -247,11 +247,24 @@ class Catalog(Tokenizable):
         self,
         item: str,
         name: str,
-        path=None,
-        value=None,
+        path: str | None = None,
+        value: Any = None,
         cls=SimpleUserParameter,
         store_to: str | None = None,
     ):
+        """
+        Descend into data & reader descriptions to create a user_parameter
+
+        There are two ways to fund and replace values by a template:
+        - if ``path`` is given, the kwargs will be walked to this location
+          e.g., "field.0.special_value" -> kwargs["field"][0]["special_value"]
+        - if ``value`` is given, all kwargs will be recursively walked, looking
+          for values that equal that given.
+
+        Matched values will be replaced by a template string like ``"{name}"``,
+        and a user_parameter of class ``cls`` will be placed in the location
+        given by ``store_to`` (could be "data", "catalog").
+        """
         # TODO: if entity is "Catalog", extract over all entities; currently this will
         #  cause a recursion loop
         entity = self.get_entity(item)
@@ -273,8 +286,16 @@ class Catalog(Tokenizable):
         entity2.user_parameters[parameter_name] = entity1.user_parameters.pop(parameter_name)
         return self
 
-    def promote_parameter_name(self, parameter_name: Any, level="cat") -> Catalog:
-        """Find and promote given named parameter, assuming they are all identical"""
+    def promote_parameter_name(self, parameter_name: str, level: str = "cat") -> Catalog:
+        """Find and promote given named parameter, assuming they are all identical
+
+        parameter_name:
+            the key string referring to the parameter
+        level: cat | data
+            If the parameter is found in a reader, it can be promoted to the data it
+            depends on. Parameters in a data description can only be promoted to a
+            catalog global.
+        """
         up = None
         ups = None
         if level not in ("cat", "data"):
@@ -320,12 +341,22 @@ class Catalog(Tokenizable):
             pass
         raise AttributeError(item)
 
-    def to_yaml_file(self, path, **storage_options):
+    def to_yaml_file(self, path: str, **storage_options):
+        """Persist the state of this catalog as a YAML file
+
+        storage_options:
+            kwargs to pass to fsspec for opening the file to write
+        """
         with fsspec.open(path, mode="wt", **storage_options) as stream:
             yaml.safe_dump(self.to_dict(), stream)
 
     @staticmethod
-    def from_yaml_file(path, **storage_options):
+    def from_yaml_file(path: str, **storage_options):
+        """Load YAML representation into a new Catalog instance
+
+        storage_options:
+            kwargs to pass to fsspec for opening the file to read
+        """
         with fsspec.open(path, **storage_options) as stream:
             cat = Catalog.from_dict(yaml.safe_load(stream))
         cat.user_parameters["CATALOG_DIR"] = path.split("/", 1)[0]
@@ -349,6 +380,11 @@ class Catalog(Tokenizable):
         return cat
 
     def get_entity(self, item: str):
+        """Get the objects by reference
+
+        item can be an entry in .aliases, in which case the original wil be returned,
+        or a key in .entries or .data. The entity in question is returned without processing.
+        """
         if item == "Catalog":
             return self
         if item in self.aliases:
@@ -406,7 +442,7 @@ class Catalog(Tokenizable):
             raise KeyError(item)
 
     def _rehydrate(self, val):
-        """For any "data" references in the value, replace with"""
+        """Recreate reader instances when accessed from this catalog, filling in refs and templates"""
         import re
 
         from intake.readers.entry import DataDescription, ReaderDescription
@@ -505,12 +541,18 @@ class Catalog(Tokenizable):
         """
         self.add_entry(entry, name=name)
 
-    def rename(self, old, new, clobber=True):
+    def rename(self, old: str, new: str, clobber=True):
+        """Change the alias of a dataset"""
         if not clobber and new in self.aliases:
             raise ValueError
         self.aliases[new] = self.aliases.pop(old)
 
-    def name(self, tok, name, clobber=True):
+    def name(self, tok: str, name: str, clobber=True):
+        """Give an alias to a dataset
+
+        tok:
+            a key in the .entries dict
+        """
         if not clobber and name in self.aliases:
             raise ValueError
         if not isinstance(tok, str):

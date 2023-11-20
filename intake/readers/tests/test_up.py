@@ -1,9 +1,9 @@
 import pytest
 
-import intake.readers.user_parameters as up
-
 
 def test_basic():
+    import intake.readers.user_parameters as up
+
     p = up.SimpleUserParameter(default=1, dtype=int)
     pars = {"k": ["{p}", 1]}
     out = up.set_values({"p": p}, pars)
