@@ -9,7 +9,6 @@ import os
 import posixpath
 import tempfile
 
-import dask
 import pytest
 
 from intake import config, open_catalog, register_driver
@@ -17,9 +16,6 @@ from intake.source.base import DataSource, Schema
 from intake.tests.test_utils import copy_test_file
 
 here = os.path.dirname(__file__)
-
-# ensures "object" dtype on strings in dask, which is still the default for pandas
-dask.config.set({"dataframe.convert-string": False})
 
 
 class TestSource(DataSource):

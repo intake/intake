@@ -15,7 +15,7 @@ def test_1():
     cat = data.to_reader(reader="StacCatalog").read()
     assert "test" in cat
     cat2 = cat.test.read()
-    assert isinstance(cat2, intake.readers.entry.Catalog)
+    assert isinstance(cat2, intake.entry.Catalog)
     assert cat2.metadata["description"] == "child catalog"
 
 

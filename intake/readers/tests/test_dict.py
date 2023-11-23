@@ -4,7 +4,7 @@ from intake.readers import entry
 
 def test_yaml_roundtrip():
     cat = entry.Catalog()
-    cat["one"] = intake.readers.BaseReader(intake.readers.BaseData(), output_instance="blah")
+    cat["one"] = intake.readers.BaseReader(intake.BaseData(), output_instance="blah")
     cat.to_yaml_file("memory://cat.yaml")
     cat2 = entry.Catalog.from_yaml_file("memory://cat.yaml")
     assert cat2.user_parameters.pop("CATALOG_DIR")

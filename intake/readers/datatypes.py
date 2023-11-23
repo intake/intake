@@ -46,6 +46,7 @@ class BaseData(Tokenizable):
 
     @property
     def possible_outputs(self):
+        """Map of importable readers to the expected output class of each"""
         readers = self.possible_readers["importable"]
         return {r: r.output_instance for r in readers}
 
@@ -68,10 +69,23 @@ class BaseData(Tokenizable):
             raise ValueError("outtype not in available in importable readers")
         return next(iter(self.possible_readers["importable"]))
 
-    def to_reader(self, outtype: str | None = None, reader: str | type | None = None, **kw):
+    def to_reader(self, outtype: str | None = None, reader: str | None = None, **kw):
+        """Find an appropriate reader for this data
+
+        If neither ``outtype`` or ``reader`` is passed, the first importable reader
+        will be picked.
+
+        See also ``.possible_outputs``
+
+        Parameters
+        ----------
+        outtype: string to match against the output classes of potential readers
+        reader: string to match against the class names of the readers
+        """
         return self.to_reader_cls(outtype, reader)(data=self, **kw)
 
     def to_entry(self):
+        """Create DataDescription version of this, for placing in a Catalog"""
         from intake.readers.entry import DataDescription
 
         kw = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
@@ -80,6 +94,11 @@ class BaseData(Tokenizable):
     def __repr__(self):
         d = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
         return f"{type(self).__name__}, {d}"
+
+    def auto_pipeline(self, outtype):
+        from intake.readers.convert import auto_pipeline
+
+        return auto_pipeline(self, outtype)
 
 
 class FileData(BaseData):

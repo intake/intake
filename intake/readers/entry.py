@@ -173,6 +173,12 @@ class ReaderDescription(Tokenizable):
         kw = self.get_kwargs(user_parameters=ups, **kwargs)
         return cls(metadata=self.metadata, **kw)
 
+    def to_cat(self, name=None):
+        """Create a Catalog containing only this entry"""
+        cat = Catalog()
+        cat.add_entry(self, name)
+        return cat
+
     def __call__(self, user_parameters=None, **kwargs):
         return self.to_reader(user_parameters=user_parameters, **kwargs)
 

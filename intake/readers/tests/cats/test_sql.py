@@ -82,5 +82,5 @@ def test_cat(sqlite_with_data):
     reader = catalogs.SQLAlchemyCatalog(data)
     cat = reader.read()
     assert list(cat.data) == ["oi"]
-    out = cat["oi"].to_reader().read()
+    out = cat["oi"].to_reader(outtype="pandas").read()
     assert len(out) == 2000

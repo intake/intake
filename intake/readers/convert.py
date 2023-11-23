@@ -5,11 +5,10 @@ By convention, functions here do not change the data, just how it is held.
 from __future__ import annotations
 
 import re
-from functools import cache
 from itertools import chain
 
-from intake import import_name
-from intake.readers import BaseReader, readers
+from intake import import_name, conf
+from intake.readers import BaseData, BaseReader, readers
 from intake.readers.utils import all_to_one, subclasses
 
 
@@ -403,8 +402,10 @@ class Pipeline(readers.BaseReader):
         )
 
 
-@cache
-def conversions_graph():
+def conversions_graph(avoid=None):
+    avoid = avoid or conf["reader_avoid"]
+    if isinstance(avoid, str):
+        avoid = [avoid]
     import networkx
 
     from intake.readers.utils import subclasses
@@ -413,16 +414,22 @@ def conversions_graph():
 
     # transformers
     nodes = set(
-        cls.output_instance for cls in subclasses(readers.BaseReader) if cls.output_instance
+        cls.output_instance
+        for cls in subclasses(readers.BaseReader)
+        if cls.output_instance and not any(re.findall(_, cls.qname()) for _ in avoid)
     )
     graph.add_nodes_from(nodes)
 
     for cls in subclasses(readers.BaseReader):
+        if any(re.findall(_, cls.qname()) for _ in avoid):
+            continue
         if cls.output_instance:
             for impl in cls.implements:
                 graph.add_node(cls.output_instance)
                 graph.add_edge(impl.qname(), cls.output_instance, label=cls.qname())
     for cls in subclasses(BaseConverter):
+        if any(re.findall(_, cls.qname()) for _ in avoid):
+            continue
         for inttype, outtype in cls.instances.items():
             if inttype != ".*" and inttype != outtype:
                 graph.add_nodes_from((inttype, outtype))
@@ -440,10 +447,11 @@ def plot_conversion_graph(filename) -> None:
     a.draw(filename, prog="fdp")
 
 
-def path(start: str, end: str, cutoff: int = 5) -> list:
+def path(start: str, end: str, cutoff: int = 5, avoid=None) -> list:
     import networkx as nx
 
-    alltypes = list(conversions_graph())
+    g = conversions_graph(avoid=avoid)
+    alltypes = list(g)
     matchtypes = [_ for _ in alltypes if re.findall(start, _)]
     if not matchtypes:
         raise ValueError("type found no match: %s", start)
@@ -452,22 +460,41 @@ def path(start: str, end: str, cutoff: int = 5) -> list:
     if not matchtypes:
         raise ValueError("outtype found no match: %s", end)
     end = matchtypes[0]
-    g = conversions_graph()
     return sorted(nx.all_simple_edge_paths(g, start, end, cutoff=cutoff), key=len)
 
 
-def auto_pipeline(url: str, outtype: str, storage_options: dict | None = None) -> Pipeline:
-    """Create pipeline from given URL to desired output type"""
+def auto_pipeline(
+    url: str | BaseData,
+    outtype: str,
+    storage_options: dict | None = None,
+    avoid: list[str] | None = None,
+) -> Pipeline:
+    """Create pipeline from given URL to desired output type
+
+    Will search for the shortest conversion path from the inferred data-type to the
+    output.
+
+    Parameters
+    ----------
+    url: input data, usually a location/URL, but maybe a data instance
+    outtype: pattern to match to possible output types
+    storage_options: if url is a remote str, these are kwargs that fsspec may need to
+        access it
+    avoid: don't consider readers whose names match any of these strings
+    """
     from intake.readers.datatypes import recommend
 
-    if storage_options:
-        data = recommend(url, storage_options=storage_options)[0](
-            url=url, storage_options=storage_options
-        )
+    if isinstance(url, str):
+        if storage_options:
+            data = recommend(url, storage_options=storage_options)[0](
+                url=url, storage_options=storage_options
+            )
+        else:
+            data = recommend(url)[0](url=url)
     else:
-        data = recommend(url)[0](url=url)
+        data = url
     start = data.qname()
-    steps = path(start, outtype)
+    steps = path(start, outtype, avoid=avoid)
     reader = data.to_reader(outtype=steps[0][0][1])
     for s in steps[0][1:]:
         reader = reader.transform[s[1]]

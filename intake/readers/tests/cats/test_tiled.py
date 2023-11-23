@@ -42,14 +42,14 @@ def test_catalog_workflow(tiled_server):
 
     data = intake.readers.datatypes.TiledService(tiled_server)
     node = data.to_reader("tiled")
-    cat = intake.readers.entry.Catalog()
+    cat = intake.entry.Catalog()
     cat["cat"] = (
         node.TiledSearch(query=FullText("dog"))
         .TiledSearch(query=FullText("red"))
         .TiledNodeToCatalog
     )
     cat.to_yaml_file("memory://cat.yaml")
-    cat2 = intake.readers.entry.Catalog.from_yaml_file("memory://cat.yaml")
+    cat2 = intake.entry.Catalog.from_yaml_file("memory://cat.yaml")
     with intake.conf.set(allow_pickle=True):
         # tiled query instances are pickled
         scat = cat2["cat"].read()

@@ -7,10 +7,12 @@ Intake
 
 *Taking the pain out of data access and distribution*
 
+
 Intake is a lightweight package for finding, investigating, loading and disseminating data. It will appeal to different
 groups for some of the reasons below, but is useful for all and acts as a common platform that everyone can use to
 smooth the progression of data from developers and providers to users.
 
+- **To the** :ref:`take2` **documentation**
 
 Intake contains the following main components. You *do not* need to use them all! The
 library is modular, only use the parts you need:
@@ -133,6 +135,7 @@ are defined in the :doc:`glossary`.
     roadmap.rst
     glossary.rst
     community.rst
+    index2.rst
 
 
 Indices and tables

@@ -99,7 +99,7 @@ class BaseReader(Tokenizable, PipelineMixin):
         raise NotImplementedError
 
     def to_entry(self):
-        """Create an entry with only this reader defined"""
+        """Create an entry version of this, ready to be inserted into a Catalog"""
         from intake.readers.entry import ReaderDescription
 
         return ReaderDescription(
@@ -108,6 +108,10 @@ class BaseReader(Tokenizable, PipelineMixin):
             output_instance=self.output_instance,
             metadata=self.metadata,
         )
+
+    def to_cat(self, name=None):
+        """Create a Catalog containing on this reader"""
+        return self.to_entry().to_cat(name)
 
 
 class FileReader(BaseReader):
@@ -430,13 +434,13 @@ class TFORC(FileReader):
 
 
 class TFSQL(BaseReader):
-    implements = {"tensorflow_io"}
-    imports = {datatypes.SQLQuery}
-    func = "tfio.experimental:IODataset.from_sql"
+    imports = {"tensorflow_io"}
+    implements = {datatypes.SQLQuery}
+    func = "tensorflow_io:experimental.IODataset.from_sql"
     output_instance = "tensorflow.data:Dataset"
 
     def _read(self, data, **kwargs):
-        return self._func(endpoint=data["conn"], query=data["query"], **kwargs)
+        return self._func(endpoint=data.conn, query=data.query, **kwargs)
 
 
 class KerasImageReader(FileReader):

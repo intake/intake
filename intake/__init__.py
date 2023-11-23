@@ -14,7 +14,25 @@ from intake.utils import import_name, logger
 from intake.catalog.base import Catalog
 from intake.source import registry
 from intake.config import conf
-from intake.readers import BaseReader, entry, BaseData, BaseUserParameter, BaseConverter
+from intake.readers import (
+    BaseData,
+    reader_from_call,
+    recommend,
+    BaseReader,
+    BaseConverter,
+    Pipeline,
+    auto_pipeline,
+    DataDescription,
+    ReaderDescription,
+    BaseUserParameter,
+    SimpleUserParameter,
+    user_parameters,
+    transform,
+    output,
+    catalogs,
+    entry,
+    datatypes,
+)
 
 # legacy on-demand imports
 imports = {

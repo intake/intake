@@ -5,6 +5,7 @@
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
 
+import ast
 import contextlib
 import copy
 import logging
@@ -31,6 +32,7 @@ defaults = {
     "import_on_startup": True,
     "extra_imports": [],
     "import_block_list": [],
+    "reader_avoid": [],
 }
 
 
@@ -49,24 +51,27 @@ class Config(dict):
         self.reload_all()
         self.temp = None
         super().__init__(**kwargs)
+        logger.setLevel(self["logging"])
 
     def reset(self):
         """Set conf values back to defaults"""
         self.clear()
         self.update(defaults)
 
-    def save(self):
+    def save(self, fn=None):
         """Save current configuration to file as YAML
 
         Uses ``self.filename`` for target location
         """
-        if self.filename is False:
+        # TODO: fsspec?
+        fn = fn or self.filename
+        if fn is False:
             return
         try:
-            os.makedirs(os.path.dirname(self.filename))
+            os.makedirs(os.path.dirname(fn))
         except (OSError, IOError):
             pass
-        with open(self.filename, "w") as f:
+        with open(fn, "w") as f:
             yaml.dump(dict(self), f)
 
     @contextlib.contextmanager
@@ -131,6 +136,8 @@ class Config(dict):
         If fn is None, looks in global config directory, which is either defined
         by the INTAKE_CONF_DIR env-var or is ~/.intake/ .
         """
+        # TODO: if fn is not None, set self.filename
+        # TODO: fsspec?
         fn = fn or self.filename
 
         if os.path.isfile(fn):
@@ -143,23 +150,14 @@ class Config(dict):
     def load_env(self):
         """Analyse environment variables and update conf accordingly"""
         # environment variables take precedence over conf file
-        for key, envvar in [
-            ["cache_dir", "INTAKE_CACHE_DIR"],
-            ["catalog_path", "INTAKE_PATH"],
-            ["persist_path", "INTAKE_PERSIST_PATH"],
-        ]:
-            if envvar in os.environ:
-                self[key] = make_path_posix(os.environ[envvar])
-        self["catalog_path"] = intake_path_dirs(self["catalog_path"])
-        for key, envvar in [
-            ["cache_disabled", "INTAKE_DISABLE_CACHING"],
-            ["cache_download_progress", "INTAKE_CACHE_PROGRESS"],
-        ]:
-            if envvar in os.environ:
-                self[key] = os.environ[envvar].lower() in ["true", "t", "y", "yes"]
-        if "INTAKE_LOG_LEVEL" in os.environ:
-            self["logging"] = os.environ["INTAKE_LOG_LEVEL"]
-        logger.setLevel(self["logging"])
+        for k, v in os.environ.items():
+            if k.startswith("INTAKE_"):
+                k2 = k[7:].lower()
+                try:
+                    val = ast.literal_eval(v)
+                except ValueError:
+                    pass
+                self[k2] = val
 
 
 def intake_path_dirs(path):

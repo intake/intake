@@ -25,7 +25,7 @@ def subclasses(cls: type) -> set:
     return out
 
 
-def merge_dicts(*dicts: tuple[dict, ...]) -> dict:
+def merge_dicts(*dicts: dict) -> dict:
     """Deep-merge dictionary values, latest value wins
 
     Examples
@@ -106,6 +106,7 @@ def find_funcs(val, tokens={}):
     elif isinstance(val, (str, bytes)):
         return val
     elif isinstance(val, Iterable):
+        # list, tuple, set-like
         return type(val)([find_funcs(v, tokens=tokens) for v in val])
     if isinstance(val, (BaseReader, BaseData)):
         tok = val.to_entry().token

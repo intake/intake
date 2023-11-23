@@ -567,7 +567,7 @@ class EarthdataReader(BaseReader):
     with xarray as netCDF4/HDF5 files.
     """
 
-    output_instance = {"xarray:Dataset"}
+    output_instance = "xarray:Dataset"
     imports = {"earthdata", "xarray"}
     func = "earthaccess:search_data"
     func_doc = "earthaccess:open"

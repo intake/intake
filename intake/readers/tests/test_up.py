@@ -2,7 +2,7 @@ import pytest
 
 
 def test_basic():
-    import intake.readers.user_parameters as up
+    from intake.readers import user_parameters as up
 
     p = up.SimpleUserParameter(default=1, dtype=int)
     pars = {"k": ["{p}", 1]}
