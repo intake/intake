@@ -888,6 +888,8 @@ class Retry(BaseReader):
 
         from intake.readers.convert import Pipeline
 
+        if isinstance(allowed_exceptions, (list, set)):
+            allowed_exceptions = tuple(allowed_exceptions)
         reader = data if isinstance(data, BaseReader) else data.reader
         if isinstance(reader, Pipeline) and (start_stage or end_stage):
             if start_stage:
