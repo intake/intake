@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import itertools
+import json
+
+import fsspec
 
 from intake.readers import datatypes
 from intake.readers.entry import Catalog, DataDescription, ReaderDescription
@@ -313,7 +316,6 @@ class StacSearch(BaseReader):
         import requests
         from pystac import ItemCollection
 
-        query = query or self.query
         req = requests.post(data.url + "/search", json=query)
         out = req.json()
         cat = Catalog(metadata=self.metadata)
@@ -327,6 +329,43 @@ class StacSearch(BaseReader):
                     **kwargs,
                 ),
             )
+        return cat
+
+
+class STACIndex(BaseReader):
+    """Searches stacindex.org for known public STAC data sources"""
+
+    implements = {datatypes.Service}
+    output_instance = Catalog.qname()
+    imports = {"pystac"}
+
+    def _read(self, *args, **kwargs):
+        with fsspec.open("https://stacindex.org/api/catalogs") as f:
+            data = json.load(f)
+        cat = Catalog()
+        for entry in data:
+            if entry["isPrivate"]:
+                continue
+            if entry["isApi"]:
+                cat[entry["slug"]] = StacSearch(
+                    data=datatypes.STACJSON(entry["url"]),
+                    metadata={
+                        "title": entry["title"],
+                        "description": entry["summary"],
+                        "created": entry["created"],
+                        "updated": entry["updated"],
+                    },
+                )
+            else:
+                cat[entry["slug"]] = StacCatalogReader(
+                    data=datatypes.STACJSON(entry["url"]),
+                    metadata={
+                        "title": entry["title"],
+                        "description": entry["summary"],
+                        "created": entry["created"],
+                        "updated": entry["updated"],
+                    },
+                )
         return cat
 
 

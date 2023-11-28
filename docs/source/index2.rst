@@ -22,8 +22,13 @@ rewrite of Intake (henceforth referred to as legacy or V1). We will give an
 introduction to the ideas of Intake in general and specifically how to use this
 release.
 
-Preliminary
------------
+.. toctree::
+    :maxdepth: 2
+
+    walkthrough2.rst
+
+Install
+-------
 
 This page and its children describes Intake Take2, the successor to Intake. Whether
 you are familiar with Intake V1 ("legacy") or not, we will motivate what this package is
@@ -42,8 +47,8 @@ Please leave issues and discussions on our `repo page`_.
 
 .. _repo page: https://github.com/intake/intake
 
-Why you care
-------------
+Motivation
+----------
 
 Data scientists, analysis, ML/AI developers and engineers want to spend their time working
 with data to produce models, results and insights. Those first few lines or cells in a workflow
@@ -62,6 +67,18 @@ Further more, the steps are highly specific - if you decide you need a different
 or the data moves to a different storage service, it is painful to fix this. If the same dataset is
 used in many places, you will need to remember to fix it in each place.
 
+
+Wouldn't it be nice if you could declare your data and pipeline just once? Then you can
+- version control your data sets as you would for data
+- share your data definitions with others, just by writing this prescription to any shared space
+- update all users of this data in a single place
+- encode a set of transforms as part of a data-oriented processing framework
+- decide to load and process the same data but with different engines
+- automatically encode python statements into data decriptions
+- convert between dozens of data types
+
+
+
 Relationship to V1
 ------------------
 
@@ -73,7 +90,7 @@ following features are no longer supported for V1 sources:
 - the intake server (use ``tiled`` instead)
 - caching (use ``fsspec`` caching instead or custom caching pipelines)
 - "persist" and "export" (use the new converters and output classes)
-- automatic ``hvplot`` (this becomes
+- automatic ``hvplot`` (this is now an "output" converter)
 - some niche source features such as CSV file pattern matching
 
 In addition, not all existing ``intake_*`` packages have corresponding readers in Take2, but we are

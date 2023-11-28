@@ -6,19 +6,22 @@
 # -----------------------------------------------------------------------------
 from __future__ import annotations
 
+from intake.source.base import DataSource
 from intake.readers.datatypes import CSV
 from intake.readers.readers import DaskCSV, PandasCSV, SparkDataFrame
 
 
-class CSVSource:
+class CSVSource(DataSource):
     """Read CSV files into dataframes
 
     Backward compatibility for V1 catalogs.
     """
 
     name = "csv"
+    container = "dataframe"
 
     def __init__(self, urlpath, storage_options=None, metadata=None, **kwargs):
+        super().__init__(metadata=metadata)
         self.data = CSV(url=urlpath, storage_options=storage_options, metadata=metadata)
         self.kwargs = kwargs
 

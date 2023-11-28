@@ -9,15 +9,21 @@ from intake.readers.utils import Completable
 class PipelineMixin(Completable):
     def __getattr__(self, item):
         super().tab_completion_fixer(item)
-        if item in dir(self.transform):
-            return getattr(self.transform, item)
-        if "Catalog" in self.output_instance:
-            # a better way to mark this condition, perhaps the datatype's structure?
-            return self.read()[item]
-        if item in self._namespaces:
-            return self._namespaces[item]
-        # the following can go very wrong - only allow via explicit opt-in?
-        return self.transform.__getattr__(item)  # arbitrary method call
+        try:
+            if item in dir(self.transform):
+                return getattr(self.transform, item)
+            if "Catalog" in self.output_instance:
+                # a better way to mark this condition, perhaps the datatype's structure?
+                out = self.read()[item]
+            if item in self._namespaces:
+                out = self._namespaces[item]
+            # the following can go very wrong - only allow via explicit opt-in?
+            else:
+                out = self.transform.__getattr__(item)  # arbitrary method call
+        except RecursionError as e:
+            raise AttributeError from e
+        else:
+            return out
 
     def __getitem__(self, item):
         from intake.readers.convert import Pipeline
@@ -138,10 +144,15 @@ class Functioner(Completable):
         else:
             outtype, func = out[0]
             kw = {}
-        if isinstance(self.reader, Pipeline):
-            return self.reader.with_step((func, (), kw), out_instance=outtype)
-
-        return Pipeline(
-            steps=[(self.reader, (), {}), (func, (), kw)],
-            out_instances=[self.reader.output_instance, outtype],
-        )
+        try:
+            if isinstance(self.reader, Pipeline):
+                out = self.reader.with_step((func, (), kw), out_instance=outtype)
+            else:
+                out = Pipeline(
+                    steps=[(self.reader, (), {}), (func, (), kw)],
+                    out_instances=[self.reader.output_instance, outtype],
+                )
+        except RecursionError as e:
+            raise AttributeError from e
+        else:
+            return out

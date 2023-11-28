@@ -554,6 +554,8 @@ class CatalogParser(object):
         if not isinstance(data, dict):
             self.error("catalog must be a dictionary", data)
             return
+        if (data.get("version", None) or data.get("metadata", {}).get("version", None) or 1) > 1:
+            raise ValueError("Not a V1 Catalog")
 
         return dict(
             plugin_sources=self._parse_plugins(data),

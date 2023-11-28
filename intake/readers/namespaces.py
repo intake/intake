@@ -44,9 +44,12 @@ class Namespace(Completable):
 
     def __getattr__(self, item):
         super().tab_completion_fixer(item)
-        dir(self)
-        func = getattr(self.mod, item)
-        return FuncHolder(self.reader, func)
+        try:
+            dir(self)
+            func = getattr(self.mod, item)
+            return FuncHolder(self.reader, func)
+        except RecursionError as e:
+            raise AttributeError from e
 
     def __repr__(self):
         return f"{self.imports} namespace"

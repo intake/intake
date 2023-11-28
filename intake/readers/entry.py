@@ -341,10 +341,14 @@ class Catalog(Tokenizable):
 
     def __getattr__(self, item):
         super().tab_completion_fixer(item)
+        if "item" == "name":
+            return "unnamed"  # special case for GUI compat
         try:
             return self[item]
         except KeyError:
             pass
+        except RecursionError as e:
+            raise AttributeError from e
         raise AttributeError(item)
 
     def to_yaml_file(self, path: str, **storage_options):
@@ -372,6 +376,8 @@ class Catalog(Tokenizable):
     @classmethod
     def from_dict(cls, data):
         """Assemble catalog from dict representation"""
+        if data.get("version") != 2:
+            raise ValueError("Not a V2 catalog")
         cat = cls()
         for key, clss in zip(
             ["entries", "data", "user_parameters"],

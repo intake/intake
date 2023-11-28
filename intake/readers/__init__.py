@@ -8,3 +8,4 @@ import intake.readers.transform
 import intake.readers.output
 import intake.readers.catalogs
 import intake.readers.importlist
+import intake.readers.examples

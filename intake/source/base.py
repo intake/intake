@@ -44,6 +44,7 @@ class DataSourceBase(DictSerialiseMixin):
     on_server = False
     cat = None  # the cat from which this source was made
     _entry = None
+    metadata = {}
 
     def __init__(self, storage_options=None, metadata=None):
         # default data

@@ -121,6 +121,7 @@ class GUI:
         self.update_catsel()
 
     def source_selected(self, *_):
+        from intake import BaseReader
         import yaml
 
         source = self.sourcesel.value
@@ -128,7 +129,10 @@ class GUI:
             return
         else:
             source = self._sources[source[0]]
-        txt = yaml.dump(source._yaml()["sources"], default_flow_style=False)
+        if isinstance(source, BaseReader):
+            txt = yaml.dump(source.to_dict(), default_flow_style=False)
+        else:
+            txt = yaml.dump(source._yaml()["sources"], default_flow_style=False)
         self.sourceinf.param.update(value=txt)
 
     def plot_clicked(self, *_):

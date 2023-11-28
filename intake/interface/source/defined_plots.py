@@ -150,7 +150,7 @@ class Plots(BaseView):
     @property
     def options(self):
         """Plots options defined on the source"""
-        return (["None"] + self.source.plots) if self.source is not None else []
+        return (["None"] + list(self.source.metadata["plots"])) if self.source is not None else []
 
     @property
     def selected(self):
@@ -290,11 +290,13 @@ class Plots(BaseView):
         return viz
 
     def _plot_object(self, selected):
+        from hvplot import hvPlot
+
         if selected and str(selected) != "None":
-            plot_method = getattr(self.source.plot, selected)
+            args = self.source.metadata["plots"][str(selected)]
+            plot_method = hvPlot(self.source)(**args)
             self.out[0] = self.pane
-            if plot_method:
-                return plot_method()
+            return plot_method
 
     def _create(self):
         plot_name = self.interact_name.value

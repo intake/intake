@@ -8,7 +8,6 @@ These are reference class and function definitions likely to be useful to everyo
    intake.registry
    intake.register_driver
    intake.unregister_driver
-   intake.upload
    intake.source.csv.CSVSource
    intake.source.textfiles.TextFilesSource
    intake.source.jsonfiles.JSONFileSource
@@ -34,9 +33,6 @@ These are reference class and function definitions likely to be useful to everyo
    Set of functions, one for each plugin, for direct opening of a data source. The names are derived from the names of
    the plugins in the registry at import time.
 
-.. autofunction::
-   intake.upload
-
 .. autoclass:: intake.interface.gui.GUI
    :members:
 
@@ -44,31 +40,31 @@ Source classes
 ''''''''''''''
 
 .. autoclass:: intake.source.csv.CSVSource
-   :members: __init__, discover, read_partition, read, to_dask, persist, export
+   :members: __init__, discover, read_partition, read, to_dask
 
 .. autoclass:: intake.source.zarr.ZarrArraySource
-   :members: __init__, discover, read_partition, read, to_dask, persist, export
+   :members: __init__, discover, read_partition, read, to_dask
 
 .. autoclass:: intake.source.textfiles.TextFilesSource
-   :members: __init__, discover, read_partition, read, to_dask, persist, export
+   :members: __init__, discover, read_partition, read, to_dask
 
 .. autoclass:: intake.source.jsonfiles.JSONFileSource
-   :members: __init__, discover, read, persist, export
+   :members: __init__, discover, read
 
 .. autoclass:: intake.source.jsonfiles.JSONLinesFileSource
-   :members: __init__, discover, read, head, persist, export
+   :members: __init__, discover, read, head
 
 .. autoclass:: intake.source.npy.NPySource
-   :members: __init__, discover, read_partition, read, to_dask, persist, export
+   :members: __init__, discover, read_partition, read, to_dask
 
 .. autoclass:: intake.catalog.local.YAMLFileCatalog
-   :members: __init__, reload, search, walk, persist, export
+   :members: __init__, reload, search, walk
 
 .. autoclass:: intake.catalog.local.YAMLFilesCatalog
-   :members: __init__, reload, search, walk, persist, export
+   :members: __init__, reload, search, walk
 
 .. autoclass:: intake.catalog.zarr.ZarrGroupCatalog
-   :members: __init__, reload, search, walk, persist, export, to_zarr
+   :members: __init__, reload, search, walk, to_zarr
 
 .. raw:: html
 

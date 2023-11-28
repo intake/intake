@@ -293,6 +293,9 @@ class Tokenizable(Completable):
         obj.__dict__.update(data)  # walk data
         return obj
 
+    def __getstate__(self):
+        return self.to_dict()
+
 
 def to_dict(thing):
     """Serialise deep structure into JSON-like hierarchy, invoking to_dict() on intake instances"""
