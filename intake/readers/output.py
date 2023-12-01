@@ -74,7 +74,7 @@ class PandasToFeather(BaseConverter):
 
 
 class XarrayToNetCDF(BaseConverter):
-    instances = {"xarray:DataSet": "intake.readers.datatypes:HDF5"}
+    instances = {"xarray:Dataset": "intake.readers.datatypes:HDF5"}
 
     def run(self, x, url, group="", metadata=None, **kwargs):
         x.to_netcdf(path=url, group=group or None, **kwargs)
@@ -82,7 +82,7 @@ class XarrayToNetCDF(BaseConverter):
 
 
 class XarrayToZarr(BaseConverter):
-    instances = {"xarray:DataSet": "intake.readers.datatypes:Zarr"}
+    instances = {"xarray:Dataset": "intake.readers.datatypes:Zarr"}
     func = "xarray:Dataset.to_zarr"
 
     def run(self, x, url, group="", storage_options=None, metadata=None, **kwargs):
@@ -121,14 +121,13 @@ class NumpyToNumpyFile(BaseConverter):
 
 class ToMatplotlib(BaseConverter):
     instances = all_to_one(
-        {"pandas:DataFrame", "geopandas:GeoDataFrame", "xarray:DataSet"},
+        {"pandas:DataFrame", "geopandas:GeoDataFrame", "xarray:Dataset"},
         "matplotlib.pyplot:Figure",
     )
+    func_doc = "matplotlib.pyplot:plot"
 
     def run(self, x, **kwargs):
-        import matplotlib.pyplot as plt
-
-        fig = plt.Figure()
+        fig = self._func()
         ax = fig.add_subplot(111)
         x.plot(ax=ax, **kwargs)
         return fig

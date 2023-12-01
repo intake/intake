@@ -109,7 +109,9 @@ def find_funcs(val, tokens={}):
         # list, tuple, set-like
         return type(val)([find_funcs(v, tokens=tokens) for v in val])
     if isinstance(val, (BaseReader, BaseData)):
-        tok = val.to_entry().token
+        ent = val.to_entry()
+        find_funcs(ent, tokens)
+        tok = ent.token
         tokens[tok] = val
         return "{data(%s)}" % tok
     if isinstance(val, Tokenizable):
@@ -269,7 +271,9 @@ class Tokenizable(Completable):
         return int(self.token, 16)
 
     def __eq__(self, other):
-        return type(self) == type(other) and self.token == other.token
+        return type(self) == type(other) and (
+            self.token == other.token or self.to_dict() == other.to_dict()
+        )
 
     @classmethod
     @cache
@@ -368,7 +372,7 @@ def replace_values(val, needle, replace):
         return type(val)([replace_values(v, needle, replace) for v in val])
     try:
         if val == needle:
-            return needle
+            return replace
         elif isinstance(val, (str, bytes)):
             return val.replace(needle, replace)
     except (ValueError, TypeError):

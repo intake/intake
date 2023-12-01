@@ -16,6 +16,10 @@ from .utils import reload_on_change
 logger = logging.getLogger("intake")
 
 
+class VersionError(Exception):
+    ...
+
+
 class Catalog(DataSource):
     """Manages a hierarchy of data sources as a collective unit.
 

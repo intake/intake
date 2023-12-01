@@ -200,7 +200,7 @@ class StacCatalogReader(BaseReader):
         else:
             raise ValueError
         try:
-            return data.to_reader(outtype="xarray:DataSet", reader=prefer)
+            return data.to_reader(outtype="xarray:Dataset", reader=prefer)
         except ValueError:
             # no xarray reader
             if data.possible_readers:

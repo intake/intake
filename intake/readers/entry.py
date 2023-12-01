@@ -227,27 +227,43 @@ class Catalog(Tokenizable):
     def add_entry(self, entry, name=None):
         """Add entry/reader (and its requirements) in-place, with optional alias"""
         from intake.readers import BaseData, BaseReader
-        from intake.readers.utils import find_funcs
+        from intake.readers.utils import find_funcs, replace_values
 
-        tokens = {}
         if isinstance(entry, (BaseReader, BaseData)):
-            # process all readers hidden within the entry as instances
-            # Maybe only for readers, not data?
             entry = entry.to_entry()
-            entry.kwargs = find_funcs(entry.kwargs, tokens)
-        for thing in tokens.values():
-            if thing not in self:
-                self.add_entry(thing)
-        if isinstance(entry, ReaderDescription):
-            self.entries[entry.token] = entry
-        elif isinstance(entry, DataDescription):
-            self.data[entry.token] = entry
-        else:
-            raise ValueError
+        if entry in self:
+            if name:
+                self.aliases[name] = entry.token
+            return entry.token
+        tokens = {}
+        entry.kwargs = find_funcs(entry.kwargs, tokens)
+        if name:
+            entry._tok = name
+        if entry not in self:
+            if isinstance(entry, ReaderDescription):
+                self.entries[entry.token] = entry
+            elif isinstance(entry, DataDescription):
+                self.data[entry.token] = entry
+            else:
+                raise ValueError
+            for tok, thing in reversed(tokens.items()):
+                thing = thing.to_entry()
+                if thing == entry:
+                    continue
+                tok = self.add_entry(thing)
+                if tok not in self:
+                    # did not add new one, because it's already there
+                    old_tok = next(iter(self._find_iter(thing))).token
+                    entry.kwargs = replace_values(
+                        entry.kwargs, "{data(%s)}" % tok, "{data(%s)}" % old_tok
+                    )
 
         if name:
             self.aliases[name] = entry.token
         return entry.token
+
+    def _ipython_key_completions_(self):
+        return sorted(set(chain(self.aliases, self.data, self.entries)))
 
     def extract_parameter(
         self,
@@ -341,8 +357,6 @@ class Catalog(Tokenizable):
 
     def __getattr__(self, item):
         super().tab_completion_fixer(item)
-        if "item" == "name":
-            return "unnamed"  # special case for GUI compat
         try:
             return self[item]
         except KeyError:
@@ -357,6 +371,7 @@ class Catalog(Tokenizable):
         storage_options:
             kwargs to pass to fsspec for opening the file to write
         """
+        # TODO: remove ['CATALOG_DIR', 'CATALOG_PATH', 'STORAGE_OPTIONS'] UPs?
         with fsspec.open(path, mode="wt", **storage_options) as stream:
             yaml.safe_dump(self.to_dict(), stream)
 
@@ -367,9 +382,11 @@ class Catalog(Tokenizable):
         storage_options:
             kwargs to pass to fsspec for opening the file to read
         """
-        with fsspec.open(path, **storage_options) as stream:
+        of = fsspec.open(path, **storage_options)
+        with of as stream:
             cat = Catalog.from_dict(yaml.safe_load(stream))
-        cat.user_parameters["CATALOG_DIR"] = path.split("/", 1)[0]
+        cat.user_parameters["CATALOG_PATH"] = path
+        cat.user_parameters["CATALOG_DIR"] = of.fs._parent(path)
         cat.user_parameters["STORAGE_OPTIONS"] = storage_options
         return cat
 
@@ -384,8 +401,11 @@ class Catalog(Tokenizable):
             [ReaderDescription, DataDescription, BaseUserParameter],
         ):
             for k, v in data[key].items():
-                desc = clss.from_dict(v)
-                desc._tok = k
+                if isinstance(v, dict):
+                    desc = clss.from_dict(v)
+                    desc._tok = k
+                else:
+                    desc = v
                 getattr(cat, key)[k] = desc
         cat.aliases = data["aliases"]
         cat.metadata = data["metadata"]
@@ -478,6 +498,9 @@ class Catalog(Tokenizable):
 
     def __delitem__(self, key):
         # remove alias, data or entry with no further actions
+        if key in self.aliases:
+            self.data.pop(self.aliases[key])
+            self.entries.pop(self.aliases[key])
         self.aliases.pop(key)
         self.data.pop(key)
         self.entries.pop(key)
@@ -485,10 +508,25 @@ class Catalog(Tokenizable):
     def __delattr__(self, item):
         del self[item]
 
+    def _find_iter(self, thing):
+        if isinstance(thing, DataDescription):
+            return (_ for _ in self.data.values() if thing.to_dict() == _.to_dict())
+        elif isinstance(thing, ReaderDescription):
+            return (_ for _ in self.entries.values() if thing.to_dict() == _.to_dict())
+        else:
+            return ()
+
     def __contains__(self, thing):
+        from intake.readers import BaseReader, BaseData
+
+        if isinstance(thing, (BaseData, BaseReader)):
+            thing = thing.to_entry()
         if hasattr(thing, "token"):
-            thing = thing.token
-        return thing in self.data or thing in self.entries or thing in self.aliases
+            thing0 = thing.token
+        else:
+            thing0 = thing
+        easy = thing0 in self.data or thing0 in self.entries or thing0 in self.aliases
+        return easy or any(self._find_iter(thing))
 
     def __call__(self, **kwargs):
         """Set override values for any named user parameters

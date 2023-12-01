@@ -698,7 +698,7 @@ class CupyTextReader(CupyNumpyReader):
 
 
 class XArrayDatasetReader(FileReader):
-    output_instance = "xarray:DataSet"
+    output_instance = "xarray:Dataset"
     imports = {"xarray"}
     optional_imports = {"zarr", "h5netcdf", "cfgrib", "scipy"}  # and others
     # DAP is not a file but an API, maybe should be separate
@@ -740,7 +740,7 @@ class XArrayDatasetReader(FileReader):
 
 
 class RasterIOXarrayReader(FileReader):
-    output_instance = "xarray:DataSet"
+    output_instance = "xarray:Dataset"
     imports = {"rioxarray"}
     implements = {datatypes.TIFF, datatypes.GDALRasterFile}
     func = "rioxarray:open_rasterio"
@@ -865,11 +865,41 @@ class DicomReader(FileReader):
 
 
 class Condition(BaseReader):
-    def _read(self, data, other, condition: callable[[BaseReader, ...], bool], **kwargs):
-        if condition(**kwargs):
-            return data.read() if isinstance(data, BaseReader) else data
+    def _read(
+        self, if_true, if_false, condition: callable[[BaseReader, ...], bool] | bool, **kwargs
+    ):
+        if isinstance(condition, bool):
+            cond = condition
+        elif isinstance(condition, BaseReader):
+            cond = condition.read()
         else:
-            return other.read() if isinstance(other, BaseReader) else other
+            cond = condition(**kwargs)
+        if cond:
+            return if_true.read() if isinstance(if_true, BaseReader) else if_true
+        else:
+            return if_false.read() if isinstance(if_false, BaseReader) else if_false
+
+
+class FileExistsReader(BaseReader):
+    implements = {datatypes.FileData}
+    func = "fsspec.core:url_to_fs"
+    output_instance = "builtins:bool"
+
+    def _read(self, data, *args, **kwargs):
+        import fsspec
+
+        try:
+            fs, path = fsspec.core.url_to_fs(data.url, **(data.storage_options or {}))
+        except FileNotFoundError:
+            return False
+        return fs.exists(path)
+
+
+class YAMLCatalogReader(FileReader):
+    implements = {datatypes.YAMLFile, datatypes.YAMLFile}
+    func = "intake.readers.entry:Catalog.from_yaml_file"
+    url_arg = "path"
+    output_instance = "intake.readers.entry:Catalog"
 
 
 class Retry(BaseReader):
@@ -936,7 +966,7 @@ def recommend(data):
     return out
 
 
-def reader_from_call(func, *args, join_lines=False, **kwargs):
+def reader_from_call(func: str, *args, join_lines=False, **kwargs) -> BaseReader:
     """Attempt to construct a reader instance by finding one that matches the function call
 
     Fails for readers that don't define a func, probably because it depends on the file
@@ -1003,5 +1033,8 @@ def reader_from_call(func, *args, join_lines=False, **kwargs):
         if data_kw["storage_options"] is None:
             del data_kw["storage_options"]
         cls = cls(datacls, **kwargs)
+    else:
+        url = data_kw.pop("url")
+        cls = cls(url, **data_kw)
 
-    return {"reader": cls, "kwargs": kw, "data": datacls}
+    return cls

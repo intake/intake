@@ -97,13 +97,19 @@ class GUI:
             cat = self._cats[catname]
         catsel_needs_update = False
         self._sources.clear()
+        indent = len(catname) - len(catname.lstrip(" ")) + 2
         for entry in cat:
+            name = " " * indent + right + entry
             source = cat[entry]
             if isinstance(source, intake.catalog.Catalog):
-                indent = len(catname) - len(catname.lstrip(" ")) + 2
-                name = " " * indent + right + entry
                 if name not in self._cats:
                     self._cats[name] = source
+                    self._children.setdefault(catname, []).append(name)
+                    catsel_needs_update = True
+            elif "Catalog" in getattr(source, "output_instance", ""):
+                if name not in self._cats:
+                    cat = source.read()
+                    self._cats[name] = cat
                     self._children.setdefault(catname, []).append(name)
                     catsel_needs_update = True
             else:
@@ -116,7 +122,14 @@ class GUI:
         self.catsel.param.update(options=get_catlist(self._cats, self._children))
 
     def add_catalog(self, cat, name=None, **_):
-        name = name or cat.name
+        if hasattr(cat, "token"):
+            if "CATALOG_PATH" in cat.user_parameters:
+                par = cat.user_parameters["CATALOG_PATH"]
+                name = getattr(par, "default", str(par))
+            else:
+                name = cat.token
+        else:
+            name = name or getattr(cat, "token", cat.name)
         self._cats[name] = cat
         self.update_catsel()
 
@@ -130,7 +143,11 @@ class GUI:
         else:
             source = self._sources[source[0]]
         if isinstance(source, BaseReader):
-            txt = yaml.dump(source.to_dict(), default_flow_style=False)
+            # could have reverted to ReaderDescription, but this version will include any
+            # other readers/data, not just references.
+            d = {"cls": source.qname()}
+            d.update(source.to_dict())
+            txt = yaml.dump(d, default_flow_style=False)
         else:
             txt = yaml.dump(source._yaml()["sources"], default_flow_style=False)
         self.sourceinf.param.update(value=txt)

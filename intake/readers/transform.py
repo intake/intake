@@ -17,15 +17,15 @@ class DataFrameColumns(BaseConverter):
 
 
 class XarraySel(BaseConverter):
-    instances = one_to_one({"xarray:DataSet", "xarray:DataArray"})
-    func = "xarray:DataSet.sel"
+    instances = one_to_one({"xarray:Dataset", "xarray:DataArray"})
+    func = "xarray:Dataset.sel"
 
     def run(self, x, indexers, **_):
         return x.sel(indexers)
 
 
 class THREDDSCatToMergedDataset(BaseConverter):
-    instances = {"intake.readers.catalogs:THREDDSCatalog": "xarray:DataSet"}
+    instances = {"intake.readers.catalogs:THREDDSCatalog": "xarray:Dataset"}
 
     def run(self, cat, path, driver="h5netcdf", xarray_kwargs=None, concat_kwargs=None, **_):
         """Merges multiple datasets into a single datasets.
@@ -84,14 +84,19 @@ class PysparkColumns(BaseConverter):
 
 
 class Method(BaseConverter):
+    """Call named method on object
+
+    Assumes output type is the same as input.
+    """
+
     instances = {".*": SameType}
 
     def run(self, x, *args, method_name: str = "", **kw):
-        """Call named method on object
-
-        Assumes output type is the same as input.
-        """
-        return getattr(x, method_name)(*args, **kw)
+        method = getattr(x, method_name)
+        if callable(method):
+            return method(*args, **kw)
+        else:
+            return method
 
 
 class GetItem(BaseConverter):

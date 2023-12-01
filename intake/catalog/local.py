@@ -18,7 +18,7 @@ from .. import __version__
 from ..source import get_plugin_class, register_driver
 from ..utils import DictSerialiseMixin, classname, make_path_posix, yaml_load
 from . import exceptions
-from .base import Catalog, DataSource
+from .base import Catalog, DataSource, VersionError
 from .entry import CatalogEntry
 from .utils import COERCION_RULES, _has_catalog_dir, coerce, expand_defaults, merge_pars
 
@@ -555,7 +555,7 @@ class CatalogParser(object):
             self.error("catalog must be a dictionary", data)
             return
         if (data.get("version", None) or data.get("metadata", {}).get("version", None) or 1) > 1:
-            raise ValueError("Not a V1 Catalog")
+            raise VersionError("Not a V1 Catalog; perhaps use intake.from_yaml_file")
 
         return dict(
             plugin_sources=self._parse_plugins(data),

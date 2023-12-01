@@ -77,7 +77,7 @@ class ak(Namespace):
 
 
 class xr(Namespace):
-    acts_on = "xr.DataArray", "xr.DataSet"
+    acts_on = "xarray:DataArray", "xarray:Dataset"
     imports = "xarray"
 
 

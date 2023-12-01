@@ -41,7 +41,10 @@ class BaseConverter(BaseReader):
         func = import_name(self.func)
         return func(x, *args, **kwargs)
 
-    def _read(self, data, *args, **kwargs):
+    def _read(self, *args, data=None, **kwargs):
+        if data is None:
+            data = args[0]
+            args = args[1:]
         if isinstance(data, BaseReader):
             data = data.read()
         return self.run(data, *args, **kwargs)
@@ -87,7 +90,7 @@ class ToHvPlot(BaseConverter):
         {
             "pandas:DataFrame",
             "dask.dataframe:DataFrame",
-            "xarray:DataSet",
+            "xarray:Dataset",
             "xarray:DataArray",
         },
         "holoviews.core.layout:Composable",
@@ -299,6 +302,7 @@ class Pipeline(readers.BaseReader):
 
     def __call__(self, *args, **kwargs):
         return super().__call__(
+            *args,
             steps=self.steps,
             out_instances=self.output_instances,
             metadata=self.metadata,

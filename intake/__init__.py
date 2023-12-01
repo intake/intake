@@ -11,7 +11,7 @@ from intake._version import __version__
 
 # legacy immediate imports
 from intake.utils import import_name, logger
-from intake.catalog.base import Catalog
+from intake.catalog.base import Catalog, VersionError
 from intake.source import registry
 from intake.config import conf
 from intake.readers import (
@@ -95,6 +95,10 @@ def __dir__(*_, **__):
 def open_catalog(uri=None, **kwargs):
     """Create a Catalog object
 
+    *New in V2*: if the URL is a single file, and loading it as a V1 catalog fails because of
+    the stated version, it will be opened again as a V2 catalog. This will mean reading
+    the file twice, so calling ``from_yaml_file`` directly ie better.
+
     Can load YAML catalog files, connect to an intake server, or create any
     arbitrary Catalog subclass instance. In the general case, the user should
     supply ``driver=`` with a value from the plugins registry which has a
@@ -172,4 +176,8 @@ def open_catalog(uri=None, **kwargs):
             "https://intake.readthedocs.io/en/latest/plugin-directory.html\n"
             f"Current registry: {list(sorted(registry))}"
         )
-    return registry[driver](uri, **kwargs)
+    try:
+        return registry[driver](uri, **kwargs)
+    except VersionError:
+        # warn that we are switching to V2? The file will be read twice
+        return from_yaml_file(uri, **kwargs)

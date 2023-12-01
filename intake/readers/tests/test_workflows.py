@@ -105,15 +105,16 @@ def dir_non_empty(d):
 
 
 def test_custom_cache(dataframe_file, tmpdir, df):
-    from intake.readers.readers import Condition, PandasCSV, PandasParquet
+    from intake.readers.readers import Condition, PandasCSV, PandasParquet, FileExistsReader
 
     fn = f"{tmpdir}/file.parquet"
     data = intake.readers.datatypes.CSV(url=dataframe_file)
     part = PandasCSV(data)
 
     output = part.PandasToParquet(url=fn).transform(PandasParquet)
-    cached = PandasParquet(data=intake.readers.datatypes.Parquet(url=fn))
-    reader2 = Condition(output, other=cached, condition=lambda: not os.listdir(tmpdir))
+    data2 = intake.readers.datatypes.Parquet(url=fn)
+    cached = PandasParquet(data=data2)
+    reader2 = Condition(cached, if_false=output, condition=FileExistsReader(data2))
 
     assert os.listdir(tmpdir) == []
     out = reader2.read()

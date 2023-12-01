@@ -15,7 +15,7 @@ class PipelineMixin(Completable):
             if "Catalog" in self.output_instance:
                 # a better way to mark this condition, perhaps the datatype's structure?
                 out = self.read()[item]
-            if item in self._namespaces:
+            elif item in self._namespaces:
                 out = self._namespaces[item]
             # the following can go very wrong - only allow via explicit opt-in?
             else:
@@ -77,6 +77,7 @@ class PipelineMixin(Completable):
         from intake.readers.convert import convert_classes
 
         funcdict = convert_classes(self.output_instance)
+        # TODO: include entries from dir(intake.import_name(self.output_instance)) ?
         return Functioner(self, funcdict)
 
 
