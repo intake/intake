@@ -4,9 +4,6 @@ build:
   os: ubuntu-22.04
   tools:
     python: mambaforge-4.10
-  jobs:
-    pre_build:
-      - cd docs && /home/docs/checkouts/readthedocs.org/user_builds/intake/conda/latest/bin/python plugins.py
 
 conda:
   environment: docs/environment.yml
