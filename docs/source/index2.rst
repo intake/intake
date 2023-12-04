@@ -39,7 +39,7 @@ To install Intake Take2:
 
     pip install --pre intake
     or
-    pip install intake==2.0.0a1
+    pip install intake==2.0.0a2
 
 This being an _alpha_ release, we would like as much feedback from the community as possible!
 Please leave issues and discussions on our `repo page`_.
