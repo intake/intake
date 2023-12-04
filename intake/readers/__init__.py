@@ -9,3 +9,4 @@ import intake.readers.output
 import intake.readers.catalogs
 import intake.readers.importlist
 import intake.readers.examples
+from intake.readers.metadata import metadata_fields

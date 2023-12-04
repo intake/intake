@@ -26,8 +26,9 @@ and declarations of scope.
 .. toctree::
     :maxdepth: 2
 
-    scope.rst
+    scope2.rst
     walkthrough2.rst
+    tour2.rst
 
 Install
 -------

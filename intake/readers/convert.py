@@ -67,9 +67,12 @@ class SameType:
     """Used to indicate that the output of a transform is the same as the input, which is arbitrary"""
 
 
-class DuckToPands(BaseConverter):
+class DuckToPandas(BaseConverter):
     instances = {"duckdb:DuckDBPyRelation": "pandas:DataFrame"}
     func = "duckdb:DuckDBPyConnection.df"
+
+    def run(self, x, *args, **kwargs):
+        return x.df()
 
 
 class DaskDFToPandas(BaseConverter):
@@ -497,9 +500,16 @@ def auto_pipeline(
             data = recommend(url)[0](url=url)
     else:
         data = url
-    start = data.qname()
-    steps = path(start, outtype, avoid=avoid)
-    reader = data.to_reader(outtype=steps[0][0][1])
-    for s in steps[0][1:]:
-        reader = reader.transform[s[1]]
+    if isinstance(data, BaseData):
+        start = data.qname()
+        steps = path(start, outtype, avoid=avoid)
+        reader = data.to_reader(outtype=steps[0][0][1])
+        for s in steps[0][1:]:
+            reader = reader.transform[s[1]]
+    elif isinstance(data, BaseReader):
+        reader = data
+        steps = path(data.output_instance, outtype, avoid=avoid)
+        for s in steps[0]:
+            reader = reader.transform[s[1]]
+
     return reader

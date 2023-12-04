@@ -77,7 +77,6 @@ class PipelineMixin(Completable):
         from intake.readers.convert import convert_classes
 
         funcdict = convert_classes(self.output_instance)
-        # TODO: include entries from dir(intake.import_name(self.output_instance)) ?
         return Functioner(self, funcdict)
 
 
@@ -129,8 +128,19 @@ class Functioner(Completable):
             out_instances=[self.reader.output_instance, output_instance],
         )
 
+    def methods(self):
+        """Methods and attributes associated with the output_instance"""
+        try:
+            cls = import_name(self.reader.output_instance)
+            dnames = (_ for _ in dir(cls) if not _.startswith("_"))
+        except (ImportError, AttributeError):
+            dnames = []
+        return dnames
+
     def __dir__(self):
-        return list(sorted(f.__name__ for f in self.funcdict.values()))
+        return list(
+            sorted(set(chain((f.__name__ for f in self.funcdict.values()), self.methods())))
+        )
 
     def __getattr__(self, item):
         super().tab_completion_fixer(item)

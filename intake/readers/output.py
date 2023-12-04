@@ -124,6 +124,7 @@ class ToMatplotlib(BaseConverter):
         {"pandas:DataFrame", "geopandas:GeoDataFrame", "xarray:Dataset"},
         "matplotlib.pyplot:Figure",
     )
+    func = "matplotlib.pyplot:Figure"
     func_doc = "matplotlib.pyplot:plot"
 
     def run(self, x, **kwargs):

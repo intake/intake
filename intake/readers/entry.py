@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from copy import copy
 from itertools import chain
+import re
 from typing import Any, Iterable
 
 import fsspec
@@ -239,6 +240,17 @@ class Catalog(Tokenizable):
         entry.kwargs = find_funcs(entry.kwargs, tokens)
         if name:
             entry._tok = name
+        for tok, thing in reversed(tokens.items()):
+            thing = thing.to_entry()
+            if thing == entry:
+                continue
+            tok = self.add_entry(thing)
+            if tok not in self:
+                # did not add new one, because it's already there
+                old_tok = next(iter(self._find_iter(thing))).token
+                entry.kwargs = replace_values(
+                    entry.kwargs, "{data(%s)}" % tok, "{data(%s)}" % old_tok
+                )
         if entry not in self:
             if isinstance(entry, ReaderDescription):
                 self.entries[entry.token] = entry
@@ -246,17 +258,6 @@ class Catalog(Tokenizable):
                 self.data[entry.token] = entry
             else:
                 raise ValueError
-            for tok, thing in reversed(tokens.items()):
-                thing = thing.to_entry()
-                if thing == entry:
-                    continue
-                tok = self.add_entry(thing)
-                if tok not in self:
-                    # did not add new one, because it's already there
-                    old_tok = next(iter(self._find_iter(thing))).token
-                    entry.kwargs = replace_values(
-                        entry.kwargs, "{data(%s)}" % tok, "{data(%s)}" % old_tok
-                    )
 
         if name:
             self.aliases[name] = entry.token
@@ -475,8 +476,6 @@ class Catalog(Tokenizable):
 
     def _rehydrate(self, val):
         """Recreate reader instances when accessed from this catalog, filling in refs and templates"""
-        import re
-
         from intake.readers.entry import DataDescription, ReaderDescription
 
         if isinstance(val, dict):
@@ -499,11 +498,11 @@ class Catalog(Tokenizable):
     def __delitem__(self, key):
         # remove alias, data or entry with no further actions
         if key in self.aliases:
-            self.data.pop(self.aliases[key])
-            self.entries.pop(self.aliases[key])
-        self.aliases.pop(key)
-        self.data.pop(key)
-        self.entries.pop(key)
+            self.data.pop(self.aliases[key], None)
+            self.entries.pop(self.aliases[key], None)
+        self.aliases.pop(key, None)
+        self.data.pop(key, None)
+        self.entries.pop(key, None)
 
     def __delattr__(self, item):
         del self[item]
@@ -597,7 +596,14 @@ class Catalog(Tokenizable):
             raise ValueError
         self.aliases[new] = self.aliases.pop(old)
 
-    def name(self, tok: str, name: str, clobber=True):
+    @property
+    def name(self):
+        if not re.match("^[0-9a-f]{16}$", self.token):
+            return self.token
+        else:
+            return self.metadata.get("name", "unnamed")
+
+    def give_name(self, tok: str, name: str, clobber=True):
         """Give an alias to a dataset
 
         tok:
