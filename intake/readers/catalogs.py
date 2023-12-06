@@ -624,7 +624,7 @@ class EarthdataCatalogReader(BaseReader):
     """Finds the earthdata datasets that contain some data in the given query bounds
 
     Each entry returns an ``EarthdataReader`` - see further documentation there. The
-    keys are the "concept-id" of each dataset, a unieque string.
+    keys are the "concept-id" of each dataset, a unique string.
 
     Example
     -------

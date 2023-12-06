@@ -293,7 +293,7 @@ class DuckDB(BaseReader):
                 duckdb.connect(":default:").execute("INSTALL sqlite;LOAD sqlite;")
                 conn = re.sub("^sqlite3?://", "", conn)
                 conn = {"database": conn}
-            elif conn.startswith("postgres"):
+            elif conn.startswith("postgres") and str(conn) not in self._dd:
                 d = duckdb.connect()
                 d.execute("INSTALL postgres;LOAD postgres;")
                 # extra params possible here https://duckdb.org/docs/extensions/postgres_scanner#usage
@@ -303,6 +303,8 @@ class DuckDB(BaseReader):
             self._dd[str(conn)] = duckdb.connect(
                 **conn
             )  # connection must be cached for results to be usable
+        if isinstance(data, datatypes.FileData) and "://" in data.url:
+            self._dd[str(conn)].execute("INSTALL httpfs;LOAD httpfs;")
         return self._dd[str(conn)]
 
 
@@ -583,6 +585,17 @@ class Ray(FileReader):
     def discover(self, **kwargs):
         return self.read(**kwargs).limit(10)
 
+    def _read(self, data, **kw):
+        if (
+            data.url.startswith("s3://")
+            and data.storage_options
+            and data.storage_options.get("anon")
+        ):
+            data = type(data)(url=f"s3://anonymous@{data.url[5:]}")
+        # TODO: other auth parameters, key/secret, token
+        #  apparently, creating an S3FileSystem here is also allowed
+        return super()._read(data, **kw)
+
 
 class RayParquet(Ray):
     implements = {datatypes.Parquet}
@@ -602,6 +615,11 @@ class RayJSON(Ray):
 class RayText(Ray):
     implements = {datatypes.Text}
     func = "ray.data:read_text"
+
+
+class RayBinary(Ray):
+    implements = {datatypes.FileData}
+    func = "ray.data:read_binary_files"
 
 
 class DeltaReader(FileReader):
