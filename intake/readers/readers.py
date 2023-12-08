@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import itertools
+import json
 import re
 
 import fsspec
@@ -546,6 +547,41 @@ class DaskAwkwardJSON(Awkward):
         return self.read(**kwargs).partitions[0]
 
 
+class HandleToUrlReader(BaseReader):
+    """Dereference handle (hdl:) identifiers
+
+    See handle.net for a description of the registry.
+    """
+
+    implements = {datatypes.Handle}
+    func = "requests:get"
+    output_instance = datatypes.BaseData.qname()
+
+    @classmethod
+    def _extract(cls, meta, base):
+        h = fsspec.filesystem("http")
+        if "URL_ORIGINAL_DATA" in meta:
+            # file
+            url = re.findall('href="(.*?)"', meta["URL_ORIGINAL_DATA"]["value"])[0]
+        elif "HAS_PARTS" in meta:
+            # dataset
+            ids = meta["HAS_PARTS"]["value"].split(";")
+            rr = h.cat([f"{base}/{u.lstrip('hdl:/')}" for u in ids])
+            rr2 = [{i["type"]: i["data"] for i in json.loads(r)["values"]} for r in rr.values()]
+            url = [cls._extract(r2, base) for r2 in rr2]
+        return url
+
+    def _read(self, data, base="https://hdl.handle.net/api/handles", **kwargs):
+        h = fsspec.filesystem("http")
+        r = h.cat(f"{base}/{data.url.lstrip('hdl:/')}")
+        j = json.loads(r)
+        meta = {i["type"]: i["data"] for i in j["values"]}
+        url = self._extract(meta, base)
+        # TODO: we can assume HDF->xarray here?
+        cls = datatypes.recommend(url[0] if isinstance(url, list) else url)[0]
+        return cls(url=url, metadata=meta)
+
+
 class PandasCSV(Pandas):
     implements = {datatypes.CSV}
     func = "pandas:read_csv"
@@ -554,7 +590,8 @@ class PandasCSV(Pandas):
     def discover(self, **kw):
         kw["nrows"] = 10
         kw.pop("skipfooter", None)
-        kw.pop("chuknsize", None)
+        kw.pop("chunksize", None)
+
         return self.read(**kw)
 
 
@@ -743,8 +780,10 @@ class XArrayDatasetReader(FileReader):
         if kw.get("engine", "") == "zarr":
             # only zarr takes storage options
             kw.setdefault("backend_kwargs", {})["storage_options"] = data.storage_options
-        if isinstance(data, datatypes.HDF5) and data.path:
-            kw["group"] = data.path
+        if isinstance(data, datatypes.HDF5):
+            kw.setdefault("engine", "h5netcdf")
+            if data.path:
+                kw["group"] = data.path
         if isinstance(data.url, (tuple, set, list)) or "*" in data.url:
             # use fsspec.open_files? (except for zarr)
             return open_mfdataset(data.url, **kw)

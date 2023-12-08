@@ -51,6 +51,12 @@ class BaseConverter(BaseReader):
 
 
 class GenericFunc(BaseConverter):
+    """Call given arbitrary function
+
+    This could be a transform or anything; the caller should specify what the
+    output_instance will be, since the class doesn't know.
+    """
+
     def _read(self, *args, data=None, func=None, data_kwarg=None, **kwargs):
         if data is not None and isinstance(data, BaseReader):
             data = data.read()

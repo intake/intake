@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from itertools import chain
 from functools import cache
 from typing import Any
 
@@ -192,7 +193,7 @@ class NetCDF3(FileData):
 class HDF5(FileData):
     filepattern = "(hdf5?|h4|nc4?)$"  # many others by convention
     structure = {"array", "table", "hierarchy"}
-    magic = {b"HDF"}
+    magic = {b"\x89HDF"}
     mimetypes = "application/x-hdf5?"
 
     def __init__(
@@ -404,6 +405,17 @@ class Literal(BaseData):
         super().__init__(metadata=metadata)
 
 
+class Handle(JSONFile):
+    """An identifier registered on handle registry
+
+    See https://handle.net/ .
+
+    May refer to a single file or a set of files
+    """
+
+    filepattern = "hdl:"
+
+
 class Feather2(FileData):
     magic = {b"ARROW1"}
     structure = {"tabular", "nested"}
@@ -522,7 +534,7 @@ def recommend(url=None, mime=None, head=True, storage_options=None, ignore=None)
         try:
             with fsspec.open_files(url, "rb", **(storage_options or {}))[0] as f:
                 head = f.read(2**20)
-        except (IOError, IndexError):
+        except (IOError, IndexError, ValueError):
             head = False
 
     if isinstance(head, bytes):
@@ -553,7 +565,7 @@ def recommend(url=None, mime=None, head=True, storage_options=None, ignore=None)
         # try stripping compression extensions?
         # TODO: file patterns could be in leading part of fsspec-like URL
         poss = {}
-        for cls in subclasses(BaseData):
+        for cls in chain(subclasses(FileData), subclasses(BaseData)):
             if cls in outs:
                 continue
             if cls.filepattern:
