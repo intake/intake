@@ -23,7 +23,9 @@ class BaseData(Tokenizable):
 
     mimetypes: str = ""  # regex
     filepattern: str = ""  # regex
-    structure: set[str] = set()
+    structure: set[str] = set()  # informational tags for nature of data
+    magic = set()  # each item identifies this data type (if using a URL)
+    contains = set()  # if using a URL, an ls() on that path will contain these things
 
     def __init__(self, metadata: dict[str, Any] | None = None):
         self.metadata: dict[str, Any] = metadata or {}  # arbitrary information
@@ -105,8 +107,6 @@ class BaseData(Tokenizable):
 class FileData(BaseData):
     """Datatypes loaded from files"""
 
-    magic = set()  # bytes at file start to identify it
-
     def __init__(self, url, storage_options: dict | None = None, metadata: dict | None = None):
         self.url = url
         self.storage_options = storage_options
@@ -133,6 +133,7 @@ class Parquet(FileData):
     mimetypes = "application/(vnd.apache.parquet|parquet|x-parquet)/"
     structure = {"table", "nested"}
     magic = {b"PAR1"}
+    contains = {"_metadata", "parq", "parquet"}  # a directory can be a dataset
 
 
 class CSV(FileData):
@@ -360,6 +361,10 @@ class Shapefile(FileData):
     magic = {b"\x00\x00\x27\x0a"}
 
 
+class GeoPackage(SQLite):
+    filepattern = "gpkg$"
+
+
 class STACJSON(JSONFile):
     magic = {(None, b'"stac_version":')}  # None means "somewhere in the file head"
     mimetypes = "(text|application)/geo\\+json"
@@ -371,6 +376,18 @@ class TiledService(CatalogAPI):
 
 class TiledDataset(Service):
     structure = {"array", "table", "nested"}
+
+
+class IcebergDataset(JSONFile):
+    structure = {"tabular"}
+    magic = {(None, b'"format-version":')}
+
+
+class DeltalakeTable(FileData):
+    # a directory by convention, but otherwise can't be distinguished
+    contains = {"_delta_log"}
+    filepattern = "/$"
+    structure = {"tabular"}
 
 
 class NumpyFile(FileData):
@@ -476,7 +493,7 @@ class KerasModel(FileData):
 
 
 class PickleFile(FileData):
-    structure = {}
+    structure = set()
 
 
 class SKLearnPickleModel(PickleFile):
@@ -521,6 +538,8 @@ def recommend(url=None, mime=None, head=True, storage_options=None, ignore=None)
     set of matching datatype classes.
     """
     # TODO: more complex returns defining which type of match hit what, or some kind of score
+
+    # TODO: for paths defined as directories, may be able to distinguish by contents
     outs = ignore or set()
     out = []
     if isinstance(url, (list, tuple)):
@@ -536,9 +555,11 @@ def recommend(url=None, mime=None, head=True, storage_options=None, ignore=None)
                 head = f.read(2**20)
         except (IOError, IndexError, ValueError):
             head = False
+    else:
+        fs = None
 
     if isinstance(head, bytes):
-        for cls in subclasses(FileData):
+        for cls in subclasses(BaseData):
             if cls in outs:
                 continue
             for m in cls.magic:
@@ -570,6 +591,14 @@ def recommend(url=None, mime=None, head=True, storage_options=None, ignore=None)
                 continue
             if cls.filepattern:
                 find = re.findall(cls._filepattern(), url.lower())
+                if getattr(cls, "contains", None) and fs is not None:
+                    try:
+                        allfiles = fs.ls(url, detail=False)
+                        if any(a.endswith(c) for c in cls.contains for a in allfiles):
+                            poss[cls] = 0
+                            find = 0
+                    except IOError:
+                        pass
                 if find:
                     poss[cls] = len(find[0])
         out.extend(reversed(sorted(poss, key=lambda x: poss[x])))

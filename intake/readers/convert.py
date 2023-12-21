@@ -237,6 +237,29 @@ class DicomToNumpy(BaseConverter):
         return x.pixel_array
 
 
+class PolarsLazy(BaseConverter):
+    instances = {"polars:DataFrame": "polars:LazyFrame"}
+    func = "polars:DataFrame.lazy"
+
+
+class PolarsEager(BaseConverter):
+    instances = {"polars:LazyFrame": "polars:DataFrame"}
+    func = "polars:LazyFrame.collect"  # collect_async() ?
+
+
+class PolarsToPandas(BaseConverter):
+    instances = {"polars:DataFrame": "pandas:DataFrame"}
+    func = "polars:DataFrame.to_pandas"
+
+    def run(self, x, *args, **kwargs):
+        return x.to_pandas(*args, **kwargs)
+
+
+class PandasToPolars(BaseConverter):
+    instances = {"pandas:DataFrame": "polars:DataFrame"}
+    func = "polars:from_pandas"
+
+
 def convert_class(data, out_type: str):
     """Get conversion class from given data to out_type
 

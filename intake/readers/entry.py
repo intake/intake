@@ -392,6 +392,14 @@ class Catalog(Tokenizable):
         return cat
 
     @classmethod
+    def from_entries(cls, data: dict, metadata=None):
+        """Assemble catalog from a dict of entries"""
+        cat = cls(metadata=metadata)
+        for k, v in data.items():
+            cat[k] = v
+        return cat
+
+    @classmethod
     def from_dict(cls, data):
         """Assemble catalog from dict representation"""
         if data.get("version") != 2:

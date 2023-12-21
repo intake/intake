@@ -18,7 +18,7 @@ def test_recommend_filetype():
     assert datatypes.Parquet in datatypes.recommend(url="myfile.parq")
     assert datatypes.Parquet in datatypes.recommend(head=b"PAR1")
     assert all(
-        p in datatypes.recommend(mime="text/yaml")
+        p in datatypes.recommend(mime="text/yaml", head=False)
         for p in {datatypes.YAMLFile, datatypes.CatalogFile, datatypes.Text}
     )
 

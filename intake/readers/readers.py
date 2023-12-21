@@ -203,6 +203,9 @@ class DaskDF(FileReader):
     output_instance = "dask.dataframe:DataFrame"
     storage_options = True
 
+    def discover(self, **kwargs):
+        return self.read().head()
+
 
 class DaskParquet(DaskDF):
     implements = {datatypes.Parquet}
@@ -225,6 +228,13 @@ class DaskJSON(DaskDF):
     implements = {datatypes.JSONFile}
     func = "dask.dataframe:read_json"
     url_arg = "url_path"
+
+
+class DaskDeltaLake(DaskDF):
+    implements = {datatypes.DeltalakeTable}
+    imports = {"dask_deltatable"}
+    func = "dask_deltatable:read_deltalake"
+    url_arg = "path"
 
 
 class DaskSQL(BaseReader):
@@ -613,6 +623,60 @@ class DaskCSV(DaskDF):
     url_arg = "urlpath"
 
 
+class Polars(FileReader):
+    imports = {"polars"}
+    output_instance = "polars:LazyFrame"
+    url_arg = "source"
+
+    def discover(self, **kwargs):
+        # https://pola-rs.github.io/polars/py-polars/html/reference/
+        #   lazyframe/api/polars.LazyFrame.fetch.html
+        return self.read().fetch()
+
+
+class PolarsDeltaLake(Polars):
+    implements = {datatypes.DeltalakeTable}
+    func = "polars:scan_delta"
+
+
+class PolarsAvro(Polars):
+    implements = {datatypes.AVRO}
+    func = "polars:read_avro"
+    output_instance = "polars:DataFrame"  # i.e., not lazy
+
+
+class PolarsFeather(Polars):
+    implements = {datatypes.Feather2}
+    func = "polars:scan_ipc"
+
+
+class PolarsParquet(Polars):
+    implements = {datatypes.Parquet}
+    func = "polars:scan_parquet"
+
+
+class PolarsCSV(Polars):
+    implements = {datatypes.CSV}
+    func = "polars:scan_csv"
+
+
+class PolarsJSON(Polars):
+    implements = {datatypes.JSONFile}
+    func = "polars:scan_ndjson"
+
+
+class PolarsIceberg(Polars):
+    imports = {"polars", "pyiceberg"}
+    implements = {datatypes.IcebergDataset}
+    func = "polars:scan_iceberg"
+
+
+class PolarsExcel(Polars):
+    implements = {datatypes.Excel}
+    func = "polars:read_excel"
+    output_instance = "polars:DataFrame"  # i.e., not lazy
+
+
 class Ray(FileReader):
     # https://docs.ray.io/en/latest/data/creating-datasets.html#supported-file-formats
     imports = {"ray"}
@@ -657,6 +721,13 @@ class RayText(Ray):
 class RayBinary(Ray):
     implements = {datatypes.FileData}
     func = "ray.data:read_binary_files"
+
+
+class RayDeltaLake(Ray):
+    implements = {datatypes.DeltalakeTable}
+    imports = {"deltaray"}
+    func = "deltaray:read_delta"
+    url_arg = "table_uri"
 
 
 class DeltaReader(FileReader):
@@ -832,6 +903,7 @@ class GeoPandasReader(FileReader):
         datatypes.SQLite,
         datatypes.Shapefile,
         datatypes.GDALVectorFile,
+        datatypes.GeoPackage,
     }
     func = "geopandas:read_file"
     url_arg = "filename"

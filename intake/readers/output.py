@@ -166,7 +166,7 @@ class Repr(BaseConverter):
     """good for including "peek" at data in entries' metadata"""
 
     instances = {".*": "builtins:str"}
-    func = "builtins.repr"
+    func = "builtins:repr"
 
 
 class CatalogToJson(BaseConverter):
