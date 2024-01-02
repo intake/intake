@@ -257,6 +257,18 @@ class FITSToNumpy(BaseConverter):
         return x[extension].data
 
 
+class ASDFToNumpy(BaseConverter):
+    instances = {"asdf:AsdfFile": "numpy.ndarray"}
+    func = "asdf:AsdfFile."
+
+    def run(self, x, tree_path: str | list[str], **kwargs):
+        if isinstance(tree_path, str):
+            tree_path = tree_path.split(".")
+        for p in tree_path:
+            x = x[p]
+        return x[:]
+
+
 class PolarsLazy(BaseConverter):
     instances = {"polars:DataFrame": "polars:LazyFrame"}
     func = "polars:DataFrame.lazy"

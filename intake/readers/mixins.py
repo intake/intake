@@ -21,7 +21,7 @@ class PipelineMixin(Completable):
             else:
                 out = self.transform.__getattr__(item)  # arbitrary method call
         except RecursionError as e:
-            raise AttributeError from e
+            raise AttributeError(item) from e
         else:
             return out
 

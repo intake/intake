@@ -998,6 +998,20 @@ class FITSReader(FileReader):
         return self._func(data.url, **kw)
 
 
+class ASDFReader(FileReader):
+    implements = {datatypes.ASDF}
+    imports = {"asdf"}
+    func = "asdf:open"
+    output_instance = "asdf:AsdfFile"
+
+    def _read(self, data, **kw):
+        if data.storage_options or "://" in data.url or "::" in data.url:
+            # want the file to stay open, since array access is lazy by default
+            f = fsspec.open(data.url, **(data.storage_options or {})).open()
+            return self._func(f, **kw)
+        return self._func(data.url, **kw)
+
+
 class DicomReader(FileReader):
     output_instance = "pydicom.dataset:FileDataset"
     implements = {datatypes.DICOM}
