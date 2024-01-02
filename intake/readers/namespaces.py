@@ -86,6 +86,11 @@ class pd(Namespace):
     imports = "pandas"
 
 
+class pl(Namespace):
+    acts_on = ("polars:DataFrame", "polars:Series", "polars:LazyFrame")
+    imports = "polars"
+
+
 def get_namespaces(reader):
     """These namespaces are available on the reader"""
     out = {}

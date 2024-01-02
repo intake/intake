@@ -351,36 +351,42 @@ class DuckSQL(DuckDB):
 
 class SparkDataFrame(FileReader):
     imports = {"pyspark"}
+    func = "pyspark.sq:SparkSession.builder.getOrCreate"
     func_doc = "pyspark.sql:SparkSession.read"
     output_instance = "pyspark.sql:DataFrame"
 
     def discover(self, **kwargs):
         return self.read(**kwargs).limit(10)
 
-    def _spark(self):
-        SparkSession = import_name("pyspark.sq:SparkSession")
-        return SparkSession.builder.getOrCreate()
-
 
 class SparkCSV(SparkDataFrame):
     implements = {datatypes.CSV}
 
     def _read(self, data, **kwargs):
-        return self._spark().read.csv(data.url, **kwargs)
+        return self._func().read.csv(data.url, **kwargs)
 
 
 class SparkParquet(SparkDataFrame):
     implements = {datatypes.Parquet}
 
     def _read(self, data, **kwargs):
-        return self._spark().read.parquet(data.url, **kwargs)
+        return self._func().read.parquet(data.url, **kwargs)
 
 
 class SparkText(SparkDataFrame):
     implements = {datatypes.Text}
 
     def _read(self, data, **kwargs):
-        return self._spark().read.text(data.url, **kwargs)
+        return self._func().read.text(data.url, **kwargs)
+
+
+class SparkDeltaLake(SparkDataFrame):
+    implements = {datatypes.DeltalakeTable}
+    imports = {"pyspark", "delta-spark"}
+
+    def _read(self, data, **kw):
+        # see https://docs.delta.io/latest/quick-start.html#python for config
+        return self._func().read.format("delta").load(data.url, **kw)
 
 
 class HuggingfaceReader(BaseReader):
@@ -967,17 +973,29 @@ class ScipyMatrixMarketReader(FileReader):
 
 
 class NibabelNiftiReader(FileReader):
-    # method img.get_fdata() gets the contents as numpy
     output_instance = "nibabel.spatialimages:SpatialImage"
     implements = {datatypes.Nifti}  # and other medical image types
     imports = {"nibabel"}
     func = "nibabel:load"
     url_arg = "filename"
-    storage_options = True
 
     def _read(self, data, **kw):
         with fsspec.open(data.url, **(data.storage_options or {})) as f:
             return self._func(f, **kw)
+
+
+class FITSReader(FileReader):
+    output_instance = {"astropy.io.fits:HDUList"}
+    implements = {datatypes.FITS}
+    imports = {"astropy"}
+    func = "astropy.io.fits:open"
+
+    def _read(self, data, **kw):
+        if data.storage_options:
+            kw.pop("use_fsspec")
+            kw.pop("fsspec_kwargs")
+            return self._func(data.url, use_fsspec=True, fsspec_kwargs=data.storage_options, **kw)
+        return self._func(data.url, **kw)
 
 
 class DicomReader(FileReader):

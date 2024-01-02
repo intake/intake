@@ -205,10 +205,12 @@ class FormatWithPassthrough(dict):
 @cache
 def check_imports(*imports: Iterable[str]) -> bool:
     """See if required packages are importable, but don't import them"""
+    import sys
+
     try:
         for package in imports:
             if package:
-                importlib.metadata.distribution(package)
+                package in sys.modules or importlib.metadata.distribution(package)
         return True
     except (ImportError, ModuleNotFoundError, NameError):
         return False

@@ -44,7 +44,7 @@ class PipelineMixin(Completable):
         )
 
     def __dir__(self):
-        return list(sorted(chain(object.__dir__(self), dir(self.transform), self._namespaces)))
+        return sorted(chain(object.__dir__(self), dir(self.transform), self._namespaces))
 
     @property
     def _namespaces(self):

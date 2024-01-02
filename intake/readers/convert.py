@@ -237,6 +237,26 @@ class DicomToNumpy(BaseConverter):
         return x.pixel_array
 
 
+class FITSToNumpy(BaseConverter):
+    instances = {"astropy.io.fits:HDUList": "numpy.ndarray"}
+    func = "astropy.io.fits:FitsHDU.data"
+
+    def run(self, x, extension=None):
+        """Get the array data of one FITS extension
+
+        If hdu is None, find first extension containing data.
+        """
+        if extension is None:
+            found = False
+            for extension, hdu in enumerate(x):
+                if hdu.header.get("NAXIS", 0) > 0:
+                    found = True
+                    break
+            if not found:
+                raise ValueError("No data extensions")
+        return x[extension].data
+
+
 class PolarsLazy(BaseConverter):
     instances = {"polars:DataFrame": "polars:LazyFrame"}
     func = "polars:DataFrame.lazy"
