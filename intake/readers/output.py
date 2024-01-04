@@ -107,7 +107,7 @@ class DaskArrayToZarr(BaseConverter):
 class NumpyToNumpyFile(BaseConverter):
     """Save a single array into a single binary file"""
 
-    instances = {"numpy:ndarray": "intake.readers.datatypes.NumpyFile"}
+    instances = {"numpy:ndarray": "intake.readers.datatypes:NumpyFile"}
     func = "numpy:save"
 
     def run(self, x, path, *args, storage_options=None, metadata=None, **kwargs):

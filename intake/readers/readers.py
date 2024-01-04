@@ -1011,7 +1011,7 @@ class NibabelNiftiReader(FileReader):
 
 
 class FITSReader(FileReader):
-    output_instance = {"astropy.io.fits:HDUList"}
+    output_instance = "astropy.io.fits:HDUList"
     implements = {datatypes.FITS}
     imports = {"astropy"}
     func = "astropy.io.fits:open"

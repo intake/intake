@@ -194,7 +194,7 @@ class TiledSearch(BaseConverter):
 
 
 class TileDBToNumpy(BaseConverter):
-    instances = {"tiledb.libtiledb.Array": "numpy:ndarray"}
+    instances = {"tiledb.libtiledb:Array": "numpy:ndarray"}
 
     def run(self, x, *args, **kwargs):
         # allow attribute selection here for when it wasn't included at read time?
@@ -204,7 +204,7 @@ class TileDBToNumpy(BaseConverter):
 class TileDBToPandas(BaseConverter):
     """Implemented only if an attribute was not already chosen."""
 
-    instances = {"tiledb.libtiledb.Array": "pandas:DataFrame"}
+    instances = {"tiledb.libtiledb:Array": "pandas:DataFrame"}
     func = "tiledb.libtiledb:Array.df"
 
     def run(self, x, *args, **kwargs):
@@ -213,7 +213,7 @@ class TileDBToPandas(BaseConverter):
 
 class DaskArrayToTileDB(BaseConverter):
     # this is like output, and could return a datatypes.TileDB instead
-    instances = {"dask.array:array": "tiledb.libtiledb:Array"}
+    instances = {"dask.array:Array": "tiledb.libtiledb:Array"}
     func = "dask.array:to_tiledb"
 
     def run(self, x, uri, **kwargs):
@@ -224,7 +224,7 @@ class NumpyToTileDB(BaseConverter):
     # this could be considered an output converter, giving a datatypes.TileDB
     # instead of the array instance
     # alternatively, a datatypes.TileDB could be the *input* to the function
-    instances = {"numpy.ndarray": "tiledb.libtiledb.Array"}
+    instances = {"numpy:ndarray": "tiledb.libtiledb:Array"}
     func = "tiledb:from_numpy"
 
     def run(self, x, uri, **kwargs):
@@ -276,7 +276,7 @@ class DicomToNumpy(BaseConverter):
 
 
 class FITSToNumpy(BaseConverter):
-    instances = {"astropy.io.fits:HDUList": "numpy.ndarray"}
+    instances = {"astropy.io.fits:HDUList": "numpy:ndarray"}
     func = "astropy.io.fits:FitsHDU.data"
 
     def run(self, x, extension=None):
@@ -296,7 +296,7 @@ class FITSToNumpy(BaseConverter):
 
 
 class ASDFToNumpy(BaseConverter):
-    instances = {"asdf:AsdfFile": "numpy.ndarray"}
+    instances = {"asdf:AsdfFile": "numpy:ndarray"}
     func = "asdf:AsdfFile."
 
     def run(self, x, tree_path: str | list[str], **kwargs):

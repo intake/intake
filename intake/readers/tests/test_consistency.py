@@ -2,6 +2,8 @@ import pytest
 import intake
 from intake.readers.utils import subclasses
 from intake.readers.readers import FileReader
+from intake import BaseConverter
+from intake.readers.convert import SameType
 
 
 @pytest.mark.parametrize("cls", subclasses(intake.BaseReader))
@@ -30,3 +32,12 @@ def test_data(cls):
 @pytest.mark.parametrize("cls", subclasses(FileReader))
 def test_filereaders(cls):
     assert isinstance(cls.url_arg, str)
+
+
+@pytest.mark.parametrize("cls", subclasses(BaseConverter))
+def test_converters(cls):
+    assert all(isinstance(s, str) and (s.count(":") == 1 or s == ".*") for s in cls.instances)
+    assert all(
+        s is SameType or isinstance(s, str) and (s.count(":") == 1 or s == ".*")
+        for s in cls.instances.values()
+    )
