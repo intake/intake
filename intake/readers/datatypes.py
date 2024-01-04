@@ -378,6 +378,12 @@ class TiledDataset(Service):
     structure = {"array", "table", "nested"}
 
 
+class TileDB(Service):
+    filepattern = "tiled://"  # or a real URL, local or remote
+    contains = {"__meta", "__schema"}
+    structure = {"array", "table"}
+
+
 class IcebergDataset(JSONFile):
     structure = {"tabular"}
     magic = {(None, b'"format-version":')}

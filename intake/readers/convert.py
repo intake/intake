@@ -193,6 +193,44 @@ class TiledSearch(BaseConverter):
         return x.search(*arg, **kw)
 
 
+class TileDBToNumpy(BaseConverter):
+    instances = {"tiledb.libtiledb.Array": "numpy:ndarray"}
+
+    def run(self, x, *args, **kwargs):
+        # allow attribute selection here for when it wasn't included at read time?
+        return x[:]
+
+
+class TileDBToPandas(BaseConverter):
+    """Implemented only if an attribute was not already chosen."""
+
+    instances = {"tiledb.libtiledb.Array": "pandas:DataFrame"}
+    func = "tiledb.libtiledb:Array.df"
+
+    def run(self, x, *args, **kwargs):
+        return x.df[:]
+
+
+class DaskArrayToTileDB(BaseConverter):
+    # this is like output, and could return a datatypes.TileDB instead
+    instances = {"dask.array:array": "tiledb.libtiledb:Array"}
+    func = "dask.array:to_tiledb"
+
+    def run(self, x, uri, **kwargs):
+        return self._func(x, uri, return_stored=True, **kwargs)
+
+
+class NumpyToTileDB(BaseConverter):
+    # this could be considered an output converter, giving a datatypes.TileDB
+    # instead of the array instance
+    # alternatively, a datatypes.TileDB could be the *input* to the function
+    instances = {"numpy.ndarray": "tiledb.libtiledb.Array"}
+    func = "tiledb:from_numpy"
+
+    def run(self, x, uri, **kwargs):
+        return self._func(uri, x, **kwargs)
+
+
 class DeltaQueryToDask(BaseConverter):
     instances = {"deltalake:DeltaTable": "dask.dataframe:DataFrame"}
     func = "deltalake:DeltaTable.file_uris"

@@ -776,6 +776,26 @@ class TiledClient(BaseReader):
             return client.read()
 
 
+class TileDBReader(BaseReader):
+    imports = {"tiledb"}
+    implements = {datatypes.TileDB}
+    output_instance = "tiledb.libtiledb.Array"
+    func = "tiledb:open"
+
+    def _read(self, data, attribute=None, **kwargs):
+        return self._func(data.url, attr=attribute, config=data.options, **kwargs)
+
+
+class TileDBDaskReader(BaseReader):
+    imports = {"tiledb", "dask"}
+    func = "dask.array:from_tiledb"
+    implements = {datatypes.TileDB}
+    output_instance = "dask.array:Array"
+
+    def _read(self, data, attribute=None, **kwargs):
+        return self._func(data.url, attribute=attribute, config=data.options, **kwargs)
+
+
 class PythonModule(BaseReader):
     output_instance = "builtins:module"
     implements = {datatypes.PythonSourceCode}
@@ -832,7 +852,7 @@ class CupyTextReader(CupyNumpyReader):
 class XArrayDatasetReader(FileReader):
     output_instance = "xarray:Dataset"
     imports = {"xarray"}
-    optional_imports = {"zarr", "h5netcdf", "cfgrib", "scipy"}  # and others
+    optional_imports = {"zarr", "h5netcdf", "cfgrib", "scipy", "tiledb"}  # and others
     # DAP is not a file but an API, maybe should be separate
     implements = {
         datatypes.NetCDF3,
@@ -840,6 +860,7 @@ class XArrayDatasetReader(FileReader):
         datatypes.GRIB2,
         datatypes.Zarr,
         datatypes.OpenDAP,
+        datatypes.TileDB,
     }
     # xarray also reads from images and tabular data
     func = "xarray:open_mfdataset"
@@ -850,10 +871,15 @@ class XArrayDatasetReader(FileReader):
     def _read(self, data, **kw):
         from xarray import open_dataset, open_mfdataset
 
-        if "engine" not in kw and isinstance(data, datatypes.Zarr):
-            kw["engine"] = "zarr"
-            if data.root and "group" not in kw:
-                kw["group"] = data.root
+        if "engine" not in kw:
+            if isinstance(data, datatypes.Zarr):
+                kw["engine"] = "zarr"
+                if data.root and "group" not in kw:
+                    kw["group"] = data.root
+            elif isinstance(data, datatypes.TileDB):
+                kw["engine"] = "tiledb"
+                if data.options:
+                    kw.setdefault("backend_kwargs", {})["config"] = data.options
         if kw.get("engine", "") == "zarr":
             # only zarr takes storage options
             kw.setdefault("backend_kwargs", {})["storage_options"] = data.storage_options
@@ -866,7 +892,7 @@ class XArrayDatasetReader(FileReader):
             return open_mfdataset(data.url, **kw)
         else:
             # TODO: recognise fsspec URLs, and optionally use open_local for engines tha need it
-            if kw.get("engine", "") == "h5netcdf" and data.url.startswith("http"):
+            if isinstance(data, datatypes.FileData) and data.url.startswith("http"):
                 # special case, because xarray would assume a DAP endpoint
                 f = fsspec.open(data.url, **(data.storage_options or {})).open()
                 return open_dataset(f, **kw)
