@@ -1089,7 +1089,40 @@ class YAMLCatalogReader(FileReader):
     output_instance = "intake.readers.entry:Catalog"
 
 
+class PrometheusMetricReader(BaseReader):
+    implements = {datatypes.Prometheus}
+    imports = {"prometheus_api_client"}
+    output_instance = "typing:Iterator"
+    func = "prometheus_api_client:custom_query"
+    other_funcs = "prometheus_api_client:get_metric_range_data"
+
+    def _read(self, data: datatypes.Prometheus, *args, **kwargs):
+        from prometheus_api_client import PrometheusConnect
+        from prometheus_api_client.utils import parse_datetime
+
+        prom = PrometheusConnect(url=data.url, **(data.options or {}))
+        if data.query:
+            # this is a catalog, should be separate reader?
+            return prom.custom_query(data.query, **kwargs)
+        if not data.metric:
+            return prom.all_metrics(**kwargs)
+        start_time = parse_datetime(data.start_time) if data.start_time else parse_datetime("1900")
+        end_time = parse_datetime(data.end_time) if data.end_time else parse_datetime("now")
+        return prom.get_metric_range_data(
+            data.metric,
+            label_config=data.labels,
+            start_time=start_time,
+            end_time=end_time,
+            **kwargs,
+        )
+
+
 class Retry(BaseReader):
+    """Retry (part of) a pipeline until it returns without exception
+
+    Retries the whole of the selected pipeline; an exception will start at the beginning.
+    """
+
     def _read(
         self,
         data,
@@ -1098,40 +1131,41 @@ class Retry(BaseReader):
         backoff0=0.1,
         backoff_factor=1.3,
         start_stage=None,
-        end_stage=None,
         **kw,
     ):
+        """
+        Parameters
+        ----------
+        data: intake pipeline/reader
+        max_tries: number of attempts that can be made
+        allowed_exceptions: tuple of Exceptions we will try again for; others will raise
+        start_stage: if given, index of pipeline member stage to start from for retries (else all);
+            may be negative from the most recent previous stage (-1).
+        """
         import time
-
-        from intake.readers.convert import Pipeline
 
         if isinstance(allowed_exceptions, (list, set)):
             allowed_exceptions = tuple(allowed_exceptions)
         reader = data if isinstance(data, BaseReader) else data.reader
-        if isinstance(reader, Pipeline) and (start_stage or end_stage):
-            if start_stage:
-                data = reader.first_n_stages(start_stage).read()
-            else:
-                data = reader.reader.read()
-            for i in range(start_stage, end_stage):
-                for i in range(max_tries):
-                    try:
-                        data = reader._read_stage_n(data, i)
-                    except allowed_exceptions:
-                        if i == max_tries - 1:
-                            raise
-                        time.sleep(backoff0 * backoff_factor**i)
-                for j in range(end_stage, len(reader.steps) - 1):
-                    data = reader._read_stage_n(data, j)
-                return data
+        if start_stage and start_stage < 0:
+            start_stage = len(reader.steps) + start_stage
+        if start_stage:
+            data = reader.first_n_stages(start_stage).read()
         else:
-            for i in range(max_tries):
-                try:
-                    return reader.read()
-                except allowed_exceptions:
-                    if i == max_tries - 1:
-                        raise
-                    time.sleep(backoff0 * backoff_factor**i)
+            data = None
+            start_stage = 0
+        for j in range(max_tries):
+            try:
+                for i in range(start_stage, len(reader.steps)):
+                    if i == 0:
+                        data = reader._read_stage_n(stage=0)
+                    else:
+                        data = reader._read_stage_n(stage=1, data=data)
+            except allowed_exceptions:
+                if j == max_tries:
+                    raise
+                time.sleep(backoff0 * backoff_factor**i)
+        return data
 
 
 def recommend(data):

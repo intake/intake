@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from itertools import chain
 from functools import cache
-from typing import Any
+from typing import Any, Optional
 
 import fsspec
 
@@ -305,6 +305,32 @@ class SQLQuery(Service):
         self.conn = conn
         self.query = query
         super().__init__(metadata)
+
+
+class Prometheus(Service):
+    # also used by "Victoria"
+    structure = {"structured"}
+
+    def __init__(
+        self,
+        url,
+        options: Optional[dict] = None,
+        metric: Optional[str] = None,
+        labels: Optional[dict] = None,
+        start_time=None,
+        end_time=None,
+        query: Optional[str] = None,
+        metadata=None,
+    ):
+        if query:
+            # this is the totally custom route
+            assert metric or labels or start_time or end_time is None
+        super().__init__(url, options, metadata)
+        self.query = query
+        self.metric = metric
+        self.labels = labels
+        self.start_time = start_time
+        self.end_time = end_time
 
 
 class SQLite(FileData):

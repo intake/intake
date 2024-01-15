@@ -22,7 +22,6 @@ logger = logging.getLogger("intake")
 
 
 def import_name(name):
-    # TODO: move to a utils module
     modname = name.split(":", 1)[0]
     logger.debug("Importing: '%s'" % modname)
     mod = importlib.import_module(modname)
