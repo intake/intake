@@ -279,6 +279,7 @@ class Catalog(Tokenizable):
         Descend into data & reader descriptions to create a user_parameter
 
         There are two ways to fund and replace values by a template:
+
         - if ``path`` is given, the kwargs will be walked to this location
           e.g., "field.0.special_value" -> kwargs["field"][0]["special_value"]
         - if ``value`` is given, all kwargs will be recursively walked, looking

@@ -9,7 +9,6 @@ This is a reference API class listing, useful mainly for developers.
    intake.catalog.Catalog
    intake.catalog.entry.CatalogEntry
    intake.catalog.local.UserParameter
-   intake.source.cache.BaseCache
    intake.source.derived.AliasSource
    intake.source.base.Schema
 

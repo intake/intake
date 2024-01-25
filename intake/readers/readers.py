@@ -1197,7 +1197,7 @@ def reader_from_call(func: str, *args, join_lines=False, **kwargs) -> BaseReader
     ----------
     func: callable | str
         If a callable, pass args and kwargs as you would have done to execute the function.
-        If a string, it should look like "func(arg1, args2, kwarg1, **kw)", i.e., a normal
+        If a string, it should look like ``"func(arg1, args2, kwarg1, **kw)"``, i.e., a normal
         python call but as a string. In the latter case, args and kwargs are ignored
     """
 

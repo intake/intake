@@ -1,8 +1,8 @@
 Scope
 =====
 
-Whether you are familiar with Intake V1 or not, we will motivate what this package is
-for, what it can do for you and why you should use it.
+Here we lay out what Intake is, why you might want to use it, main features and also
+a few reasons you may wish to look elsewhere.
 
 
 Motivation
@@ -28,9 +28,9 @@ used in many places, you will need to remember to fix it in each place.
 
 Wouldn't it be nice if you could declare your data and pipeline just once? Then you can
 
-- version control your data sets as you would for data
+- version control your data set descriptions as you would for code (and maybe data files)
 - share your data definitions with others, just by writing this prescription to any shared space
-- update all users of this data in a single place
+- update all users of this data in a single place, single source of truth
 - encode a set of transforms as part of a data-oriented processing framework
 - decide to load and process the same data but with different engines
 - automatically encode python statements into data decriptions
@@ -42,14 +42,15 @@ Counter indications
 
 The following are some situations where you might not be interested in Intake:
 
-- you only ever read one type of file with one package. In this case, Intake can still
+- you only ever read one type of file with one package, e.g., ``pd.read_csv``.
+  In this case, Intake can still
   serve to describe and enumerate data sources, but you miss out on most of the functionality.
-- you only ever work on data sources alone and have no reasons to direct other people in how
+- you only ever work on data sources by yourself and have no reasons to direct other people in how
   to read data (not be the consumer of such descriptions).
 - all your data needs are already met by some other data service by itself, for example a
   set of tables/procedures/views/queries on a SQL database.
 - you have data that is not read by anything in Intake (but maybe you could pretty easily add any
-  reader you need pretty easily).
+  reader you need).
 - you don't yet see any benefit of describing your datasets in catalogs.
 
 
@@ -59,14 +60,15 @@ What Intake Isn't
 This is not a workflow running system (maybe use Airflow, Celery, Prefect, etc.) nor
 a compute engine (although we hook into spark, dask, ray and such). Our scope is limited
 to describing data and how to load it. Here, "load" includes transforms and cleaning
-with the engine of your choice to get to something ready for analysis. Thus, these are
-also datasets, and we delegate all calls to other third-party packages.
+with the engine of your choice to get to something ready for analysis.
+We delegate all calls to other third-party packages, so you can think of the descriptions
+as being "what to call".
 
 Relationship to ``fsspec``
 --------------------------
 
 ``fsspec`` is a library concerned only with reading bytes from various stores. It has become
-the standard (but not only) package for this in the python ecosystem and is supported by
+the standard (but not only) package for this in the python/data ecosystem and is supported by
 many other packages. Intake will make use of ``fsspec`` for many file readers, encoding
 "storage_options` (further arguments that ``fsspec`` understands) when necessary.
 

@@ -13,10 +13,7 @@ GUI
    intake.interface.catalog.add.URLSelector
    intake.interface.catalog.add.CatAdder
    intake.interface.catalog.search.Search
-   intake.interface.catalog.select.CatSelector
    intake.interface.source.defined_plots.Plots
-   intake.interface.source.description.Description
-   intake.interface.source.select.SourceSelector
 
 .. autoclass:: intake.interface.base.Base
    :members:
@@ -39,16 +36,7 @@ GUI
 .. autoclass:: intake.interface.catalog.search.Search
    :members:
 
-.. autoclass:: intake.interface.catalog.select.CatSelector
-   :members:
-
 .. autoclass:: intake.interface.source.defined_plots.Plots
-   :members:
-
-.. autoclass:: intake.interface.source.description.Description
-   :members:
-
-.. autoclass:: intake.interface.source.select.SourceSelector
    :members:
 
 .. raw:: html

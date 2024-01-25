@@ -1,24 +1,39 @@
-## Intake 2 prototype
+## Intake Take2
 
-I have been developing a rewrite of Intake, https://github.com/intake/intake/pull/737 .
+Intake has been extensively rewritten to produce Intake Take2,
+https://github.com/intake/intake/pull/737 .
+This will now become the version of the ``main`` branch and be released as v2.0.0. The
+main documentation will move to describing V2, and V1 will not be further developed.
+Existing users of the legacy version ("v1") may find their code breaks and will need
+a version pin, although we aim to support most legacy workflows via backward compatibility.
+
 To install, you would do the following
 
 ```shell
-> pip install git+https://github.com/martindurant/intake.git@reader
+> pip install intake
+or
+> conda install intake
 ```
 
-All the new stuff is under `intake.readers`.
+To get v1:
 
-This is a demo of the current state and request for thoughts and feedback.
+```shell
+> pip install "intake<2"
+or
+> conda install "intake<2"
+```
 
-### Motivation
+This README is being kept to describe why the rewrite was done and considerations that
+went into it.
 
-The main way to get the most out of Intake at the moment is by editing YAML files. This is
-how the documentation is structured. Yes, you can use intake.open_* to seed them, but then
+### Motivation for the rewrite.
+
+The main way to get the most out of Intake v1 has been by editing YAML files. This is
+how the documentation is structured. Yes, you could use intake.open_* to seed them, but then
 you will find a strong discontinuity between the documentation of the driver and the third
 party library that actually does the reading.
 
-This makes is very unlikely to convert a novice data-oriented python user into someone
+This made is very unlikely to convert a novice data-oriented python user into someone
 that can create even the simplest catalogs. They will certainly never use more advanced
 features like parametrisation or derived datasets. The new model eases users in and lends
 itself to being overlaid with graphical/wizard interfaces (i.e., in jupyterlab or in
@@ -27,21 +42,23 @@ preparation for use with
 
 ### Main changes
 
-This is a total rewrite. Backward compatibility is desired, but not necessarily fully possible.
+This is a total rewrite. Backward compatibility is desired and some v1 sources have been
+rewritten to use the v2 readers.
 
 #### Simplification
 
-This PR is dropping features that added complexity but were only rarely used.
+We are dropping features that added complexity but were only rarely used.
 
-- the server; the Intake server was never production-ready, and I believe anything an intake
- usecase might want can be provided by tiled
+- the server; the Intake server was never production-ready, and most
+ use-cases can be provided by [tiled](https://blueskyproject.io/tiled/)
 - the caching/persist stuff; files can be persisted by fsspec, and we maintain the ability to
  write to various formats
 - explicit dependence on dask; dask is just one of many possible compute engines and
  an we should not be tied to one
 - less added functionality in the readers (like file pattern stuff)
-- explicit dependence on hvplot
+- explicit dependence on hvplot (but you can still choose to use it)
 - the CLI
+
 
 #### New structure
 
@@ -64,19 +81,20 @@ class AwkwardParquet(Awkward):
 The imports are declared and deferred until needed, so there is no need to make all those intake-*
 repos with their own dependencies. (Of course, you might still want to declare packages
 and requirements; considering whether catalogs should have requirements, but this is better
-suited for something like conda-project).
+suited for something like conda-project). The arguments accepted are the same as for the
+target function, and the method `.doc()` will show this.
 
 
 ### New features
 
 - recommendation system to try to guess the right data type from a URL or existing function call,
  and readers that can use that type (and for each, tells you the instance it makes and provides docs).
- Will eventually have a graph tracer to answer: "I have this type but I want this other type, what
+ Can be extended to "I have this type but I want this other type, what
  set of steps get me there"
 - embracing any compute engines as first-class (e.g., duck, dask, ray, spark) or none
 - no constraints on the types of data that can/should be returned
 - pipeline building tools, including explicit conversion, types operations, generalised getattr and
- getitem (think dask delayed) and apply. Most of these available as "transform" attributes, including
+ getitem (like dask delayed) and apply. Most of these available as "transform" attributes, including
  new namespaces like "reader.np.max(..)" will call numpy on whatever the reader makes, but lazily.
 - output functions, as a special type of "conversion", returning a new data description for further
  manipulation. This is effectively caching (would like to add conditions to the pipeline, only load and
@@ -95,27 +113,22 @@ sourcing, high bus factor.
 
 ### Work to follow
 
-- fill out all the types, readers, converters. There are not
- [*that* many](https://intake.readthedocs.io/en/latest/plugin-directory.html) in intake V1, if we ignore
- the several repos that never get used (splunk, solr, astro, avro, hbase...).
-- re-add search capability, which will need some thoughts in this context
-- compatibility with existing intake, especially catalog-type drivers (stac, esm, etc)
-- fill out functionality for reading from tiled; tiled is not special, but most likely to fill the
- functionality previously promised by the intake server
-- plugin system: the plan is to have intake import things declared in entrypoints or config, rather
- than require different types of entrypoints for different types of thing. Any subclass of BaseReader
- will be a reader, and you can register converters, since imports don't happen until execution.
+- thorough search capability, which will need some thoughts in this context
+- compatibility with remaining existing intake plugins
 - the catalog serialisation currently uses custom YAML tags, but this should not be necessary
 - add those magic methods that make pipelines work on descriptions on catalogs, not just
  materialised readers.
+- metadata conventions, to persist basic dataset properties (e.g., based on frictionlessdata spec)
+ and validation as a pipeline operation you can do to any data entry using any available reader that
+ can produce the info
 - probably much more - I will need help!
 
 ### Unanswered questions
 
 - actual functions and classes are now embedded into any YAML serialised catalog as strings. These
  are imported/instantiated when the reader is instantiated from its description. So arbitrary
- code execution is possible, but not at catalog parse time. We could make flags to prevent this or
- explicitly require approval.
+ code execution is possible, but not at catalog parse time. We only have a loose permissions config
+ story around this
 - this implementation maintains the distinction between "descriptions" (which have templated values
  and user parameters) and readers (which only have concrete values and real instances). Is this a
  major confusion we somehow want to eliminate in V2?

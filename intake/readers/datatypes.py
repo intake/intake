@@ -105,7 +105,7 @@ class BaseData(Tokenizable):
 
 
 class FileData(BaseData):
-    """Datatypes loaded from files"""
+    """Datatypes loaded from files, local or remote"""
 
     def __init__(self, url, storage_options: dict | None = None, metadata: dict | None = None):
         self.url = url
@@ -129,6 +129,8 @@ class Catalog(BaseData):
 
 
 class Parquet(FileData):
+    """Column-optimized binary format"""
+
     filepattern = "(parq|parquet|/$)"
     mimetypes = "application/(vnd.apache.parquet|parquet|x-parquet)/"
     structure = {"table", "nested"}
@@ -137,12 +139,16 @@ class Parquet(FileData):
 
 
 class CSV(FileData):
+    """Human-readable tabular format, Comma Separated Values"""
+
     filepattern = "(csv$|txt$|tsv$)"
     mimetypes = "(text/csv|application/csv|application/vnd.ms-excel)"
     structure = {"table"}
 
 
 class Text(FileData):
+    """Any text file"""
+
     filepattern = "(txt$|text$|dat$|ascii$)"
     mimetypes = "text/.*"
     structure = {"sequence"}
@@ -152,6 +158,8 @@ class Text(FileData):
 
 
 class XML(FileData):
+    """Extensible Markup Language file"""
+
     filepattern = "xml[sx]?$"
     mimetypes = "(application|text)/xml"
     structure = {"nested"}
@@ -159,11 +167,19 @@ class XML(FileData):
 
 
 class THREDDSCatalog(XML):
+    """Datasets on a THREDDS server
+
+    Typically used for "environmental data sources".
+    See https://www.unidata.ucar.edu/software/tds/
+    """
+
     magic = {(None, b"<xml.*<catalog ")}
     structure = {"catalog"}
 
 
 class PNG(FileData):
+    """Portable Network Graphics, common image format"""
+
     filepattern = "png$"
     structure = {"array", "image"}
     mimetypes = "image/png"
@@ -171,6 +187,8 @@ class PNG(FileData):
 
 
 class JPEG(FileData):
+    """Image format with good compression for the internet"""
+
     filepattern = "jpe?g$"
     structure = {"array", "image"}
     mimetypes = "image/jpeg"
@@ -178,6 +196,8 @@ class JPEG(FileData):
 
 
 class WAV(FileData):
+    """Waveform/sound file"""
+
     filepattern = "wav$"
     structure = {"array", "timeseries"}
     mimetypes = "audio/wav"
@@ -185,6 +205,8 @@ class WAV(FileData):
 
 
 class NetCDF3(FileData):
+    """Collection of ND-arrays with coordinates, scientific file format"""
+
     filepattern = "(netcdf3$|nc3?$)"
     structure = {"array"}
     mimetypes = "application/x-netcdf"
@@ -192,6 +214,8 @@ class NetCDF3(FileData):
 
 
 class HDF5(FileData):
+    """Hierarchical tree of ND-arrays, widely used scientific file format"""
+
     filepattern = "(hdf5?|h4|nc4?)$"  # many others by convention
     structure = {"array", "table", "hierarchy"}
     magic = {b"\x89HDF"}
@@ -204,6 +228,10 @@ class HDF5(FileData):
         path: str = "",
         metadata: dict | None = None,
     ):
+        """
+        path: if given, points to specific array/group in the hierarchy; with "group.subgroup"
+            format
+        """
         self.url = url
         self.storage_options = storage_options
         self.path = path
@@ -211,6 +239,8 @@ class HDF5(FileData):
 
 
 class Zarr(FileData):
+    """Cloud optimised, chunked N-dimensional file format"""
+
     filepattern = "(zarr$|/$)"  # i.e., any directory might be
     structure = {"array", "hierarchy"}
     mimetypes = "application/vnd\\+zarr"
@@ -222,6 +252,9 @@ class Zarr(FileData):
         root: str = "",
         metadata: dict | None = None,
     ):
+        """
+        root: if given, points to specific array/group in the hierarchy
+        """
         self.url = url
         self.storage_options = storage_options
         self.root = root
@@ -241,10 +274,14 @@ class MatlabArray(FileData):
 
 
 class MatrixMarket(FileData):
+    """Text format for sparse array"""
+
     magic = {b"%%MatrixMarket"}
 
 
 class Excel(FileData):
+    """The well-known spreadsheet app's file format"""
+
     filepattern = "xls[xmb]?"
     structure = {"tabular"}
     mimetypes = "application/.*(excel|xls)"
@@ -252,6 +289,8 @@ class Excel(FileData):
 
 
 class TIFF(FileData):
+    """Image format commonly used for large data"""
+
     # includes geoTIFF/COG, or split out?
     filepattern = "(tiff?$|cog$)"
     structure = {"array", "image"}
@@ -260,6 +299,8 @@ class TIFF(FileData):
 
 
 class GRIB2(FileData):
+    """ "Gridded" file format commonly used in meteo forecasting"""
+
     filepattern = "gri?b2?$"
     structure = {"array"}
     magic = {b"GRIB"}
@@ -267,6 +308,8 @@ class GRIB2(FileData):
 
 
 class FITS(FileData):
+    """Tabular or array data in text/binary format common in astronomy"""
+
     filepattern = "fits$"  # other conventions too
     structure = {"array", "table"}
     magic = {b"SIMPLE"}
@@ -274,12 +317,16 @@ class FITS(FileData):
 
 
 class ASDF(FileData):
+    """Advanced Scientific Data Format"""
+
     filepattern = "asdf$"
     structure = {"array", "table"}
     magic = {b"#ASDF"}
 
 
 class DICOM(FileData):
+    """Imaging data usually from medical scans"""
+
     filepattern = "(dicom|dcm|ct|mri|DCM)$"  # and others
     structure = {"array", "image"}
     magic = {(128, b"DICM")}
@@ -287,6 +334,8 @@ class DICOM(FileData):
 
 
 class Nifti(FileData):
+    """Medical imaging or volume data file"""
+
     # https://brainder.org/2012/09/23/the-nifti-file-format/
     filepattern = "(hdr|nii)(\\.gz)?$"
     structure = {"array", "image"}
@@ -294,10 +343,14 @@ class Nifti(FileData):
 
 
 class OpenDAP(Service):
+    """Earth-science oriented searchable HTTP API"""
+
     structure = {"array"}
 
 
 class SQLQuery(Service):
+    """Query on a database-like service"""
+
     structure = {"sequence", "table"}
     filepattern = "^(oracle|mssql|sqlite|mysql|postgres)"
 
@@ -308,7 +361,8 @@ class SQLQuery(Service):
 
 
 class Prometheus(Service):
-    # also used by "Victoria"
+    """Monitoring metric query service"""
+
     structure = {"structured"}
 
     def __init__(
@@ -334,12 +388,16 @@ class Prometheus(Service):
 
 
 class SQLite(FileData):
+    """Database data stored in files"""
+
     structure = {"sequence", "table"}
     filepattern = "sqlite$|sqlitedb$|db$"
     magic = {b"SQLite format"}
 
 
 class AVRO(FileData):
+    """Structured record passing file format"""
+
     structure = {"nested"}
     filepattern = "avro$"
     magic = {b"Obj\x01"}
@@ -347,26 +405,34 @@ class AVRO(FileData):
 
 
 class ORC(FileData):
+    """Columnar-optimized tabular binary file format"""
+
     structure = {"nested", "tabular"}
     filepattern = "orc$"
     magic = {b"ORC"}
 
 
 class YAMLFile(FileData):
+    """Human-readable JSON/object-like format"""
+
     filepattern = "ya?ml$"
     mimetypes = "text/yaml"
     structure = {"nested"}
 
 
 class CatalogFile(Catalog, YAMLFile):
-    ...
+    """Intake catalog expressed as YAML"""
 
 
 class CatalogAPI(Catalog, Service):
+    """An API endpoint capable of describing Intake catalogs"""
+
     filepattern = "^https?:"
 
 
 class JSONFile(FileData):
+    """Nested record format as readable text, very common over HTTP"""
+
     filepattern = "json$"
     mimetypes = "(text|application)/json"
     structure = {"nested", "table"}
@@ -374,11 +440,15 @@ class JSONFile(FileData):
 
 
 class GeoJSON(JSONFile):
+    """Geo data (position and geometries) within JSON"""
+
     filepattern = "(?:geo)?json$"
     magic = {(None, b'"type": "Feature')}  # not guaranteed, but good indicator
 
 
 class Shapefile(FileData):
+    """Geo data (position and geometries) in a set of related binary files"""
+
     # this would only be found as a member of a .ZIP, since you need all three mandatory
     # files to make a dataset https://en.wikipedia.org/wiki/Shapefile#Overview
     # However, Fiona can read some .shp files with env SHAPE_RESTORE_SHX=YES
@@ -388,10 +458,14 @@ class Shapefile(FileData):
 
 
 class GeoPackage(SQLite):
+    """Geo data (position and geometries) in a SQLite DB file"""
+
     filepattern = "gpkg$"
 
 
 class STACJSON(JSONFile):
+    """Data assets related to geo data, either as static JSON or a searchable API"""
+
     magic = {(None, b'"stac_version":')}  # None means "somewhere in the file head"
     mimetypes = "(text|application)/geo\\+json"
 
@@ -401,21 +475,29 @@ class TiledService(CatalogAPI):
 
 
 class TiledDataset(Service):
+    """Data access service for data-aware portals and data science tools"""
+
     structure = {"array", "table", "nested"}
 
 
 class TileDB(Service):
+    """Service exposing versioned, chunked and potentially sparse arrays"""
+
     filepattern = "tiled://"  # or a real URL, local or remote
     contains = {"__meta", "__schema"}
     structure = {"array", "table"}
 
 
 class IcebergDataset(JSONFile):
+    """Indexed set of parquet files with servioning and diffs"""
+
     structure = {"tabular"}
     magic = {(None, b'"format-version":')}
 
 
 class DeltalakeTable(FileData):
+    """Indexed set of parquet files with servioning and diffs"""
+
     # a directory by convention, but otherwise can't be distinguished
     contains = {"_delta_log"}
     filepattern = "/$"
@@ -423,6 +505,8 @@ class DeltalakeTable(FileData):
 
 
 class NumpyFile(FileData):
+    """Simple array format"""
+
     # will also match .npz since it will be recognised as a ZIP archive
     magic = {b"\x93NUMPY"}
     filepattern = "(npy$|text$)"
@@ -466,16 +550,22 @@ class Handle(JSONFile):
 
 
 class Feather2(FileData):
+    """Tabular format based on Arrow IPC"""
+
     magic = {b"ARROW1"}
     structure = {"tabular", "nested"}
 
 
 class Feather1(FileData):
+    """Deprecated tabular format from the Arrow project"""
+
     magic = {b"FEA1"}
     structure = {"tabular", "nested"}
 
 
 class PythonSourceCode(FileData):
+    """Source code file"""
+
     structure = {"code"}
     filepattern = "py$"
 
@@ -515,21 +605,27 @@ class HuggingfaceDataset(BaseData):
 
 
 class TFRecord(FileData):
+    """Tensorflow record file, ready for machine learning"""
+
     structure = {"nested"}
     filepattern = "tfrec$"
 
 
 class KerasModel(FileData):
+    """Keras model parameter set"""
+
     structure = {"model"}  # complex
     filepattern = "pb$"  # possibly protobuf
 
 
 class PickleFile(FileData):
+    """Python pickle, arbitrary serialized object"""
+
     structure = set()
 
 
 class SKLearnPickleModel(PickleFile):
-    ...
+    """Serialized model made by sklearn"""
 
 
 comp_magic = {
@@ -570,8 +666,6 @@ def recommend(url=None, mime=None, head=True, storage_options=None, ignore=None)
     set of matching datatype classes.
     """
     # TODO: more complex returns defining which type of match hit what, or some kind of score
-
-    # TODO: for paths defined as directories, may be able to distinguish by contents
     outs = ignore or set()
     out = []
     if isinstance(url, (list, tuple)):
