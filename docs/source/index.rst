@@ -23,10 +23,19 @@ introduction to the ideas of Intake in general and specifically how to use this
 release. Go directly to the walkthrough and examples, or read the following motivation
 and declarations of scope.
 
+.. note::
+
+    We are making Take2 as a full release. It is still "beta" in the sense that we will be adding
+    many data types, readers and transformers, and are prepared to revisit the API in general. The
+    reason not to use a pre-release or RC, is that users never see these.
+
+
 .. warning::
 
-    Looking for :ref:`v1` documentation? You may have justin installed Intake and found that
-    V2 broke things for you, so you might wish to pin to an older version.
+    Looking for :ref:`v1` documentation? You may have just installed Intake and found that
+    Take2 broke things for you, so you might wish to pin to an older version. Or stick around
+    and find out why you might wish to update your code. All old "sources", whether still working
+    or not, should be considered deprecated.
 
 
 .. toctree::
@@ -44,7 +53,7 @@ To install Intake Take2:
 
 .. code-block:: bash
 
-    pip install intake
+    pip install -c conda-forge intake
     or
     pip install intake
 

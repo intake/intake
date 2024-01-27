@@ -1,4 +1,4 @@
-"""Enumerates sorts of data that can exist"""
+"""Enumerates all the sorts of data that Intake knows about"""
 
 from __future__ import annotations
 
@@ -21,11 +21,15 @@ from intake.readers.utils import Tokenizable, subclasses
 class BaseData(Tokenizable):
     """Prototype dataset definition"""
 
-    mimetypes: str = ""  # regex
-    filepattern: str = ""  # regex
-    structure: set[str] = set()  # informational tags for nature of data
-    magic = set()  # each item identifies this data type (if using a URL)
-    contains = set()  # if using a URL, an ls() on that path will contain these things
+    mimetypes: str = ""  #: regex, MIME pattern to match
+    filepattern: str = ""  #: regex, file URLs to match
+    structure: set[str] = set()  #: informational tags for nature of data, e.g., "array"
+    magic: set[
+        bytes | tuple
+    ] = set()  #: binary patterns, usually at the file head; each item identifies this data type
+    contains: set[
+        str
+    ] = set()  #: if using a directory URL, an ls() on that path will contain these things
 
     def __init__(self, metadata: dict[str, Any] | None = None):
         self.metadata: dict[str, Any] = metadata or {}  # arbitrary information
@@ -98,7 +102,8 @@ class BaseData(Tokenizable):
         d = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
         return f"{type(self).__name__}, {d}"
 
-    def auto_pipeline(self, outtype):
+    def auto_pipeline(self, outtype: str):
+        """Find a pipeline to transform from this to the given output type"""
         from intake.readers.convert import auto_pipeline
 
         return auto_pipeline(self, outtype)
@@ -108,8 +113,8 @@ class FileData(BaseData):
     """Datatypes loaded from files, local or remote"""
 
     def __init__(self, url, storage_options: dict | None = None, metadata: dict | None = None):
-        self.url = url
-        self.storage_options = storage_options
+        self.url = url  #: location of the file(s), should be str or list[str]
+        self.storage_options = storage_options  #: kwargs for a backend storage system
         super().__init__(metadata)
 
 
@@ -641,8 +646,14 @@ container_magic = {
 }
 
 
-def recommend(url=None, mime=None, head=True, storage_options=None, ignore=None) -> set:
-    """Show which data types match
+def recommend(
+    url: str | None = None,
+    mime: str | None = None,
+    head: bool = True,
+    storage_options=None,
+    ignore: set[str] | None = None,
+) -> set[BaseData]:
+    """Show which Intake data types can apply to the given details
 
     Parameters
     ----------

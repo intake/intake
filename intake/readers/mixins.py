@@ -1,3 +1,5 @@
+"""Helpers for creating pipelines"""
+
 from __future__ import annotations
 
 from itertools import chain
@@ -7,6 +9,8 @@ from intake.readers.utils import Completable
 
 
 class PipelineMixin(Completable):
+    """Make it possible to associate transforms with the given class"""
+
     def __getattr__(self, item):
         super().tab_completion_fixer(item)
         try:

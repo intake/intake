@@ -1,4 +1,4 @@
-"""Classes for reading data into a python object"""
+"""Classes for reading data into a python objects"""
 
 from __future__ import annotations
 
@@ -16,13 +16,13 @@ from intake.readers.utils import Tokenizable, subclasses
 
 
 class BaseReader(Tokenizable, PipelineMixin):
-    imports: set[str] = set()  # allow for pip-style versions maybe
-    implements: set[datatypes.BaseData] = set()
-    optional_imports: set[str] = set()
-    func: str = "builtins:NotImplementedError"  # usual function for loading data
-    func_doc: str = None  # docstring origin if not from func
-    output_instance: str = None
-    other_funcs: set = set()  # function names to recognise
+    imports: set[str] = set()  #: top-level packages required to use this
+    implements: set[datatypes.BaseData] = set()  #: datatype(s) this applies to
+    optional_imports: set[str] = set()  #: packages that might be required by some options
+    func: str = "builtins:NotImplementedError"  #: function name for loading data
+    func_doc: str = None  #: docstring origin if not from func
+    output_instance: str = None  #: type the reader produces
+    other_funcs: set[str] = set()  #: function names to recognise when matching user calls
 
     def __init__(
         self,

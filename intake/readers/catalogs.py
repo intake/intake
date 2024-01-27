@@ -1,3 +1,5 @@
+"""Data readers which create Catalog objects"""
+
 from __future__ import annotations
 
 import itertools
@@ -370,7 +372,11 @@ class STACIndex(BaseReader):
 
 
 class THREDDSCatalog(Catalog):
-    ...
+    """A catalog provided by a THREDDS service
+
+    This subclass exists, just so we can indicate the possibility of using the server's
+    search endpoint and xarray collection
+    """
 
 
 class THREDDSCatalogReader(BaseReader):
@@ -396,7 +402,7 @@ class THREDDSCatalogReader(BaseReader):
         from intake.readers.readers import XArrayDatasetReader
 
         thr = TDSCatalog(data.url)
-        cat = Catalog(metadata=thr.metadata)
+        cat = THREDDSCatalog(metadata=thr.metadata)
         for r in thr.catalog_refs.values():
             cat[r.title] = THREDDSCatalogReader(datatypes.THREDDSCatalog(url=r.href))
         for ds in thr.datasets.values():

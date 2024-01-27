@@ -35,13 +35,21 @@ class BaseConverter(BaseReader):
     override that, or just provide a func=.
     """
 
-    instances: dict[str, str] = {}
+    instances: dict[str, str] = {}  #: mapping from input types to output types
 
     def run(self, x, *args, **kwargs):
+        """Execute a conversion stage on the output object from another stage
+
+        Subclasses may override this
+        """
         func = import_name(self.func)
         return func(x, *args, **kwargs)
 
     def _read(self, *args, data=None, **kwargs):
+        """Read the data
+
+        Subclasses may override this if they wish to interact with the upstream reader/pipeline.
+        """
         if data is None:
             data = args[0]
             args = args[1:]
@@ -419,10 +427,6 @@ class Pipeline(readers.BaseReader):
         ]
         return "\n".join([start] + bits)
 
-    @property
-    def tokens(self):
-        return [(self.token, n) for n in range(len(self.steps))]
-
     def output_doc(self):
         from intake import import_name
 
@@ -433,6 +437,7 @@ class Pipeline(readers.BaseReader):
         return self.doc_n(-1)
 
     def doc_n(self, n):
+        """Documentation for the Nth step"""
         return self.steps[n][0].doc()
 
     def _read_stage_n(self, stage, discover=False, **kwargs):
@@ -499,6 +504,7 @@ class Pipeline(readers.BaseReader):
         return self.read(discover=True)
 
     def with_step(self, step, out_instance):
+        """A new pipeline like this one but with one more step"""
         if not isinstance(step, tuple):
             # must be a func - check?
             step = (step, (), {})

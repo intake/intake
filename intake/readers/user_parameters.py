@@ -1,3 +1,16 @@
+"""
+Parametrization of data/reader entries, as they appear in Catalogs
+
+Parameters can be used to template values across readers, wither to indicate
+choices that a user wishes to make at run time, or to require the user to fill
+in details such as credentials. Providing options in this way is a simpler
+experience for a user than replicating a reader/pipeline with different options.
+
+In a catalog, user parameters can exist at the global scope, to be used anywhere,
+as a part of the data description, to be inherited by all readers of that data,
+or as part of the reader-specific descriptions. The value can be set in-place,
+or provided during ``read()``.
+"""
 from __future__ import annotations
 
 import builtins
@@ -12,17 +25,16 @@ from intake.readers.utils import FormatWithPassthrough, SecurityError, Tokenizab
 class BaseUserParameter(Tokenizable):
     """The base class allows for any default without checking/coercing"""
 
-    fields = {"_description"}
-
     def __init__(self, default, description=""):
-        self.default = default
-        self.description = description
+        self.default = default  #: the value to use without user input
+        self.description = description  #: what is the function of this parameter
 
     def __repr__(self):
         dic = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
         return f"{type(self).__name__}, {self.description}\n{dic}"
 
     def set_default(self, value):
+        """Change the default, if it validates"""
         value = self.coerce(value)
         if self.validate(value):
             self.default = value
@@ -30,6 +42,10 @@ class BaseUserParameter(Tokenizable):
             raise ValueError
 
     def with_default(self, value):
+        """A new instance with different default, if it validates
+
+        (original object is left unchanged)
+        """
         import copy
 
         up = copy.copy(self)
@@ -37,12 +53,17 @@ class BaseUserParameter(Tokenizable):
         return up
 
     def coerce(self, value):
+        """Change given type to one that matches this parameter's intent"""
         return value
 
     def _validate(self, value):
         return True
 
     def validate(self, value) -> bool:
+        """Is the given value allowed by this parameter?
+
+        Exceptions are treated as False
+        """
         try:
             return self._validate(value)
         except (TypeError, ValueError):

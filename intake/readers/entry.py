@@ -1,4 +1,13 @@
-"""Description of the ways to load a data set"""
+"""Description of the ways to load a data set
+
+These are the definitions as they would appear in a Catalog: they may have (unevaluated)
+user parameters and references to one-another, as well as other templated values.
+
+The rule is: when placing an entry in a catalog, it is converted to its constituent data and
+reader descriptions. When accessing an entry, it is re-instantiated as a reader. The entries
+within a catalog can be amended in-place (such as extracting user parameters or templating)
+and persisted as catalog files.
+"""
 from __future__ import annotations
 
 from collections.abc import Mapping

@@ -1,3 +1,5 @@
+"""Intake config manipulations and persistence"""
+
 # -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.

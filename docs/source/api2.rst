@@ -1,4 +1,6 @@
 
+.. _api2:
+
 API Reference
 =============
 
@@ -8,6 +10,7 @@ User Functions
 .. autosummary::
     intake.config.Config
     intake.readers.datatypes.recommend
+    intake.readers.convert.auto_pipeline
     intake.readers.entry.Catalog
     intake.readers.entry.DataDescription
     intake.readers.entry.ReaderDescription
@@ -18,6 +21,8 @@ User Functions
     :members:
 
 .. autofunction:: intake.readers.datatypes.recommend
+
+.. autofunction:: intake.readers.convert.auto_pipeline
 
 .. autoclass:: intake.readers.entry.Catalog
     :members:

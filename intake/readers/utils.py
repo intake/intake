@@ -12,7 +12,7 @@ from intake import import_name
 
 
 class SecurityError(RuntimeError):
-    ...
+    """The given operation is disabled in the Intake config"""
 
 
 def subclasses(cls: type) -> set:
@@ -217,6 +217,13 @@ def check_imports(*imports: Iterable[str]) -> bool:
 
 
 class Completable:
+    """Helper mixin for classes with dynamic tab completion"""
+
+    @classmethod
+    @cache
+    def check_imports(cls):
+        return check_imports(*getattr(cls, "imports"))
+
     @staticmethod
     def tab_completion_fixer(item):
         # just make this a function?
@@ -278,11 +285,6 @@ class Tokenizable(Completable):
         )
 
     @classmethod
-    @cache
-    def check_imports(cls):
-        return check_imports(*getattr(cls, "imports"))
-
-    @classmethod
     def qname(cls):
         """module:class name of this class, makes str for import_name"""
         return f"{cls.__module__}:{cls.__name__}"
@@ -320,6 +322,7 @@ def make_cls(cls: str | type, kwargs: dict):
 
 
 def descend_to_path(path: str | list, kwargs: dict | list | tuple):
+    """Find the value at the location `path` in the deeply nested dict `kwargs`"""
     if isinstance(path, str):
         path = path.split(".")
     part = path.pop(0)

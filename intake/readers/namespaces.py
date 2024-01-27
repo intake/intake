@@ -1,3 +1,8 @@
+"""Add module accessors to pipelines, providing functions appropriate for its output
+
+The code here allow something like pipeline.np.<tab> to get completions from the numpy
+namespace, and apply to the pipeline.
+"""
 from __future__ import annotations
 
 import importlib.metadata
@@ -11,22 +16,11 @@ from intake.readers.utils import Completable, subclasses
 class Namespace(Completable):
     """A set of functions as an accessor on a Reader, producing a Pipeline"""
 
-    acts_on = ()
-    imports = "nolibrary"
+    acts_on: tuple[str] = ()  #: types that this namespace is associated with
+    imports: tuple[str] = ()  #: requires this top-level package
 
     def __init__(self, reader):
         self.reader = reader
-
-    @classmethod
-    @cache
-    def check_imports(cls):
-        """See if required packages are importable, but don't import them"""
-        # TODO: this is copied from readers.py, should refactor to utils
-        try:
-            importlib.metadata.distribution(cls.imports)
-            return True
-        except (ImportError, ModuleNotFoundError, NameError):
-            return False
 
     @classmethod
     @cache
@@ -34,7 +28,7 @@ class Namespace(Completable):
         if not cls.check_imports():
             return []
         # if self.reader.output_instance doesn't match self.acts_on
-        cls.mod = importlib.import_module(cls.imports)
+        cls.mod = importlib.import_module(cls.imports[0])
         return [f for f in dir(cls.mod) if callable(getattr(cls.mod, f)) and not f.startswith("_")]
 
     def __dir__(self) -> Iterable[str]:
@@ -68,27 +62,27 @@ class FuncHolder:
 
 class np(Namespace):
     acts_on = (".*",)  # numpy works with a wide variety of objects
-    imports = "numpy"
+    imports = ("numpy",)
 
 
 class ak(Namespace):
     acts_on = "awkward:Array", "dask_awkward:Array"
-    imports = "awkward"
+    imports = ("awkward",)
 
 
 class xr(Namespace):
     acts_on = "xarray:DataArray", "xarray:Dataset"
-    imports = "xarray"
+    imports = ("xarray",)
 
 
 class pd(Namespace):
     acts_on = ("pandas:DataFrame",)
-    imports = "pandas"
+    imports = ("pandas",)
 
 
 class pl(Namespace):
     acts_on = ("polars:DataFrame", "polars:Series", "polars:LazyFrame")
-    imports = "polars"
+    imports = ("polars",)
 
 
 def get_namespaces(reader):

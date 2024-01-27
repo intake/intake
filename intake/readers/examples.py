@@ -1,3 +1,4 @@
+"""This module can contain examples of complex Intake use we wish to refer to"""
 import operator
 
 

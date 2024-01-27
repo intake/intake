@@ -1,3 +1,5 @@
+"""Find datasets meeting some complex criteria"""
+
 from intake.readers.entry import ReaderDescription
 
 
@@ -11,6 +13,7 @@ class SearchBase:
     """
 
     def filter(self, entry: ReaderDescription) -> bool:
+        """Does the given ReaderDescription entry match the query?"""
         # should not raise: an exception counts as False
         return True
 

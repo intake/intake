@@ -1,6 +1,4 @@
-"""Manipulate data
-
-By convention, functions that change the data but not the container type
+"""Manipulate data: functions that change the data but not the container type
 """
 from __future__ import annotations
 
