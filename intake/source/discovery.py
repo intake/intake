@@ -5,11 +5,10 @@
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
 
+from importlib.metadata import entry_points
 import logging
 import re
 import warnings
-
-import entrypoints
 
 from ..config import conf
 
@@ -50,20 +49,17 @@ class DriverSouces:
 
     def from_entrypoints(self):
         if self._entrypoints is None:
+            eps = entry_points()
+            if hasattr(eps, "select"):  # Python 3.10+ / importlib_metadata >= 3.9.0
+                specs = eps.select(group="intake.drivers")
+            else:
+                specs = eps.get("intake.drivers", [])
             # must cache this, since lookup if fairly slow and we do this a lot
-            self._entrypoints = list(entrypoints.get_group_all("intake.drivers"))
+            self._entrypoints = list(specs)
         return self._entrypoints
 
     def from_conf(self):
-        return [
-            entrypoints.EntryPoint(
-                name=k,
-                module_name=v.rsplit(":", 1)[0] if ":" in v else v.rsplit(".", 1)[0],
-                object_name=v.rsplit(":", 1)[1] if ":" in v else v.rsplit(".", 1)[1],
-            )
-            for k, v in self.conf.get("drivers", {}).items()
-            if v
-        ]
+        return []
 
     def __setitem__(self, key, value):
         super(DriverSouces, self).__setitem__(key, value)

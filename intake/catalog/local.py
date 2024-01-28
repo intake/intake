@@ -5,12 +5,12 @@
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
 import collections
+from importlib.metadata import entry_points
 import inspect
 import logging
 import os
 import warnings
 
-import entrypoints
 from fsspec import get_filesystem_class, open_files
 from fsspec.core import split_protocol
 
@@ -929,7 +929,11 @@ class EntrypointsCatalog(Catalog):
         super().__init__(*args, **kwargs)
 
     def _load(self):
-        catalogs = entrypoints.get_group_named(self._entrypoints_group, path=self._paths)
+        eps = entry_points()
+        if hasattr(eps, "select"):  # Python 3.10+ / importlib_metadata >= 3.9.0
+            catalogs = eps.select(group=self._entrypoints_group)
+        else:
+            catalogs = eps.get("intake.drivers", [])
         self.name = self.name or "EntrypointsCatalog"
         self.description = self.description or f"EntrypointsCatalog of {len(catalogs)} catalogs."
         for name, entrypoint in catalogs.items():
