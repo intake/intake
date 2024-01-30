@@ -36,7 +36,7 @@ test suite.
         description: a local data file
         driver: csv
         args:
-          urlpath: '{{ CATALOG_DIR }}cache_data/states.csv'
+          urlpath: '{{ CATALOG_DIR }}/cache_data/states.csv'
 
 We now show two ways to apply a super-simple transform to this data,
 which selects two of the dataframe's columns.
