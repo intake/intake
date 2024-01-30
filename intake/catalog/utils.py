@@ -62,6 +62,7 @@ def _j_getenv(x, default=""):
 
 def _j_getshell(x):
     from jinja2 import Undefined
+
     if isinstance(x, Undefined):
         x = x._undefined_name
     try:
@@ -72,6 +73,7 @@ def _j_getshell(x):
 
 def _j_passthrough(x, funcname):
     from jinja2 import Undefined
+
     if isinstance(x, Undefined):
         x = x._undefined_name
     return "{{%s(%s)}}" % (funcname, x)
