@@ -26,7 +26,7 @@ class DriverRegistry(MappingView):
 
     def __getitem__(self, item):
         it = self.drivers.enabled_plugins()[item]
-        if isinstance(it, entrypoints.EntryPoint):
+        if hasattr(it, "load"):
             return it.load()
         if isinstance(it, str):
             return import_name(it)

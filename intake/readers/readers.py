@@ -880,8 +880,7 @@ class XArrayDatasetReader(FileReader):
                 kw["engine"] = "tiledb"
                 if data.options:
                     kw.setdefault("backend_kwargs", {})["config"] = data.options
-        if kw.get("engine", "") == "zarr":
-            # only zarr takes storage options
+        if kw.get("engine", "") in ["zarr", "kerchunk", "h5netcdf"] and data.storage_options:
             kw.setdefault("backend_kwargs", {})["storage_options"] = data.storage_options
         if isinstance(data, datatypes.HDF5):
             kw.setdefault("engine", "h5netcdf")

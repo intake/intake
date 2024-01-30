@@ -96,6 +96,7 @@ class BaseData(Tokenizable):
         from intake.readers.entry import DataDescription
 
         kw = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+        kw.pop("metadata")  # this is always passed separately
         return DataDescription(datatype=self.qname(), kwargs=kw, metadata=self.metadata)
 
     def __repr__(self):
