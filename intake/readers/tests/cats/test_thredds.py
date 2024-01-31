@@ -14,7 +14,7 @@ def test_1():
         req.head(u)
         assert req.ok
     except:
-        pytest.xfail(msg="server down")
+        pytest.xfail("server down")
     data = intake.readers.datatypes.THREDDSCatalog(url=u)
     ds = (
         data.to_reader()
