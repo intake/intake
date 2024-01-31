@@ -8,7 +8,14 @@ pytest.importorskip("h5netcdf")
 
 
 def test_1():
-    data = intake.readers.datatypes.THREDDSCatalog(url="https://psl.noaa.gov/thredds/catalog.xml")
+    req = pytest.importorskip("requests")
+    u = "https://psl.noaa.gov/thredds/catalog.xml"
+    try:
+        req.head(u)
+        assert req.ok
+    except:
+        pytest.xfail(msg="server down")
+    data = intake.readers.datatypes.THREDDSCatalog(url=u)
     ds = (
         data.to_reader()
         .THREDDSCatToMergedDataset(
