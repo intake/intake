@@ -152,6 +152,10 @@ class CSV(FileData):
     structure = {"table"}
 
 
+class CSVPattern(CSV):
+    """Specialised version of CSV, with a patch containing capturing fields"""
+
+
 class Text(FileData):
     """Any text file"""
 

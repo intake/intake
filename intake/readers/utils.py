@@ -408,3 +408,45 @@ def camel_to_snake(name: str) -> str:
 def snake_to_camel(name: str) -> str:
     # https://stackoverflow.com/a/1176023/3821154
     return "".join(word.title() for word in name.split("_"))
+
+
+def pattern_to_glob(pattern: str) -> str:
+    """
+    Convert a path-as-pattern into a glob style path
+
+    Uses the pattern's indicated number of '?' instead of '*' where an int was specified.
+
+    Parameters
+    ----------
+    pattern : str
+        Path as pattern optionally containing format_strings
+
+    Returns
+    -------
+    glob_path : str
+        Path with int format strings replaced with the proper number of '?' and '*' otherwise.
+
+    Examples
+    --------
+    >>> pattern_to_glob('{year}/{month}/{day}.csv')
+    '*/*/*.csv'
+    >>> pattern_to_glob('{year:4}/{month:2}/{day:2}.csv')
+    '????/??/??.csv'
+    >>> pattern_to_glob('data/{year:4}{month:02}{day:02}.csv')
+    'data/????????.csv'
+    >>> pattern_to_glob('data/*.csv')
+    'data/*.csv'
+    """
+    # https://github.com/intake/intake/issues/776#issuecomment-1917737732 by @JessicaS11
+    from string import Formatter
+
+    fmt = Formatter()
+    glob_path = ""
+    for literal_text, field_name, format_specs, _ in fmt.parse(format_string=pattern):
+        glob_path += literal_text
+        if field_name and (glob_path != "*"):
+            try:
+                glob_path += "?" * int(format_specs)
+            except ValueError:
+                glob_path += "*"
+    return glob_path

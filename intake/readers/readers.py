@@ -629,6 +629,29 @@ class DaskCSV(DaskDF):
     url_arg = "urlpath"
 
 
+class DaskCSVPattern(DaskCSV):
+    implements = {datatypes.CSVPattern}
+
+    def _read(self, data, **kw):
+        from pandas.api.types import CategoricalDtype
+        from intake.readers.utils import pattern_to_glob
+        from intake.source.utils import reverse_formats
+
+        url = pattern_to_glob(data.url)
+        df = self._func(url, storage_options=data.storage_options, include_path_column=True, **kw)
+
+        paths = sorted(df["path"].cat.categories)
+
+        column_by_field = {
+            field: df["path"]
+            .cat.codes.map(dict(enumerate(values)))
+            .astype(CategoricalDtype(set(values)))
+            for field, values in reverse_formats(data.url, paths).items()
+        }
+
+        return df.assign(**column_by_field).drop(columns=["path"])
+
+
 class Polars(FileReader):
     imports = {"polars"}
     output_instance = "polars:LazyFrame"
