@@ -35,7 +35,10 @@ def test_expand_nested_template():
         (None, pd.Timestamp("1970-01-01 00:00:00")),
         (1, pd.Timestamp("1970-01-01 00:00:00.000000001")),
         ("1988-02-24T13:37+0100", pd.Timestamp("1988-02-24 13:37+0100")),
-        ({"__datetime__": True, "as_str": "1988-02-24T13:37+0100"}, pd.Timestamp("1988-02-24T13:37+0100")),
+        (
+            {"__datetime__": True, "as_str": "1988-02-24T13:37+0100"},
+            pd.Timestamp("1988-02-24T13:37+0100"),
+        ),
     ],
 )
 def test_coerce_datetime(test_input, expected):

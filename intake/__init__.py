@@ -5,25 +5,40 @@
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
 
-import importlib
-import logging
 import os
-import re
-import warnings
 
-from ._version import get_versions
+from intake._version import __version__
 
-__version__ = get_versions()["version"]
-del get_versions
+# legacy immediate imports
+from intake.utils import import_name, logger
+from intake.catalog.base import Catalog, VersionError
+from intake.source import registry
+from intake.config import conf
+from intake.readers import (
+    BaseData,
+    reader_from_call,
+    recommend,
+    BaseReader,
+    BaseConverter,
+    Pipeline,
+    auto_pipeline,
+    DataDescription,
+    ReaderDescription,
+    BaseUserParameter,
+    SimpleUserParameter,
+    user_parameters,
+    transform,
+    output,
+    catalogs,
+    entry,
+    datatypes,
+)
 
-from .catalog.base import Catalog
-from .source import registry
-
+# legacy on-demand imports
 imports = {
     "DataSource": "intake.source.base:DataSource",
     "Schema": "intake.source.base:Schema",
     "load_combo_catalog": "intake.catalog.default:load_combo_catalog",
-    "upload": "intake.container:upload",
     "gui": "intake.interface:instance",
     "interface": "intake.interface",
     "cat": "intake.catalog:builtin",
@@ -31,7 +46,7 @@ imports = {
     "register_driver": "intake.source:register_driver",
     "unregister_driver": "intake.source:unregister_driver",
 }
-logger = logging.getLogger("intake")
+from_yaml_file = entry.Catalog.from_yaml_file
 
 
 def __getattr__(attr):
@@ -53,13 +68,8 @@ def __getattr__(attr):
 
     if attr in imports:
         dest = imports[attr]
-        modname = dest.split(":", 1)[0]
-        logger.debug("Importing: %s" % modname)
-        mod = importlib.import_module(modname)
-        if ":" in dest:
-            mod = getattr(mod, dest.split(":")[1])
-        gl[attr] = mod
-        return mod
+        gl[attr] = import_name(dest)
+        return gl[attr]
 
     if attr[:5] == "open_":
         if attr[5:] in registry.drivers.enabled_plugins():
@@ -84,6 +94,10 @@ def __dir__(*_, **__):
 
 def open_catalog(uri=None, **kwargs):
     """Create a Catalog object
+
+    *New in V2*: if the URL is a single file, and loading it as a V1 catalog fails because of
+    the stated version, it will be opened again as a V2 catalog. This will mean reading
+    the file twice, so calling ``from_yaml_file`` directly ie better.
 
     Can load YAML catalog files, connect to an intake server, or create any
     arbitrary Catalog subclass instance. In the general case, the user should
@@ -124,7 +138,9 @@ def open_catalog(uri=None, **kwargs):
         uri = os.fspath(uri)
     if driver is None:
         if uri:
-            if (isinstance(uri, str) and "*" in uri) or ((isinstance(uri, (list, tuple))) and len(uri) > 1):
+            if (isinstance(uri, str) and "*" in uri) or (
+                (isinstance(uri, (list, tuple))) and len(uri) > 1
+            ):
                 # glob string or list of files/globs
                 driver = "yaml_files_cat"
             elif isinstance(uri, (list, tuple)) and len(uri) == 1:
@@ -160,4 +176,8 @@ def open_catalog(uri=None, **kwargs):
             "https://intake.readthedocs.io/en/latest/plugin-directory.html\n"
             f"Current registry: {list(sorted(registry))}"
         )
-    return registry[driver](uri, **kwargs)
+    try:
+        return registry[driver](uri, **kwargs)
+    except VersionError:
+        # warn that we are switching to V2? The file will be read twice
+        return from_yaml_file(uri, **kwargs)

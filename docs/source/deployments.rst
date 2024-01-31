@@ -113,12 +113,6 @@ is the ability to provide different version (testing/production, and different
 storage formats) of the same logical dataset, depending on
 whether it is being read on a laptop versus the production infrastructure ...
 
-Intake Server
-~~~~~~~~~~~~~
-
-The server protocol (see :ref:`server`) is simple enough that anyone can write their
-own implementation with full customisation and behaviour. In particular, auth and
-monitoring would be essential for a production-grade deployment.
 
 .. raw:: html
 

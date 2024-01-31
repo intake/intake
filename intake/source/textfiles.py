@@ -5,7 +5,9 @@
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
 
-from . import base, import_name
+from . import base
+from intake.readers.datatypes import Text
+from intake.readers.readers import SparkText, FileByteReader
 
 
 class TextFilesSource(base.DataSource):
@@ -23,7 +25,16 @@ class TextFilesSource(base.DataSource):
     container = "python"
     partition_access = True
 
-    def __init__(self, urlpath, text_mode=True, text_encoding="utf8", compression=None, decoder=None, read=True, metadata=None, storage_options=None):
+    def __init__(
+        self,
+        urlpath,
+        text_mode=True,
+        text_encoding="utf8",
+        compression=None,
+        decoder=None,
+        metadata=None,
+        storage_options=None,
+    ):
         """
 
         Parameters
@@ -46,70 +57,25 @@ class TextFilesSource(base.DataSource):
             a list of lines of text/bytes. If a function, it must operate on
             an open file-like object or a bytes/str instance, and return a
             list
-        read : bool
-            If decoder is not None, this flag controls whether bytes/str get
-            passed to the function indicated (True) or the open file-like
-            object (False)
         storage_options: dict
             Options to pass to the file reader backend, including text-specific
             encoding arguments, and parameters specific to the remote
             file-system driver, if using.
         """
-        self._urlpath = urlpath
-        self._storage_options = storage_options or {}
-        self._dataframe = None
-        self._files = None
-        if isinstance(decoder, str):
-            decoder = import_name(decoder)
-        self.decoder = decoder
-        self.compression = compression
-        self.mode = "rt" if text_mode else "rb"
-        self.encoding = text_encoding
-        self._read = read
-
-        super(TextFilesSource, self).__init__(metadata=metadata)
-
-    def _get_schema(self):
-        from fsspec import open_files
-
-        if self._files is None:
-            urlpath = self._get_cache(self._urlpath)[0]
-
-            self._files = open_files(urlpath, mode=self.mode, encoding=self.encoding, compression=self.compression, **self._storage_options)
-            self.npartitions = len(self._files)
-        return base.Schema(dtype=None, shape=(None,), npartitions=self.npartitions, extra_metadata=self.metadata)
-
-    def _get_partition(self, i):
-        return get_file(self._files[i], self.decoder, self._read)
+        if compression:
+            storage_options["compression"] = compression
+        self.data = Text(url=urlpath, storage_options=storage_options, metadata=metadata)
+        self.metadata = metadata
+        self.kwargs = dict(text_mode=text_mode, text_encoding=text_encoding, decoder=decoder)
 
     def read(self):
-        self._get_schema()
-        return [line for i in range(len(self._files)) for line in self._get_partition(i)]
+        reader = FileByteReader(self.data)
+        if self.kwargs["text_mode"]:
+            if self.kwargs["decoder"]:
+                reader = reader.apply(self.kwargs["decoder"])
+            else:
+                reader = reader.apply(bytes.decode, encoding=self.kwargs["text_encoding"])
+        return reader.read()
 
     def to_spark(self):
-        from intake_spark.base import SparkHolder
-
-        h = SparkHolder(False, [("textFile", (self._urlpath,))], {})
-        return h.setup()
-
-    def to_dask(self):
-        import dask.bag as db
-        from dask import delayed
-
-        self._get_schema()
-        dfile = delayed(get_file)
-        return db.from_delayed([dfile(f, self.decoder, self._read) for f in self._files])
-
-
-def get_file(f, decoder, read):
-    """Serializable function to take an OpenFile object and read lines"""
-    with f as f:
-        if decoder is None:
-            return list(f)
-        else:
-            d = f.read() if read else f
-            out = decoder(d)
-            if isinstance(out, (tuple, list)):
-                return out
-            else:
-                return [out]
+        return SparkText(self.data).read()

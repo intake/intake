@@ -30,12 +30,19 @@ class GUI:
     def __init__(self, cats=None):
         # state
         self._children = {}  # cat name in the selector to child catalogs' names: cat objects
-        self._cats = cats or {"builtin": intake.cat}  # mapping of name in the selector to catalog object
+        # mapping of name in the selector to catalog object
+        self._cats = cats or {"builtin": intake.cat}
         self._sources = {}  # source name: source instance
 
         # layout
         col0 = pn.Column(pn.pane.PNG(ICONS["logo"], align="center"), margin=(25, 0, 0, 0), width=50)
-        self.catsel = pn.widgets.MultiSelect(name="Catalogs", options=list(self._cats), value=[], size=13, styles={"width": "25%"})
+        self.catsel = pn.widgets.MultiSelect(
+            name="Catalogs",
+            options=list(self._cats),
+            value=[],
+            size=13,
+            styles={"width": "25%"},
+        )
         self.catsel.param.watch(self.cat_selected, "value")
         add = pn.widgets.Button(name="+")
         sub = pn.widgets.Button(name="-")
@@ -51,7 +58,9 @@ class GUI:
         self.sourcesel.param.watch(self.source_selected, "value")
         col2 = pn.Column(self.sourcesel, plot)
 
-        self.sourceinf = pn.widgets.CodeEditor(readonly=True, language="yaml", print_margin=False, annotations=[])
+        self.sourceinf = pn.widgets.CodeEditor(
+            readonly=True, language="yaml", print_margin=False, annotations=[]
+        )
         col3 = pn.Column(self.sourceinf)
 
         row0 = pn.Row(col0, col1, col2, col3, styles={"width": "100%"})
@@ -88,13 +97,19 @@ class GUI:
             cat = self._cats[catname]
         catsel_needs_update = False
         self._sources.clear()
+        indent = len(catname) - len(catname.lstrip(" ")) + 2
         for entry in cat:
+            name = " " * indent + right + entry
             source = cat[entry]
             if isinstance(source, intake.catalog.Catalog):
-                indent = len(catname) - len(catname.lstrip(" ")) + 2
-                name = " " * indent + right + entry
                 if name not in self._cats:
                     self._cats[name] = source
+                    self._children.setdefault(catname, []).append(name)
+                    catsel_needs_update = True
+            elif "Catalog" in getattr(source, "output_instance", ""):
+                if name not in self._cats:
+                    cat = source.read()
+                    self._cats[name] = cat
                     self._children.setdefault(catname, []).append(name)
                     catsel_needs_update = True
             else:
@@ -107,11 +122,19 @@ class GUI:
         self.catsel.param.update(options=get_catlist(self._cats, self._children))
 
     def add_catalog(self, cat, name=None, **_):
-        name = name or cat.name
+        if hasattr(cat, "token"):
+            if "CATALOG_PATH" in cat.user_parameters:
+                par = cat.user_parameters["CATALOG_PATH"]
+                name = getattr(par, "default", str(par))
+            else:
+                name = cat.token
+        else:
+            name = name or getattr(cat, "token", cat.name)
         self._cats[name] = cat
         self.update_catsel()
 
     def source_selected(self, *_):
+        from intake import BaseReader
         import yaml
 
         source = self.sourcesel.value
@@ -119,7 +142,14 @@ class GUI:
             return
         else:
             source = self._sources[source[0]]
-        txt = yaml.dump(source._yaml()["sources"], default_flow_style=False)
+        if isinstance(source, BaseReader):
+            # could have reverted to ReaderDescription, but this version will include any
+            # other readers/data, not just references.
+            d = {"cls": source.qname()}
+            d.update(source.to_dict())
+            txt = yaml.dump(d, default_flow_style=False)
+        else:
+            txt = yaml.dump(source._yaml()["sources"], default_flow_style=False)
         self.sourceinf.param.update(value=txt)
 
     def plot_clicked(self, *_):

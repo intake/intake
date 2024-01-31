@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2.0.0
+-----
+
+Released Jan 31, 2024
+
+- complete rewrite of the package, see
+
 0.7.0
 -----
 

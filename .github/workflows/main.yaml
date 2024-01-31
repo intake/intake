@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        CONDA_ENV: [py38, py39, py310, py311, pip]
+        CONDA_ENV: [py39, py310, py311, pip]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,4 +57,4 @@ jobs:
       - name: Run Tests on Windows
         shell: bash -l {0}
         run: |
-          pytest -v
+          pytest -v intake/readers

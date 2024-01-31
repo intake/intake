@@ -5,8 +5,6 @@
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
 
-import time
-
 from ..utils import DictSerialiseMixin, pretty_describe
 
 
@@ -46,10 +44,6 @@ class CatalogEntry(DictSerialiseMixin):
 
         Equivalent to calling the catalog entry like a function.
 
-        Note: ``entry()``, ``entry.attr``, ``entry[item]`` check for persisted
-        sources, but directly calling ``.get()`` will always ignore the
-        persisted store (equivalent to ``self._pmode=='never'``).
-
         Parameters
         ----------
           user_parameters : dict
@@ -62,32 +56,8 @@ class CatalogEntry(DictSerialiseMixin):
         raise NotImplementedError
 
     def __call__(self, persist=None, **kwargs):
-        """Instantiate DataSource with given user arguments
-
-        Parameters
-        ----------
-        persist: str or None
-            Override persistence mode defined in the parent catalog. If not
-            None, must be one of ['always', 'never', 'default']. Has no
-            effect if the source has never been persisted, use source.persist()
-        """
-        from ..source.base import PersistMixin
-
-        if persist is not None and persist not in ["always", "never", "default"]:
-            raise ValueError("Persist value (%s) not understood" % persist)
-        persist = persist or self._pmode
+        """Instantiate DataSource with given user arguments"""
         s = self.get(**kwargs)
-        if persist != "never" and isinstance(s, PersistMixin) and s.has_been_persisted:
-            from ..container.persist import store
-
-            s2 = s.get_persisted()
-            met = s2.metadata
-            if persist == "always" or not met["ttl"]:
-                s = s2
-            elif met["ttl"] < time.time() - met["timestamp"]:
-                s = s2
-            else:
-                s = store.refresh(s2)
         s._entry = self
         s._passed_kwargs = list(kwargs)
         return s
@@ -103,11 +73,6 @@ class CatalogEntry(DictSerialiseMixin):
         self._container = cont
 
     @property
-    def has_been_persisted(self, **kwargs):
-        """For the source created with the given args, has it been persisted?"""
-        return self.get(**kwargs).has_been_persisted
-
-    @property
     def plots(self):
         """List custom associated quick-plots"""
         return list(self._metadata.get("plots", {}))
@@ -120,7 +85,12 @@ class CatalogEntry(DictSerialiseMixin):
 
         contents = self.describe()
         display(
-            {"application/json": json.dumps(contents), "text/plain": pretty_describe(contents)}, metadata={"application/json": {"root": contents["name"]}}, raw=True
+            {
+                "application/json": json.dumps(contents),
+                "text/plain": pretty_describe(contents),
+            },
+            metadata={"application/json": {"root": contents["name"]}},
+            raw=True,
         )
 
     def _yaml(self):

@@ -48,16 +48,27 @@ def test_discover_cli(extra_pythonpath, tmp_config_path):
     env["PYTHONPATH"] = extra_pythonpath
 
     # directory is not automatically scanned any more
-    subprocess.call(shlex.split("intake drivers enable foo intake_foo.FooPlugin"), stderr=subprocess.STDOUT, stdout=subprocess.PIPE, env=env)
+    subprocess.call(
+        shlex.split("intake drivers enable foo intake_foo.FooPlugin"),
+        stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE,
+        env=env,
+    )
 
-    out = subprocess.check_output(shlex.split("intake drivers list"), stderr=subprocess.STDOUT, env=env)
+    out = subprocess.check_output(
+        shlex.split("intake drivers list"), stderr=subprocess.STDOUT, env=env
+    )
 
     assert b"foo" in out
     assert out.index(b"Disabled") > out.index(b"foo")
 
-    subprocess.check_output(shlex.split("intake drivers disable foo"), stderr=subprocess.STDOUT, env=env)
+    subprocess.check_output(
+        shlex.split("intake drivers disable foo"), stderr=subprocess.STDOUT, env=env
+    )
 
-    out = subprocess.check_output(shlex.split("intake drivers list"), stderr=subprocess.STDOUT, env=env)
+    out = subprocess.check_output(
+        shlex.split("intake drivers list"), stderr=subprocess.STDOUT, env=env
+    )
     assert b"foo" in out
     assert out.index(b"Disabled") < out.index(b"foo")
 

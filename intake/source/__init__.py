@@ -8,10 +8,8 @@
 import logging
 from collections.abc import MappingView
 
-import entrypoints
-
-from .base import DataSource
-from .discovery import drivers
+from intake.source.base import DataSource
+from intake.source.discovery import drivers
 
 logger = logging.getLogger("intake")
 
@@ -28,9 +26,9 @@ class DriverRegistry(MappingView):
 
     def __getitem__(self, item):
         it = self.drivers.enabled_plugins()[item]
-        if isinstance(it, entrypoints.EntryPoint):
+        if hasattr(it, "load"):
             return it.load()
-        elif isinstance(it, str):
+        if isinstance(it, str):
             return import_name(it)
         elif issubclass(it, DataSource):
             return it

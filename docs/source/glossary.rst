@@ -10,7 +10,7 @@ Glossary
 
     Cache
         Local copies of remote files. Intake allows for download-on-first-use for data-sources,
-        so that subsequent access is much faster, see :ref:`caching`. The
+        so that subsequent access is much faster. The
         format of the files is unchanged in this case, but may be decompressed.
 
     Catalog

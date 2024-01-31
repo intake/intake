@@ -27,7 +27,20 @@ def abspath(filename):
 
 
 def test_local_catalog(catalog1):
-    assert_items_equal(list(catalog1), ["use_example1", "nested", "entry1", "entry1_part", "remote_env", "local_env", "text", "arr", "datetime"])
+    assert_items_equal(
+        list(catalog1),
+        [
+            "use_example1",
+            "nested",
+            "entry1",
+            "entry1_part",
+            "remote_env",
+            "local_env",
+            "text",
+            "arr",
+            "datetime",
+        ],
+    )
     assert len(catalog1) == 9
     assert catalog1["entry1"].describe() == {
         "name": "entry1",
@@ -170,7 +183,11 @@ def test_user_parameter_repr():
     [
         ("bool", "true", True),
         ("bool", 0, False),
-        ("datetime", datetime.datetime(2018, 1, 1, 0, 34, 0), pandas.Timestamp(2018, 1, 1, 0, 34, 0)),
+        (
+            "datetime",
+            datetime.datetime(2018, 1, 1, 0, 34, 0),
+            pandas.Timestamp(2018, 1, 1, 0, 34, 0),
+        ),
         ("datetime", "2018-01-01 12:34AM", pandas.Timestamp(2018, 1, 1, 0, 34, 0)),
         ("datetime", 1234567890000000000, pandas.Timestamp(2009, 2, 13, 23, 31, 30)),
         ("float", "3.14", 3.14),
@@ -669,7 +686,9 @@ def test_dict_save():
     from intake.catalog.base import Catalog
 
     fn = os.path.join(tempfile.mkdtemp(), "mycat.yaml")
-    entry = LocalCatalogEntry(name="trial", description="get this back", driver="csv", args=dict(urlpath=""))
+    entry = LocalCatalogEntry(
+        name="trial", description="get this back", driver="csv", args=dict(urlpath="")
+    )
     cat = Catalog.from_dict({"trial": entry}, name="mycat")
     cat.save(fn)
 
@@ -706,7 +725,9 @@ def test_dict_save_complex():
 def test_dict_adddel():
     from intake.catalog.base import Catalog
 
-    entry = LocalCatalogEntry(name="trial", description="get this back", driver="csv", args=dict(urlpath=""))
+    entry = LocalCatalogEntry(
+        name="trial", description="get this back", driver="csv", args=dict(urlpath="")
+    )
     cat = Catalog.from_dict({"trial": entry}, name="mycat")
     assert "trial" in cat
     cat["trial2"] = entry
@@ -719,8 +740,15 @@ def test_dict_adddel():
 def test_filter():
     from intake.catalog.base import Catalog
 
-    entry1 = LocalCatalogEntry(name="trial", description="get this back", driver="csv", args=dict(urlpath=""))
-    entry2 = LocalCatalogEntry(name="trial", description="pass this through", driver="csv", args=dict(urlpath=""))
+    entry1 = LocalCatalogEntry(
+        name="trial", description="get this back", driver="csv", args=dict(urlpath="")
+    )
+    entry2 = LocalCatalogEntry(
+        name="trial",
+        description="pass this through",
+        driver="csv",
+        args=dict(urlpath=""),
+    )
     cat = Catalog.from_dict({"trial1": entry1, "trial2": entry2}, name="mycat")
     cat2 = cat.filter(lambda e: "pass" in e._description)
     assert list(cat2) == ["trial2"]
@@ -731,7 +759,9 @@ def test_from_dict_with_data_source():
     "Check that Catalog.from_dict accepts DataSources not wrapped in Entry."
     from intake.catalog.base import Catalog
 
-    entry = LocalCatalogEntry(name="trial", description="get this back", driver="csv", args=dict(urlpath=""))
+    entry = LocalCatalogEntry(
+        name="trial", description="get this back", driver="csv", args=dict(urlpath="")
+    )
     ds = entry()
     Catalog.from_dict({"trial": ds}, name="mycat")
 
@@ -835,7 +865,10 @@ def test_inherit_params(inherit_params_cat):
 
 
 def test_runtime_overwrite_params(inherit_params_cat):
-    assert inherit_params_cat.param(bucket="runtime_overwrite")._urlpath == "s3://runtime_overwrite/file.parquet"
+    assert (
+        inherit_params_cat.param(bucket="runtime_overwrite")._urlpath
+        == "s3://runtime_overwrite/file.parquet"
+    )
 
 
 def test_local_param_overwrites(inherit_params_cat):
@@ -843,12 +876,21 @@ def test_local_param_overwrites(inherit_params_cat):
 
 
 def test_local_and_global_params(inherit_params_cat):
-    assert inherit_params_cat.local_and_global_params._urlpath == "s3://test_bucket/local_filename.parquet"
+    assert (
+        inherit_params_cat.local_and_global_params._urlpath
+        == "s3://test_bucket/local_filename.parquet"
+    )
 
 
 def test_search_inherit_params(inherit_params_cat):
-    assert inherit_params_cat.search("local_and_global").local_and_global_params._urlpath == "s3://test_bucket/local_filename.parquet"
+    assert (
+        inherit_params_cat.search("local_and_global").local_and_global_params._urlpath
+        == "s3://test_bucket/local_filename.parquet"
+    )
 
 
 def test_multiple_cats_params(inherit_params_multiple_cats):
-    assert inherit_params_multiple_cats.local_and_global_params._urlpath == "s3://test_bucket/local_filename.parquet"
+    assert (
+        inherit_params_multiple_cats.local_and_global_params._urlpath
+        == "s3://test_bucket/local_filename.parquet"
+    )

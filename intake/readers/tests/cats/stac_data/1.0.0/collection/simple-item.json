@@ -1,0 +1,87 @@
+{
+  "stac_version": "1.0.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/projection/v1.0.0/schema.json",
+    "https://stac-extensions.github.io/eo/v1.0.0/schema.json"
+  ],
+  "type": "Feature",
+  "id": "S2B_MSIL2A_20171227T160459_N0212_R054_T17QLA_20201014T165101",
+  "bbox": [
+    172.91173669923782, 1.3438851951615003, 172.95469614953714,
+    1.3690476620161975
+  ],
+  "geometry": {
+    "coordinates": [
+      [
+        [-82.89978, 18.98277161],
+        [-81.85693, 18.99053787],
+        [-81.85202, 17.99825755],
+        [-82.888855, 17.99092482],
+        [-82.89978, 18.98277161]
+      ]
+    ],
+    "type": "Polygon"
+  },
+  "properties": {
+    "datetime": "2017-12-27T16:04:59.027000Z"
+  },
+  "collection": "simple-collection",
+  "links": [
+    {
+      "rel": "collection",
+      "href": "./collection.json",
+      "type": "application/json",
+      "title": "Simple Example Collection"
+    },
+    {
+      "rel": "root",
+      "href": "./collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "./collection.json",
+      "type": "application/json"
+    }
+  ],
+  "assets": {
+    "B02": {
+      "href": "https://sentinel2l2a01.blob.core.windows.net/sentinel2-l2/17/Q/LA/2017/12/27/S2B_MSIL2A_20171227T160459_N0212_R054_T17QLA_20201014T165101.SAFE/GRANULE/L2A_T17QLA_A004227_20171227T160750/IMG_DATA/R10m/T17QLA_20171227T160459_B02_10m.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "Band 2 - Blue",
+      "eo:bands": [
+        {
+          "name": "B02",
+          "common_name": "blue",
+          "description": "Band 2 - Blue",
+          "center_wavelength": 0.49,
+          "full_width_half_max": 0.098
+        }
+      ],
+      "gsd": 10,
+      "proj:shape": [10980, 10980],
+      "proj:bbox": [300000, 1990200, 409800, 2100000],
+      "proj:transform": [10, 0, 300000, 0, -10, 2100000],
+      "roles": ["data"]
+    },
+    "B03": {
+      "href": "https://sentinel2l2a01.blob.core.windows.net/sentinel2-l2/17/Q/LA/2017/12/27/S2B_MSIL2A_20171227T160459_N0212_R054_T17QLA_20201014T165101.SAFE/GRANULE/L2A_T17QLA_A004227_20171227T160750/IMG_DATA/R10m/T17QLA_20171227T160459_B03_10m.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "Band 3 - Green",
+      "eo:bands": [
+        {
+          "name": "B03",
+          "common_name": "green",
+          "description": "Band 3 - Green",
+          "center_wavelength": 0.56,
+          "full_width_half_max": 0.045
+        }
+      ],
+      "gsd": 10,
+      "proj:shape": [10980, 10980],
+      "proj:bbox": [300000, 1990200, 409800, 2100000],
+      "proj:transform": [10, 0, 300000, 0, -10, 2100000],
+      "roles": ["data"]
+    }
+  }
+}

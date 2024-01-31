@@ -13,7 +13,6 @@ how to use the graphical interface, plotting, etc.
     persisting.rst
     plotting.rst
     plugin-directory.rst
-    server.rst
     transforms.rst
 
 .. raw:: html

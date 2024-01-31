@@ -8,6 +8,8 @@
 import collections
 import collections.abc
 import datetime
+import importlib
+import logging
 import os
 import sys
 import warnings
@@ -15,6 +17,19 @@ from collections import OrderedDict
 from contextlib import contextmanager
 
 import yaml
+
+logger = logging.getLogger("intake")
+
+
+def import_name(name):
+    modname = name.split(":", 1)[0]
+    logger.debug("Importing: '%s'" % modname)
+    mod = importlib.import_module(modname)
+    if ":" in name:
+        end = name.split(":")[1]
+        for bit in end.split("."):
+            mod = getattr(mod, bit)
+    return mod
 
 
 def make_path_posix(path):
@@ -38,7 +53,12 @@ def no_duplicates_constructor(loader, node, deep=False):
         if key in mapping:
             from intake.catalog.exceptions import DuplicateKeyError
 
-            raise DuplicateKeyError("while constructing a mapping", node.start_mark, "found duplicate key (%s)" % key, key_node.start_mark)
+            raise DuplicateKeyError(
+                "while constructing a mapping",
+                node.start_mark,
+                "found duplicate key (%s)" % key,
+                key_node.start_mark,
+            )
         mapping[key] = value
 
     return loader.construct_mapping(node, deep)
@@ -57,12 +77,17 @@ yaml.add_representer(OrderedDict, represent_dictionary_order)
 
 @contextmanager
 def no_duplicate_yaml():
-    yaml.SafeLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, no_duplicates_constructor)
+    yaml.SafeLoader.add_constructor(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, no_duplicates_constructor
+    )
     yaml.SafeLoader.add_constructor("tag:yaml.org,2002:python/tuple", tuple_constructor)
     try:
         yield
     finally:
-        yaml.SafeLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, yaml.constructor.SafeConstructor.construct_yaml_map)
+        yaml.SafeLoader.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+            yaml.constructor.SafeConstructor.construct_yaml_map,
+        )
 
 
 def yaml_load(stream):
@@ -104,13 +129,21 @@ class DictSerialiseMixin(object):
         return self.__tok_cache
 
     def __getstate__(self):
-        args = [arg.__getstate__() if isinstance(arg, DictSerialiseMixin) else arg for arg in self._captured_init_args]
+        args = [
+            arg.__getstate__() if isinstance(arg, DictSerialiseMixin) else arg
+            for arg in self._captured_init_args
+        ]
         # We employ OrderedDict in several places. The motivation
         # is to speed up dask tokenization. When dask tokenizes a plain dict,
         # it sorts the keys, and it turns out that this sort operation
         # dominates the call time, even for very small dicts. Using an
         # OrderedDict steers dask toward a different and faster tokenization.
-        kwargs = collections.OrderedDict({k: arg.__getstate__() if isinstance(arg, DictSerialiseMixin) else arg for k, arg in self._captured_init_kwargs.items()})
+        kwargs = collections.OrderedDict(
+            {
+                k: arg.__getstate__() if isinstance(arg, DictSerialiseMixin) else arg
+                for k, arg in self._captured_init_kwargs.items()
+            }
+        )
         return collections.OrderedDict(cls=self.classname, args=args, kwargs=kwargs)
 
     def __setstate__(self, state):
@@ -147,7 +180,7 @@ def pretty_describe(object, nestedness=0, indent=2):
     if not isinstance(object, dict):
         return str(object)
     sep = f'\n{" " * nestedness * indent}'
-    out = sep.join((f"{k}: {pretty_describe(v, nestedness + 1)}" for k, v in object.items()))
+    out = sep.join(f"{k}: {pretty_describe(v, nestedness + 1)}" for k, v in object.items())
     if nestedness > 0 and out:
         return f"{sep}{out}"
     return out
@@ -205,7 +238,9 @@ class RegistryView(collections.abc.Mapping):
 
     def update(self, *args, **kwargs):
         warnings.warn(
-            f"In a future release of intake, the {self._registry_name} will " f"not be directly mutable. Use {self._register_func_name}.", DeprecationWarning
+            f"In a future release of intake, the {self._registry_name} will "
+            f"not be directly mutable. Use {self._register_func_name}.",
+            DeprecationWarning,
         )
         self._registry.update(*args, **kwargs)
         # raise TypeError(
@@ -214,7 +249,9 @@ class RegistryView(collections.abc.Mapping):
 
     def __setitem__(self, key, value):
         warnings.warn(
-            f"In a future release of intake, the {self._registry_name} will " f"not be directly mutable. Use {self._register_func_name}.", DeprecationWarning
+            f"In a future release of intake, the {self._registry_name} will "
+            f"not be directly mutable. Use {self._register_func_name}.",
+            DeprecationWarning,
         )
         self._registry[key] = value
         # raise TypeError(
@@ -223,7 +260,9 @@ class RegistryView(collections.abc.Mapping):
 
     def __delitem__(self, key):
         warnings.warn(
-            f"In a future release of intake, the {self._registry_name} will " f"not be directly mutable. Use {self._unregister_func_name}.", DeprecationWarning
+            f"In a future release of intake, the {self._registry_name} will "
+            f"not be directly mutable. Use {self._unregister_func_name}.",
+            DeprecationWarning,
         )
         del self._registry[key]
         # raise TypeError(

@@ -37,3 +37,8 @@ dependencies:
   - click
   - rangehttpserver
   - pre-commit
+  - sqlalchemy
+  - python-duckdb
+  - pytest-postgresql
+  - psycopg
+  - siphon
