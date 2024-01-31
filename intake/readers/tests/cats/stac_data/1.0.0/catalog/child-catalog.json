@@ -1,0 +1,14 @@
+{
+  "type": "Catalog",
+  "id": "test",
+  "stac_version": "1.0.0",
+  "description": "child catalog",
+  "links": [
+    {
+      "rel": "root",
+      "href": "./catalog.json",
+      "type": "application/json"
+    }
+  ],
+  "stac_extensions": []
+}

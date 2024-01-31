@@ -1,0 +1,499 @@
+{
+  "type": "Collection",
+  "id": "daymet-daily-hi",
+  "stac_version": "1.0.0",
+  "description": "{{ collection.description }}",
+  "links": [
+    {
+      "rel": "license",
+      "href": "https://science.nasa.gov/earth-science/earth-science-data/data-information-policy"
+    }
+  ],
+  "stac_extensions": [
+    "https://stac-extensions.github.io/datacube/v2.0.0/schema.json"
+  ],
+  "cube:dimensions": {
+    "time": {
+      "type": "temporal",
+      "description": "24-hour day based on local time",
+      "extent": ["1980-01-01T12:00:00Z", "2020-12-30T12:00:00Z"]
+    },
+    "x": {
+      "type": "spatial",
+      "axis": "x",
+      "description": "x coordinate of projection",
+      "extent": [-5802250.0, -5519250.0],
+      "step": 1000.0,
+      "reference_system": {
+        "$schema": "https://proj.org/schemas/v0.2/projjson.schema.json",
+        "type": "ProjectedCRS",
+        "name": "undefined",
+        "base_crs": {
+          "name": "undefined",
+          "datum": {
+            "type": "GeodeticReferenceFrame",
+            "name": "undefined",
+            "ellipsoid": {
+              "name": "undefined",
+              "semi_major_axis": 6378137,
+              "inverse_flattening": 298.257223563
+            }
+          },
+          "coordinate_system": {
+            "subtype": "ellipsoidal",
+            "axis": [
+              {
+                "name": "Longitude",
+                "abbreviation": "lon",
+                "direction": "east",
+                "unit": "degree"
+              },
+              {
+                "name": "Latitude",
+                "abbreviation": "lat",
+                "direction": "north",
+                "unit": "degree"
+              }
+            ]
+          }
+        },
+        "conversion": {
+          "name": "unknown",
+          "method": {
+            "name": "Lambert Conic Conformal (2SP)",
+            "id": {
+              "authority": "EPSG",
+              "code": 9802
+            }
+          },
+          "parameters": [
+            {
+              "name": "Latitude of 1st standard parallel",
+              "value": 25,
+              "unit": "degree",
+              "id": {
+                "authority": "EPSG",
+                "code": 8823
+              }
+            },
+            {
+              "name": "Latitude of 2nd standard parallel",
+              "value": 60,
+              "unit": "degree",
+              "id": {
+                "authority": "EPSG",
+                "code": 8824
+              }
+            },
+            {
+              "name": "Latitude of false origin",
+              "value": 42.5,
+              "unit": "degree",
+              "id": {
+                "authority": "EPSG",
+                "code": 8821
+              }
+            },
+            {
+              "name": "Longitude of false origin",
+              "value": -100,
+              "unit": "degree",
+              "id": {
+                "authority": "EPSG",
+                "code": 8822
+              }
+            },
+            {
+              "name": "Easting at false origin",
+              "value": 0,
+              "unit": "metre",
+              "id": {
+                "authority": "EPSG",
+                "code": 8826
+              }
+            },
+            {
+              "name": "Northing at false origin",
+              "value": 0,
+              "unit": "metre",
+              "id": {
+                "authority": "EPSG",
+                "code": 8827
+              }
+            }
+          ]
+        },
+        "coordinate_system": {
+          "subtype": "Cartesian",
+          "axis": [
+            {
+              "name": "Easting",
+              "abbreviation": "E",
+              "direction": "east",
+              "unit": "metre"
+            },
+            {
+              "name": "Northing",
+              "abbreviation": "N",
+              "direction": "north",
+              "unit": "metre"
+            }
+          ]
+        }
+      }
+    },
+    "y": {
+      "type": "spatial",
+      "axis": "y",
+      "description": "y coordinate of projection",
+      "extent": [-622000.0, -39000.0],
+      "step": -1000.0,
+      "reference_system": {
+        "$schema": "https://proj.org/schemas/v0.2/projjson.schema.json",
+        "type": "ProjectedCRS",
+        "name": "undefined",
+        "base_crs": {
+          "name": "undefined",
+          "datum": {
+            "type": "GeodeticReferenceFrame",
+            "name": "undefined",
+            "ellipsoid": {
+              "name": "undefined",
+              "semi_major_axis": 6378137,
+              "inverse_flattening": 298.257223563
+            }
+          },
+          "coordinate_system": {
+            "subtype": "ellipsoidal",
+            "axis": [
+              {
+                "name": "Longitude",
+                "abbreviation": "lon",
+                "direction": "east",
+                "unit": "degree"
+              },
+              {
+                "name": "Latitude",
+                "abbreviation": "lat",
+                "direction": "north",
+                "unit": "degree"
+              }
+            ]
+          }
+        },
+        "conversion": {
+          "name": "unknown",
+          "method": {
+            "name": "Lambert Conic Conformal (2SP)",
+            "id": {
+              "authority": "EPSG",
+              "code": 9802
+            }
+          },
+          "parameters": [
+            {
+              "name": "Latitude of 1st standard parallel",
+              "value": 25,
+              "unit": "degree",
+              "id": {
+                "authority": "EPSG",
+                "code": 8823
+              }
+            },
+            {
+              "name": "Latitude of 2nd standard parallel",
+              "value": 60,
+              "unit": "degree",
+              "id": {
+                "authority": "EPSG",
+                "code": 8824
+              }
+            },
+            {
+              "name": "Latitude of false origin",
+              "value": 42.5,
+              "unit": "degree",
+              "id": {
+                "authority": "EPSG",
+                "code": 8821
+              }
+            },
+            {
+              "name": "Longitude of false origin",
+              "value": -100,
+              "unit": "degree",
+              "id": {
+                "authority": "EPSG",
+                "code": 8822
+              }
+            },
+            {
+              "name": "Easting at false origin",
+              "value": 0,
+              "unit": "metre",
+              "id": {
+                "authority": "EPSG",
+                "code": 8826
+              }
+            },
+            {
+              "name": "Northing at false origin",
+              "value": 0,
+              "unit": "metre",
+              "id": {
+                "authority": "EPSG",
+                "code": 8827
+              }
+            }
+          ]
+        },
+        "coordinate_system": {
+          "subtype": "Cartesian",
+          "axis": [
+            {
+              "name": "Easting",
+              "abbreviation": "E",
+              "direction": "east",
+              "unit": "metre"
+            },
+            {
+              "name": "Northing",
+              "abbreviation": "N",
+              "direction": "north",
+              "unit": "metre"
+            }
+          ]
+        }
+      }
+    },
+    "nv": {
+      "type": "count",
+      "description": "Size of the 'time_bnds' variable.",
+      "values": [0, 1]
+    }
+  },
+  "cube:variables": {
+    "dayl": {
+      "type": "data",
+      "description": "daylength",
+      "dimensions": ["time", "y", "x"],
+      "unit": "s",
+      "shape": [14965, 584, 284],
+      "chunks": [365, 584, 284],
+      "attrs": {
+        "cell_methods": "area: mean",
+        "grid_mapping": "lambert_conformal_conic",
+        "long_name": "daylength",
+        "units": "s"
+      }
+    },
+    "lambert_conformal_conic": {
+      "type": "data",
+      "dimensions": [],
+      "shape": [],
+      "attrs": {
+        "false_easting": 0.0,
+        "false_northing": 0.0,
+        "grid_mapping_name": "lambert_conformal_conic",
+        "inverse_flattening": 298.257223563,
+        "latitude_of_projection_origin": 42.5,
+        "longitude_of_central_meridian": -100.0,
+        "semi_major_axis": 6378137.0,
+        "standard_parallel": [25.0, 60.0]
+      }
+    },
+    "lat": {
+      "type": "auxiliary",
+      "description": "latitude coordinate",
+      "dimensions": ["y", "x"],
+      "unit": "degrees_north",
+      "shape": [584, 284],
+      "chunks": [584, 284],
+      "attrs": {
+        "long_name": "latitude coordinate",
+        "standard_name": "latitude",
+        "units": "degrees_north"
+      }
+    },
+    "lon": {
+      "type": "auxiliary",
+      "description": "longitude coordinate",
+      "dimensions": ["y", "x"],
+      "unit": "degrees_east",
+      "shape": [584, 284],
+      "chunks": [584, 284],
+      "attrs": {
+        "long_name": "longitude coordinate",
+        "standard_name": "longitude",
+        "units": "degrees_east"
+      }
+    },
+    "prcp": {
+      "type": "data",
+      "description": "daily total precipitation",
+      "dimensions": ["time", "y", "x"],
+      "unit": "mm/day",
+      "shape": [14965, 584, 284],
+      "chunks": [365, 584, 284],
+      "attrs": {
+        "cell_methods": "area: mean time: sum",
+        "grid_mapping": "lambert_conformal_conic",
+        "long_name": "daily total precipitation",
+        "units": "mm/day"
+      }
+    },
+    "srad": {
+      "type": "data",
+      "description": "daylight average incident shortwave radiation",
+      "dimensions": ["time", "y", "x"],
+      "unit": "W/m2",
+      "shape": [14965, 584, 284],
+      "chunks": [365, 584, 284],
+      "attrs": {
+        "cell_methods": "area: mean time: mean",
+        "grid_mapping": "lambert_conformal_conic",
+        "long_name": "daylight average incident shortwave radiation",
+        "units": "W/m2"
+      }
+    },
+    "swe": {
+      "type": "data",
+      "description": "snow water equivalent",
+      "dimensions": ["time", "y", "x"],
+      "unit": "kg/m2",
+      "shape": [14965, 584, 284],
+      "chunks": [365, 584, 284],
+      "attrs": {
+        "cell_methods": "area: mean time: mean",
+        "grid_mapping": "lambert_conformal_conic",
+        "long_name": "snow water equivalent",
+        "units": "kg/m2"
+      }
+    },
+    "time_bnds": {
+      "type": "data",
+      "dimensions": ["time", "nv"],
+      "shape": [14965, 2],
+      "chunks": [365, 2],
+      "attrs": {}
+    },
+    "tmax": {
+      "type": "data",
+      "description": "daily maximum temperature",
+      "dimensions": ["time", "y", "x"],
+      "unit": "degrees C",
+      "shape": [14965, 584, 284],
+      "chunks": [365, 584, 284],
+      "attrs": {
+        "cell_methods": "area: mean time: maximum",
+        "grid_mapping": "lambert_conformal_conic",
+        "long_name": "daily maximum temperature",
+        "units": "degrees C"
+      }
+    },
+    "tmin": {
+      "type": "data",
+      "description": "daily minimum temperature",
+      "dimensions": ["time", "y", "x"],
+      "unit": "degrees C",
+      "shape": [14965, 584, 284],
+      "chunks": [365, 584, 284],
+      "attrs": {
+        "cell_methods": "area: mean time: minimum",
+        "grid_mapping": "lambert_conformal_conic",
+        "long_name": "daily minimum temperature",
+        "units": "degrees C"
+      }
+    },
+    "vp": {
+      "type": "data",
+      "description": "daily average vapor pressure",
+      "dimensions": ["time", "y", "x"],
+      "unit": "Pa",
+      "shape": [14965, 584, 284],
+      "chunks": [365, 584, 284],
+      "attrs": {
+        "cell_methods": "area: mean time: mean",
+        "grid_mapping": "lambert_conformal_conic",
+        "long_name": "daily average vapor pressure",
+        "units": "Pa"
+      }
+    },
+    "yearday": {
+      "type": "data",
+      "description": "day of year (DOY) starting with day 1 on January 1st",
+      "dimensions": ["time"],
+      "shape": [14965],
+      "chunks": [365],
+      "attrs": {
+        "long_name": "day of year (DOY) starting with day 1 on January 1st"
+      }
+    }
+  },
+  "title": "Daymet Daily Hawaii",
+  "keywords": [
+    "Daymet",
+    "Hawaii",
+    "Temperature",
+    "Precipitation",
+    "Vapor Pressure",
+    "Weather"
+  ],
+  "providers": [
+    {
+      "name": "Microsoft",
+      "roles": ["host", "processor"],
+      "url": "https://planetarycomputer.microsoft.com"
+    },
+    {
+      "name": "ORNL DAAC",
+      "roles": ["producer"],
+      "url": "https://doi.org/10.3334/ORNLDAAC/1840"
+    }
+  ],
+  "assets": {
+    "zarr-https": {
+      "href": "https://daymeteuwest.blob.core.windows.net/daymet-zarr/daily/hi.zarr",
+      "type": "application/vnd+zarr",
+      "title": "Daily Hawaii Daymet HTTPS Zarr root",
+      "description": "HTTPS URI of the daily Hawaii Daymet Zarr Group on Azure Blob Storage.",
+      "xarray:open_kwargs": {
+        "consolidated": true
+      },
+      "roles": ["data", "zarr", "https"]
+    },
+    "zarr-abfs": {
+      "href": "abfs://daymet-zarr/daily/hi.zarr",
+      "type": "application/vnd+zarr",
+      "title": "Daily Hawaii Daymet Azure Blob File System Zarr root",
+      "description": "Azure Blob File System of the daily Hawaii Daymet Zarr Group on Azure Blob Storage for use with adlfs.",
+      "xarray:storage_options": {
+        "account_name": "daymeteuwest"
+      },
+      "xarray:open_kwargs": {
+        "consolidated": true
+      },
+      "roles": ["data", "zarr", "abfs"]
+    },
+    "thumbnail": {
+      "href": "https://ai4edatasetspublicassets.blob.core.windows.net/assets/pc_thumbnails/daymet-daily-hi.png",
+      "type": "image/png",
+      "title": "Daymet daily Hawaii map thumbnail",
+      "roles": ["thumbnail"]
+    }
+  },
+  "msft:short_description": "Daily surface weather data on a 1-km grid for Hawaii",
+  "msft:storage_account": "daymeteuwest",
+  "msft:container": "daymet-zarr",
+  "msft:group_id": "daymet",
+  "msft:group_keys": ["daily", "hawaii"],
+  "extent": {
+    "spatial": {
+      "bbox": [[-160.3056, 17.9539, -154.772, 23.5186]]
+    },
+    "temporal": {
+      "interval": [["1980-01-01T12:00:00Z", "2020-12-30T12:00:00Z"]]
+    }
+  },
+  "license": "proprietary"
+}

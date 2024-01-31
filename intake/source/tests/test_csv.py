@@ -57,12 +57,23 @@ def sample_list_datasource_with_glob(data_filenames):
 
 @pytest.fixture
 def sample_list_datasource_with_path_as_pattern_str(data_filenames):
-    return csv.CSVSource([data_filenames["sample2_1"], data_filenames["sample2_2"]], path_as_pattern="sample{num:d}_{dup:d}.csv")
+    return csv.CSVSource(
+        [data_filenames["sample2_1"], data_filenames["sample2_2"]],
+        path_as_pattern="sample{num:d}_{dup:d}.csv",
+    )
 
 
 @pytest.fixture
 def sample_pattern_datasource_with_cache(data_filenames):
-    metadata = {"cache": [{"argkey": "urlpath", "regex": make_path_posix(os.path.dirname(__file__)), "type": "file"}]}
+    metadata = {
+        "cache": [
+            {
+                "argkey": "urlpath",
+                "regex": make_path_posix(os.path.dirname(__file__)),
+                "type": "file",
+            }
+        ]
+    }
     return csv.CSVSource(data_filenames["sample_pattern"], metadata=metadata)
 
 

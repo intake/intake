@@ -91,6 +91,7 @@ todo_include_todos = False
 #
 
 html_theme = "sphinx_rtd_theme"
+html_favicon = "_static/images/favicon.ico"
 
 # on_rtd is whether we are on readthedocs.org
 on_rtd = os.environ.get("READTHEDOCS", None) == "True"
@@ -166,7 +167,15 @@ man_pages = [(master_doc, "intake", "Intake Documentation", [author], 1)]
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, "intake", "Intake Documentation", author, "intake", "Fast data ingestion for Python.", "Miscellaneous"),
+    (
+        master_doc,
+        "intake",
+        "Intake Documentation",
+        author,
+        "intake",
+        "Fast data ingestion for Python.",
+        "Miscellaneous",
+    ),
 ]
 
 

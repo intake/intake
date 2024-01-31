@@ -156,7 +156,16 @@ class DerivedSource(DataSource):
     required_params = []  # list of kwargs that must be present
     optional_params = {}  # optional kwargs with defaults
 
-    def __init__(self, targets, target_chooser=first, target_kwargs=None, cat_kwargs=None, container=None, metadata=None, **kwargs):
+    def __init__(
+        self,
+        targets,
+        target_chooser=first,
+        target_kwargs=None,
+        cat_kwargs=None,
+        container=None,
+        metadata=None,
+        **kwargs,
+    ):
         """
 
         Parameters
@@ -235,7 +244,9 @@ class GenericTransform(DerivedSource):
     def to_dask(self):
         self._get_schema()
         if not self._params["allow_dask"]:
-            raise ValueError("This transform is not compatible with Dask" "because it has use_dask=False")
+            raise ValueError(
+                "This transform is not compatible with Dask" "because it has use_dask=False"
+            )
         return self._transform(self._source.to_dask(), **self._params["transform_kwargs"])
 
     def read(self):
@@ -264,7 +275,12 @@ class DataFrameTransform(GenericTransform):
     def _get_schema(self):
         """load metadata only if needed"""
         self.to_dask()
-        return Schema(dtype=self._df.dtypes, shape=(None, len(self._df.columns)), npartitions=self._df.npartitions, metadata=self.metadata)
+        return Schema(
+            dtype=self._df.dtypes,
+            shape=(None, len(self._df.columns)),
+            npartitions=self._df.npartitions,
+            metadata=self.metadata,
+        )
 
     def read(self):
         return self.to_dask().compute()

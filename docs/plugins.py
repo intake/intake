@@ -45,48 +45,79 @@ def generate_plugin_table():
     plugin_df["ci_yaml"] = plugin_df["ci_yaml"].fillna("main.yaml")
 
     # CI badges
-    plugin_df["ci_badges"] = plugin_df[["repo_links", "ci_yaml"]].apply(lambda x: f"{x[0]}/actions/workflows/{x[1]}/badge.svg", axis=1)
+    plugin_df["ci_badges"] = plugin_df[["repo_links", "ci_yaml"]].apply(
+        lambda x: f"{x[0]}/actions/workflows/{x[1]}/badge.svg", axis=1
+    )
     plugin_df["ci_links"] = plugin_df["repo_links"].apply(lambda x: f"{x}/actions")
     ci_badges_ok = asyncio.run(check_all_ok(plugin_df["ci_badges"]))
 
     # Docs badges
-    plugin_df["docs_badges"] = plugin_df["short_name"].apply(lambda x: f"https://readthedocs.org/projects/{x}/badge/?version=latest")
-    plugin_df["docs_links"] = plugin_df["short_name"].apply(lambda x: f"https://{x}.readthedocs.io/en/latest/?badge=latest")
+    plugin_df["docs_badges"] = plugin_df["short_name"].apply(
+        lambda x: f"https://readthedocs.org/projects/{x}/badge/?version=latest"
+    )
+    plugin_df["docs_links"] = plugin_df["short_name"].apply(
+        lambda x: f"https://{x}.readthedocs.io/en/latest/?badge=latest"
+    )
     docs_badges_ok = asyncio.run(check_all_ok(plugin_df["docs_links"]))
 
     # PyPi badges
-    plugin_df["pypi_badges"] = plugin_df["short_name"].apply(lambda x: f"https://img.shields.io/pypi/v/{x}.svg?maxAge=3600")
-    plugin_df["pypi_links"] = plugin_df["short_name"].apply(lambda x: f"https://pypi.org/project/{x}")
+    plugin_df["pypi_badges"] = plugin_df["short_name"].apply(
+        lambda x: f"https://img.shields.io/pypi/v/{x}.svg?maxAge=3600"
+    )
+    plugin_df["pypi_links"] = plugin_df["short_name"].apply(
+        lambda x: f"https://pypi.org/project/{x}"
+    )
     pypi_badges_ok = asyncio.run(check_all_ok(plugin_df["pypi_links"]))
 
     # Conda badges
     plugin_df["conda_badges"] = plugin_df[["conda_channel", "conda_package"]].apply(
-        lambda x: f"https://img.shields.io/conda/vn/{x[0]}/{x[1]}.svg?colorB=4488ff&label={x[0]}&style=flat", axis=1
+        lambda x: f"https://img.shields.io/conda/vn/{x[0]}/{x[1]}.svg?colorB=4488ff&label={x[0]}&style=flat",
+        axis=1,
     )
-    plugin_df["conda_links"] = plugin_df[["conda_channel", "conda_package"]].apply(lambda x: f"https://anaconda.org/{x[0]}/{x[1]}", axis=1)
+    plugin_df["conda_links"] = plugin_df[["conda_channel", "conda_package"]].apply(
+        lambda x: f"https://anaconda.org/{x[0]}/{x[1]}", axis=1
+    )
     conda_badges_ok = asyncio.run(check_all_ok(plugin_df["conda_links"]))
 
     # Conda defaults badges
-    plugin_df["conda_defaults_links"] = plugin_df["conda_package"].apply(lambda x: f"https://anaconda.org/anaconda/{x}")
+    plugin_df["conda_defaults_links"] = plugin_df["conda_package"].apply(
+        lambda x: f"https://anaconda.org/anaconda/{x}"
+    )
     plugin_df["conda_defaults_badges"] = plugin_df["conda_package"].apply(
         lambda x: f"https://img.shields.io/conda/vn/anaconda/{x}.svg?colorB=4488ff&label=defaults&style=flat"
     )
     conda_defaults_badges_ok = asyncio.run(check_all_ok(plugin_df["conda_defaults_links"]))
 
     # Conda forge badges
-    plugin_df["conda_forge_links"] = plugin_df["conda_package"].apply(lambda x: f"https://anaconda.org/conda-forge/{x}")
-    plugin_df["conda_forge_badges"] = plugin_df["conda_package"].apply(lambda x: f"https://img.shields.io/conda/vn/conda-forge/{x}.svg?colorB=4488ff&style=flat")
+    plugin_df["conda_forge_links"] = plugin_df["conda_package"].apply(
+        lambda x: f"https://anaconda.org/conda-forge/{x}"
+    )
+    plugin_df["conda_forge_badges"] = plugin_df["conda_package"].apply(
+        lambda x: f"https://img.shields.io/conda/vn/conda-forge/{x}.svg?colorB=4488ff&style=flat"
+    )
     conda_forge_badges_ok = asyncio.run(check_all_ok(plugin_df["conda_forge_links"]))
 
-    plugin_df["Package Name"] = plugin_df[["name", "repo_links"]].apply(lambda x: format_package_links(*x), axis=1)
-    plugin_df["CI"] = plugin_df[["ci_badges", "ci_links"]][ci_badges_ok].apply(lambda x: format_badge_html(*x), axis=1)
-    plugin_df["Docs"] = plugin_df[["docs_badges", "docs_links"]][docs_badges_ok].apply(lambda x: format_badge_html(*x), axis=1)
-    plugin_df["PyPi"] = plugin_df[["pypi_badges", "pypi_links"]][pypi_badges_ok].apply(lambda x: format_badge_html(*x), axis=1)
-    plugin_df["conda"] = plugin_df[["conda_badges", "conda_links"]][conda_badges_ok].apply(lambda x: format_badge_html(*x), axis=1)
-    plugin_df["conda_forge"] = plugin_df[["conda_forge_badges", "conda_forge_links"]][conda_forge_badges_ok].apply(lambda x: format_badge_html(*x), axis=1)
-    plugin_df["conda_defaults"] = plugin_df[["conda_defaults_badges", "conda_defaults_links"]][conda_defaults_badges_ok].apply(
+    plugin_df["Package Name"] = plugin_df[["name", "repo_links"]].apply(
+        lambda x: format_package_links(*x), axis=1
+    )
+    plugin_df["CI"] = plugin_df[["ci_badges", "ci_links"]][ci_badges_ok].apply(
         lambda x: format_badge_html(*x), axis=1
     )
+    plugin_df["Docs"] = plugin_df[["docs_badges", "docs_links"]][docs_badges_ok].apply(
+        lambda x: format_badge_html(*x), axis=1
+    )
+    plugin_df["PyPi"] = plugin_df[["pypi_badges", "pypi_links"]][pypi_badges_ok].apply(
+        lambda x: format_badge_html(*x), axis=1
+    )
+    plugin_df["conda"] = plugin_df[["conda_badges", "conda_links"]][conda_badges_ok].apply(
+        lambda x: format_badge_html(*x), axis=1
+    )
+    plugin_df["conda_forge"] = plugin_df[["conda_forge_badges", "conda_forge_links"]][
+        conda_forge_badges_ok
+    ].apply(lambda x: format_badge_html(*x), axis=1)
+    plugin_df["conda_defaults"] = plugin_df[["conda_defaults_badges", "conda_defaults_links"]][
+        conda_defaults_badges_ok
+    ].apply(lambda x: format_badge_html(*x), axis=1)
 
     plugin_df = plugin_df.fillna("")
 

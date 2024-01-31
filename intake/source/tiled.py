@@ -1,6 +1,3 @@
-from tiled.client import from_uri
-from tiled.client.node import Node
-
 from intake.catalog import Catalog
 from intake.source import DataSource
 
@@ -32,6 +29,8 @@ class TiledCatalog(Catalog):
             If given, restrict the catalog to this part of the server's catalog
             tree. Equivalent to extending the server URL.
         """
+        from tiled.client import from_uri
+
         self.path = path
         if isinstance(server, str):
             if server.startswith("tiled"):
@@ -61,6 +60,8 @@ class TiledCatalog(Catalog):
         return TiledCatalog.from_dict(self._entries.search(q), uri=self.uri, path=self.path)
 
     def __getitem__(self, item):
+        from tiled.client.node import Node
+
         node = self._entries[item]
         if isinstance(node, Node):
             return TiledCatalog(node)
@@ -105,6 +106,8 @@ class TiledSource(DataSource):
             Extra metadata for this source; metadata will also be provided
             by the server.
         """
+        from tiled.client import from_uri
+
         if instance is None:
             instance = from_uri(uri, "dask")[path].read()
         self.instance = instance
@@ -119,7 +122,12 @@ class TiledSource(DataSource):
         x = self.to_dask()
         dt = getattr(x, "dtype", None) or getattr(x, "dtypes", None)
         parts = getattr(x, "npartitions", None) or x.data.npartitions
-        return dict(dtype=dt, shape=getattr(self.instance.structure().macro, "shape", x.shape), npartitions=parts, metadata=self.metadata)
+        return dict(
+            dtype=dt,
+            shape=getattr(self.instance.structure().macro, "shape", x.shape),
+            npartitions=parts,
+            metadata=self.metadata,
+        )
 
     def to_dask(self):
         # cache this?

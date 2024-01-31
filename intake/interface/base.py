@@ -61,7 +61,9 @@ class Base(object):
     panel = None
     watchers = None
     visible_callback = None
-    logo_panel = pn.Column(pn.pane.PNG(ICONS["logo"], align="center"), margin=(25, 0, 0, 0), width=50)
+    logo_panel = pn.Column(
+        pn.pane.PNG(ICONS["logo"], align="center"), margin=(25, 0, 0, 0), width=50
+    )
     logo = False
 
     def __init__(self, visible=True, visible_callback=None, logo=False):
@@ -232,7 +234,11 @@ class BaseSelector(Base):
     def selected(self):
         """Value selected on the widget"""
         ops = self.widget.options
-        return [val for val in self.widget.value if (val in ops.values() if isinstance(ops, dict) else val in ops)]
+        return [
+            val
+            for val in self.widget.value
+            if (val in ops.values() if isinstance(ops, dict) else val in ops)
+        ]
 
     @selected.setter
     def selected(self, new):

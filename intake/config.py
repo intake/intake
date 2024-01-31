@@ -1,3 +1,5 @@
+"""Intake config manipulations and persistence"""
+
 # -----------------------------------------------------------------------------
 # Copyright (c) 2012 - 2018, Anaconda, Inc. and Intake contributors
 # All rights reserved.
@@ -5,6 +7,9 @@
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
 
+import ast
+import contextlib
+import copy
 import logging
 import os
 import posixpath
@@ -21,15 +26,15 @@ confdir = make_path_posix(os.getenv("INTAKE_CONF_DIR", os.path.join(expanduser("
 
 
 defaults = {
-    "auth": {"cls": "intake.auth.base.BaseAuth"},
-    "port": 5000,
-    "cache_dir": posixpath.join(confdir, "cache"),
-    "cache_disabled": False,
-    "cache_download_progress": True,
     "logging": "INFO",
     "catalog_path": [],
-    "persist_path": posixpath.join(confdir, "persisted"),
-    "package_scan": False,
+    "allow_import": True,
+    "allow_templates": True,
+    "allow_pickle": False,
+    "import_on_startup": True,
+    "extra_imports": [],
+    "import_block_list": [],
+    "reader_avoid": [],
 }
 
 
@@ -38,29 +43,89 @@ def cfile():
 
 
 class Config(dict):
+    """Intake's dict-like config system
+
+    Instance ``intake.conf`` is globally used throughout the package
+    """
+
     def __init__(self, filename=None, **kwargs):
         self.filename = filename if filename is not None else cfile()
         self.reload_all()
+        self.temp = None
         super().__init__(**kwargs)
+        logger.setLevel(self["logging"])
 
     def reset(self):
         """Set conf values back to defaults"""
         self.clear()
         self.update(defaults)
 
-    def save(self):
+    def save(self, fn=None):
         """Save current configuration to file as YAML
 
-        Uses ``.filename`` for target location
+        Uses ``self.filename`` for target location
         """
-        if self.filename is False:
+        # TODO: fsspec?
+        fn = fn or self.filename
+        if fn is False:
             return
         try:
-            os.makedirs(os.path.dirname(self.filename))
+            os.makedirs(os.path.dirname(fn))
         except (OSError, IOError):
             pass
-        with open(self.filename, "w") as f:
+        with open(fn, "w") as f:
             yaml.dump(dict(self), f)
+
+    @contextlib.contextmanager
+    def _unset(self, temp):
+        yield
+        self.clear()
+        self.update(temp)
+
+    def set(self, update_dict=None, **kw):
+        """Change config values within a context or for the session
+
+        values: dict
+            This can be deeply nested to set only leaf values
+
+        See also: ``intake.readers.utils.nested_keys_to_dict``
+
+        Examples
+        --------
+
+        Value resets after context ends
+
+        >>> with intake.conf.set(mybval=5):
+        ...     ...
+
+        Set for whole session
+
+        >>> intake.conf.set(myval=5)
+
+        Set only a single leaf value within a nested dict
+
+        >>> intake.conf.set(intake.readers.utils.nested_keys_to_dict({"deep.2.key": True})
+        """
+        temp = copy.deepcopy(self)
+        if update_dict:
+            kw.update(update_dict)
+        from intake.readers.utils import merge_dicts
+
+        self.update(merge_dicts(self, kw))
+        return self._unset(temp)
+
+    def __getitem__(self, item):
+        if item in self:
+            return super().__getitem__(item)
+        elif item in defaults:
+            return defaults[item]
+        else:
+            raise KeyError(item)
+
+    def get(self, key, default=None):
+        if key in self:
+            return super().__getitem__(key)
+        return default
 
     def reload_all(self):
         self.reset()
@@ -73,6 +138,8 @@ class Config(dict):
         If fn is None, looks in global config directory, which is either defined
         by the INTAKE_CONF_DIR env-var or is ~/.intake/ .
         """
+        # TODO: if fn is not None, set self.filename
+        # TODO: fsspec?
         fn = fn or self.filename
 
         if os.path.isfile(fn):
@@ -85,15 +152,14 @@ class Config(dict):
     def load_env(self):
         """Analyse environment variables and update conf accordingly"""
         # environment variables take precedence over conf file
-        for key, envvar in [["cache_dir", "INTAKE_CACHE_DIR"], ["catalog_path", "INTAKE_PATH"], ["persist_path", "INTAKE_PERSIST_PATH"]]:
-            if envvar in os.environ:
-                self[key] = make_path_posix(os.environ[envvar])
-        self["catalog_path"] = intake_path_dirs(self["catalog_path"])
-        for key, envvar in [["cache_disabled", "INTAKE_DISABLE_CACHING"], ["cache_download_progress", "INTAKE_CACHE_PROGRESS"]]:
-            if envvar in os.environ:
-                self[key] = os.environ[envvar].lower() in ["true", "t", "y", "yes"]
-        if "INTAKE_LOG_LEVEL" in os.environ:
-            self["logging"] = os.environ["INTAKE_LOG_LEVEL"]
+        for k, v in os.environ.items():
+            if k.startswith("INTAKE_"):
+                k2 = k[7:].lower()
+                try:
+                    val = ast.literal_eval(v)
+                except ValueError:
+                    pass
+                self[k2] = val
 
 
 def intake_path_dirs(path):
@@ -115,10 +181,3 @@ conf = Config()
 conf.reload_all()
 save_conf = conf.save
 load_cond = conf.load
-
-logger.setLevel(conf["logging"].upper())
-ch = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - " "%(filename)s:%(funcName)s:L%(lineno)d - " "%(message)s")
-ch.setFormatter(formatter)
-logger.addHandler(ch)
-logger.debug("Intake logger set to debug")

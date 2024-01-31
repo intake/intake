@@ -10,7 +10,15 @@ class ZarrGroupCatalog(Catalog):
     partition_access = None
     name = "zarr_cat"
 
-    def __init__(self, urlpath, storage_options=None, component=None, metadata=None, consolidated=False, name=None):
+    def __init__(
+        self,
+        urlpath,
+        storage_options=None,
+        component=None,
+        metadata=None,
+        consolidated=False,
+        name=None,
+    ):
         """
 
         Parameters
@@ -77,9 +85,17 @@ class ZarrGroupCatalog(Catalog):
         entries = {}
         for k, v in self._grp.items():
             if isinstance(v, zarr.core.Array):
-                entry = LocalCatalogEntry(name=k, description="", driver="ndzarr", args=dict(urlpath=v), catalog=self)
+                entry = LocalCatalogEntry(
+                    name=k,
+                    description="",
+                    driver="ndzarr",
+                    args=dict(urlpath=v),
+                    catalog=self,
+                )
             else:
-                entry = LocalCatalogEntry(name=k, description="", driver="zarr_cat", args=dict(urlpath=v))
+                entry = LocalCatalogEntry(
+                    name=k, description="", driver="zarr_cat", args=dict(urlpath=v)
+                )
             entries[k] = entry
         self._entries = entries
 

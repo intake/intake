@@ -5,7 +5,9 @@ import pytest
 import intake
 from intake.source.derived import MissingTargetError, PipelineStepError
 
-catfile = os.path.join(os.path.dirname(__file__), "..", "..", "catalog", "tests", "catalog_alias.yml")
+catfile = os.path.join(
+    os.path.dirname(__file__), "..", "..", "catalog", "tests", "catalog_alias.yml"
+)
 
 
 @pytest.fixture
@@ -63,7 +65,12 @@ def test_pipeline_cols(pipe_cat):
     assert name_col.to_list() == ["Alice", "Bob", "Charlie", "Eve"]
 
     two_cols = pipe_cat.two_columns.read()
-    assert two_cols.values.tolist() == [["Alice", 1], ["Bob", 2], ["Charlie", 3], ["Eve", 3]]
+    assert two_cols.values.tolist() == [
+        ["Alice", 1],
+        ["Bob", 2],
+        ["Charlie", 3],
+        ["Eve", 3],
+    ]
 
 
 def test_pipeline_accessor(pipe_cat):
@@ -96,7 +103,13 @@ def test_pipeline_concat(pipe_cat):
 
 def test_pipeline_merge(pipe_cat):
     merged = pipe_cat.merged.read()
-    assert merged.columns.to_list() == ["name_x", "score_x", "rank", "name_y", "score_y"]
+    assert merged.columns.to_list() == [
+        "name_x",
+        "score_x",
+        "rank",
+        "name_y",
+        "score_y",
+    ]
     assert merged.shape == (6, 5)
 
 
@@ -108,11 +121,25 @@ def test_pipeline_merge_fail(pipe_cat):
 def test_pipeline_join(pipe_cat):
     join1 = pipe_cat.join1.read()
     assert join1.shape == (4, 6)
-    assert join1.columns.to_list() == ["name", "score", "rank", "name1", "score1", "rank1"]
+    assert join1.columns.to_list() == [
+        "name",
+        "score",
+        "rank",
+        "name1",
+        "score1",
+        "rank1",
+    ]
 
     join_list = pipe_cat.join_list.read()
     assert join_list.shape == (4, 6)
-    assert join_list.columns.to_list() == ["name", "score", "rank", "name1", "score1", "rank1"]
+    assert join_list.columns.to_list() == [
+        "name",
+        "score",
+        "rank",
+        "name1",
+        "score1",
+        "rank1",
+    ]
 
 
 def test_pipeline_join_fail(pipe_cat):

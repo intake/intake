@@ -14,8 +14,6 @@ import shlex
 import subprocess
 import sys
 
-from jinja2 import Environment, Undefined, meta
-
 
 def flatten(iterable):
     """Flatten an arbitrarily deep list"""
@@ -53,6 +51,8 @@ def clamp(value, lower=0, upper=sys.maxsize):
 
 
 def _j_getenv(x, default=""):
+    from jinja2 import Undefined
+
     if isinstance(x, Undefined):
         x = x._undefined_name
     if isinstance(default, Undefined):
@@ -61,6 +61,8 @@ def _j_getenv(x, default=""):
 
 
 def _j_getshell(x):
+    from jinja2 import Undefined
+
     if isinstance(x, Undefined):
         x = x._undefined_name
     try:
@@ -70,12 +72,16 @@ def _j_getshell(x):
 
 
 def _j_passthrough(x, funcname):
+    from jinja2 import Undefined
+
     if isinstance(x, Undefined):
         x = x._undefined_name
     return "{{%s(%s)}}" % (funcname, x)
 
 
 def _expand(p, context, all_vars, client, getenv, getshell):
+    from jinja2 import Environment, meta
+
     if isinstance(p, dict):
         return {k: _expand(v, context, all_vars, client, getenv, getshell) for k, v in p.items()}
     elif isinstance(p, (list, tuple, set)):
@@ -339,6 +345,8 @@ class RemoteCatalogError(Exception):
 
 def _has_catalog_dir(args):
     """Check is any value in args dict needs CATALOG_DIR variable"""
+    from jinja2 import Environment, meta
+
     env = Environment()
     for k, arg in args.items():
         parsed_content = env.parse(arg)
