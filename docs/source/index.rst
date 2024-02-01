@@ -42,6 +42,7 @@ and declarations of scope.
     :maxdepth: 2
 
     scope2.rst
+    user2.rst
     walkthrough2.rst
     tour2.rst
     api2.rst
