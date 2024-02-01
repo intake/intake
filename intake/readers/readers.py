@@ -630,6 +630,12 @@ class DaskCSV(DaskDF):
 
 
 class DaskCSVPattern(DaskCSV):
+    """Apply categorical data extraction to a set of CSV paths using dask
+
+    Paths are of the form "proto://path/{field}/measurement_{date:%Y-%m-%d}.csv",
+    where the format-like fields will be captured as columns in the output.
+    """
+
     implements = {datatypes.CSVPattern}
 
     def _read(self, data, **kw):
@@ -1108,6 +1114,7 @@ class YAMLCatalogReader(FileReader):
     implements = {datatypes.YAMLFile, datatypes.YAMLFile}
     func = "intake.readers.entry:Catalog.from_yaml_file"
     url_arg = "path"
+    storage_options = True
     output_instance = "intake.readers.entry:Catalog"
 
 

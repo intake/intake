@@ -286,14 +286,22 @@ class Tokenizable(Completable):
 
     @classmethod
     def qname(cls):
-        """module:class name of this class, makes str for import_name"""
+        """package.module:class name of this class, makes str for import_name"""
         return f"{cls.__module__}:{cls.__name__}"
 
     def to_dict(self):
+        """Dictionary representation of the instances contents"""
         return to_dict(self)
+
+    def pprint(self):
+        """Produce nice text formatting of the instance's contents"""
+        from pprint import pp
+
+        pp(self.to_dict())
 
     @classmethod
     def from_dict(cls, data):
+        """Recreate instance from the results of to_dict()"""
         data = data.copy()
         if "cls" in data:
             cls = import_name(data.pop("cls"))

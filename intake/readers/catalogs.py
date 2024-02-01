@@ -424,8 +424,8 @@ class HuggingfaceHubCatalog(BaseReader):
     and appropriate token. By default, you will be able to read any public/example
     data.
 
-    Example
-    -------
+    Examples
+    --------
     >>> hf = intake.readers.catalogs.HuggingfaceHubCatalog().read()
     >>> hf['acronym_identification'].read()
     DatasetDict({
@@ -632,8 +632,8 @@ class EarthdataCatalogReader(BaseReader):
     Each entry returns an ``EarthdataReader`` - see further documentation there. The
     keys are the "concept-id" of each dataset, a unique string.
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> import intake.readers.catalogs
     >>> cat = intake.readers.catalogs.EarthdataCatalogReader(temporal=("2002-01-01", "2002-01-02")).read()

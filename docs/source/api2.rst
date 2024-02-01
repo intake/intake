@@ -68,7 +68,7 @@ These may be subclassed by developers
 .. autoclass:: intake.readers.user_parameters.BaseUserParameter
    :members:
 
-
+.. _data:
 
 Data Classes
 ------------
@@ -131,6 +131,7 @@ Data Classes
    intake.readers.datatypes.YAMLFile
    intake.readers.datatypes.Zarr
 
+.. _reader:
 
 Reader Classes
 --------------

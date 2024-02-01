@@ -153,7 +153,12 @@ class CSV(FileData):
 
 
 class CSVPattern(CSV):
-    """Specialised version of CSV, with a patch containing capturing fields"""
+    """Specialised version of CSV, with a path containing capturing fields
+
+    Characteristically contains python-style format groups with {..}
+    """
+
+    filepattern = ".*[{].*[}].*(csv$|txt$|tsv$)"
 
 
 class Text(FileData):

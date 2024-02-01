@@ -1,5 +1,8 @@
-Walkthrough
-===========
+Creator Walkthrough
+===================
+
+As soon as you have used a catalog, you may wonder how to create the - look no further.
+EVen if you don't make catalogs, you may find the data and reader class recommenders useful.
 
 Preamble
 --------
@@ -12,13 +15,13 @@ operations known as a Pipeline. A Pipeline is just a special kind of reader.
 
 Catalogs contain readers and data definitions. Readers can and should be saved in Catalogs,
 which can in the simplest case be saved as text files, but can also be generated from
-may data services. Catalogs and readers are the central themes of intake.
+many data services. Catalogs and readers are the central themes of intake.
 
 .. note::
 
     "Load" means make a machine representations: many data containers may be lazy,
     where you get an object on which you can act, but the data is only read on
-    demand for actions that rerquire it.
+    demand for actions that require it.
 
 
 Simple Example
@@ -288,3 +291,8 @@ update the metadata of ``data`` or the readers to show the expected columns type
 
 **Summary**: you can branch and join pipelines and save the whole complicated tree in catalogs,
 allowing complex patterns like conditional caching.
+
+Extracting User Parameters
+--------------------------
+
+To come
