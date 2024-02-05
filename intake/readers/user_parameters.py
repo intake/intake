@@ -262,7 +262,11 @@ def set_values(user_parameters: dict[str, BaseUserParameter], arguments: dict[st
     up = user_parameters.copy()
     for k, v in arguments.copy().items():
         if k in user_parameters:
-            up[k] = up[k].with_default(v)
+            u = up[k]
+            if isinstance(u, BaseUserParameter):
+                up[k] = up[k].with_default(v)
+            else:
+                up[k] = v
             arguments.pop(k)
     for k, v in up.copy().items():
         # v can be a literal DataDescription (from a reader) rather than a UP

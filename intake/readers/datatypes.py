@@ -152,6 +152,15 @@ class CSV(FileData):
     structure = {"table"}
 
 
+class CSVPattern(CSV):
+    """Specialised version of CSV, with a path containing capturing fields
+
+    Characteristically contains python-style format groups with {..}
+    """
+
+    filepattern = ".*[{].*[}].*(csv$|txt$|tsv$)"
+
+
 class Text(FileData):
     """Any text file"""
 

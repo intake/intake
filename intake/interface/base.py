@@ -145,8 +145,8 @@ class Base(object):
     def from_state(cls, state):
         """Create a new object from a serialized exising object.
 
-        Example
-        -------
+        Examples
+        --------
         original = cls()
         copy = cls.from_state(original.__getstate__())
         """

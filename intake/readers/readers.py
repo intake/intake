@@ -629,6 +629,35 @@ class DaskCSV(DaskDF):
     url_arg = "urlpath"
 
 
+class DaskCSVPattern(DaskCSV):
+    """Apply categorical data extraction to a set of CSV paths using dask
+
+    Paths are of the form "proto://path/{field}/measurement_{date:%Y-%m-%d}.csv",
+    where the format-like fields will be captured as columns in the output.
+    """
+
+    implements = {datatypes.CSVPattern}
+
+    def _read(self, data, **kw):
+        from pandas.api.types import CategoricalDtype
+        from intake.readers.utils import pattern_to_glob
+        from intake.source.utils import reverse_formats
+
+        url = pattern_to_glob(data.url)
+        df = self._func(url, storage_options=data.storage_options, include_path_column=True, **kw)
+
+        paths = sorted(df["path"].cat.categories)
+
+        column_by_field = {
+            field: df["path"]
+            .cat.codes.map(dict(enumerate(values)))
+            .astype(CategoricalDtype(set(values)))
+            for field, values in reverse_formats(data.url, paths).items()
+        }
+
+        return df.assign(**column_by_field).drop(columns=["path"])
+
+
 class Polars(FileReader):
     imports = {"polars"}
     output_instance = "polars:LazyFrame"
@@ -1085,6 +1114,7 @@ class YAMLCatalogReader(FileReader):
     implements = {datatypes.YAMLFile, datatypes.YAMLFile}
     func = "intake.readers.entry:Catalog.from_yaml_file"
     url_arg = "path"
+    storage_options = True
     output_instance = "intake.readers.entry:Catalog"
 
 

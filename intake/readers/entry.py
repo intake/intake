@@ -387,17 +387,19 @@ class Catalog(Tokenizable):
             yaml.safe_dump(self.to_dict(), stream)
 
     @staticmethod
-    def from_yaml_file(path: str, **storage_options):
+    def from_yaml_file(path: str, **kwargs):
         """Load YAML representation into a new Catalog instance
 
         storage_options:
-            kwargs to pass to fsspec for opening the file to read
+            kwargs to pass to fsspec for opening the file to read; can pass as storage_options=
+            or will pick up any unused kwargs for simplicity
         """
+        storage_options = kwargs.pop("storage_options", kwargs)
         of = fsspec.open(path, **storage_options)
         with of as stream:
             cat = Catalog.from_dict(yaml.safe_load(stream))
         cat.user_parameters["CATALOG_PATH"] = path
-        cat.user_parameters["CATALOG_DIR"] = of.fs._parent(path)
+        cat.user_parameters["CATALOG_DIR"] = of.fs.unstrip_protocol(of.fs._parent(path))
         cat.user_parameters["STORAGE_OPTIONS"] = storage_options
         return cat
 
