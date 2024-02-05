@@ -60,6 +60,7 @@ def sqlite_with_data(tmpdir):
 
 
 def test_sqlite_pandas(sqlite_with_data):
+    pytest.importorskip("pandas", minversion="2", reason="Not working on earlier version of pandas")
     data = datatypes.SQLQuery(conn=f"sqlite:///{sqlite_with_data}", query="oi")
     reader = readers.PandasSQLAlchemy(data)
     out = reader.read()
@@ -78,6 +79,7 @@ def test_sqlite_duck_with_pandas_input(sqlite_with_data):
 
 
 def test_cat(sqlite_with_data):
+    pytest.importorskip("pandas", minversion="2", reason="Not working on earlier version of pandas")
     data = datatypes.Service(url=f"sqlite:///{sqlite_with_data}")
     reader = catalogs.SQLAlchemyCatalog(data)
     cat = reader.read()
