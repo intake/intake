@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import importlib.metadata
 import re
-from functools import cache
+from functools import lru_cache as cache
 from typing import Iterable
 
 from intake.readers.utils import Completable, subclasses

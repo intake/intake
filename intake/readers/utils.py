@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib.metadata
 import numbers
 import re
-from functools import cache
+from functools import lru_cache as cache
 from hashlib import md5
 from itertools import zip_longest
 from typing import Any, Iterable, Mapping
