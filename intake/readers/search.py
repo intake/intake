@@ -1,5 +1,7 @@
 """Find datasets meeting some complex criteria"""
 
+from __future__ import annotations
+
 from intake.readers.entry import ReaderDescription
 
 
