@@ -7,6 +7,7 @@ We may decide to have different recommended keys for data versus readers/pipelin
 For a possible schema we could decide to use, see
 https://specs.frictionlessdata.io/data-resource/
 """
+from __future__ import annotations
 
 metadata_fields = {
     "description": (str, "one-line description of the dataset"),
