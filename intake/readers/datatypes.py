@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from itertools import chain
-from functools import cache
+from functools import lru_cache as cache
 from typing import Any, Optional
 
 import fsspec

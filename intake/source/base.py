@@ -148,7 +148,7 @@ class DataSourceBase(DictSerialiseMixin):
 
     def _get_cache(self, urlpath):
         """The base class does not interact with caches"""
-        return urlpath
+        return [urlpath]
 
     def discover(self):
         """Open resource and populate the source attributes."""
