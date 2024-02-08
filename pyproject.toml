@@ -44,9 +44,11 @@ version_file = "intake/_version.py"
 
 [tool.setuptools]
 include-package-data = false
+zip-safe = false
 
 [tool.setuptools.packages.find]
-exclude = ["test*"]
+exclude = ["*tests*", "dist", "*examples*", "*scripts*", "*docs*"]
+namespaces = false
 
 [flake8]
 exclude = "__init__.py"

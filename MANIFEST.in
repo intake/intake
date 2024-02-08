@@ -1,0 +1,5 @@
+prune .github
+prune docs
+prune examples
+prune scripts
+global-exclude test*.py *.yml *.yaml *.csv calvert* *.png *.json

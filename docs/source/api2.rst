@@ -37,6 +37,8 @@ User Functions
 
 .. autofunction:: intake.readers.readers.reader_from_call
 
+.. _base:
+
 Base Classes
 ------------
 

@@ -88,6 +88,8 @@ distributed workloads.
 
 .. _dask: https://dask.org
 
+.. _v1:
+
 Relationship to V1
 ------------------
 
