@@ -932,6 +932,7 @@ class EntrypointsCatalog(Catalog):
         eps = entry_points()
         if hasattr(eps, "select"):  # Python 3.10+ / importlib_metadata >= 3.9.0
             catalogs = eps.select(group=self._entrypoints_group)
+            catalogs = {ep.name: ep for ep in catalogs}
         else:
             catalogs = eps.get("intake.drivers", [])
         self.name = self.name or "EntrypointsCatalog"
