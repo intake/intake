@@ -964,6 +964,7 @@ class GeoPandasReader(FileReader):
         datatypes.Shapefile,
         datatypes.GDALVectorFile,
         datatypes.GeoPackage,
+        datatypes.FlatGeoBuf,
     }
     func = "geopandas:read_file"
     url_arg = "filename"
@@ -1093,6 +1094,27 @@ class Condition(BaseReader):
             return if_true.read() if isinstance(if_true, BaseReader) else if_true
         else:
             return if_false.read() if isinstance(if_false, BaseReader) else if_false
+
+
+class PMTileReader(BaseReader):
+    implements = {datatypes.PMTiles}
+    func = "pmtiles.reader:Reader"
+    output_instance = "pmtiles.reader:Reader"
+
+    def _read(self, data):
+        import pmtiles.reader
+
+        if "://" in data.url or "::" in data.url:
+            f = fsspec.open(data.url, **(data.storage_options or {})).open()
+
+            def get_bytes(offset, length):
+                f.seek(offset)
+                return f.read(length)
+
+        else:
+            f = open(data.url)
+            get_bytes = pmtiles.reader.MmapSource(f)
+        return self._func(get_bytes)
 
 
 class FileExistsReader(BaseReader):
