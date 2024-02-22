@@ -134,6 +134,22 @@ class Catalog(BaseData):
     structure = {"catalog"}
 
 
+class PMTiles(FileData):
+    """single-file archive format for tiled image data"""
+
+    filepattern = "pmtiles"
+    magic = {b"PMTiles"}
+    structure = {"image"}
+
+
+class DuckDB(FileData):
+    """Columnar table DB format used exclusively by duckdb"""
+
+    filepattern = "(duck?)db"
+    magic = {(8, b"DUCK")}
+    structure = {"table"}
+
+
 class Parquet(FileData):
     """Column-optimized binary format"""
 
@@ -470,6 +486,13 @@ class Shapefile(FileData):
     filepattern = "shp$|shx$|dbf$"
     mimetypes = "x-gis/x-shapefile"
     magic = {b"\x00\x00\x27\x0a"}
+
+
+class FlatGeoBuf(FileData):
+    """Geo data in flatbuffers"""
+
+    filepattern = "fgb$"
+    magic = {b"fgb\x03fgb\x01"}
 
 
 class GeoPackage(SQLite):
