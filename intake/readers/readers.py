@@ -114,6 +114,28 @@ class BaseReader(Tokenizable, PipelineMixin):
         """Create a Catalog containing on this reader"""
         return self.to_entry().to_cat(name)
 
+    @property
+    def data(self):
+        """The BaseData this reader depends on, if it has one"""
+        data = self.kwargs.get("data")
+        if data is None:
+            args = self.kwargs.get("args", ())
+            if not (args):
+                raise ValueError("Cloud not find a data entity in this reader")
+            data = args[0]
+        if not isinstance(data, datatypes.BaseData):
+            raise ValueError("Data argument isn't a BaseData")
+        return data
+
+    def to_reader(self, outtype: tuple[str] | str | None = None, reader: str | None = None, **kw):
+        """Make a different reader for the data used by this reader"""
+        return self.data.to_reader(outtype=outtype, reader=reader, **kw)
+
+    def auto_pipeline(self, outtype: str | tuple[str], avoid: list[str] | None = None):
+        from intake import auto_pipeline
+
+        return auto_pipeline(self, outtype=outtype, avoid=avoid)
+
 
 class FileReader(BaseReader):
     """Convenience superclass for readers of files"""
@@ -127,6 +149,13 @@ class FileReader(BaseReader):
         if self.storage_options and data.storage_options:
             kw["storage_options"] = data.storage_options
         return self._func(**kw)
+
+
+class PanelImageViewer(FileReader):
+    output_instance = "panel.pane:Image"
+    implements = {datatypes.PNG, datatypes.JPEG}
+    func = "panel.pane:Image"
+    url_arg = "object"
 
 
 class FileByteReader(FileReader):

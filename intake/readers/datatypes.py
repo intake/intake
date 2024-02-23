@@ -57,21 +57,27 @@ class BaseData(Tokenizable):
         readers = self.possible_readers["importable"]
         return {r: r.output_instance for r in readers}
 
-    def to_reader_cls(self, outtype: str | None = None, reader: str | type | None = None):
+    def to_reader_cls(
+        self, outtype: tuple[str] | str | None = None, reader: tuple[str] | str | type | None = None
+    ):
         if outtype and reader:
             raise ValueError
         if isinstance(reader, str):
             try:
-                reader = import_name(reader)
+                return import_name(reader)
             except (ImportError, ModuleNotFoundError):
-                for cls, out in self.possible_outputs.items():
-                    if re.findall(reader, cls.qname()):
-                        return cls
+                reader = (reader,)
+        if isinstance(reader, tuple):
+            for cls, out in self.possible_outputs.items():
+                if any(re.findall(r, cls.qname()) for r in reader):
+                    return cls
         if isinstance(reader, type):
             return reader
         elif outtype:
+            if isinstance(outtype, str):
+                outtype = (outtype,)
             for reader, out in self.possible_outputs.items():
-                if out is not None and (out == outtype or re.findall(outtype, out)):
+                if out is not None and any(out == _ or re.findall(_, out) for _ in outtype):
                     return reader
             raise ValueError("outtype not in available in importable readers")
         return next(iter(self.possible_readers["importable"]))
@@ -103,7 +109,7 @@ class BaseData(Tokenizable):
         d = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
         return f"{type(self).__name__}, {d}"
 
-    def auto_pipeline(self, outtype: str):
+    def auto_pipeline(self, outtype: str | tuple[str]):
         """Find a pipeline to transform from this to the given output type"""
         from intake.readers.convert import auto_pipeline
 
@@ -492,7 +498,8 @@ class FlatGeoBuf(FileData):
     """Geo data in flatbuffers"""
 
     filepattern = "fgb$"
-    magic = {b"fgb\x03fgb\x01"}
+    magic = {b"fgb"}
+    # b"fgb\x03fgb\x01" would be a full magic, encoding version number; here is 3.2
 
 
 class GeoPackage(SQLite):
@@ -756,21 +763,23 @@ def recommend(
         # try stripping compression extensions?
         # TODO: file patterns could be in leading part of fsspec-like URL
         poss = {}
+        if fs is not None:
+            try:
+                allfiles = fs.ls(url, detail=False)
+            except IOError:
+                allfiles = None
+        else:
+            allfiles = None
         for cls in chain(subclasses(FileData), subclasses(BaseData)):
             if cls in outs:
                 continue
             if cls.filepattern:
-                find = re.findall(cls._filepattern(), url.lower())
-                if getattr(cls, "contains", None) and fs is not None:
-                    try:
-                        allfiles = fs.ls(url, detail=False)
-                        if any(a.endswith(c) for c in cls.contains for a in allfiles):
-                            poss[cls] = 0
-                            find = 0
-                    except IOError:
-                        pass
+                find = re.search(cls._filepattern(), url.lower())
+                if find is None and getattr(cls, "contains", None) and allfiles:
+                    if any(a.endswith(c) for c in cls.contains for a in allfiles):
+                        poss[cls] = 0
                 if find:
-                    poss[cls] = len(find[0])
+                    poss[cls] = find.start()
         out.extend(reversed(sorted(poss, key=lambda x: poss[x])))
     if url:
         for ext in {".gz", ".gzip", ".bzip2", "bz2", ".zstd", ".tar", ".tgz"}:

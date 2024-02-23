@@ -115,7 +115,7 @@ class StacCatalogReader(BaseReader):
         data,
         cls: str = "Catalog",
         signer: callable | None = None,
-        prefer: str | None = None,
+        prefer: tuple[str] | str | None = ("xarray", "numpy"),
         **kwargs,
     ):
         """
@@ -181,7 +181,7 @@ class StacCatalogReader(BaseReader):
         """
         Assign intake driver for data I/O
 
-        prefer: str
+        prefer: str | list[str]
             passed to .to_reader to inform what class of reader would be preferable, if any
         """
         url = asset.href
@@ -202,7 +202,7 @@ class StacCatalogReader(BaseReader):
         else:
             raise ValueError
         try:
-            return data.to_reader(outtype="xarray:Dataset", reader=prefer)
+            return data.to_reader(outtype=prefer)
         except ValueError:
             # no xarray reader
             if data.possible_readers:

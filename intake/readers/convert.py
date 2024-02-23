@@ -559,7 +559,7 @@ def plot_conversion_graph(filename) -> None:
     a.draw(filename, prog="fdp")
 
 
-def path(start: str, end: str, cutoff: int = 5, avoid=None) -> list:
+def path(start: str, end: str | tuple[str], cutoff: int = 5, avoid=None) -> list:
     import networkx as nx
 
     g = conversions_graph(avoid=avoid)
@@ -568,7 +568,9 @@ def path(start: str, end: str, cutoff: int = 5, avoid=None) -> list:
     if not matchtypes:
         raise ValueError("type found no match: %s", start)
     start = matchtypes[0]
-    matchtypes = [_ for _ in alltypes if re.findall(end, _)]
+    if isinstance(end, str):
+        end = (end,)
+    matchtypes = [_ for _ in alltypes if any(re.findall(e, _) for e in end)]
     if not matchtypes:
         raise ValueError("outtype found no match: %s", end)
     end = matchtypes[0]
@@ -577,7 +579,7 @@ def path(start: str, end: str, cutoff: int = 5, avoid=None) -> list:
 
 def auto_pipeline(
     url: str | BaseData,
-    outtype: str,
+    outtype: str | tuple[str],
     storage_options: dict | None = None,
     avoid: list[str] | None = None,
 ) -> Pipeline:
