@@ -5,6 +5,7 @@ By convention, functions here do not change the data, just how it is held.
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 from itertools import chain
 
 from intake import import_name, conf
@@ -559,7 +560,24 @@ def plot_conversion_graph(filename) -> None:
     a.draw(filename, prog="fdp")
 
 
-def path(start: str, end: str | tuple[str], cutoff: int = 5, avoid=None) -> list:
+@lru_cache()  # clear cache if you import more things
+def path(
+    start: str, end: str | tuple[str], cutoff: int = 5, avoid: tuple[str] | None = None
+) -> list[list]:
+    """Find possible conversion paths from start to end types
+
+    Parameters
+    ----------
+    start: data or reader qualified name to start with
+    end: desired output type name; any match on any of the strings given
+    cutoff: the maximum numer of steps to consider per path
+    avoid: ignore all readers/converters with a name matching this
+
+    Returns
+    -------
+    A list of paths, where each item is a list of steps (starttype, endtype) for which
+    there is a conversion class.
+    """
     import networkx as nx
 
     g = conversions_graph(avoid=avoid)
