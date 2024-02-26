@@ -159,7 +159,7 @@ class PanelImageViewer(FileReader):
 
 
 class FileByteReader(FileReader):
-    """The contents of file(s) as bytes objects"""
+    """The contents of file(s) as bytes"""
 
     output_instance = "builtin:bytes"
     implements = {datatypes.FileData}
@@ -175,6 +175,29 @@ class FileByteReader(FileReader):
             with of as f:
                 out.append(f.read())
         return b"".join(out)
+
+
+class FileTextReader(FileReader):
+    """The contents of file(s) as str"""
+
+    output_instance = "builtin:str"
+    implements = {datatypes.FileData}
+
+    def discover(self, data=None, encoding=None, **kwargs):
+        data = data or self.kwargs["data"]
+        if encoding:
+            data.storage_options["encoding"] = encoding
+        with fsspec.open(data.url, mode="rt", **(data.storage_options or {})) as f:
+            return f.read()
+
+    def _read(self, data, encoding=None, **kwargs):
+        out = []
+        if encoding:
+            data.storage_options["encoding"] = encoding
+        for of in fsspec.open_files(data.url, mode="rt", **(data.storage_options or {})):
+            with of as f:
+                out.append(f.read())
+        return "".join(out)
 
 
 class Pandas(FileReader):
@@ -241,6 +264,12 @@ class DaskParquet(DaskDF):
     optional_imports = {"fastparquet", "pyarrow"}
     func = "dask.dataframe:read_parquet"
     url_arg = "path"
+
+
+class DaskGeoParquet(DaskParquet):
+    imports = {"dask", "geopandas"}
+    func = "dask_geopandas:read_parquet"
+    output_instance = "dask_geopandas.core:GeoDataFrame"
 
 
 class DaskHDF(DaskDF):
@@ -656,6 +685,18 @@ class DaskCSV(DaskDF):
     implements = {datatypes.CSV}
     func = "dask.dataframe:read_csv"
     url_arg = "urlpath"
+
+
+class DaskText(FileReader):
+    imports = {"dask"}
+    implements = {datatypes.Text}
+    func = "dask.bag:read_text"
+    output_instance = "dask.bag.core:Bag"
+    storage_options = True
+    url_arg = "urlpath"
+
+    def discover(self, n=10, **kwargs):
+        return self.read().take(n)
 
 
 class DaskCSVPattern(DaskCSV):
@@ -1152,8 +1193,6 @@ class FileExistsReader(BaseReader):
     output_instance = "builtins:bool"
 
     def _read(self, data, *args, **kwargs):
-        import fsspec
-
         try:
             fs, path = fsspec.core.url_to_fs(data.url, **(data.storage_options or {}))
         except FileNotFoundError:

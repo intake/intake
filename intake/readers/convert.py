@@ -93,9 +93,13 @@ class DuckToPandas(BaseConverter):
 class DaskDFToPandas(BaseConverter):
     instances = {
         "dask.dataframe:DataFrame": "pandas:DataFrame",
+        "dask_geopandas.core:GeoDataFrame": "geopandas:GeoDataFrame",
         "dask.array:Array": "numpy:ndarray",
     }
     func = "dask:compute"
+
+    def run(self, x, *args, **kwargs):
+        return self._func(x)[0]
 
 
 class PandasToGeopandas(BaseConverter):
@@ -264,6 +268,40 @@ class DeltaQueryToDaskGeopandas(BaseConverter):
         return dask_geopandas.read_parquet(
             file_uris, storage_options=reader.kwargs["data"].storage_options
         )
+
+
+class GeoDataFrameToSTACCatalog(BaseConverter):
+    instances = {"geopandas:GeoDataFrame": "intake.readers.entry:Catalog"}
+    func = "intake.readers.catalogs:StacCatalogReader"
+
+    @classmethod
+    def _un_arr(cls, data):
+        # clean up dataframe
+        import numpy as np
+
+        if isinstance(data, dict):
+            data = {k: cls._un_arr(v) for k, v in data.items()}
+        elif isinstance(data, (list, np.ndarray)):
+            data = [cls._un_arr(_) for _ in data]
+        return data
+
+    def read(self, data, *args, **kwargs):
+        from intake.readers import Literal
+        from intake.readers.catalogs import StacCatalogReader
+        import stac_geoparquet
+
+        # clean up numpy arrays->list and any assets that are just None
+        data["assets"] = data.assets.apply(
+            lambda x: {k: v for k, v in self._un_arr(x).items() if v}
+        )
+        stac = stac_geoparquet.stac_geoparquet.to_item_collection(data)
+        lit = Literal(stac.to_dict())
+        return StacCatalogReader(
+            lit,
+            signer=self.metadata.get("signer"),
+            prefer=self.metadata.get("prefer"),
+            cls="ItemCollection",
+        ).read()
 
 
 class PandasToMetagraph(BaseConverter):
@@ -457,9 +495,9 @@ class Pipeline(readers.BaseReader):
         # TODO: these conditions can probably be combined
         if isinstance(func, type) and issubclass(func, BaseReader):
             if discover:
-                return func().discover(*arg, **kw2)
+                return func(metadata=self.metadata).discover(*arg, **kw2)
             else:
-                return func().read(*arg, **kw2)
+                return func(metadata=self.metadata).read(*arg, **kw2)
         elif isinstance(func, BaseReader):
             if discover:
                 return func.discover(*arg, **kw2)
@@ -495,7 +533,10 @@ class Pipeline(readers.BaseReader):
             raise ValueError(f"n must be between {1} and {len(self.steps)}")
 
         pipe = Pipeline(
-            steps=self.steps[:n], out_instances=self.output_instances[:n], **self.kwargs
+            steps=self.steps[:n],
+            out_instances=self.output_instances[:n],
+            metadata=self.metadata,
+            **self.kwargs,
         )
         if n < len(self.steps):
             pipe.token = (self.token, n)
@@ -512,6 +553,7 @@ class Pipeline(readers.BaseReader):
         return Pipeline(
             steps=self.steps + [step],
             out_instances=self.output_instances + [out_instance],
+            metadata=self.metadata,
         )
 
 
@@ -520,8 +562,6 @@ def conversions_graph(avoid=None):
     if isinstance(avoid, str):
         avoid = [avoid]
     import networkx
-
-    from intake.readers.utils import subclasses
 
     graph = networkx.DiGraph()
 

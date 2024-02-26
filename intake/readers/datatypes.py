@@ -736,6 +736,7 @@ def recommend(
         fs = None
 
     if isinstance(head, bytes):
+        # more specific first
         for cls in subclasses(BaseData):
             if cls in outs:
                 continue
@@ -759,9 +760,6 @@ def recommend(
                 out.append(cls)
                 outs.add(cls)
     if url:
-        # urlparse to remove query parts?
-        # try stripping compression extensions?
-        # TODO: file patterns could be in leading part of fsspec-like URL
         poss = {}
         if fs is not None:
             try:
@@ -770,7 +768,10 @@ def recommend(
                 allfiles = None
         else:
             allfiles = None
-        for cls in chain(subclasses(FileData), subclasses(BaseData)):
+        files = set(subclasses(FileData))
+        bases = set(subclasses(BaseData)) - files
+        # file types first, then other/srvices, more specific first
+        for cls in chain(files, bases):
             if cls in outs:
                 continue
             if cls.filepattern:
@@ -780,7 +781,7 @@ def recommend(
                         poss[cls] = 0
                 if find:
                     poss[cls] = find.start()
-        out.extend(reversed(sorted(poss, key=lambda x: poss[x])))
+        out.extend(sorted(poss, key=lambda x: poss[x]))
     if url:
         for ext in {".gz", ".gzip", ".bzip2", "bz2", ".zstd", ".tar", ".tgz"}:
             if url.endswith(ext):

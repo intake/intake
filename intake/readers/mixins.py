@@ -45,6 +45,7 @@ class PipelineMixin(Completable):
         return Pipeline(
             steps=[(self, (), {}), (GetItem, (item,), {})],
             out_instances=[self.output_instance, outtype],
+            metadata=self.metadata,
         )
 
     def __dir__(self):
@@ -74,6 +75,7 @@ class PipelineMixin(Completable):
                 self.output_instance,
                 output_instance or self.output_instance,
             ],
+            metadata=self.metadata,
         )
 
     @property
@@ -113,6 +115,7 @@ class Functioner(Completable):
         return Pipeline(
             steps=[(self.reader, (), {}), (func, arg, kw)],
             out_instances=[self.reader.output_instance, item],
+            metadata=self.reader.metadata,
         )
 
     def __repr__(self):
@@ -130,6 +133,7 @@ class Functioner(Completable):
         return Pipeline(
             steps=[(self.reader, (), {}), (func, args, kwargs)],
             out_instances=[self.reader.output_instance, output_instance],
+            metadata=self.reader.metadata,
         )
 
     def methods(self):
@@ -166,6 +170,7 @@ class Functioner(Completable):
                 out = Pipeline(
                     steps=[(self.reader, (), {}), (func, (), kw)],
                     out_instances=[self.reader.output_instance, outtype],
+                    metadata=self.reader.metadata,
                 )
         except RecursionError as e:
             raise AttributeError from e
