@@ -115,7 +115,7 @@ class StacCatalogReader(BaseReader):
         data,
         cls: str = "Catalog",
         signer: callable | None = None,
-        prefer: str | None = None,
+        prefer: tuple[str] | str | None = ("xarray", "numpy"),
         **kwargs,
     ):
         """
@@ -124,7 +124,7 @@ class StacCatalogReader(BaseReader):
         data:
             JSON-like STAC response, or the actual URL to fetch this from
         cls:
-            the class of STAC object this should be, Catalog, Item, Asset, ItemCollection
+            the class of STAC object this should be, Catalog, Item, Asset, ItemCollection, Feature
         signer:
             if given, apply this function to assets and derived items, to add signature/
             auth information to HTTP calls
@@ -140,7 +140,7 @@ class StacCatalogReader(BaseReader):
         else:
             self._stac = cls.from_dict(data.data)
         metadata = self._stac.to_dict()
-        metadata.pop("links")
+        metadata.pop("links", None)
         self.metadata.update(metadata)
         import pystac
 
@@ -157,7 +157,11 @@ class StacCatalogReader(BaseReader):
             for key, value in self._stac.assets.items():
                 if signer:
                     signer(value)
-                cat[key] = self._get_reader(value, prefer=prefer).to_entry()
+                try:
+                    reader = self._get_reader(value, signer=signer, prefer=prefer).to_entry()
+                    cat[key] = reader
+                except (ValueError, TypeError, StopIteration):
+                    pass
 
         for subcatalog in items:
             subcls = type(subcatalog).__name__
@@ -177,11 +181,11 @@ class StacCatalogReader(BaseReader):
         return cat
 
     @staticmethod
-    def _get_reader(asset, prefer=None):
+    def _get_reader(asset, signer=None, prefer=None):
         """
         Assign intake driver for data I/O
 
-        prefer: str
+        prefer: str | list[str]
             passed to .to_reader to inform what class of reader would be preferable, if any
         """
         url = asset.href
@@ -201,14 +205,15 @@ class StacCatalogReader(BaseReader):
             data = cls[0](url=url, metadata=meta, storage_options=storage_options)
         else:
             raise ValueError
-        try:
-            return data.to_reader(outtype="xarray:Dataset", reader=prefer)
-        except ValueError:
-            # no xarray reader
-            if data.possible_readers:
-                return data.to_reader(reader=prefer)
-            else:
-                return data
+        if "stac-items" in meta.get("roles", []) or [] and isinstance(data, datatypes.Parquet):
+            from intake.readers.readers import DaskGeoParquet
+
+            data.metadata["signer"] = signer
+            data.metadata["prefer"] = prefer
+            return DaskGeoParquet(data)
+        else:
+            rr = None
+        return data.to_reader(reader=rr, outtype=prefer)
 
 
 class StackBands(BaseReader):
@@ -231,7 +236,7 @@ class StackBands(BaseReader):
         bands:
             band_id, name or common_name to select from contained items
         concat_dim:
-            concat dimansion inthe xarray sense
+            concat dimansion in the xarray sense
 
         Returns
         -------

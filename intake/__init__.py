@@ -25,6 +25,7 @@ from intake.readers import (
     BaseConverter,
     Pipeline,
     auto_pipeline,
+    path,
     DataDescription,
     ReaderDescription,
     BaseUserParameter,

@@ -16,12 +16,15 @@ class SecurityError(RuntimeError):
 
 
 def subclasses(cls: type) -> set:
-    """Find all direct and indirect subclasses"""
+    """Find all direct and indirect subclasses
+
+    Most recently created and most specialised classes come first
+    """
     out = set()
-    for cl in cls.__subclasses__():
+    for cl in reversed(cls.__subclasses__()):
         # TODO: if cls.check_imports exists and returns False, do we descend?
-        out.add(cl)
         out |= subclasses(cl)
+        out.add(cl)
     return out
 
 

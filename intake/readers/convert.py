@@ -5,6 +5,7 @@ By convention, functions here do not change the data, just how it is held.
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 from itertools import chain
 
 from intake import import_name, conf
@@ -92,9 +93,13 @@ class DuckToPandas(BaseConverter):
 class DaskDFToPandas(BaseConverter):
     instances = {
         "dask.dataframe:DataFrame": "pandas:DataFrame",
+        "dask_geopandas.core:GeoDataFrame": "geopandas:GeoDataFrame",
         "dask.array:Array": "numpy:ndarray",
     }
     func = "dask:compute"
+
+    def run(self, x, *args, **kwargs):
+        return self._func(x)[0]
 
 
 class PandasToGeopandas(BaseConverter):
@@ -263,6 +268,40 @@ class DeltaQueryToDaskGeopandas(BaseConverter):
         return dask_geopandas.read_parquet(
             file_uris, storage_options=reader.kwargs["data"].storage_options
         )
+
+
+class GeoDataFrameToSTACCatalog(BaseConverter):
+    instances = {"geopandas:GeoDataFrame": "intake.readers.entry:Catalog"}
+    func = "intake.readers.catalogs:StacCatalogReader"
+
+    @classmethod
+    def _un_arr(cls, data):
+        # clean up dataframe
+        import numpy as np
+
+        if isinstance(data, dict):
+            data = {k: cls._un_arr(v) for k, v in data.items()}
+        elif isinstance(data, (list, np.ndarray)):
+            data = [cls._un_arr(_) for _ in data]
+        return data
+
+    def read(self, data, *args, **kwargs):
+        from intake.readers import Literal
+        from intake.readers.catalogs import StacCatalogReader
+        import stac_geoparquet
+
+        # clean up numpy arrays->list and any assets that are just None
+        data["assets"] = data.assets.apply(
+            lambda x: {k: v for k, v in self._un_arr(x).items() if v}
+        )
+        stac = stac_geoparquet.stac_geoparquet.to_item_collection(data)
+        lit = Literal(stac.to_dict())
+        return StacCatalogReader(
+            lit,
+            signer=self.metadata.get("signer"),
+            prefer=self.metadata.get("prefer"),
+            cls="ItemCollection",
+        ).read()
 
 
 class PandasToMetagraph(BaseConverter):
@@ -456,9 +495,9 @@ class Pipeline(readers.BaseReader):
         # TODO: these conditions can probably be combined
         if isinstance(func, type) and issubclass(func, BaseReader):
             if discover:
-                return func().discover(*arg, **kw2)
+                return func(metadata=self.metadata).discover(*arg, **kw2)
             else:
-                return func().read(*arg, **kw2)
+                return func(metadata=self.metadata).read(*arg, **kw2)
         elif isinstance(func, BaseReader):
             if discover:
                 return func.discover(*arg, **kw2)
@@ -494,7 +533,10 @@ class Pipeline(readers.BaseReader):
             raise ValueError(f"n must be between {1} and {len(self.steps)}")
 
         pipe = Pipeline(
-            steps=self.steps[:n], out_instances=self.output_instances[:n], **self.kwargs
+            steps=self.steps[:n],
+            out_instances=self.output_instances[:n],
+            metadata=self.metadata,
+            **self.kwargs,
         )
         if n < len(self.steps):
             pipe.token = (self.token, n)
@@ -511,6 +553,7 @@ class Pipeline(readers.BaseReader):
         return Pipeline(
             steps=self.steps + [step],
             out_instances=self.output_instances + [out_instance],
+            metadata=self.metadata,
         )
 
 
@@ -519,8 +562,6 @@ def conversions_graph(avoid=None):
     if isinstance(avoid, str):
         avoid = [avoid]
     import networkx
-
-    from intake.readers.utils import subclasses
 
     graph = networkx.DiGraph()
 
@@ -559,7 +600,24 @@ def plot_conversion_graph(filename) -> None:
     a.draw(filename, prog="fdp")
 
 
-def path(start: str, end: str, cutoff: int = 5, avoid=None) -> list:
+@lru_cache()  # clear cache if you import more things
+def path(
+    start: str, end: str | tuple[str], cutoff: int = 5, avoid: tuple[str] | None = None
+) -> list[list]:
+    """Find possible conversion paths from start to end types
+
+    Parameters
+    ----------
+    start: data or reader qualified name to start with
+    end: desired output type name; any match on any of the strings given
+    cutoff: the maximum numer of steps to consider per path
+    avoid: ignore all readers/converters with a name matching this
+
+    Returns
+    -------
+    A list of paths, where each item is a list of steps (starttype, endtype) for which
+    there is a conversion class.
+    """
     import networkx as nx
 
     g = conversions_graph(avoid=avoid)
@@ -568,7 +626,9 @@ def path(start: str, end: str, cutoff: int = 5, avoid=None) -> list:
     if not matchtypes:
         raise ValueError("type found no match: %s", start)
     start = matchtypes[0]
-    matchtypes = [_ for _ in alltypes if re.findall(end, _)]
+    if isinstance(end, str):
+        end = (end,)
+    matchtypes = [_ for _ in alltypes if any(re.findall(e, _) for e in end)]
     if not matchtypes:
         raise ValueError("outtype found no match: %s", end)
     end = matchtypes[0]
@@ -577,7 +637,7 @@ def path(start: str, end: str, cutoff: int = 5, avoid=None) -> list:
 
 def auto_pipeline(
     url: str | BaseData,
-    outtype: str,
+    outtype: str | tuple[str],
     storage_options: dict | None = None,
     avoid: list[str] | None = None,
 ) -> Pipeline:
