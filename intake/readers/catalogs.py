@@ -157,7 +157,11 @@ class StacCatalogReader(BaseReader):
             for key, value in self._stac.assets.items():
                 if signer:
                     signer(value)
-                cat[key] = self._get_reader(value, signer=signer, prefer=prefer).to_entry()
+                try:
+                    reader = self._get_reader(value, signer=signer, prefer=prefer).to_entry()
+                    cat[key] = reader
+                except (ValueError, TypeError, StopIteration):
+                    pass
 
         for subcatalog in items:
             subcls = type(subcatalog).__name__

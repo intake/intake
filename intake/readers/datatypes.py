@@ -79,7 +79,6 @@ class BaseData(Tokenizable):
             for reader, out in self.possible_outputs.items():
                 if out is not None and any(out == _ or re.findall(_, out) for _ in outtype):
                     return reader
-            raise ValueError("outtype not in available in importable readers")
         return next(iter(self.possible_readers["importable"]))
 
     def to_reader(self, outtype: str | None = None, reader: str | None = None, **kw):
