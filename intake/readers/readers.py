@@ -129,7 +129,7 @@ class BaseReader(Tokenizable, PipelineMixin):
 
     def to_reader(self, outtype: tuple[str] | str | None = None, reader: str | None = None, **kw):
         """Make a different reader for the data used by this reader"""
-        return self.data.to_reader(outtype=outtype, reader=reader, **kw)
+        return self.data.to_reader(outtype=outtype, reader=reader, metadata=self.metadata, **kw)
 
     def auto_pipeline(self, outtype: str | tuple[str], avoid: list[str] | None = None):
         from intake import auto_pipeline
