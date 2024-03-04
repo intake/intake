@@ -1014,8 +1014,8 @@ class RasterIOXarrayReader(FileReader):
             if k in kwargs
         }
 
-        with fsspec.open_files(data.url, **(data.storage_options or {})) as ofs:
-            bits = [open_rasterio(of, **kwargs) for of in ofs]
+        ofs = fsspec.open_files(data.url, **(data.storage_options or {}))
+        bits = [open_rasterio(of.open(), **kwargs) for of in ofs]
         if len(bits) == 1:
             return bits
         else:

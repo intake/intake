@@ -301,6 +301,7 @@ class GeoDataFrameToSTACCatalog(BaseConverter):
             signer=self.metadata.get("signer"),
             prefer=self.metadata.get("prefer"),
             cls="ItemCollection",
+            metadata=self.metadata,
         ).read()
 
 

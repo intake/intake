@@ -142,8 +142,6 @@ class StacCatalogReader(BaseReader):
         metadata = self._stac.to_dict()
         metadata.pop("links", None)
         self.metadata.update(metadata)
-        import pystac
-
         cat = Catalog(metadata=self.metadata)
         items = []
 
@@ -158,7 +156,9 @@ class StacCatalogReader(BaseReader):
                 if signer:
                     signer(value)
                 try:
-                    reader = self._get_reader(value, signer=signer, prefer=prefer).to_entry()
+                    reader = self._get_reader(
+                        value, signer=signer, prefer=prefer, metadata=self.metadata
+                    ).to_entry()
                     cat[key] = reader
                 except (ValueError, TypeError, StopIteration):
                     pass
@@ -177,11 +177,12 @@ class StacCatalogReader(BaseReader):
                     },
                     **kwargs,
                 ),
+                metadata=self.metadata,
             )
         return cat
 
     @staticmethod
-    def _get_reader(asset, signer=None, prefer=None):
+    def _get_reader(asset, signer=None, prefer=None, metadata=None):
         """
         Assign intake driver for data I/O
 
@@ -213,7 +214,7 @@ class StacCatalogReader(BaseReader):
             return DaskGeoParquet(data)
         else:
             rr = None
-        return data.to_reader(reader=rr, outtype=prefer)
+        return data.to_reader(reader=rr, outtype=prefer, metadata=metadata)
 
 
 class StackBands(BaseReader):
@@ -225,7 +226,7 @@ class StackBands(BaseReader):
 
     implements = {datatypes.STACJSON, datatypes.Literal}
     imports = {"pystac", "xarray"}
-    output_instance = "intake.readers.readers:XarrayReader"
+    output_instance = "xarray:Dataset"
 
     def _read(self, data, bands: list[str], concat_dim: str = "band", signer=None, **kw):
         """
@@ -300,8 +301,8 @@ class StackBands(BaseReader):
             raise ValueError(
                 f"Stacking failed: bands must have same type, multiple found: {unique_types}"
             )
-        reader = StacCatalogReader._get_reader(asset)
-        reader.kwargs["concat_dim"] = concat_dim
+        reader = StacCatalogReader._get_reader(asset, signer=signer)
+        reader.kwargs["dim"] = concat_dim
         reader.kwargs["data"].url = hrefs
         reader.kwargs.update(kw)
         return reader.read()
