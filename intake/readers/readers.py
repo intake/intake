@@ -129,7 +129,7 @@ class BaseReader(Tokenizable, PipelineMixin):
 
     def to_reader(self, outtype: tuple[str] | str | None = None, reader: str | None = None, **kw):
         """Make a different reader for the data used by this reader"""
-        return self.data.to_reader(outtype=outtype, reader=reader, **kw)
+        return self.data.to_reader(outtype=outtype, reader=reader, metadata=self.metadata, **kw)
 
     def auto_pipeline(self, outtype: str | tuple[str], avoid: list[str] | None = None):
         from intake import auto_pipeline
@@ -1014,8 +1014,8 @@ class RasterIOXarrayReader(FileReader):
             if k in kwargs
         }
 
-        with fsspec.open_files(data.url, **(data.storage_options or {})) as ofs:
-            bits = [open_rasterio(of, **kwargs) for of in ofs]
+        ofs = fsspec.open_files(data.url, **(data.storage_options or {}))
+        bits = [open_rasterio(of.open(), **kwargs) for of in ofs]
         if len(bits) == 1:
             return bits
         else:

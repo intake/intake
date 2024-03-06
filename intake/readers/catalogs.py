@@ -142,8 +142,6 @@ class StacCatalogReader(BaseReader):
         metadata = self._stac.to_dict()
         metadata.pop("links", None)
         self.metadata.update(metadata)
-        import pystac
-
         cat = Catalog(metadata=self.metadata)
         items = []
 
@@ -158,7 +156,9 @@ class StacCatalogReader(BaseReader):
                 if signer:
                     signer(value)
                 try:
-                    reader = self._get_reader(value, signer=signer, prefer=prefer).to_entry()
+                    reader = self._get_reader(
+                        value, signer=signer, prefer=prefer, metadata=self.metadata
+                    ).to_entry()
                     cat[key] = reader
                 except (ValueError, TypeError, StopIteration):
                     pass
@@ -177,11 +177,12 @@ class StacCatalogReader(BaseReader):
                     },
                     **kwargs,
                 ),
+                metadata=self.metadata,
             )
         return cat
 
     @staticmethod
-    def _get_reader(asset, signer=None, prefer=None):
+    def _get_reader(asset, signer=None, prefer=None, metadata=None):
         """
         Assign intake driver for data I/O
 
@@ -213,7 +214,7 @@ class StacCatalogReader(BaseReader):
             return DaskGeoParquet(data)
         else:
             rr = None
-        return data.to_reader(reader=rr, outtype=prefer)
+        return data.to_reader(reader=rr, outtype=prefer, metadata=metadata)
 
 
 class StackBands(BaseReader):
@@ -225,9 +226,9 @@ class StackBands(BaseReader):
 
     implements = {datatypes.STACJSON, datatypes.Literal}
     imports = {"pystac", "xarray"}
-    output_instance = "intake.readers.readers:XarrayReader"
+    output_instance = "xarray:Dataset"
 
-    def _read(self, data, bands: list[str], concat_dim: str = "band", **kw):
+    def _read(self, data, bands: list[str], concat_dim: str = "band", signer=None, **kw):
         """
         Parameters
         ----------
@@ -252,6 +253,8 @@ class StackBands(BaseReader):
             self._stac = cls.from_file(data.url)
         else:
             self._stac = cls.from_dict(data.data)
+        if signer:
+            signer(self._stac)
 
         band_info = [band.to_dict() for band in EOExtension.ext(self._stac).bands]
         metadatas = {}
@@ -263,11 +266,18 @@ class StackBands(BaseReader):
             # band can be band id, name or common_name
             if band in assets:
                 info = next(
-                    (b for b in band_info if b.get("id", b.get("name")) == band),
+                    (
+                        b
+                        for b in band_info
+                        if band in [b.get(_) for _ in ["common_name", "name", "id"]]
+                    ),
                     None,
                 )
             else:
-                info = next((b for b in band_info if b.get("common_name") == band), None)
+                info = next(
+                    (b for b in band_info if band in [b.get(_) for _ in ["common_name", "name"]]),
+                    None,
+                )
                 if info is not None:
                     band = info.get("id", info.get("name"))
 
@@ -291,11 +301,11 @@ class StackBands(BaseReader):
             raise ValueError(
                 f"Stacking failed: bands must have same type, multiple found: {unique_types}"
             )
-        reader = StacCatalogReader._get_reader(asset)
-        reader.kwargs["concat_dim"] = concat_dim
+        reader = StacCatalogReader._get_reader(asset, signer=signer)
+        reader.kwargs["dim"] = concat_dim
         reader.kwargs["data"].url = hrefs
         reader.kwargs.update(kw)
-        return reader
+        return reader.read()
 
 
 class StacSearch(BaseReader):

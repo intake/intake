@@ -677,6 +677,7 @@ comp_magic = {
     (0, b"\x1f\x8b"): "gzip",
     (0, b"BZh"): "bzip2",
     (0, b"(\xc2\xb5/\xc3\xbd"): "zstd",
+    (0, b"\xff\x06\x00\x00sNaPpY"): "sz",  # stream framed format
 }
 container_magic = {
     # these are like datatypes making filesystems
