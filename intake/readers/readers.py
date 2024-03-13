@@ -114,6 +114,28 @@ class BaseReader(Tokenizable, PipelineMixin):
         """Create a Catalog containing on this reader"""
         return self.to_entry().to_cat(name)
 
+    @property
+    def data(self):
+        """The BaseData this reader depends on, if it has one"""
+        data = self.kwargs.get("data")
+        if data is None:
+            args = self.kwargs.get("args", ())
+            if not (args):
+                raise ValueError("Cloud not find a data entity in this reader")
+            data = args[0]
+        if not isinstance(data, datatypes.BaseData):
+            raise ValueError("Data argument isn't a BaseData")
+        return data
+
+    def to_reader(self, outtype: tuple[str] | str | None = None, reader: str | None = None, **kw):
+        """Make a different reader for the data used by this reader"""
+        return self.data.to_reader(outtype=outtype, reader=reader, metadata=self.metadata, **kw)
+
+    def auto_pipeline(self, outtype: str | tuple[str], avoid: list[str] | None = None):
+        from intake import auto_pipeline
+
+        return auto_pipeline(self, outtype=outtype, avoid=avoid)
+
 
 class FileReader(BaseReader):
     """Convenience superclass for readers of files"""
@@ -129,8 +151,15 @@ class FileReader(BaseReader):
         return self._func(**kw)
 
 
+class PanelImageViewer(FileReader):
+    output_instance = "panel.pane:Image"
+    implements = {datatypes.PNG, datatypes.JPEG}
+    func = "panel.pane:Image"
+    url_arg = "object"
+
+
 class FileByteReader(FileReader):
-    """The contents of file(s) as bytes objects"""
+    """The contents of file(s) as bytes"""
 
     output_instance = "builtin:bytes"
     implements = {datatypes.FileData}
@@ -146,6 +175,29 @@ class FileByteReader(FileReader):
             with of as f:
                 out.append(f.read())
         return b"".join(out)
+
+
+class FileTextReader(FileReader):
+    """The contents of file(s) as str"""
+
+    output_instance = "builtin:str"
+    implements = {datatypes.FileData}
+
+    def discover(self, data=None, encoding=None, **kwargs):
+        data = data or self.kwargs["data"]
+        if encoding:
+            data.storage_options["encoding"] = encoding
+        with fsspec.open(data.url, mode="rt", **(data.storage_options or {})) as f:
+            return f.read()
+
+    def _read(self, data, encoding=None, **kwargs):
+        out = []
+        if encoding:
+            data.storage_options["encoding"] = encoding
+        for of in fsspec.open_files(data.url, mode="rt", **(data.storage_options or {})):
+            with of as f:
+                out.append(f.read())
+        return "".join(out)
 
 
 class Pandas(FileReader):
@@ -212,6 +264,12 @@ class DaskParquet(DaskDF):
     optional_imports = {"fastparquet", "pyarrow"}
     func = "dask.dataframe:read_parquet"
     url_arg = "path"
+
+
+class DaskGeoParquet(DaskParquet):
+    imports = {"dask", "geopandas"}
+    func = "dask_geopandas:read_parquet"
+    output_instance = "dask_geopandas.core:GeoDataFrame"
 
 
 class DaskHDF(DaskDF):
@@ -629,6 +687,18 @@ class DaskCSV(DaskDF):
     url_arg = "urlpath"
 
 
+class DaskText(FileReader):
+    imports = {"dask"}
+    implements = {datatypes.Text}
+    func = "dask.bag:read_text"
+    output_instance = "dask.bag.core:Bag"
+    storage_options = True
+    url_arg = "urlpath"
+
+    def discover(self, n=10, **kwargs):
+        return self.read().take(n)
+
+
 class DaskCSVPattern(DaskCSV):
     """Apply categorical data extraction to a set of CSV paths using dask
 
@@ -944,8 +1014,8 @@ class RasterIOXarrayReader(FileReader):
             if k in kwargs
         }
 
-        with fsspec.open_files(data.url, **(data.storage_options or {})) as ofs:
-            bits = [open_rasterio(of, **kwargs) for of in ofs]
+        ofs = fsspec.open_files(data.url, **(data.storage_options or {}))
+        bits = [open_rasterio(of.open(), **kwargs) for of in ofs]
         if len(bits) == 1:
             return bits
         else:
@@ -964,6 +1034,7 @@ class GeoPandasReader(FileReader):
         datatypes.Shapefile,
         datatypes.GDALVectorFile,
         datatypes.GeoPackage,
+        datatypes.FlatGeoBuf,
     }
     func = "geopandas:read_file"
     url_arg = "filename"
@@ -1095,14 +1166,33 @@ class Condition(BaseReader):
             return if_false.read() if isinstance(if_false, BaseReader) else if_false
 
 
+class PMTileReader(BaseReader):
+    implements = {datatypes.PMTiles}
+    func = "pmtiles.reader:Reader"
+    output_instance = "pmtiles.reader:Reader"
+
+    def _read(self, data):
+        import pmtiles.reader
+
+        if "://" in data.url or "::" in data.url:
+            f = fsspec.open(data.url, **(data.storage_options or {})).open()
+
+            def get_bytes(offset, length):
+                f.seek(offset)
+                return f.read(length)
+
+        else:
+            f = open(data.url)
+            get_bytes = pmtiles.reader.MmapSource(f)
+        return self._func(get_bytes)
+
+
 class FileExistsReader(BaseReader):
     implements = {datatypes.FileData}
     func = "fsspec.core:url_to_fs"
     output_instance = "builtins:bool"
 
     def _read(self, data, *args, **kwargs):
-        import fsspec
-
         try:
             fs, path = fsspec.core.url_to_fs(data.url, **(data.storage_options or {}))
         except FileNotFoundError:

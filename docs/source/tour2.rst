@@ -173,6 +173,30 @@ can be done
 
 .. _entrypoint: https://packaging.python.org/en/latest/specifications/entry-points/
 
+Migration from V1
+-----------------
+
+Section :ref:`v1` shows the principal differences to Intake before Take2. From
+a developer's viewpoint, if porting former plugins, here are some things to bear in mind.
+
+- in v2 we generally separate out the definition of the data itself versus the
+  specific reader, e.g., HDF5 is a file type, but xarray is a reader which can
+  handle HDF5. It is totally possible to write a reader without a data type if appropriate.
+  See :ref:`base` for an overview of the classes.
+- the new readers only really have one method that matters, ``.read()``, and will
+  contain all of the previous logic. It should consistently only produce one
+  particular output type. Other attributes of BaseReader (or FileReader) are
+  one-line overrides and mostly provide information rather than functionality;
+  for instance, Intake uses these for recommending readers for a given data instance.
+- for catalog-producing readers, the output type will be :class:`intake.readers.entry:Catalog`,
+  and the ``.read()`` method will create the Catalog instance and assign readers into it.
+  Module ``intake.readers.catalogs`` contains some patterns to copy.
+- if using file patterns: the ``DaskCSVPattern`` reader will give an idea of how to
+  implement that in the new framework.
+- if using V1 plots, dataframe and xarray-producing readers have the ``ToHvPlot``
+  converter can be used for similar functionality.
+
+
 .. raw:: html
 
     <script data-goatcounter="https://intake.goatcounter.com/count"

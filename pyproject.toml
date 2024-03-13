@@ -44,12 +44,22 @@ version_file = "intake/_version.py"
 
 [tool.setuptools]
 include-package-data = false
+zip-safe = false
 
 [tool.setuptools.packages.find]
-exclude = ["test*"]
+exclude = ["*tests*", "dist", "*examples*", "*scripts*", "*docs*"]
+namespaces = false
 
 [flake8]
 exclude = "__init__.py"
 ignore = "E,W"
 select = "F,E101,E111,E501"
 max-line-length = 100
+
+[project.entry-points."intake.drivers"]
+csv = "intake.source.csv:CSVSource"
+jsonfiles = "intake.source.jsonfiles:JSONFileSource"
+numpy = "intake.source.npy:NPySource"
+tiled_cat = "intake.source.tiled:TiledCatalog"
+textfiles = "intake.source.textfiles:TextFilesSource"
+zarr = "intake.source.zarr:ZarrArraySource"

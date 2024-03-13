@@ -11,6 +11,7 @@ User Functions
     intake.config.Config
     intake.readers.datatypes.recommend
     intake.readers.convert.auto_pipeline
+    intake.readers.convert.path
     intake.readers.entry.Catalog
     intake.readers.entry.DataDescription
     intake.readers.entry.ReaderDescription
@@ -36,6 +37,8 @@ User Functions
 .. autofunction:: intake.readers.readers.recommend
 
 .. autofunction:: intake.readers.readers.reader_from_call
+
+.. _base:
 
 Base Classes
 ------------

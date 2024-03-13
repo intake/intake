@@ -394,6 +394,10 @@ class CatalogParser(object):
                 )
                 continue
 
+            elif "module" in plugin_source:
+                import intake
+
+                intake.import_name(plugin_source["module"])
             elif "dir" in plugin_source:
                 self.error(
                     "The key 'dir', and in general the feature of registering "
@@ -555,7 +559,7 @@ class CatalogParser(object):
             self.error("catalog must be a dictionary", data)
             return
         if (data.get("version", None) or data.get("metadata", {}).get("version", None) or 1) > 1:
-            raise VersionError("Not a V1 Catalog; perhaps use intake.from_yaml_file")
+            raise VersionError("Not a V1 Catalog; perhaps use intake.open_catalog")
 
         return dict(
             plugin_sources=self._parse_plugins(data),
@@ -932,6 +936,7 @@ class EntrypointsCatalog(Catalog):
         eps = entry_points()
         if hasattr(eps, "select"):  # Python 3.10+ / importlib_metadata >= 3.9.0
             catalogs = eps.select(group=self._entrypoints_group)
+            catalogs = {ep.name: ep for ep in catalogs}
         else:
             catalogs = eps.get("intake.drivers", [])
         self.name = self.name or "EntrypointsCatalog"

@@ -7,7 +7,10 @@
 
 import os
 
-from intake._version import __version__
+try:
+    from intake._version import __version__
+except ImportError:
+    __version__ = "2.dev"  # fallback
 
 # legacy immediate imports
 from intake.utils import import_name, logger
@@ -22,6 +25,7 @@ from intake.readers import (
     BaseConverter,
     Pipeline,
     auto_pipeline,
+    path,
     DataDescription,
     ReaderDescription,
     BaseUserParameter,
