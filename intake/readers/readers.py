@@ -360,7 +360,7 @@ class DuckDB(BaseReader):
             # https://duckdb.org/docs/extensions/
             if conn.startswith("sqlite:"):
                 duckdb.connect(":default:").execute("INSTALL sqlite;LOAD sqlite;")
-                conn = re.sub("^sqlite3?://", "", conn)
+                conn = re.sub("^sqlite3?:/{0,3}", "", conn)
                 conn = {"database": conn}
             elif conn.startswith("postgres") and str(conn) not in self._dd:
                 d = duckdb.connect()
@@ -710,6 +710,7 @@ class DaskCSVPattern(DaskCSV):
 
     def _read(self, data, **kw):
         from pandas.api.types import CategoricalDtype
+
         from intake.readers.utils import pattern_to_glob
         from intake.source.utils import reverse_formats
 

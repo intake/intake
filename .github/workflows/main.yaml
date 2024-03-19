@@ -8,11 +8,12 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.CONDA_ENV }}-pytest
-    runs-on: ubuntu-latest
+    name: ${{ matrix.OS }}-${{ matrix.CONDA_ENV }}-pytest
+    runs-on: ${{ matrix.OS }}
     strategy:
       fail-fast: false
       matrix:
+        OS: [ubuntu-latest, windows-latest]
         CONDA_ENV: [py38, py39, py310, py311, pip]
     steps:
       - name: Checkout
