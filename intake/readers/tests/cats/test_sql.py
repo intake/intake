@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from intake.readers import catalogs, datatypes, readers
@@ -18,7 +20,7 @@ def postgres_with_data(postgresql):
     return int(cur._conn.pgconn.port)  # this is the one I found to be dynamic
 
 
-@pytest.mark.skip_on_windows
+@pytest.mark.skipif(os.name == "nt", reason="`postgresql` does not work on Windows")
 def test_pg_pandas(postgres_with_data):
     pytest.importorskip("psycopg2")
     pytest.importorskip("sqlalchemy")
@@ -34,7 +36,7 @@ def test_pg_pandas(postgres_with_data):
     assert len(out) == 10
 
 
-@pytest.mark.skip_on_windows
+@pytest.mark.skipif(os.name == "nt", reason="`postgresql` does not work on Windows")
 def test_pg_duck_with_pandas_input(postgres_with_data):
     data = datatypes.SQLQuery(
         conn=f"postgresql://postgres@127.0.0.1:{postgres_with_data}/tests",

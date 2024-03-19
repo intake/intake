@@ -57,4 +57,4 @@ jobs:
       - name: Run Tests
         shell: bash -l {0}
         run: |
-          pytest -v intake/readers -k "not skip_on_windows"
+          pytest -v intake/readers
