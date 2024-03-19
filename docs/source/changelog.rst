@@ -1,12 +1,30 @@
 Changelog
 =========
 
+2.0.4
+-----
+
+Released March 19, 2024
+
+- re-enable v1 entrypoint sources
+- expose recommend functions higher up (e.g,. intake.recommend)
+- add more geo types and readers, including pmtiles
+- add migration guide
+
+2.0.3
+-----
+
+Released February 29, 2024
+
+- fix v1 caches
+- more docs
+
 2.0.0
 -----
 
 Released Jan 31, 2024
 
-- complete rewrite of the package, see
+- complete rewrite of the package, see main docs page
 
 0.7.0
 -----
