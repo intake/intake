@@ -7,38 +7,13 @@ on:
     branches: master
 
 jobs:
-  test-linux:
-    name: ${{ matrix.CONDA_ENV }}-pytest-linux
-    runs-on: ubuntu-latest
+  test:
+    name: ${{ matrix.OS }}-${{ matrix.CONDA_ENV }}-pytest
+    runs-on: ${{ matrix.OS }}
     strategy:
       fail-fast: false
       matrix:
-        CONDA_ENV: [py38, py39, py310, py311, pip]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup conda
-        uses: mamba-org/setup-micromamba@v1
-        with:
-          environment-file: scripts/ci/environment-${{ matrix.CONDA_ENV }}.yml
-
-      - name: pip-install
-        shell: bash -l {0}
-        run: |
-          pip install . --no-deps
-
-      - name: Run Tests
-        shell: bash -l {0}
-        run: |
-          pytest -v intake/readers
-
-  test-windows:
-    name: ${{ matrix.CONDA_ENV }}-pytest-windows
-    runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
+        OS: [ubuntu-latest, windows-latest]
         CONDA_ENV: [py38, py39, py310, py311, pip]
     steps:
       - name: Checkout
