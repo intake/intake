@@ -275,6 +275,23 @@ class Catalog(Tokenizable):
     def _ipython_key_completions_(self):
         return sorted(set(chain(self.aliases, self.data, self.entries)))
 
+    def delete(self, name, recursive=False):
+        """Remove named entity (data/entry) from catalog
+
+        We do not check whether any other entity in the catalog refers *to*
+        what is being deleted, so you can break other entries this way.
+
+        Parameters
+        ----------
+        recursive: bool
+            Also removed data/entries references by the given one, and those
+            they refer to in turn.
+        """
+        item = self.get_entity(name)
+        del self[item]
+        if recursive:
+            raise NotImplementedError
+
     def extract_parameter(
         self,
         item: str,

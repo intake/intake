@@ -332,7 +332,7 @@ def make_cls(cls: str | type, kwargs: dict):
     return cls(**kwargs)
 
 
-def descend_to_path(path: str | list, kwargs: dict | list | tuple):
+def descend_to_path(path: str | list, kwargs: dict | list | tuple, name: str):
     """Find the value at the location `path` in the deeply nested dict `kwargs`"""
     if isinstance(path, str):
         path = path.split(".")
@@ -340,13 +340,15 @@ def descend_to_path(path: str | list, kwargs: dict | list | tuple):
     if part.isnumeric():
         part = int(part)
     if path:
-        return descend_to_path(path, kwargs[part])
-    return kwargs[part]
+        return descend_to_path(path, kwargs[part], name)
+    out = kwargs[part]
+    kwargs[part] = "{%s}" % name
+    return out
 
 
 def extract_by_path(path: str, cls: type, name: str, kwargs: dict) -> tuple:
     """Walk kwargs, replacing dotted keys in path by UserParameter template"""
-    value = descend_to_path(path, kwargs)
+    value = descend_to_path(path, kwargs, name)
     up = cls(default=value)
     return merge_dicts(kwargs, nested_keys_to_dict({path: "{%s}" % name})), up
 
