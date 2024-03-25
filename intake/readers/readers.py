@@ -1294,7 +1294,8 @@ def recommend(data):
     """
     seen = set()
     out = {"importable": [], "not_importable": []}
-    for datacls in type(data).mro():
+    data = type(data) if not isinstance(data, type) else data
+    for datacls in data.mro():
         for cls in subclasses(BaseReader):
             if any(datacls == imp for imp in cls.implements):
                 if cls not in seen:

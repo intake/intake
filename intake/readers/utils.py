@@ -332,7 +332,7 @@ def make_cls(cls: str | type, kwargs: dict):
     return cls(**kwargs)
 
 
-def descend_to_path(path: str | list, kwargs: dict | list | tuple, name: str):
+def descend_to_path(path: str | list, kwargs: dict | list | tuple, name: str = ""):
     """Find the value at the location `path` in the deeply nested dict `kwargs`"""
     if isinstance(path, str):
         path = path.split(".")
@@ -342,7 +342,8 @@ def descend_to_path(path: str | list, kwargs: dict | list | tuple, name: str):
     if path:
         return descend_to_path(path, kwargs[part], name)
     out = kwargs[part]
-    kwargs[part] = "{%s}" % name
+    if name:
+        kwargs[part] = "{%s}" % name
     return out
 
 
