@@ -333,7 +333,11 @@ def make_cls(cls: str | type, kwargs: dict):
 
 
 def descend_to_path(path: str | list, kwargs: dict | list | tuple, name: str = ""):
-    """Find the value at the location `path` in the deeply nested dict `kwargs`"""
+    """Find the value at the location `path` in the deeply nested dict `kwargs`
+
+    If a name is given, replace that value by "{name}" - used by parameter
+    extraction.
+    """
     if isinstance(path, str):
         path = path.split(".")
     part = path.pop(0)
