@@ -28,7 +28,7 @@ def process_entries():
         specs = eps.get("intake.imports", [])
     for spec in specs:
         top_level = spec.value.split(":", 1)[0].split(".", 1)[0]
-        bl = conf.get("entrypoint_block_list", [])
+        bl = conf.get("import_block_list", [])
         if top_level in bl or spec.name in bl:
             logger.debug("Skipping import of %s", spec)
             continue
