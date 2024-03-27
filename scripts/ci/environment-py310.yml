@@ -42,3 +42,4 @@ dependencies:
   - pytest-postgresql
   - psycopg
   - siphon
+  - scikit-learn

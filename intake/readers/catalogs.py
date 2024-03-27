@@ -500,12 +500,9 @@ class SKLearnExamplesCatalog(BaseReader):
     Examples
     --------
     >>> import intake.readers.catalogs
-    >>> cat = intake.readers.catalogs.SKLearnExamplesCatalog().read() # doctest: +SKIP
-    >>> list(cat) # doctest: +SKIP
-    ['breast_cancer',
-     'diabetes',
-     'digits',
-     ...]
+    >>> cat = intake.readers.catalogs.SKLearnExamplesCatalog().read()
+    >>> list(cat) # doctest: +ELLIPSIS
+    ['breast_cancer', 'diabetes', 'digits', ...]
     >>> cat.olivetti_faces.read() # doctest: +SKIP
     downloading Olivetti faces from https://ndownloader.figshare.com/files/5976027 to TMP
     {'data': array([[0.30991736, 0.3677686 , 0.41735536, ..., 0.15289256, 0.16115703,

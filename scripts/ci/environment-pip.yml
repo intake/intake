@@ -41,3 +41,4 @@ dependencies:
       - toolz
       - pre-commit
       - siphon
+      - scikit-learn
