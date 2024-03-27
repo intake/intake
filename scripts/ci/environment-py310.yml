@@ -43,5 +43,5 @@ dependencies:
   - psycopg
   - siphon
   - scikit-learn
-  - pip
+  - pip:
     - tensorflow_datasets
