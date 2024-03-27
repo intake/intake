@@ -441,8 +441,9 @@ class HuggingfaceHubCatalog(BaseReader):
 
     Examples
     --------
-    >>> hf = intake.readers.catalogs.HuggingfaceHubCatalog().read()
-    >>> hf['acronym_identification'].read()
+    >>> import intake.readers.catalogs
+    >>> hf = intake.readers.catalogs.HuggingfaceHubCatalog().read() # doctest: +SKIP
+    >>> hf['acronym_identification'].read() # doctest: +SKIP
     DatasetDict({
         train: Dataset({
             features: ['id', 'tokens', 'labels'],
@@ -471,9 +472,10 @@ class HuggingfaceHubCatalog(BaseReader):
         with_community_datasets:
             If False, only includes official public data, and retrieves fewer entries.
         """
+        import huggingface_hub
+
         from intake.readers.datatypes import HuggingfaceDataset
         from intake.readers.readers import HuggingfaceReader
-        import huggingface_hub
 
         datasets = huggingface_hub.list_datasets(full=False)
         if not with_community_datasets:
@@ -498,13 +500,13 @@ class SKLearnExamplesCatalog(BaseReader):
     Examples
     --------
     >>> import intake.readers.catalogs
-    >>> cat = intake.readers.catalogs.SKLearnExamplesCatalog().read()
-    >>> list(cat)
+    >>> cat = intake.readers.catalogs.SKLearnExamplesCatalog().read() # doctest: +SKIP
+    >>> list(cat) # doctest: +SKIP
     ['breast_cancer',
      'diabetes',
      'digits',
      ...]
-    >>> cat.olivetti_faces.read()
+    >>> cat.olivetti_faces.read() # doctest: +SKIP
     downloading Olivetti faces from https://ndownloader.figshare.com/files/5976027 to TMP
     {'data': array([[0.30991736, 0.3677686 , 0.41735536, ..., 0.15289256, 0.16115703,
              0.1570248 ],
@@ -518,8 +520,9 @@ class SKLearnExamplesCatalog(BaseReader):
     imports = {"sklearn"}
 
     def _read(self, **kw):
-        from intake.readers.readers import SKLearnExampleReader
         import sklearn.datasets
+
+        from intake.readers.readers import SKLearnExampleReader
 
         names = [funcname[5:] for funcname in dir(sklearn.datasets) if funcname.startswith("load_")]
         names.extend(
@@ -541,8 +544,9 @@ class TorchDatasetsCatalog(BaseReader):
 
     Examples
     --------
+    >>> import intake.readers.catalogs
     >>> cat = intake.readers.catalogs.TorchDatasetsCatalog(rootdir="here").read()
-    >>> cat.RTE.read()
+    >>> cat.RTE.read() # doctest: +SKIP
     (ShardingFilterIterDataPipe,
      ShardingFilterIterDataPipe,
      ShardingFilterIterDataPipe)
@@ -562,8 +566,9 @@ class TorchDatasetsCatalog(BaseReader):
         Some datasets require further kwargs, such as subset (e.g., "train") or other
         selector.
         """
-        from intake.readers.readers import TorchDataset
         import importlib
+
+        from intake.readers.readers import TorchDataset
 
         cat = Catalog()
         for name in ("vision", "audio", "text"):
@@ -595,8 +600,9 @@ class TensorFlowDatasetsCatalog(BaseReader):
 
     Examples
     --------
-    >>> tf = intake.readers.catalogs.TensorFlowDatasetsCatalog().read(
-    >>> tf.xnli.read()
+    >>> import intake.readers.catalogs
+    >>> tf = intake.readers.catalogs.TensorFlowDatasetsCatalog().read()
+    >>> tf.xnli.read() # doctest: +SKIP
     Downloading and preparin ...
     Dataset xnli downloaded and prepared to <>>. Subsequent calls will reuse this data.
     Out[13]:
@@ -607,8 +613,9 @@ class TensorFlowDatasetsCatalog(BaseReader):
     imports = {"tensorflow_datasets"}
 
     def _read(self, *args, **kwargs):
-        from intake.readers.readers import TFPublicDataset
         from tensorflow_datasets.core import community
+
+        from intake.readers.readers import TFPublicDataset
 
         cat = Catalog()
         for name in community.registry.registered._DATASET_REGISTRY:
@@ -649,11 +656,10 @@ class EarthdataCatalogReader(BaseReader):
 
     Examples
     --------
-
     >>> import intake.readers.catalogs
-    >>> cat = intake.readers.catalogs.EarthdataCatalogReader(temporal=("2002-01-01", "2002-01-02")).read()
-    >>> reader = cat['C2723754864-GES_DISC']
-    >>> reader.read()
+    >>> cat = intake.readers.catalogs.EarthdataCatalogReader(temporal=("2002-01-01", "2002-01-02")).read() # doctest: +SKIP
+    >>> reader = cat['C2723754864-GES_DISC'] # doctest: +SKIP
+    >>> reader.read() # doctest: +SKIP
     <xarray.Dataset>
     Dimensions:                         (time: 2, lon: 3600, lat: 1800, nv: 2)
     Coordinates:
