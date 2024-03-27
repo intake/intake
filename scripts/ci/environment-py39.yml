@@ -42,4 +42,4 @@ dependencies:
   - psycopg
   - siphon
   - scikit-learn
-  - tensorflow_datasets
+  - tensorflow-datasets
