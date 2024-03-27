@@ -43,4 +43,4 @@ dependencies:
   - siphon
   - scikit-learn
   - pip:
-    - tensorflow_datasets
+    - tensorflow_datasets <= 4.9.2
