@@ -755,6 +755,7 @@ def recommend(
                     outs.add(cls)
                     break
     if mime:
+        mime = mime.lower()
         for cls in subclasses(BaseData):
             if cls not in outs and cls.mimetypes and re.match(cls._mimetypes(), mime):
                 out.append(cls)

@@ -520,6 +520,10 @@ class Catalog(Tokenizable):
         if key in self.aliases:
             self.data.pop(self.aliases[key], None)
             self.entries.pop(self.aliases[key], None)
+        for k, v in self.aliases.copy().items():
+            # remove alias pointing TO key
+            if v == key:
+                self.aliases.pop(k)
         self.aliases.pop(key, None)
         self.data.pop(key, None)
         self.entries.pop(key, None)
