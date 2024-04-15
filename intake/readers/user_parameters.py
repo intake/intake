@@ -39,7 +39,7 @@ class BaseUserParameter(Tokenizable):
         if self.validate(value):
             self.default = value
         else:
-            raise ValueError
+            raise ValueError("Could not validate %s with %s", value, self)
 
     def with_default(self, value):
         """A new instance with different default, if it validates

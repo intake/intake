@@ -91,13 +91,14 @@ class DataDescription(Tokenizable):
         path: str | None = None,
         value: Any = None,
         cls: type = SimpleUserParameter,
+        **kw,
     ):
         if not ((path is None) ^ (value is None)):
             raise ValueError
         if path is not None:
-            kw, up = extract_by_path(path, cls, name, self.kwargs)
+            kw, up = extract_by_path(path, cls, name, self.kwargs, **kw)
         else:
-            kw, up = extract_by_value(value, cls, name, self.kwargs)
+            kw, up = extract_by_value(value, cls, name, self.kwargs, **kw)
         self.kwargs = kw
         self.user_parameters[name] = up
 
@@ -157,7 +158,7 @@ class ReaderDescription(Tokenizable):
         kw = set_values(up, kw)
         return kw
 
-    def extract_parameter(self, name: str, path=None, value=None, cls=SimpleUserParameter):
+    def extract_parameter(self, name: str, path=None, value=None, cls=SimpleUserParameter, **kw):
         """Creates new version of the description
 
         Creates new instance, since the token will in general change
@@ -165,9 +166,9 @@ class ReaderDescription(Tokenizable):
         if not ((path is None) ^ (value is None)):
             raise ValueError
         if path is not None:
-            kw, up = extract_by_path(path, cls, name, self.kwargs)
+            kw, up = extract_by_path(path, cls, name, self.kwargs, **kw)
         else:
-            kw, up = extract_by_value(value, cls, name, self.kwargs)
+            kw, up = extract_by_value(value, cls, name, self.kwargs, **kw)
         self.kwargs = kw
         self.user_parameters[name] = up
 
@@ -300,6 +301,7 @@ class Catalog(Tokenizable):
         value: Any = None,
         cls=SimpleUserParameter,
         store_to: str | None = None,
+        **kw,
     ):
         """
         Descend into data & reader descriptions to create a user_parameter
@@ -318,7 +320,7 @@ class Catalog(Tokenizable):
         # TODO: if entity is "Catalog", extract over all entities; currently this will
         #  cause a recursion loop
         entity = self.get_entity(item)
-        entity.extract_parameter(name, path=path, value=value, cls=cls)
+        entity.extract_parameter(name, path=path, value=value, cls=cls, **kw)
         if store_to is None:
             return
         elif store_to == "data" and isinstance(entity, ReaderDescription):
