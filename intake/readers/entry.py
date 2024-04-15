@@ -235,7 +235,7 @@ class Catalog(Tokenizable):
             self.entries = {}
             [self.add_entry(e) for e in entries]
 
-    def add_entry(self, entry, name=None):
+    def add_entry(self, entry, name=None, clobber=True):
         """Add entry/reader (and its requirements) in-place, with optional alias"""
         from intake.readers import BaseData, BaseReader
         from intake.readers.utils import find_funcs, replace_values
@@ -261,13 +261,14 @@ class Catalog(Tokenizable):
                 entry.kwargs = replace_values(
                     entry.kwargs, "{data(%s)}" % tok, "{data(%s)}" % old_tok
                 )
-        if entry not in self:
-            if isinstance(entry, ReaderDescription):
-                self.entries[entry.token] = entry
-            elif isinstance(entry, DataDescription):
-                self.data[entry.token] = entry
-            else:
-                raise ValueError
+        if entry in self and clobber is False:
+            raise ValueError("Name {} exists in catalog, and clobber is False", entry.token)
+        if isinstance(entry, ReaderDescription):
+            self.entries[entry.token] = entry
+        elif isinstance(entry, DataDescription):
+            self.data[entry.token] = entry
+        else:
+            raise ValueError
 
         if name:
             self.aliases[name] = entry.token
