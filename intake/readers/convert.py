@@ -543,14 +543,19 @@ class Pipeline(readers.BaseReader):
         if n < 1 or n > len(self.steps):
             raise ValueError(f"n must be between {1} and {len(self.steps)}")
 
+        kw = self.kwargs.copy()
+        kw.update(
+            dict(
+                steps=self.steps[:n],
+                out_instances=self.output_instances[:n],
+                metadata=self.metadata,
+            )
+        )
         pipe = Pipeline(
-            steps=self.steps[:n],
-            out_instances=self.output_instances[:n],
-            metadata=self.metadata,
-            **self.kwargs,
+            **kw,
         )
         if n < len(self.steps):
-            pipe.token = (self.token, n)
+            pipe._tok = (self.token, n)
         return pipe
 
     def discover(self, **kwargs):

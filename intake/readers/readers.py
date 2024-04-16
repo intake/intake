@@ -31,6 +31,26 @@ class BaseReader(Tokenizable, PipelineMixin):
         output_instance: str | None = None,
         **kwargs,
     ):
+        if (
+            self.implements
+            and (args and not isinstance(args[0], datatypes.BaseData))
+            and not any(isinstance(_, datatypes.BaseData) for _ in kwargs.values())
+        ):
+            # reader requires data input, but not given - guess
+            if len(self.implements) == 1:
+                d_cls = list(self.implements)[0]
+                sig = inspect.signature(d_cls.__init__).parameters
+                kw2 = {}
+                for k, v in kwargs.copy().items():
+                    if k in sig:
+                        kw2[k] = kwargs.pop(k)
+                args = (d_cls(*args, **kw2),)
+            else:
+                raise NotImplementedError(
+                    "Guessing the data type not supported for a reader implementing multiple data "
+                    "classes. Please Instantiate the data type directly."
+                )
+
         self.kwargs = kwargs
         if args:
             self.kwargs["args"] = args
@@ -149,6 +169,13 @@ class FileReader(BaseReader):
         if self.storage_options and data.storage_options:
             kw["storage_options"] = data.storage_options
         return self._func(**kw)
+
+
+class OpenFilesReader(FileReader):
+    url_arg = "urlpath"
+    implements = {datatypes.FileData}
+    func = "fsspec:open_files"
+    output_instance = "fsspec.core:OpenFiles"
 
 
 class PanelImageViewer(FileReader):
@@ -1295,7 +1322,8 @@ def recommend(data):
     """
     seen = set()
     out = {"importable": [], "not_importable": []}
-    for datacls in type(data).mro():
+    data = type(data) if not isinstance(data, type) else data
+    for datacls in data.mro():
         for cls in subclasses(BaseReader):
             if any(datacls == imp for imp in cls.implements):
                 if cls not in seen:

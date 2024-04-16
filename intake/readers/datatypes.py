@@ -63,13 +63,15 @@ class BaseData(Tokenizable):
         if outtype and reader:
             raise ValueError
         if isinstance(reader, str):
+            # exact match (no lowering)
             try:
                 return import_name(reader)
             except (ImportError, ModuleNotFoundError):
                 reader = (reader,)
         if isinstance(reader, tuple):
             for cls, out in self.possible_outputs.items():
-                if any(re.findall(r, cls.qname()) for r in reader):
+                # there shouldn't be many of these
+                if any(re.findall(r.lower(), cls.qname().lower()) for r in reader):
                     return cls
         if isinstance(reader, type):
             return reader
@@ -77,7 +79,10 @@ class BaseData(Tokenizable):
             if isinstance(outtype, str):
                 outtype = (outtype,)
             for reader, out in self.possible_outputs.items():
-                if out is not None and any(out == _ or re.findall(_, out) for _ in outtype):
+                # there shouldn't be many of these
+                if out is not None and any(
+                    out == _ or re.findall(_.lower(), out.lower()) for _ in outtype
+                ):
                     return reader
         return next(iter(self.possible_readers["importable"]))
 
