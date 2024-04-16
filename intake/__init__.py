@@ -14,7 +14,7 @@ except ImportError:
 
 # legacy immediate imports
 from intake.utils import import_name, logger
-from intake.catalog.base import Catalog, VersionError
+from intake.catalog.base import VersionError
 from intake.source import registry
 from intake.config import conf
 from intake.readers import (
@@ -37,6 +37,7 @@ from intake.readers import (
     entry,
     datatypes,
 )
+from intake.readers.entry import Catalog
 
 # legacy on-demand imports
 imports = {
