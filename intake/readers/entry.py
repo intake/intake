@@ -455,17 +455,23 @@ class Catalog(Tokenizable):
     def get_entity(self, item: str):
         """Get the objects by reference
 
+        Use this method if you want to change the catalog in-place
+
         item can be an entry in .aliases, in which case the original wil be returned,
-        or a key in .entries or .data. The entity in question is returned without processing.
+        or a key in .entries, .user_parameters or .data.
+        The entity in question is returned without processing.
         """
         if item == "Catalog":
             return self
+        # TODO: this can be simplified with `get(..) or`
         if item in self.aliases:
             item = self.aliases[item]
         if item in self.entries:
             return self.entries[item]
         elif item in self.data:
             return self.data[item]
+        elif item in self.user_parameters:
+            return self.user_parameters[item]
         else:
             raise KeyError(item)
 
@@ -540,6 +546,10 @@ class Catalog(Tokenizable):
         if key in self.aliases:
             self.data.pop(self.aliases[key], None)
             self.entries.pop(self.aliases[key], None)
+        for k, v in self.aliases.copy().items():
+            # remove alias pointing TO key
+            if v == key:
+                self.aliases.pop(k)
         self.aliases.pop(key, None)
         self.data.pop(key, None)
         self.entries.pop(key, None)

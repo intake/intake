@@ -22,6 +22,6 @@ def test_1():
 def test_bands():
     data = intake.readers.datatypes.STACJSON(simple_item_url)
     list_of_bands = ["B02", "B03"]
-    reader = data.to_reader_cls(outtype="XarrayReader")(data, list_of_bands).read()
+    reader = data.to_reader_cls(reader="Bands")(data, list_of_bands).read()
     assert isinstance(reader.kwargs["data"], intake.readers.datatypes.TIFF)
     assert len(reader.kwargs["data"].url) == 2

@@ -89,6 +89,6 @@ def get_namespaces(reader):
     """These namespaces are available on the reader"""
     out = {}
     for space in subclasses(Namespace):
-        if any(re.match(act, reader.output_instance) for act in space.acts_on):
+        if any(re.match(act.lower(), reader.output_instance.lower()) for act in space.acts_on):
             out[space.__name__] = space(reader)
     return out
