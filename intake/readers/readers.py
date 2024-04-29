@@ -1356,7 +1356,7 @@ def reader_from_call(func: str, *args, join_lines=False, **kwargs) -> BaseReader
         if join_lines:
             func = func.replace("\n", "")
         frame = inspect.currentframe().f_back
-        match = re.match("^(.*=)?(.*?)[(](.*)[)]")
+        match = re.match("^(.*=)?(.*?)[(](.*)[)]", func)
         if match:
             groups = match.groups()
         else:
