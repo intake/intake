@@ -108,12 +108,12 @@ class PandasToGeopandas(BaseConverter):
 
 
 class XarrayToPandas(BaseConverter):
-    instances = {"xarray:DataSet": "pandas:DataFrame"}
-    func = "xarray:DataSet.to_dataframe"
+    instances = {"xarray:Dataset": "pandas:DataFrame"}
+    func = "xarray:Dataset.to_dataframe"
 
 
 class PandasToXarray(BaseConverter):
-    instances = {"pandas:DataFrame": "xarray:DataSet"}
+    instances = {"pandas:DataFrame": "xarray:Dataset"}
     func = "xarray:Dataset.from_dataframe"
 
 
