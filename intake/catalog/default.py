@@ -10,7 +10,7 @@ import os
 import subprocess
 import sys
 
-import appdirs
+import platformdirs
 
 from intake.config import conf
 from intake.utils import make_path_posix
@@ -29,7 +29,7 @@ def load_user_catalog():
 
 def user_data_dir():
     """Return the user Intake catalog directory"""
-    return appdirs.user_data_dir(appname="intake", appauthor="intake")
+    return platformdirs.user_data_dir(appname="intake", appauthor="intake")
 
 
 def load_global_catalog():
@@ -76,7 +76,7 @@ def global_data_dir():
         # conda and virtualenv use Linux-style directory pattern
         return make_path_posix(os.path.join(prefix, "share", "intake"))
     else:
-        return appdirs.site_data_dir(appname="intake", appauthor="intake")
+        return platformdirs.site_data_dir(appname="intake", appauthor="intake")
 
 
 def load_combo_catalog():
