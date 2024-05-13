@@ -461,7 +461,7 @@ class Catalog(Tokenizable):
         or a key in .entries, .user_parameters or .data.
         The entity in question is returned without processing.
         """
-        if item == "Catalog":
+        if item.lower() in ["cat", "catalog"]:
             return self
         # TODO: this can be simplified with `get(..) or`
         if item in self.aliases:
