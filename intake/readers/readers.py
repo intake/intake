@@ -1019,8 +1019,8 @@ class XArrayDatasetReader(FileReader):
         else:
             # TODO: recognise fsspec URLs, and optionally use open_local for engines tha need it
             if (
-                isinstance(data, datatypes.FileData) 
-                and data.url.startswith("http") 
+                isinstance(data, datatypes.FileData)
+                and data.url.startswith("http")
                 and not datatypes.Zarr
             ):
                 # special case, because xarray would assume a DAP endpoint
