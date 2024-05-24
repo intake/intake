@@ -1021,7 +1021,7 @@ class XArrayDatasetReader(FileReader):
             if (
                 isinstance(data, datatypes.FileData)
                 and data.url.startswith("http")
-                and not datatypes.Zarr
+                and not isinstance(data, datatypes.Zarr)
             ):
                 # special case, because xarray would assume a DAP endpoint
                 f = fsspec.open(data.url, **(data.storage_options or {})).open()
