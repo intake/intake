@@ -1018,7 +1018,11 @@ class XArrayDatasetReader(FileReader):
             return open_mfdataset(data.url, **kw)
         else:
             # TODO: recognise fsspec URLs, and optionally use open_local for engines tha need it
-            if isinstance(data, datatypes.FileData) and data.url.startswith("http"):
+            if (
+                isinstance(data, datatypes.FileData)
+                and data.url.startswith("http")
+                and not isinstance(data, datatypes.Zarr)
+            ):
                 # special case, because xarray would assume a DAP endpoint
                 f = fsspec.open(data.url, **(data.storage_options or {})).open()
                 return open_dataset(f, **kw)
