@@ -91,13 +91,14 @@ class DataDescription(Tokenizable):
         path: str | None = None,
         value: Any = None,
         cls: type = SimpleUserParameter,
+        **kw,
     ):
         if not ((path is None) ^ (value is None)):
             raise ValueError
         if path is not None:
-            kw, up = extract_by_path(path, cls, name, self.kwargs)
+            kw, up = extract_by_path(path, cls, name, self.kwargs, **kw)
         else:
-            kw, up = extract_by_value(value, cls, name, self.kwargs)
+            kw, up = extract_by_value(value, cls, name, self.kwargs, **kw)
         self.kwargs = kw
         self.user_parameters[name] = up
 
@@ -157,7 +158,7 @@ class ReaderDescription(Tokenizable):
         kw = set_values(up, kw)
         return kw
 
-    def extract_parameter(self, name: str, path=None, value=None, cls=SimpleUserParameter):
+    def extract_parameter(self, name: str, path=None, value=None, cls=SimpleUserParameter, **kw):
         """Creates new version of the description
 
         Creates new instance, since the token will in general change
@@ -165,9 +166,9 @@ class ReaderDescription(Tokenizable):
         if not ((path is None) ^ (value is None)):
             raise ValueError
         if path is not None:
-            kw, up = extract_by_path(path, cls, name, self.kwargs)
+            kw, up = extract_by_path(path, cls, name, self.kwargs, **kw)
         else:
-            kw, up = extract_by_value(value, cls, name, self.kwargs)
+            kw, up = extract_by_value(value, cls, name, self.kwargs, **kw)
         self.kwargs = kw
         self.user_parameters[name] = up
 
@@ -234,7 +235,7 @@ class Catalog(Tokenizable):
             self.entries = {}
             [self.add_entry(e) for e in entries]
 
-    def add_entry(self, entry, name=None):
+    def add_entry(self, entry, name=None, clobber=True):
         """Add entry/reader (and its requirements) in-place, with optional alias"""
         from intake.readers import BaseData, BaseReader
         from intake.readers.utils import find_funcs, replace_values
@@ -260,13 +261,14 @@ class Catalog(Tokenizable):
                 entry.kwargs = replace_values(
                     entry.kwargs, "{data(%s)}" % tok, "{data(%s)}" % old_tok
                 )
-        if entry not in self:
-            if isinstance(entry, ReaderDescription):
-                self.entries[entry.token] = entry
-            elif isinstance(entry, DataDescription):
-                self.data[entry.token] = entry
-            else:
-                raise ValueError
+        if entry in self and clobber is False:
+            raise ValueError("Name {} exists in catalog, and clobber is False", entry.token)
+        if isinstance(entry, ReaderDescription):
+            self.entries[entry.token] = entry
+        elif isinstance(entry, DataDescription):
+            self.data[entry.token] = entry
+        else:
+            raise ValueError
 
         if name:
             self.aliases[name] = entry.token
@@ -274,6 +276,23 @@ class Catalog(Tokenizable):
 
     def _ipython_key_completions_(self):
         return sorted(set(chain(self.aliases, self.data, self.entries)))
+
+    def delete(self, name, recursive=False):
+        """Remove named entity (data/entry) from catalog
+
+        We do not check whether any other entity in the catalog refers *to*
+        what is being deleted, so you can break other entries this way.
+
+        Parameters
+        ----------
+        recursive: bool
+            Also removed data/entries references by the given one, and those
+            they refer to in turn.
+        """
+        item = self.get_entity(name)
+        del self[item]
+        if recursive:
+            raise NotImplementedError
 
     def extract_parameter(
         self,
@@ -283,6 +302,7 @@ class Catalog(Tokenizable):
         value: Any = None,
         cls=SimpleUserParameter,
         store_to: str | None = None,
+        **kw,
     ):
         """
         Descend into data & reader descriptions to create a user_parameter
@@ -301,7 +321,7 @@ class Catalog(Tokenizable):
         # TODO: if entity is "Catalog", extract over all entities; currently this will
         #  cause a recursion loop
         entity = self.get_entity(item)
-        entity.extract_parameter(name, path=path, value=value, cls=cls)
+        entity.extract_parameter(name, path=path, value=value, cls=cls, **kw)
         if store_to is None:
             return
         elif store_to == "data" and isinstance(entity, ReaderDescription):
@@ -435,17 +455,23 @@ class Catalog(Tokenizable):
     def get_entity(self, item: str):
         """Get the objects by reference
 
+        Use this method if you want to change the catalog in-place
+
         item can be an entry in .aliases, in which case the original wil be returned,
-        or a key in .entries or .data. The entity in question is returned without processing.
+        or a key in .entries, .user_parameters or .data.
+        The entity in question is returned without processing.
         """
-        if item == "Catalog":
+        if item.lower() in ["cat", "catalog"]:
             return self
+        # TODO: this can be simplified with `get(..) or`
         if item in self.aliases:
             item = self.aliases[item]
         if item in self.entries:
             return self.entries[item]
         elif item in self.data:
             return self.data[item]
+        elif item in self.user_parameters:
+            return self.user_parameters[item]
         else:
             raise KeyError(item)
 
@@ -520,6 +546,10 @@ class Catalog(Tokenizable):
         if key in self.aliases:
             self.data.pop(self.aliases[key], None)
             self.entries.pop(self.aliases[key], None)
+        for k, v in self.aliases.copy().items():
+            # remove alias pointing TO key
+            if v == key:
+                self.aliases.pop(k)
         self.aliases.pop(key, None)
         self.data.pop(key, None)
         self.entries.pop(key, None)

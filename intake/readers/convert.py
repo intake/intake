@@ -107,6 +107,16 @@ class PandasToGeopandas(BaseConverter):
     func = "geopandas:GeoDataFrame"
 
 
+class XarrayToPandas(BaseConverter):
+    instances = {"xarray:Dataset": "pandas:DataFrame"}
+    func = "xarray:Dataset.to_dataframe"
+
+
+class PandasToXarray(BaseConverter):
+    instances = {"pandas:DataFrame": "xarray:Dataset"}
+    func = "xarray:Dataset.from_dataframe"
+
+
 class ToHvPlot(BaseConverter):
     instances = all_to_one(
         {
@@ -533,14 +543,19 @@ class Pipeline(readers.BaseReader):
         if n < 1 or n > len(self.steps):
             raise ValueError(f"n must be between {1} and {len(self.steps)}")
 
+        kw = self.kwargs.copy()
+        kw.update(
+            dict(
+                steps=self.steps[:n],
+                out_instances=self.output_instances[:n],
+                metadata=self.metadata,
+            )
+        )
         pipe = Pipeline(
-            steps=self.steps[:n],
-            out_instances=self.output_instances[:n],
-            metadata=self.metadata,
-            **self.kwargs,
+            **kw,
         )
         if n < len(self.steps):
-            pipe.token = (self.token, n)
+            pipe._tok = (self.token, n)
         return pipe
 
     def discover(self, **kwargs):
@@ -623,16 +638,17 @@ def path(
 
     g = conversions_graph(avoid=avoid)
     alltypes = list(g)
-    matchtypes = [_ for _ in alltypes if re.findall(start, _)]
+    start = start.lower()
+    matchtypes = [_ for _ in alltypes if re.findall(start, _.lower())]
     if not matchtypes:
         raise ValueError("type found no match: %s", start)
     start = matchtypes[0]
     if isinstance(end, str):
         end = (end,)
-    matchtypes = [_ for _ in alltypes if any(re.findall(e, _) for e in end)]
+    matchtypes = [_ for _ in alltypes if any(re.findall(e.lower(), _.lower()) for e in end)]
     if not matchtypes:
         raise ValueError("outtype found no match: %s", end)
-    end = matchtypes[0]
+    end = matchtypes[0].lower()
     return sorted(nx.all_simple_edge_paths(g, start, end, cutoff=cutoff), key=len)
 
 

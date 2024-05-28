@@ -332,22 +332,29 @@ def make_cls(cls: str | type, kwargs: dict):
     return cls(**kwargs)
 
 
-def descend_to_path(path: str | list, kwargs: dict | list | tuple):
-    """Find the value at the location `path` in the deeply nested dict `kwargs`"""
+def descend_to_path(path: str | list, kwargs: dict | list | tuple, name: str = ""):
+    """Find the value at the location `path` in the deeply nested dict `kwargs`
+
+    If a name is given, replace that value by "{name}" - used by parameter
+    extraction.
+    """
     if isinstance(path, str):
         path = path.split(".")
     part = path.pop(0)
     if part.isnumeric():
         part = int(part)
     if path:
-        return descend_to_path(path, kwargs[part])
-    return kwargs[part]
+        return descend_to_path(path, kwargs[part], name)
+    out = kwargs[part]
+    if name:
+        kwargs[part] = "{%s}" % name
+    return out
 
 
-def extract_by_path(path: str, cls: type, name: str, kwargs: dict) -> tuple:
+def extract_by_path(path: str, cls: type, name: str, kwargs: dict, **kw) -> tuple:
     """Walk kwargs, replacing dotted keys in path by UserParameter template"""
-    value = descend_to_path(path, kwargs)
-    up = cls(default=value)
+    value = descend_to_path(path, kwargs, name)
+    up = cls(default=value, **kw)
     return merge_dicts(kwargs, nested_keys_to_dict({path: "{%s}" % name})), up
 
 
@@ -369,9 +376,9 @@ def _by_value(val, up, name):
         return val
 
 
-def extract_by_value(value: Any, cls: type, name: str, kwargs: dict) -> tuple:
+def extract_by_value(value: Any, cls: type, name: str, kwargs: dict, **kw) -> tuple:
     """Walk kwargs, replacing given value with UserParameter placeholder"""
-    up = cls(default=value)
+    up = cls(default=value, **kw)
     kw = _by_value(kwargs, up, name)
     return kw, up
 

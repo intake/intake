@@ -11,7 +11,7 @@ import sys
 import tempfile
 import time
 
-import appdirs
+import platformdirs
 import pytest
 
 import intake
@@ -23,7 +23,7 @@ from .test_utils import copy_test_file
 @pytest.fixture
 def user_catalog():
     target_catalog = copy_test_file(
-        "catalog1.yml", appdirs.user_data_dir(appname="intake", appauthor="intake")
+        "catalog1.yml", platformdirs.user_data_dir(appname="intake", appauthor="intake")
     )
     yield target_catalog
     # Remove the file, but not the directory (because there might be other

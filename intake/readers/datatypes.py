@@ -63,13 +63,15 @@ class BaseData(Tokenizable):
         if outtype and reader:
             raise ValueError
         if isinstance(reader, str):
+            # exact match (no lowering)
             try:
                 return import_name(reader)
             except (ImportError, ModuleNotFoundError):
                 reader = (reader,)
         if isinstance(reader, tuple):
             for cls, out in self.possible_outputs.items():
-                if any(re.findall(r, cls.qname()) for r in reader):
+                # there shouldn't be many of these
+                if any(re.findall(r.lower(), cls.qname().lower()) for r in reader):
                     return cls
         if isinstance(reader, type):
             return reader
@@ -77,7 +79,10 @@ class BaseData(Tokenizable):
             if isinstance(outtype, str):
                 outtype = (outtype,)
             for reader, out in self.possible_outputs.items():
-                if out is not None and any(out == _ or re.findall(_, out) for _ in outtype):
+                # there shouldn't be many of these
+                if out is not None and any(
+                    out == _ or re.findall(_.lower(), out.lower()) for _ in outtype
+                ):
                     return reader
         return next(iter(self.possible_readers["importable"]))
 
@@ -690,6 +695,7 @@ def recommend(
     url: str | None = None,
     mime: str | None = None,
     head: bool = True,
+    contents: bool = False,
     storage_options=None,
     ignore: set[str] | None = None,
 ) -> set[BaseData]:
@@ -706,6 +712,9 @@ def recommend(
         True, fetch these bytes from th given URL/storage_options and use them. If None,
         only fetch bytes if there is no match by mime type or path, if False, don't
         fetch at all.
+    contents: bool | None
+        Attempt to delve into URL to analyse constituent files. This can significantly slow
+        your recommendation.
     storage_options: dict | None
         If passing a URL which might be a remote file, storage_options can be used
         by fsspec.
@@ -728,8 +737,8 @@ def recommend(
         except (IOError, TypeError, AttributeError, ValueError):
             mime = mime or None
         try:
-            with fsspec.open_files(url, "rb", **(storage_options or {}))[0] as f:
-                head = f.read(2**20)
+            fs, url2 = fsspec.core.url_to_fs(url, **(storage_options or {}))
+            head = fs.cat_file(url2[0] if isinstance(url2, list) else url2, end=2**20)
         except (IOError, IndexError, ValueError):
             head = False
     else:
@@ -755,13 +764,14 @@ def recommend(
                     outs.add(cls)
                     break
     if mime:
+        mime = mime.lower()
         for cls in subclasses(BaseData):
             if cls not in outs and cls.mimetypes and re.match(cls._mimetypes(), mime):
                 out.append(cls)
                 outs.add(cls)
     if url:
         poss = {}
-        if fs is not None:
+        if fs is not None and contents:
             try:
                 allfiles = fs.ls(url, detail=False)
             except IOError:
@@ -770,7 +780,7 @@ def recommend(
             allfiles = None
         files = set(subclasses(FileData))
         bases = set(subclasses(BaseData)) - files
-        # file types first, then other/srvices, more specific first
+        # file types first, then other/services, more specific first
         for cls in chain(files, bases):
             if cls in outs:
                 continue
@@ -782,7 +792,7 @@ def recommend(
                 if find:
                     poss[cls] = find.start()
         out.extend(sorted(poss, key=lambda x: poss[x]))
-    if url:
+    if contents and url:
         for ext in {".gz", ".gzip", ".bzip2", "bz2", ".zstd", ".tar", ".tgz"}:
             if url.endswith(ext):
                 out.extend(recommend(url[: -len(ext)], head=False, ignore=outs))
