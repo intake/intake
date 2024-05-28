@@ -16,6 +16,7 @@ dependencies:
   - python-snappy
   - pyyaml
   - hvplot>=0.8.1
+  - platformdirs
   - panel>=0.9.5
   - bokeh<3.0
   - docutils<0.17  # Downgrade docutils to fix missing bullets (https://stackoverflow.com/a/68008428)

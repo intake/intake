@@ -243,7 +243,7 @@ class Catalog(Tokenizable):
         if isinstance(entry, (BaseReader, BaseData)):
             entry = entry.to_entry()
         if entry in self:
-            if name:
+            if name and name != entry.token:
                 self.aliases[name] = entry.token
             return entry.token
         tokens = {}
@@ -270,7 +270,7 @@ class Catalog(Tokenizable):
         else:
             raise ValueError
 
-        if name:
+        if name and name != entry.token:
             self.aliases[name] = entry.token
         return entry.token
 
