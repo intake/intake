@@ -31,6 +31,7 @@ def tiled_server():
         time.sleep(0.01)
         if time.time() - t0 > 5:
             fail = True
+            break
     P.kill()
     P.wait()
     if fail:
