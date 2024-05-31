@@ -76,7 +76,7 @@ class xr(Namespace):
 
 
 class pd(Namespace):
-    acts_on = ("pandas:DataFrame",)
+    acts_on = ("pandas:DataFrame", "pandas.Series")
     imports = ("pandas",)
 
 

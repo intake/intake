@@ -18,6 +18,8 @@ def test_readers(cls):
     assert cls.func.count(":") == 1
     assert cls.func_doc is None or cls.func_doc.count(":") == 1
     assert isinstance(cls.output_instance, str) or cls.output_instance is None
+    if cls.other_funcs:
+        assert isinstance(cls.other_funcs, set) and all(isinstance(c, str) for c in cls.other_funcs)
 
 
 @pytest.mark.parametrize("cls", subclasses(intake.BaseData))
