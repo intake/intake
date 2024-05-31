@@ -24,7 +24,7 @@ metadata_fields = {
     "repr": (str, "string form of output"),
     "data": (
         dict,
-        "any data-specific details, such as field types, missing values" "bounds or statistics",
+        "any data-specific details, such as field types, missing values bounds or statistics",
     ),
     "history": (
         List[dict],

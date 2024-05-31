@@ -1245,7 +1245,7 @@ class PrometheusMetricReader(BaseReader):
     imports = {"prometheus_api_client"}
     output_instance = "typing:Iterator"
     func = "prometheus_api_client:custom_query"
-    other_funcs = "prometheus_api_client:get_metric_range_data"
+    other_funcs = {"prometheus_api_client:get_metric_range_data"}
 
     def _read(self, data: datatypes.Prometheus, *args, **kwargs):
         from prometheus_api_client import PrometheusConnect
@@ -1360,7 +1360,7 @@ def reader_from_call(func: str, *args, join_lines=False, **kwargs) -> BaseReader
         if join_lines:
             func = func.replace("\n", "")
         frame = inspect.currentframe().f_back
-        match = re.match("^(.*=)?(.*?)[(](.*)[)]", func)
+        match = re.match("^([^(]+=)?([^(]+)[(](.*)[)][^)]?$", func)
         if match:
             groups = match.groups()
         else:
