@@ -50,3 +50,19 @@ def test_other_cat():
     assert other.source.cat.name == "name_in_cat"
     assert other.source._csv_kwargs == {"parse_dates": True}
     assert other.source.cat._captured_init_kwargs == {"getenv": True}
+
+
+def test_alias():
+    """make sure aliases are set up correctly"""
+
+    cat = intake.entry.Catalog()
+
+    filepath = os.path.join(here, "entry1_1.csv")
+    data = intake.readers.datatypes.CSV(filepath)
+    reader = intake.readers.readers.PandasCSV(data)
+
+    # create catalog entry
+    cat["entry1_1"] = reader
+
+    assert list(cat) == ["entry1_1"]
+    assert cat.aliases == {"entry1_1": "entry1_1"}
