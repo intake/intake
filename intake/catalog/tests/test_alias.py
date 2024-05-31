@@ -61,8 +61,13 @@ def test_alias():
     data = intake.readers.datatypes.CSV(filepath)
     reader = intake.readers.readers.PandasCSV(data)
 
-    # create catalog entry
-    cat["entry1_1"] = reader
+    # modify reader
+    reader_modified = reader.name.lower()
 
+    # create catalog entry
+    cat["entry1_1"] = reader_modified
+
+    # Make sure that only the key/alias/name is
+    # in the list of entries and aliases
     assert list(cat) == ["entry1_1"]
     assert cat.aliases == {"entry1_1": "entry1_1"}
