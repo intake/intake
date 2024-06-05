@@ -706,7 +706,7 @@ class GGUF(FileData):
 
     structure = {"model"}
     filepattern = "gguf$"
-    magic = (b"GGUF",)
+    magic = {b"GGUF"}
 
 
 class SafeTensors(FileData):
@@ -718,7 +718,7 @@ class SafeTensors(FileData):
     # TODO: .bin sees to be an older pytorch-specific version of this
     structure = {"model"}
     filepattern = "safetensors$"
-    magic = ((8, b"{"),)
+    magic = {(8, b"{")}
 
 
 class PickleFile(FileData):
@@ -735,7 +735,7 @@ class ModelConfig(FileData):
 
     structure = {"model"}
     filepattern = "config.json"
-    magic = (b'"model_type":',)
+    magic = {b'"model_type":'}
 
 
 class SKLearnPickleModel(PickleFile):
