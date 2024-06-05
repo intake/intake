@@ -428,6 +428,38 @@ class Prometheus(Service):
         self.end_time = end_time
 
 
+class LlamaCPPService(Service):
+    """Simple local HTTP chat
+
+    Also had OpenAI compatible endpoints
+
+    https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md
+    """
+
+    def open(self):
+        """Open chat config and chat page"""
+        import webbrowser
+
+        webbrowser.open(self.url)
+
+
+class OpenAIService(Service):
+    """OpenAI compatible chatbot
+
+    See https://platform.openai.com/docs/api-reference/making-requests
+    """
+
+    def __init__(
+        self,
+        url="https://api.openai.com/",
+        key: str = "sk-no-key-required",
+        options=None,
+        metadata=None,
+    ):
+        self.key = key
+        super().__init__(url, options=options, metadata=metadata)
+
+
 class SQLite(FileData):
     """Database data stored in files"""
 
@@ -667,14 +699,47 @@ class KerasModel(FileData):
     filepattern = "pb$"  # possibly protobuf
 
 
+class GGUF(FileData):
+    """Trained model
+
+    (see https://github.com/ggerganov/ggml/blob/master/docs/gguf.md)"""
+
+    structure = {"model"}
+    filepattern = "gguf$"
+    magic = {b"GGUF"}
+
+
+class SafeTensors(FileData):
+    """Trained model
+
+    (see https://github.com/huggingface/safetensors?tab=readme-ov-file#format)
+    """
+
+    # TODO: .bin sees to be an older pytorch-specific version of this
+    structure = {"model"}
+    filepattern = "safetensors$"
+    magic = {(8, b"{")}
+
+
 class PickleFile(FileData):
     """Python pickle, arbitrary serialized object"""
 
     structure = set()
 
 
+class ModelConfig(FileData):
+    """HuggingFace-style multi-file model directory
+
+    Looks like a catalog of related models
+    """
+
+    structure = {"model"}
+    filepattern = "config.json"
+    magic = {b'"model_type":'}
+
+
 class SKLearnPickleModel(PickleFile):
-    """Serialized model made by sklearn"""
+    """Trained model made by sklearn and saved as pickle"""
 
 
 comp_magic = {

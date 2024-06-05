@@ -585,19 +585,20 @@ def conversions_graph(avoid=None):
     nodes = set(
         cls.output_instance
         for cls in subclasses(readers.BaseReader)
-        if cls.output_instance and not any(re.findall(_, cls.qname()) for _ in avoid)
+        if cls.output_instance
+        and not any(re.findall(_.lower(), cls.qname().lower()) for _ in avoid)
     )
     graph.add_nodes_from(nodes)
 
     for cls in subclasses(readers.BaseReader):
-        if any(re.findall(_, cls.qname()) for _ in avoid):
+        if any(re.findall(_.lower(), cls.qname().lower()) for _ in avoid):
             continue
         if cls.output_instance:
             for impl in cls.implements:
                 graph.add_node(cls.output_instance)
                 graph.add_edge(impl.qname(), cls.output_instance, label=cls.qname())
     for cls in subclasses(BaseConverter):
-        if any(re.findall(_, cls.qname()) for _ in avoid):
+        if any(re.findall(_.lower(), cls.qname().lower()) for _ in avoid):
             continue
         for inttype, outtype in cls.instances.items():
             if inttype != ".*" and inttype != outtype:
@@ -638,23 +639,22 @@ def path(
 
     g = conversions_graph(avoid=avoid)
     alltypes = list(g)
-    start = start.lower()
-    matchtypes = [_ for _ in alltypes if re.findall(start, _.lower())]
+    matchtypes = [_ for _ in alltypes if re.findall(start, _)]
     if not matchtypes:
         raise ValueError("type found no match: %s", start)
     start = matchtypes[0]
     if isinstance(end, str):
         end = (end,)
-    matchtypes = [_ for _ in alltypes if any(re.findall(e.lower(), _.lower()) for e in end)]
+    matchtypes = [_ for _ in alltypes if any(re.findall(e, _) for e in end)]
     if not matchtypes:
         raise ValueError("outtype found no match: %s", end)
-    end = matchtypes[0].lower()
+    end = matchtypes[0]
     return sorted(nx.all_simple_edge_paths(g, start, end, cutoff=cutoff), key=len)
 
 
 def auto_pipeline(
     url: str | BaseData,
-    outtype: str | tuple[str],
+    outtype: str | tuple[str] = "",
     storage_options: dict | None = None,
     avoid: list[str] | None = None,
 ) -> Pipeline:
@@ -685,9 +685,10 @@ def auto_pipeline(
     if isinstance(data, BaseData):
         start = data.qname()
         steps = path(start, outtype, avoid=avoid)
-        reader = data.to_reader(outtype=steps[0][0][1])
-        for s in steps[0][1:]:
-            reader = reader.transform[s[1]]
+        reader = data.to_reader(outtype=steps[0][0][1] if steps else outtype)
+        if steps:
+            for s in steps[0][1:]:
+                reader = reader.transform[s[1]]
     elif isinstance(data, BaseReader):
         reader = data
         steps = path(data.output_instance, outtype, avoid=avoid)

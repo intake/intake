@@ -8,7 +8,9 @@ import json
 import re
 
 import fsspec
+import requests
 
+import intake.readers.datatypes
 from intake import import_name, logger
 from intake.readers import datatypes
 from intake.readers.mixins import PipelineMixin
@@ -496,6 +498,89 @@ class SKLearnExampleReader(BaseReader):
             sklearn.datasets, f"fetch_{name}"
         )
         return loader()
+
+
+class LlamaServerReader(BaseReader):
+    """Create llama.cpp server using local pretrained model file"""
+
+    output_instance = "intake.readers.datatypes:ChatService"
+    implements = {datatypes.GGUF, datatypes.SafeTensors}
+    imports = {"transformers"}
+
+    def _read(self, data, log_file="out.log", **kwargs):
+        # TODO: list common options, like PORT
+        import subprocess
+        import atexit
+
+        f = open(log_file, "wb")
+        cmd = ["server", "-m", data.url]
+        for k, v in kwargs.items():
+            if not k.startswith("-"):
+                k = f"-{k}"
+            if v not in [None, ""]:
+                cmd.extend([str(k), str(v)])
+            else:
+                cmd.append(str(k))
+        P = subprocess.Popen(cmd, stdout=f, stderr=f)
+        with open(log_file, "rb") as f:
+            while True:
+                text = f.readline()
+                if b"http://" in text:
+                    URL = text.rsplit()[-1].decode()
+                    break
+                if P.poll() is not None:
+                    raise RuntimeError
+        # TODO: could check {URL}/health
+        atexit.register(P.terminate)
+        return intake.readers.datatypes.LlamaCPPService(url=URL, options={"Process": P})
+
+
+class LlamaCPPCompletion(BaseReader):
+    implements = {datatypes.LlamaCPPService}
+    imports = {"requests"}
+    output_instance = "builtins:str"
+
+    def _read(self, data, prompt: str = "", *args, **kwargs):
+        r = requests.post(
+            f"{data.url}/completion",
+            json={"prompt": prompt, **kwargs},
+            headers={"Content-Type": "application/json"},
+        )
+        return r.json()["content"]
+
+
+class LlamaCPPEmbedding(BaseReader):
+    implements = {datatypes.LlamaCPPService}
+    imports = {"requests"}
+    output_instance = "builtins:str"
+
+    def _read(self, data, prompt: str = "", *args, **kwargs):
+        r = requests.post(
+            f"{data.url}/embedding",
+            json={"content": prompt, **kwargs},
+            headers={"Content-Type": "application/json"},
+        )
+        return r.json()["embedding"]
+
+
+class OpenAICompletion(BaseReader):
+    implements = {datatypes.OpenAIService}
+    imports = {"requests"}
+    output_instance = "builtins:dict"
+    # related high-volume endpoints, assistant, embeddings
+
+    def _read(self, data, messages: list[dict], *args, model="gtp-3.5-turbo", **kwargs):
+        import requests
+
+        url = f"{data.url}/v1/chat/completions"
+        options = data.options.copy()
+        options.update(kwargs)
+        r = requests.get(
+            url,
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {data.key}"},
+            json=dict(messages=messages, **options),
+        )
+        return r.json()["choices"][0]["message"]
 
 
 class TorchDataset(BaseReader):
