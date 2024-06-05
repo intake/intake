@@ -120,7 +120,10 @@ def find_funcs(val, tokens={}):
     if isinstance(val, Tokenizable):
         return val.to_dict()
     elif callable(val):
-        return "{func(%s)}" % f"{val.__module__}:{val.__name__}"
+        name = "{func(%s)}" % f"{val.__module__}:{val.__name__}"
+        if "<locals>" in name or "__main__" in name or val.__closure__:
+            raise RuntimeError("Cannot store dynamically defined function: %s", val)
+        return name
     elif val is None or isinstance(val, (numbers.Number, BaseData, BaseReader)):
         return val
     else:
