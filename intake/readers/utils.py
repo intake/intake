@@ -34,10 +34,10 @@ def merge_dicts(*dicts: dict) -> dict:
     Examples
     --------
     >>> merge_dicts({"a": {"a": 0, "b": 1}}, {"a": {"a": 1}, "b": 1})
-    {"a": {"a": 1, "b": 1}}, "b": 1)
+    {'a': {'a': 1, 'b': 1}, 'b': 1}
 
     >>> merge_dicts({"a": [None, True]}, {"a": [False, None]})
-    {"a": [False, True}
+    {'a': [False, True]}
     """
     if isinstance(dicts[0], dict):
         out = {}
@@ -68,8 +68,8 @@ def nested_keys_to_dict(kw: dict[str, Any]) -> dict:
     >>> nested_keys_to_dict({"field": 0, "deeper.field": 1, "deeper.other": 2, "deep.est.field": 3})
     {'field': 0, 'deeper': {'field': 1, 'other': 2}, 'deep': {'est': {'field': 3}}}
 
-    >>>  nested_keys_to_dict({"deeper.1.field": 1, "list.1.1.1": True, "list.1.0": False})
-    {'deeper': [None, {"field": 1}], "list": [None, [False, [None, True]]]}
+    >>> nested_keys_to_dict({"deeper.1.field": 1, "list.1.1.1": True, "list.1.0": False})
+    {'deeper': [None, {'field': 1}], 'list': [None, [False, [None, True]]]}
     """
     out = {}
     for k, v in kw.items():
