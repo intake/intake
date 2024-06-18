@@ -129,14 +129,14 @@ class ToHvPlot(BaseConverter):
     )
     func = "hvplot:hvPlot"
 
-    def run(self, x, explorer: bool = False, **kw):
+    def run(self, data, explorer: bool = False, **kw):
         """For tabular data only, pass explorer=True to get an interactive GUI"""
         import hvplot
 
         if explorer:
             # this is actually a hvplot.ui:hvPlotExplorer and only allows tabular data
-            return hvplot.explorer(x, **kw)
-        return hvplot.hvPlot(x, **kw)()
+            return hvplot.explorer(data, **kw)
+        return hvplot.hvPlot(data, **kw)()
 
 
 class RayToPandas(BaseConverter):
