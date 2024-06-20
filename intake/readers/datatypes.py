@@ -506,7 +506,7 @@ class CatalogAPI(Catalog, Service):
 class JSONFile(FileData):
     """Nested record format as readable text, very common over HTTP"""
 
-    filepattern = "json$"
+    filepattern = "json[l]$"
     mimetypes = "(text|application)/json"
     structure = {"nested", "table"}
     magic = {b"{"}

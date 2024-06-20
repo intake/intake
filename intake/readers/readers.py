@@ -229,6 +229,16 @@ class FileTextReader(FileReader):
         return "".join(out)
 
 
+class FileSizeReader(FileReader):
+    output_instance = "builtins:int"
+    implements = {datatypes.FileData}
+
+    def _read(self, data, **kw):
+        fs, path = fsspec.url_to_fs(data.url, **(data.storage_options or {}))
+        path = fs.expand_path(path)  # or use fs.du with deep
+        return sum(fs.info(p)["size"] for p in path)
+
+
 class Pandas(FileReader):
     imports = {"pandas"}
     output_instance = "pandas:DataFrame"
