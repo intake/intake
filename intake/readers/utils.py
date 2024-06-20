@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.metadata
 import numbers
 import re
+import typing
 from functools import lru_cache as cache
 from hashlib import md5
 from itertools import zip_longest
@@ -471,3 +472,14 @@ def pattern_to_glob(pattern: str) -> str:
             except ValueError:
                 glob_path += "*"
     return glob_path
+
+
+def safe_dict(x):
+    """Make a dict or list-like int a form you can JSON serialize"""
+    if isinstance(x, str):
+        return x
+    if isinstance(x, typing.Mapping):
+        return {k: safe_dict(v) for k, v in x.items()}
+    if isinstance(x, typing.Iterable):
+        return [safe_dict(v) for v in x]
+    return str(x)

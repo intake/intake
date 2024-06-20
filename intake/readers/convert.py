@@ -10,7 +10,7 @@ from itertools import chain
 
 from intake import import_name, conf
 from intake.readers import BaseData, BaseReader, readers
-from intake.readers.utils import all_to_one, subclasses
+from intake.readers.utils import all_to_one, subclasses, safe_dict
 
 
 class ImportsProperty:
@@ -388,6 +388,32 @@ class PandasToPolars(BaseConverter):
     func = "polars:from_pandas"
 
 
+class DataFrameToMetadata(BaseConverter):
+    instances = all_to_one(
+        ["pandas:DataFrame", "dask.dataframe:DataFrame", "polars:DataFrame"], "builtins:dict"
+    )
+
+    def run(self, x, *args, **kwargs):
+        out = {"repr": repr(x), "shape": x.shape}  # cf Repr, the output converter
+        t = str(type(x)).lower()
+        # TODO: perhaps can split this class into several
+        # TODO: implement spark, daft, modin, ibis ...
+        # Note that FileSizeReader can give file size on disk (if origin is files)
+        if "pandas" in t:
+            out["memory"] = x.memory_usage(deep=True).sum()
+            out["schema"] = x.dtypes if hasattr(x, "dtypes") else x.dtype
+            out["shape"] = x.shape
+        elif "polars" in t:
+            out["memory"] = x.estimated_size()
+            out["shape"] = x.shape
+            out["schema"] = x.schema
+        elif "ray" in t:
+            out["memory"] = x.size_bytes()
+            out["shape"] = [x.count(), len(x.columns)]
+            out["schema"] = safe_dict(x.schema)
+        return safe_dict(out)
+
+
 def convert_class(data, out_type: str):
     """Get conversion class from given data to out_type
 
@@ -413,7 +439,7 @@ def convert_classes(in_type: str):
     package = in_type.split(":", 1)[0].split(".", 1)[0]
     for cls in subclasses(BaseConverter):
         for intype, outtype in cls.instances.items():
-            if intype.split(":", 1)[0].split(".", 1)[0] != package:
+            if "*" not in intype and intype.split(":", 1)[0].split(".", 1)[0] != package:
                 continue
             if re.findall(intype.lower(), in_type.lower()) or re.findall(
                 in_type.lower(), intype.lower()
