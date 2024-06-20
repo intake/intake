@@ -1080,7 +1080,7 @@ class XArrayDatasetReader(FileReader):
     other_urls = {"xarray:open_dataset": "filename_or_obj"}
     url_arg = "paths"
 
-    def _read(self, data, **kw):
+    def _read(self, data, open_local=False, **kw):
         from xarray import open_dataset, open_mfdataset
 
         if "engine" not in kw:
@@ -1105,12 +1105,16 @@ class XArrayDatasetReader(FileReader):
             # TODO: recognise fsspec URLs, and optionally use open_local for engines tha need it
             if (
                 isinstance(data, datatypes.FileData)
-                and data.url.startswith("http")
+                and (data.url.startswith("http") or data.url.startswith("simplecache://"))
                 and not isinstance(data, datatypes.Zarr)
             ):
                 # special case, because xarray would assume a DAP endpoint
-                f = fsspec.open(data.url, **(data.storage_options or {})).open()
-                return open_dataset(f, **kw)
+                if open_local:
+                    f = fsspec.open_local(data.url, **(data.storage_options or {}))
+                    return open_dataset(f, **kw)
+                else:
+                    f = fsspec.open(data.url, **(data.storage_options or {})).open()
+                    return open_dataset(f, **kw)
             return open_dataset(data.url, **kw)
 
 
