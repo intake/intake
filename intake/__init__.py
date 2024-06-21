@@ -38,6 +38,7 @@ from intake.readers import (
     datatypes,
 )
 from intake.readers.entry import Catalog
+import intake.readers.importlist  # do this last, as it triggers more imports needing intake
 
 # legacy on-demand imports
 imports = {
