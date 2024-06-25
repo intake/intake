@@ -65,7 +65,7 @@ class DataDescription(Tokenizable):
         ups = self.user_parameters.copy()
         ups.update(user_parameters or {})
         kw = self.get_kwargs(user_parameters=ups, **kwargs)
-        return cls(**kw)
+        return cls(**kw, metadata=self.metadata)
 
     def __call__(self, **kwargs):
         return self.to_data(**kwargs)
