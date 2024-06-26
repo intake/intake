@@ -534,8 +534,7 @@ class LlamaServerReader(BaseReader):
         path = cls._find_executable()
         return imports & (path is not None)
 
-    def _read(self, data, log_file="out.log", **kwargs):
-        # TODO: list common options, like PORT
+    def _read(self, data, log_file="llama-cpp.log", **kwargs):
         startup_timeout = kwargs.pop("startup_timeout", 60)
         port = kwargs.pop("port", 8080)
         host = kwargs.pop("host", "127.0.0.1")
@@ -547,7 +546,7 @@ class LlamaServerReader(BaseReader):
 
         f = open(log_file, "wb")
         server_path = self._find_executable()
-        cmd = [server_path, "-m", data.url, "--host", host, "--port", str(port)]
+        cmd = [server_path, "-m", data.url, "--host", host, "--port", str(port), "--log-disable"]
         for k, v in kwargs.items():
             if not k.startswith("-"):
                 k = f"-{k}"
