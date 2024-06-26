@@ -514,16 +514,39 @@ class LlamaServerReader(BaseReader):
     """Create llama.cpp server using local pretrained model file"""
 
     output_instance = "intake.readers.datatypes:ChatService"
-    implements = {datatypes.GGUF, datatypes.SafeTensors}
-    imports = {"transformers"}
+    implements = {datatypes.GGUF}
+    imports = {"requests"}
+
+    @classmethod
+    def _find_executable(cls):
+        import shutil
+
+        # executables were renamed in https://github.com/ggerganov/llama.cpp/pull/7809
+        path = shutil.which("llama-server")
+        if path is None:
+            # fallback on old name
+            path = shutil.which("server")
+        return path
+
+    @classmethod
+    def check_imports(cls):
+        imports = super().check_imports()
+        path = cls._find_executable()
+        return imports & (path is not None)
 
     def _read(self, data, log_file="out.log", **kwargs):
         # TODO: list common options, like PORT
+        port = kwargs.pop("port", 8080)
+        host = kwargs.pop("host", "127.0.0.1")
+        URL = f"http://{host}:{port}"
+
+        import requests
         import subprocess
         import atexit
 
         f = open(log_file, "wb")
-        cmd = ["server", "-m", data.url]
+        server_path = self._find_executable()
+        cmd = [server_path, "-m", data.url, "--host", host, "--port", str(port)]
         for k, v in kwargs.items():
             if not k.startswith("-"):
                 k = f"-{k}"
@@ -535,12 +558,13 @@ class LlamaServerReader(BaseReader):
         with open(log_file, "rb") as f:
             while True:
                 text = f.readline()
-                if b"http://" in text:
-                    URL = text.rsplit()[-1].decode()
+                if b"HTTP server listening" in text:
                     break
                 if P.poll() is not None:
                     raise RuntimeError
-        # TODO: could check {URL}/health
+        res = requests.get(f"{URL}/health")
+        res.raise_for_status()
+
         atexit.register(P.terminate)
         return intake.readers.datatypes.LlamaCPPService(url=URL, options={"Process": P})
 
