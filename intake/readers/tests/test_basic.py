@@ -1,6 +1,6 @@
 import os
 
-from intake.readers import datatypes, readers
+from intake.readers import datatypes, readers, entry
 
 here = os.path.dirname(__file__)
 testdir = os.path.abspath(os.path.join(here, "..", "..", "catalog/tests"))
@@ -34,3 +34,11 @@ def test_recommend_reader():
     )
     pp = datatypes.CSV("")
     assert readers.PandasCSV in readers.recommend(pp)["importable"]
+
+
+def test_data_metadata():
+    cat = entry.Catalog()
+    cat["d"] = datatypes.BaseData(metadata={"oi": "io"})
+    cat.get_entity("d").metadata.update(blag=0)
+    out = cat["d"]
+    assert out.metadata == {"oi": "io", "blag": 0}
