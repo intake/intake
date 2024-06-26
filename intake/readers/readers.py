@@ -536,6 +536,7 @@ class LlamaServerReader(BaseReader):
 
     def _read(self, data, log_file="out.log", **kwargs):
         # TODO: list common options, like PORT
+        startup_timeout = kwargs.pop("startup_timeout", 60)
         port = kwargs.pop("port", 8080)
         host = kwargs.pop("host", "127.0.0.1")
         URL = f"http://{host}:{port}"
@@ -555,15 +556,21 @@ class LlamaServerReader(BaseReader):
             else:
                 cmd.append(str(k))
         P = subprocess.Popen(cmd, stdout=f, stderr=f)
-        with open(log_file, "rb") as f:
-            while True:
-                text = f.readline()
-                if b"HTTP server listening" in text:
+        import time
+
+        t0 = time.time()
+        while True:
+            try:
+                res = requests.get(f"{URL}/health")
+                if res.ok:
                     break
-                if P.poll() is not None:
-                    raise RuntimeError
-        res = requests.get(f"{URL}/health")
-        res.raise_for_status()
+            except requests.ConnectionError:
+                pass
+            elapsed = time.time() - t0
+            if (P.poll() is not None) or (elapsed > startup_timeout):
+                raise RuntimeError(
+                    f"Could not start {server_path}. See {log_file} for more details."
+                )
 
         atexit.register(P.terminate)
         return intake.readers.datatypes.LlamaCPPService(url=URL, options={"Process": P})
