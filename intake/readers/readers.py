@@ -534,8 +534,54 @@ class LlamaServerReader(BaseReader):
         path = cls._find_executable()
         return imports & (path is not None)
 
+    def _local_model_path(self, data, callback=None):
+        import os
+        from fsspec.core import split_protocol
+        from intake.catalog.default import user_data_dir
+
+        if callback is None:
+            from fsspec.callbacks import _DEFAULT_CALLBACK
+
+            cb = _DEFAULT_CALLBACK
+        else:
+            cb = callback("model")
+
+        protocol, _ = split_protocol(data.url)
+        if protocol is None:
+            return data.url
+
+        storage_options = {} if data.storage_options is None else data.storage_options
+        cache_location = os.path.join(user_data_dir(), "llama.cpp")
+        options = {protocol: storage_options, "simplecache": {"cache_storage": cache_location}}
+        fs, path = fsspec.url_to_fs(f"simplecache::{data.url}", **options)
+
+        cached_fn = fs._check_file(path)
+        if cached_fn:
+            return cached_fn
+
+        with fs.fs.open(path) as f:
+            sha = fs._mapper(path)
+            cached_fn = os.path.join(fs.storage[-1], sha)
+
+            cb.set_size(fs.info(path)["size"])
+
+            cached = open(cached_fn, "wb")
+            chunk = True
+            try:
+                while chunk:
+                    chunk = f.read(fs.blocksize)
+                    cached.write(chunk)
+                    cb.relative_update(len(chunk))
+            finally:
+                cb.close()
+                cached.close()
+
+            return cached_fn
+
     def _read(self, data, log_file="llama-cpp.log", **kwargs):
         startup_timeout = kwargs.pop("startup_timeout", 60)
+        callback = kwargs.pop("callback")
+
         port = kwargs.pop("port", 8080)
         host = kwargs.pop("host", "127.0.0.1")
         URL = f"http://{host}:{port}"
@@ -546,7 +592,8 @@ class LlamaServerReader(BaseReader):
 
         f = open(log_file, "wb")
         server_path = self._find_executable()
-        cmd = [server_path, "-m", data.url, "--host", host, "--port", str(port), "--log-disable"]
+        path = self._local_model_path(data, callback=callback)
+        cmd = [server_path, "-m", path, "--host", host, "--port", str(port), "--log-disable"]
         for k, v in kwargs.items():
             if not k.startswith("-"):
                 k = f"-{k}"
