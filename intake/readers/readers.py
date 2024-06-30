@@ -548,6 +548,7 @@ class LlamaServerReader(BaseReader):
 
         protocol, _ = split_protocol(data.url)
         if protocol is None:
+            # no protocol means local path
             return data.url
 
         storage_options = {} if data.storage_options is None else data.storage_options
