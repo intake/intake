@@ -580,7 +580,7 @@ class LlamaServerReader(BaseReader):
 
     def _read(self, data, log_file="llama-cpp.log", **kwargs):
         startup_timeout = kwargs.pop("startup_timeout", 60)
-        callback = kwargs.pop("callback")
+        callback = kwargs.pop("callback", None)
 
         port = kwargs.pop("port", 8080)
         host = kwargs.pop("host", "127.0.0.1")
@@ -595,6 +595,7 @@ class LlamaServerReader(BaseReader):
         path = self._local_model_path(data, callback=callback)
         cmd = [server_path, "-m", path, "--host", host, "--port", str(port), "--log-disable"]
         for k, v in kwargs.items():
+            k = k.replace("_", "-")
             if not k.startswith("-"):
                 k = f"-{k}"
             if v not in [None, ""]:
@@ -619,7 +620,9 @@ class LlamaServerReader(BaseReader):
                 )
 
         atexit.register(P.terminate)
-        return intake.readers.datatypes.LlamaCPPService(url=URL, options={"Process": P})
+        return intake.readers.datatypes.LlamaCPPService(
+            url=URL, options={"Process": P, "log_file": log_file}
+        )
 
 
 class LlamaCPPCompletion(BaseReader):
