@@ -513,7 +513,7 @@ class SKLearnExampleReader(BaseReader):
 class LlamaServerReader(BaseReader):
     """Create llama.cpp server using local pretrained model file"""
 
-    output_instance = "intake.readers.datatypes:ChatService"
+    output_instance = "intake.readers.datatypes:LlamaCPPService"
     implements = {datatypes.GGUF}
     imports = {"requests"}
 
@@ -652,6 +652,18 @@ class LlamaCPPEmbedding(BaseReader):
             headers={"Content-Type": "application/json"},
         )
         return r.json()["embedding"]
+
+
+class OpenAIReader(BaseReader):
+    implements = {datatypes.OpenAIService}
+    imports = {"openai"}
+    output_instance = "openai:OpenAI"
+
+    def _read(self, data, **kwargs):
+        import openai
+
+        client = openai.Client(api_key=data.key, base_url=data.url, **kwargs)
+        return client
 
 
 class OpenAICompletion(BaseReader):
