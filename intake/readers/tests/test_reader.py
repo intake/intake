@@ -49,6 +49,7 @@ def xarray_dataset():
 
 
 def test_xarray_pattern(tmpdir, xarray_dataset):
+    pytest.importorskip("h5netcdf")
     path1 = f"{tmpdir}/1.nc"
     path2 = f"{tmpdir}/2.nc"
     xarray_dataset.to_netcdf(path1)

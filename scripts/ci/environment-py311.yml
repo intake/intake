@@ -28,6 +28,7 @@ dependencies:
   - rasterio
   - s3fs
   - xarray
+  - h5netcdf
   - zarr
   - moto
   - httpx
