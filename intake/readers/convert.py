@@ -435,7 +435,7 @@ class LLamaCPPServiceToOpenAIService(BaseConverter):
 
 
 class OpenAIServiceToOpenAIClient(BaseConverter):
-    instance = {"intake.readers.datatypes:OpenAIService": "openai:OpenAI"}
+    instances = {"intake.readers.datatypes:OpenAIService": "openai:OpenAI"}
 
     def run(self, x):
         return OpenAIReader(x).read()
