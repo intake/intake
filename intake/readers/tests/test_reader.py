@@ -49,6 +49,10 @@ def xarray_dataset():
 
 
 def test_xarray_pattern(tmpdir, xarray_dataset):
+    import numpy as np
+
+    if np.__version__.split(".") > ["2"]:
+        pytest.skip("HDF does not yet support numpy 2")
     pytest.importorskip("h5netcdf")
     path1 = f"{tmpdir}/1.nc"
     path2 = f"{tmpdir}/2.nc"
