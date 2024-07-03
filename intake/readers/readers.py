@@ -1128,6 +1128,37 @@ class XArrayDatasetReader(FileReader):
             return open_dataset(data.url, **kw)
 
 
+class XarrayPatternReader(XArrayDatasetReader):
+    """Same as XarrayDatasetReader, but recognises file patterns
+
+    If you use a URL like "/path/file_{value}_.nc". The template may include
+    specifiers like ":d" to determine the type of the values inferred. This
+    reader supports all the same filetypes as XArrayDatasetReader.
+
+    The read step may be accelerated by providing arguments like
+    ``parallel=True`` and ``combine_attrs="override" - see the
+    xr.open_mfdataset documentation.
+
+    Note: this method determined the ``concat_dim`` and ``combine`` arguments,
+    so passing these will raise an exception.
+    """
+
+    # should we have an explicit pattern type data input?
+
+    def _read(self, data, open_local=False, **kw):
+        import pandas as pd
+        from intake.readers.utils import pattern_to_glob
+        from intake.source.utils import reverse_formats
+
+        url = pattern_to_glob(data.url)
+        fs, _, paths = fsspec.get_fs_token_paths(url, **(data.storage_options or {}))
+        val_dict = reverse_formats(data.url, paths)
+        indices = [pd.Index(v, name=k) for k, v in val_dict.items()]
+        data2 = type(data)(url=paths, storage_options=data.storage_options, metadata=data.metadata)
+
+        return super()._read(data2, concat_dim=indices, combine="nested", **kw)
+
+
 class RasterIOXarrayReader(FileReader):
     output_instance = "xarray:Dataset"
     imports = {"rioxarray"}

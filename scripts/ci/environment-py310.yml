@@ -27,6 +27,7 @@ dependencies:
   - pytest
   - rasterio
   - s3fs
+  - h5netcdf
   - xarray
   - zarr
   - moto

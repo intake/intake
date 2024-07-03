@@ -166,7 +166,7 @@ def reverse_formats(format_string, resolved_strings):
 
     Parameters
     ----------
-    format_strings : str
+    format_string : str
         Format template string as used with str.format method
     resolved_strings : list
         List of strings with same pattern as format_string but with fields
