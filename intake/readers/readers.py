@@ -6,9 +6,11 @@ import inspect
 import itertools
 import json
 import re
+from functools import lru_cache
 
 import fsspec
 import requests
+from fsspec.callbacks import _DEFAULT_CALLBACK as DEFAULT_CALLBACK
 
 import intake.readers.datatypes
 from intake import import_name, logger
@@ -234,7 +236,7 @@ class FileSizeReader(FileReader):
     implements = {datatypes.FileData}
 
     def _read(self, data, **kw):
-        fs, path = fsspec.url_to_fs(data.url, **(data.storage_options or {}))
+        fs, path = fsspec.core.url_to_fs(data.url, **(data.storage_options or {}))
         path = fs.expand_path(path)  # or use fs.du with deep
         return sum(fs.info(p)["size"] for p in path)
 
@@ -511,13 +513,26 @@ class SKLearnExampleReader(BaseReader):
 
 
 class LlamaServerReader(BaseReader):
-    """Create llama.cpp server using local pretrained model file"""
+    """Create llama.cpp server using local pretrained model file
+
+    The read() method allows you to pass arguments directly to the llama.cpp server
+    as kwargs. Common arguments are
+
+    host: (str) hostname for the the server to listen on, default: 127.0.0.1
+    port: (int) port number for the server to listen on, default: 8080
+
+    Additional kwargs not passed to llama.cpp
+
+    startup_timeout: (int) time in seconds to wait for server to respond to a health check before failing, default 60
+    callback: fsspec.callbacks.Callback derived instance progress indicator during model download, default None
+    """
 
     output_instance = "intake.readers.datatypes:LlamaCPPService"
     implements = {datatypes.GGUF}
     imports = {"requests"}
 
     @classmethod
+    @lru_cache()
     def _find_executable(cls):
         import shutil
 
@@ -534,17 +549,10 @@ class LlamaServerReader(BaseReader):
         path = cls._find_executable()
         return imports & (path is not None)
 
-    def _local_model_path(self, data, callback=None):
+    def _local_model_path(self, data, callback=DEFAULT_CALLBACK):
         import os
         from fsspec.core import split_protocol
         from intake.catalog.default import user_data_dir
-
-        if callback is None:
-            from fsspec.callbacks import _DEFAULT_CALLBACK
-
-            cb = _DEFAULT_CALLBACK
-        else:
-            cb = callback("model")
 
         protocol, _ = split_protocol(data.url)
         if protocol is None:
@@ -553,18 +561,21 @@ class LlamaServerReader(BaseReader):
 
         storage_options = {} if data.storage_options is None else data.storage_options
         cache_location = os.path.join(user_data_dir(), "llama.cpp")
-        options = {protocol: storage_options, "simplecache": {"cache_storage": cache_location}}
-        fs, path = fsspec.url_to_fs(f"simplecache::{data.url}", **options)
+        options = {
+            protocol: storage_options,
+            "simplecache": {"cache_storage": cache_location, "block_size": 1024},
+        }
+        fs, path = fsspec.core.url_to_fs(f"simplecache::{data.url}", **options)
 
         cached_fn = fs._check_file(path)
         if cached_fn:
             return cached_fn
 
-        with fs.fs.open(path) as f:
-            sha = fs._mapper(path)
-            cached_fn = os.path.join(fs.storage[-1], sha)
+        sha = fs._mapper(path)
+        cached_fn = os.path.join(fs.storage[-1], sha)
 
-            cb.set_size(fs.info(path)["size"])
+        with fs.fs.open(path) as f:
+            callback.set_size(fs.info(path)["size"])
 
             cached = open(cached_fn, "wb")
             chunk = True
@@ -572,9 +583,9 @@ class LlamaServerReader(BaseReader):
                 while chunk:
                     chunk = f.read(fs.blocksize)
                     cached.write(chunk)
-                    cb.relative_update(len(chunk))
+                    callback.relative_update(len(chunk))
             finally:
-                cb.close()
+                callback.close()
                 cached.close()
 
             return cached_fn
