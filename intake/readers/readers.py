@@ -574,21 +574,8 @@ class LlamaServerReader(BaseReader):
         sha = fs._mapper(path)
         cached_fn = os.path.join(fs.storage[-1], sha)
 
-        with fs.fs.open(path) as f:
-            callback.set_size(fs.info(path)["size"])
-
-            cached = open(cached_fn, "wb")
-            chunk = True
-            try:
-                while chunk:
-                    chunk = f.read(fs.blocksize)
-                    cached.write(chunk)
-                    callback.relative_update(len(chunk))
-            finally:
-                callback.close()
-                cached.close()
-
-            return cached_fn
+        fs.fs.get_file(path, cached_fn, callback=callback)
+        return cached_fn
 
     def _read(self, data, log_file="llama-cpp.log", **kwargs):
         startup_timeout = kwargs.pop("startup_timeout", 60)
