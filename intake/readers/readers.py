@@ -14,7 +14,7 @@ import intake.readers.datatypes
 from intake import import_name, logger
 from intake.readers import datatypes
 from intake.readers.mixins import PipelineMixin
-from intake.readers.utils import Tokenizable, subclasses
+from intake.readers.utils import Tokenizable, subclasses, port_in_use
 
 
 class BaseReader(Tokenizable, PipelineMixin):
@@ -586,6 +586,9 @@ class LlamaServerReader(BaseReader):
         port = kwargs.pop("port", 8080)
         host = kwargs.pop("host", "127.0.0.1")
         URL = f"http://{host}:{port}"
+
+        if port_in_use(host, port):
+            raise RuntimeError(f"{URL} in use.")
 
         import requests
         import subprocess
