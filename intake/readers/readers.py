@@ -6,15 +6,17 @@ import inspect
 import itertools
 import json
 import re
+from functools import lru_cache
 
 import fsspec
 import requests
+from fsspec.callbacks import _DEFAULT_CALLBACK as DEFAULT_CALLBACK
 
 import intake.readers.datatypes
 from intake import import_name, logger
 from intake.readers import datatypes
 from intake.readers.mixins import PipelineMixin
-from intake.readers.utils import Tokenizable, subclasses
+from intake.readers.utils import Tokenizable, subclasses, port_in_use
 
 
 class BaseReader(Tokenizable, PipelineMixin):
@@ -234,7 +236,7 @@ class FileSizeReader(FileReader):
     implements = {datatypes.FileData}
 
     def _read(self, data, **kw):
-        fs, path = fsspec.url_to_fs(data.url, **(data.storage_options or {}))
+        fs, path = fsspec.core.url_to_fs(data.url, **(data.storage_options or {}))
         path = fs.expand_path(path)  # or use fs.du with deep
         return sum(fs.info(p)["size"] for p in path)
 
@@ -511,20 +513,91 @@ class SKLearnExampleReader(BaseReader):
 
 
 class LlamaServerReader(BaseReader):
-    """Create llama.cpp server using local pretrained model file"""
+    """Create llama.cpp server using local pretrained model file
 
-    output_instance = "intake.readers.datatypes:ChatService"
-    implements = {datatypes.GGUF, datatypes.SafeTensors}
-    imports = {"transformers"}
+    The read() method allows you to pass arguments directly to the llama.cpp server
+    as kwargs. Common arguments are
 
-    def _read(self, data, log_file="out.log", **kwargs):
-        # TODO: list common options, like PORT
+    host: (str) hostname for the the server to listen on, default: 127.0.0.1
+    port: (int) port number for the server to listen on, default: 8080
+
+    Additional kwargs not passed to llama.cpp
+
+    startup_timeout: (int) time in seconds to wait for server to respond to a health check before failing, default 60
+    callback: fsspec.callbacks.Callback derived instance progress indicator during model download, default None
+    """
+
+    output_instance = "intake.readers.datatypes:LlamaCPPService"
+    implements = {datatypes.GGUF}
+    imports = {"requests"}
+
+    @classmethod
+    @lru_cache()
+    def _find_executable(cls):
+        import shutil
+
+        # executables were renamed in https://github.com/ggerganov/llama.cpp/pull/7809
+        path = shutil.which("llama-server")
+        if path is None:
+            # fallback on old name
+            path = shutil.which("server")
+        return path
+
+    @classmethod
+    def check_imports(cls):
+        imports = super().check_imports()
+        path = cls._find_executable()
+        return imports & (path is not None)
+
+    def _local_model_path(self, data, callback=DEFAULT_CALLBACK):
+        import os
+        from fsspec.core import split_protocol
+        from intake.catalog.default import user_data_dir
+
+        protocol, _ = split_protocol(data.url)
+        if protocol is None:
+            # no protocol means local path
+            return data.url
+
+        storage_options = {} if data.storage_options is None else data.storage_options
+        cache_location = os.path.join(user_data_dir(), "llama.cpp")
+        options = {
+            protocol: storage_options,
+            "simplecache": {"cache_storage": cache_location, "block_size": 1024},
+        }
+        fs, path = fsspec.core.url_to_fs(f"simplecache::{data.url}", **options)
+
+        cached_fn = fs._check_file(path)
+        if cached_fn:
+            return cached_fn
+
+        sha = fs._mapper(path)
+        cached_fn = os.path.join(fs.storage[-1], sha)
+
+        fs.fs.get_file(path, cached_fn, callback=callback)
+        return cached_fn
+
+    def _read(self, data, log_file="llama-cpp.log", **kwargs):
+        startup_timeout = kwargs.pop("startup_timeout", 60)
+        callback = kwargs.pop("callback", None)
+
+        port = kwargs.pop("port", 8080)
+        host = kwargs.pop("host", "127.0.0.1")
+        URL = f"http://{host}:{port}"
+
+        if port_in_use(host, port):
+            raise RuntimeError(f"{URL} in use.")
+
+        import requests
         import subprocess
         import atexit
 
         f = open(log_file, "wb")
-        cmd = ["server", "-m", data.url]
+        server_path = self._find_executable()
+        path = self._local_model_path(data, callback=callback)
+        cmd = [server_path, "-m", path, "--host", host, "--port", str(port), "--log-disable"]
         for k, v in kwargs.items():
+            k = k.replace("_", "-")
             if not k.startswith("-"):
                 k = f"-{k}"
             if v not in [None, ""]:
@@ -532,17 +605,26 @@ class LlamaServerReader(BaseReader):
             else:
                 cmd.append(str(k))
         P = subprocess.Popen(cmd, stdout=f, stderr=f)
-        with open(log_file, "rb") as f:
-            while True:
-                text = f.readline()
-                if b"http://" in text:
-                    URL = text.rsplit()[-1].decode()
+        import time
+
+        t0 = time.time()
+        while True:
+            try:
+                res = requests.get(f"{URL}/health")
+                if res.ok:
                     break
-                if P.poll() is not None:
-                    raise RuntimeError
-        # TODO: could check {URL}/health
+            except requests.ConnectionError:
+                pass
+            elapsed = time.time() - t0
+            if (P.poll() is not None) or (elapsed > startup_timeout):
+                raise RuntimeError(
+                    f"Could not start {server_path}. See {log_file} for more details."
+                )
+
         atexit.register(P.terminate)
-        return intake.readers.datatypes.LlamaCPPService(url=URL, options={"Process": P})
+        return intake.readers.datatypes.LlamaCPPService(
+            url=URL, options={"Process": P, "log_file": log_file}
+        )
 
 
 class LlamaCPPCompletion(BaseReader):
@@ -571,6 +653,18 @@ class LlamaCPPEmbedding(BaseReader):
             headers={"Content-Type": "application/json"},
         )
         return r.json()["embedding"]
+
+
+class OpenAIReader(BaseReader):
+    implements = {datatypes.OpenAIService}
+    imports = {"openai"}
+    output_instance = "openai:OpenAI"
+
+    def _read(self, data, **kwargs):
+        import openai
+
+        client = openai.Client(api_key=data.key, base_url=data.url, **kwargs)
+        return client
 
 
 class OpenAICompletion(BaseReader):

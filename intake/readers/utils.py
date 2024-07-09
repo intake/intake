@@ -483,3 +483,28 @@ def safe_dict(x):
     if isinstance(x, typing.Iterable):
         return [safe_dict(v) for v in x]
     return str(x)
+
+
+def port_in_use(host, port=None):
+    import socket
+
+    if isinstance(host, tuple):
+        host, port = host
+    elif isinstance(host, str) and host.startswith("http"):
+        from urllib.parse import urlparse
+
+        parsed = urlparse(host)
+        host = parsed.hostname
+        if parsed.port is None:
+            port = port
+
+    if (port is None) or (host is None):
+        raise ValueError(f"host={host} and port={port} is not valid.")
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.connect((host, int(port)))
+        s.shutdown(2)
+        return True
+    except:  # noqa: E722
+        return False

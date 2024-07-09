@@ -5,11 +5,13 @@ By convention, functions here do not change the data, just how it is held.
 from __future__ import annotations
 
 import re
+from urllib.parse import urljoin
 from functools import lru_cache
 from itertools import chain
 
 from intake import import_name, conf
-from intake.readers import BaseData, BaseReader, readers
+from intake.readers.datatypes import OpenAIService
+from intake.readers import BaseData, BaseReader, readers, LlamaServerReader, OpenAIReader
 from intake.readers.utils import all_to_one, subclasses, safe_dict
 
 
@@ -412,6 +414,31 @@ class DataFrameToMetadata(BaseConverter):
             out["shape"] = [x.count(), len(x.columns)]
             out["schema"] = safe_dict(x.schema)
         return safe_dict(out)
+
+
+class GGUFToLlamaCPPService(BaseConverter):
+    instances = {"intake.readers.datatypes:GGUF": "intake.readers.datatypes:LlamaCPPService"}
+
+    def run(self, x, **kwargs):
+        return LlamaServerReader(x).read(**kwargs)
+
+
+class LLamaCPPServiceToOpenAIService(BaseConverter):
+    instances = {
+        "intake.readers.datatypes:LlamaCPPService": "intake.readers.datatypes:OpenAIService"
+    }
+
+    def run(self, x, options=None):
+        url = urljoin(x.url, "/v1")
+        service = OpenAIService(url=url, key="none", options=options)
+        return service
+
+
+class OpenAIServiceToOpenAIClient(BaseConverter):
+    instances = {"intake.readers.datatypes:OpenAIService": "openai:OpenAI"}
+
+    def run(self, x):
+        return OpenAIReader(x).read()
 
 
 def convert_class(data, out_type: str):
