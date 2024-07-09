@@ -52,6 +52,12 @@ def test_pipeline_steps(dataframe_file, df):
     out = stepper.step()
     assert out.equals(df[["apple", "beet"]].set_index(keys="beet"))
 
+    stepper = reader2.read_stepwise(breakpoint=1)
+    assert stepper.next[0] == 1
+    assert stepper.data is not None
+    out = stepper.cont()
+    assert out.equals(df[["apple", "beet"]].set_index(keys="beet"))
+
 
 def test_parameters(dataframe_file, monkeypatch):
     data = intake.readers.datatypes.CSV(url=dataframe_file)

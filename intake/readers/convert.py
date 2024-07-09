@@ -626,9 +626,15 @@ class Pipeline(readers.BaseReader):
             metadata=self.metadata,
         )
 
-    def read_stepwise(self):
-        """Read with a wrapper class to allow executing one step at a time"""
-        return PipelineExecution(self)
+    def read_stepwise(self, breakpoint=0):
+        """Read with a wrapper class to allow executing one step at a time
+
+        Parameters
+        ----------
+        breakpoint: int
+            At which stage of the pipeline to enter stepwise mode
+        """
+        return PipelineExecution(self, breakpoint=breakpoint)
 
 
 class PipelineExecution:
@@ -641,16 +647,30 @@ class PipelineExecution:
       you can edit the kwargs in-place without changing the original
     """
 
-    def __init__(self, pipeline):
+    def __init__(self, pipeline, breakpoint=0):
         self.pipeline = pipeline
         self.data = None
         self.steps = iter(enumerate(pipeline.steps))
         self.next = copy.copy(next(self.steps))
+        for _ in range(breakpoint):
+            self.step()
 
     def __repr__(self):
         return f"Executing stage {self.next[0]} of pipeline\n{self.pipeline}"
 
+    def cont(self):
+        """Continue pipeline to the end without stopping again"""
+        while True:
+            out = self.step()
+            if out is not self:
+                return out
+
     def step(self, **kw):
+        """Run one step of the pipeline
+
+        If it is the last step, will return the result; otherwise
+        will return self.
+        """
         i, step = self.next
         if i:
             self.data = self.pipeline._read_stage_n(i, data=self.data, **kw)
