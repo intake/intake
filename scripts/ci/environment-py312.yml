@@ -1,0 +1,44 @@
+name: test_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - aiohttp
+  - flask
+  - appdirs
+  - dask
+  - jinja2
+  - numpy
+  - pyyaml
+  - requests
+  - msgpack-numpy
+  - pytest
+  - fsspec
+  - intake-parquet
+  - zarr
+  - notebook
+  - panel
+  - hvplot
+  - bokeh
+  - dask
+  - intake
+  - pip
+  - pytest
+  - rasterio
+  - s3fs
+  - xarray
+  - h5netcdf
+  - zarr
+  - moto
+  - httpx
+  - typer
+  - pydantic >=1.8
+  - sqlalchemy
+  - click
+  - rangehttpserver
+  - pre-commit
+  - pytest-postgresql
+  - psycopg
+  - python-duckdb
+  - siphon

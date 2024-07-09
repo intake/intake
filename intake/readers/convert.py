@@ -4,6 +4,7 @@ By convention, functions here do not change the data, just how it is held.
 """
 from __future__ import annotations
 
+import copy
 import re
 from urllib.parse import urljoin
 from functools import lru_cache
@@ -624,6 +625,62 @@ class Pipeline(readers.BaseReader):
             out_instances=self.output_instances + [out_instance],
             metadata=self.metadata,
         )
+
+    def read_stepwise(self, breakpoint=0):
+        """Read with a wrapper class to allow executing one step at a time
+
+        Parameters
+        ----------
+        breakpoint: int
+            At which stage of the pipeline to enter stepwise mode
+        """
+        return PipelineExecution(self, breakpoint=breakpoint)
+
+
+class PipelineExecution:
+
+    """Encapsulates a Pipeline, so you can step through it stepwise
+
+    Interesting attributes to examine:
+    - .data, the result of the most recent step (initially None)
+    - .next, (i, step) the next step to perform. This is a copy, so
+      you can edit the kwargs in-place without changing the original
+    """
+
+    def __init__(self, pipeline, breakpoint=0):
+        self.pipeline = pipeline
+        self.data = None
+        self.steps = iter(enumerate(pipeline.steps))
+        self.next = copy.copy(next(self.steps))
+        for _ in range(breakpoint):
+            self.step()
+
+    def __repr__(self):
+        return f"Executing stage {self.next[0]} of pipeline\n{self.pipeline}"
+
+    def cont(self):
+        """Continue pipeline to the end without stopping again"""
+        while True:
+            out = self.step()
+            if out is not self:
+                return out
+
+    def step(self, **kw):
+        """Run one step of the pipeline
+
+        If it is the last step, will return the result; otherwise
+        will return self.
+        """
+        i, step = self.next
+        if i:
+            self.data = self.pipeline._read_stage_n(i, data=self.data, **kw)
+        else:
+            self.data = self.pipeline._read_stage_n(i, **kw)
+        try:
+            self.next = next(self.steps)
+            return self
+        except StopIteration:
+            return self.data
 
 
 def conversions_graph(avoid=None):
