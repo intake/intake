@@ -1202,7 +1202,9 @@ class XArrayDatasetReader(FileReader):
             kw.setdefault("engine", "h5netcdf")
             if data.path:
                 kw["group"] = data.path
-        if isinstance(data.url, (tuple, set, list)) or "*" in data.url:
+        if isinstance(data.url, (tuple, set, list)) and len(data.url) == 1:
+            return open_dataset(data.url[0], **kw)
+        elif (isinstance(data.url, (tuple, set, list)) and len(data.url) > 1) or "*" in data.url:
             # use fsspec.open_files? (except for zarr)
             return open_mfdataset(data.url, **kw)
         else:
@@ -1222,7 +1224,7 @@ class XArrayDatasetReader(FileReader):
             return open_dataset(data.url, **kw)
 
 
-class XarrayPatternReader(XArrayDatasetReader):
+class XArrayPatternReader(XArrayDatasetReader):
     """Same as XarrayDatasetReader, but recognises file patterns
 
     If you use a URL like "/path/file_{value}_.nc". The template may include
@@ -1249,7 +1251,11 @@ class XarrayPatternReader(XArrayDatasetReader):
         val_dict = reverse_formats(data.url, paths)
         indices = [pd.Index(v, name=k) for k, v in val_dict.items()]
         data2 = type(data)(url=paths, storage_options=data.storage_options, metadata=data.metadata)
-
+        if "concat_dim" in kw:
+            ccm = kw.pop("concat_dim")
+            ccm = [ccm] if isinstance(ccm, str) else ccm
+            for ind, cd in zip(indices, ccm):
+                ind.name = cd
         return super()._read(data2, concat_dim=indices, combine="nested", **kw)
 
 

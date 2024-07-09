@@ -4,7 +4,7 @@ import fsspec
 import pytest
 
 import intake.readers
-from intake.readers import readers, utils, entry
+from intake.readers import convert, readers, utils, entry
 
 pd = pytest.importorskip("pandas")
 bindata = b"apple,beet,carrot\n" + b"a,1,0.1\nb,2,0.2\nc,3,0.3\n" * 100
@@ -35,6 +35,22 @@ def test_pipelines_in_catalogs(dataframe_file, df):
     cat["eq"] = reader.equals(other=reader)
     assert reader.equals(other=reader).read() is True
     assert cat.eq.read() is True
+
+
+def test_pipeline_steps(dataframe_file, df):
+    data = intake.readers.datatypes.CSV(url=dataframe_file)
+    reader = intake.readers.PandasCSV(data)
+    reader2 = reader[["apple", "beet"]].set_index(keys="beet")
+    stepper = reader2.read_stepwise()
+    assert isinstance(stepper, convert.PipelineExecution)
+    assert stepper.data is None
+    assert stepper.next[0] == 0
+    assert isinstance(stepper.step(), convert.PipelineExecution)
+    assert stepper.next[0] == 1
+    assert stepper.data is not None
+    assert isinstance(stepper.step(), convert.PipelineExecution)
+    out = stepper.step()
+    assert out.equals(df[["apple", "beet"]].set_index(keys="beet"))
 
 
 def test_parameters(dataframe_file, monkeypatch):
