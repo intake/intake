@@ -50,6 +50,7 @@ def xarray_dataset():
 
 def test_xarray_pattern(tmpdir, xarray_dataset):
     import numpy as np
+    from intake.readers.readers import XArrayPatternReader
 
     if np.__version__.split(".") > ["2"]:
         pytest.skip("HDF does not yet support numpy 2")
@@ -60,14 +61,14 @@ def test_xarray_pattern(tmpdir, xarray_dataset):
     xarray_dataset.to_netcdf(path2)
 
     data = intake.datatypes.HDF5("%s/{part}.nc" % tmpdir)
-    reader = intake.readers.XarrayPatternReader(data)
+    reader = XArrayPatternReader(data)
     ds = reader.read()
 
     assert ds.part.values.tolist() == ["1", "2"]
     assert ds.temperature.shape == (2, 2, 3, 4)
 
     data = intake.datatypes.HDF5("%s/{part:d}.nc" % tmpdir)
-    reader = intake.readers.XarrayPatternReader(data)
+    reader = XArrayPatternReader(data)
     ds = reader.read()
 
     assert ds.part.values.tolist() == [1, 2]
