@@ -36,7 +36,8 @@ classifiers = [
 dependencies = [
   "fsspec >=2023.0.0",
   "pyyaml",
-  "appdirs"
+  "platformdirs",
+  "networkx"
 ]
 
 [tool.setuptools_scm]
