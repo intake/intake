@@ -9,7 +9,6 @@ import re
 from functools import lru_cache
 
 import fsspec
-import requests
 from fsspec.callbacks import _DEFAULT_CALLBACK as DEFAULT_CALLBACK
 
 import intake.readers.datatypes
@@ -633,6 +632,8 @@ class LlamaCPPCompletion(BaseReader):
     output_instance = "builtins:str"
 
     def _read(self, data, prompt: str = "", *args, **kwargs):
+        import requests
+
         r = requests.post(
             f"{data.url}/completion",
             json={"prompt": prompt, **kwargs},
@@ -647,6 +648,8 @@ class LlamaCPPEmbedding(BaseReader):
     output_instance = "builtins:str"
 
     def _read(self, data, prompt: str = "", *args, **kwargs):
+        import requests
+
         r = requests.post(
             f"{data.url}/embedding",
             json={"content": prompt, **kwargs},
@@ -845,6 +848,7 @@ class HandleToUrlReader(BaseReader):
 
     implements = {datatypes.Handle}
     func = "requests:get"
+    imports = {"requests", "aiohttp"}
     output_instance = datatypes.BaseData.qname()
 
     @classmethod
