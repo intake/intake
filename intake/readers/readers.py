@@ -5,11 +5,13 @@ from __future__ import annotations
 import inspect
 import itertools
 import json
+import os
 import re
 from functools import lru_cache
 
 import fsspec
 import requests
+import xarray
 from fsspec.callbacks import _DEFAULT_CALLBACK as DEFAULT_CALLBACK
 
 import intake.readers.datatypes
@@ -1202,13 +1204,29 @@ class XArrayDatasetReader(FileReader):
             kw.setdefault("engine", "h5netcdf")
             if data.path:
                 kw["group"] = data.path
+        auth = kw.pop("auth", "")
+        if isinstance(data, datatypes.OpenDAP) and auth and kw.get("engine", "") == "pydap":
+            import requests
+
+            if isinstance(auth, str):
+                setup = intake.import_name(f"pydap.cas.{auth}:setup_session")
+                un = kw.pop("username", os.getenv("DAP_USER"))
+                pw = kw.pop("password", os.getenv("DAP_PASSWORD"))
+                session = setup(un, pw, check_url=data.url)
+            else:
+                session = requests.Session()
+                session.auth = auth
+            return xarray.open_dataset(data.url, session=session, **kw)
         if isinstance(data.url, (tuple, set, list)) and len(data.url) == 1:
             return open_dataset(data.url[0], **kw)
-        elif (isinstance(data.url, (tuple, set, list)) and len(data.url) > 1) or "*" in data.url:
+        elif (isinstance(data.url, (tuple, set, list)) and len(data.url) > 1) or (
+            isinstance(data.url, str) and "*" in data.url
+        ):
             # use fsspec.open_files? (except for zarr)
             return open_mfdataset(data.url, **kw)
         else:
             # TODO: recognise fsspec URLs, and optionally use open_local for engines tha need it
+            #  see fsspec.utils.can_be_local
             if (
                 isinstance(data, datatypes.FileData)
                 and (data.url.startswith("http") or data.url.startswith("simplecache://"))
