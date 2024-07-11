@@ -599,7 +599,7 @@ class LlamaServerReader(BaseReader):
         for k, v in kwargs.items():
             k = k.replace("_", "-")
             if not k.startswith("-"):
-                k = f"-{k}"
+                k = f"--{k}"
             if v not in [None, ""]:
                 cmd.extend([str(k), str(v)])
             else:
