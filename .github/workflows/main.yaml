@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup conda
-        uses: mamba-org/setup-micromamba@v1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           environment-file: scripts/ci/environment-${{ matrix.CONDA_ENV }}.yml
 
