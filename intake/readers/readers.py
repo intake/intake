@@ -563,7 +563,7 @@ class LlamaServerReader(BaseReader):
         cache_location = os.path.join(user_data_dir(), "llama.cpp")
         options = {
             protocol: storage_options,
-            "simplecache": {"cache_storage": cache_location, "block_size": 1024},
+            "simplecache": {"cache_storage": cache_location},
         }
         fs, path = fsspec.core.url_to_fs(f"simplecache::{data.url}", **options)
 
@@ -579,7 +579,7 @@ class LlamaServerReader(BaseReader):
 
     def _read(self, data, log_file="llama-cpp.log", **kwargs):
         startup_timeout = kwargs.pop("startup_timeout", 60)
-        callback = kwargs.pop("callback", None)
+        callback = kwargs.pop("callback", DEFAULT_CALLBACK)
 
         port = kwargs.pop("port", 8080)
         host = kwargs.pop("host", "127.0.0.1")
@@ -599,7 +599,7 @@ class LlamaServerReader(BaseReader):
         for k, v in kwargs.items():
             k = k.replace("_", "-")
             if not k.startswith("-"):
-                k = f"-{k}"
+                k = f"--{k}"
             if v not in [None, ""]:
                 cmd.extend([str(k), str(v)])
             else:
