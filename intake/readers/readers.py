@@ -525,11 +525,66 @@ class LlamaServerReader(BaseReader):
 
     startup_timeout: (int) time in seconds to wait for server to respond to a health check before failing, default 60
     callback: fsspec.callbacks.Callback derived instance progress indicator during model download, default None
+
+    Any remaining kwargs are passed as '--<key> <value>' to llama.cpp. Where '_' is replaced with '-'. For
+    options that do not take arguments, like `--verbose` the value should  be None or the empty string "".
+
+    The following short-name arguments are supported as kwargs, they will be transformed to long-form when
+    passed to llama.cpp. If a short-name option is missing it is best to use the long-form.
     """
 
     output_instance = "intake.readers.datatypes:LlamaCPPService"
     implements = {datatypes.GGUF}
     imports = {"requests"}
+
+    _short_kwargs = {
+        "v": "verbose",
+        "s": "seed",
+        "t": "threads",
+        "tb": "threads-draft",
+        "tbd": "threads-batch-draft",
+        "ps": "p-split",
+        "lcs": "lookup-cache-static",
+        "lcd": "lookup-cache-dynamic",
+        "c": "ctx-size",
+        "n": "predict",
+        "b": "batch-size",
+        "ub": "ubatch-size",
+        "fa": "flash-attn",
+        "p": "prompt",
+        "f": "file",
+        "bf": "binary-file",
+        "e": "escape",
+        "ptc": "prompt-token-count",
+        "r": "reverse-prompt",
+        "sp": "special",
+        "cnv": "conversation",
+        "l": "logit-bias",
+        "j": "json-schema",
+        "gan": "grp-attn-n",
+        "gaw": "grp-attn-w",
+        "dkvc": "dump-kv-cache",
+        "nkvo": "no-ko-offload",
+        "ctk": "cache-type-k",
+        "ctv": "cache-type-v",
+        "dt": "defrag-thold",
+        "np": "parallel",
+        "ns": "sequences",
+        "cb": "cont-batching",
+        "ngl": "gpu-layers",
+        "ngld": "gpu-layers-draft",
+        "sm": "split-mode",
+        "ts": "tensor-split",
+        "mg": "main-gpu",
+        "md": "model-draft",
+        "o": "output",
+        "sps": "slot-prompt-similarity",
+        "ld": "logdir",
+    }
+
+    @classmethod
+    def _short_kwargs_docs(cls):
+        return "\n".join(f"    -{k:4s}-> --{v}" for k, v in cls._short_kwargs.items())
 
     @classmethod
     @lru_cache()
@@ -597,6 +652,9 @@ class LlamaServerReader(BaseReader):
         path = self._local_model_path(data, callback=callback)
         cmd = [server_path, "-m", path, "--host", host, "--port", str(port), "--log-disable"]
         for k, v in kwargs.items():
+            if k in self._short_kwargs:
+                k = self._short_kwargs[k]
+
             k = k.replace("_", "-")
             if not k.startswith("-"):
                 k = f"--{k}"
@@ -625,6 +683,9 @@ class LlamaServerReader(BaseReader):
         return intake.readers.datatypes.LlamaCPPService(
             url=URL, options={"Process": P, "log_file": log_file}
         )
+
+
+LlamaServerReader.__doc__ += f"\n{LlamaServerReader._short_kwargs_docs()}"
 
 
 class LlamaCPPCompletion(BaseReader):
