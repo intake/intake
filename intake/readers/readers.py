@@ -16,7 +16,7 @@ import intake.readers.datatypes
 from intake import import_name, logger
 from intake.readers import datatypes
 from intake.readers.mixins import PipelineMixin
-from intake.readers.utils import Tokenizable, subclasses, port_in_use
+from intake.readers.utils import Tokenizable, subclasses, port_in_use, find_free_port
 
 
 class BaseReader(Tokenizable, PipelineMixin):
@@ -519,7 +519,7 @@ class LlamaServerReader(BaseReader):
     as kwargs. Common arguments are
 
     host: (str) hostname for the the server to listen on, default: 127.0.0.1
-    port: (int) port number for the server to listen on, default: 8080
+    port: (int) port number for the server to listen on, default: 0, which means first free port
 
     Additional kwargs not passed to llama.cpp
 
@@ -581,10 +581,13 @@ class LlamaServerReader(BaseReader):
         startup_timeout = kwargs.pop("startup_timeout", 60)
         callback = kwargs.pop("callback", DEFAULT_CALLBACK)
 
-        port = kwargs.pop("port", 8080)
+        port = kwargs.pop("port", 0)
         host = kwargs.pop("host", "127.0.0.1")
-        URL = f"http://{host}:{port}"
 
+        if port == 0:
+            port = find_free_port()
+
+        URL = f"http://{host}:{port}"
         if port_in_use(host, port):
             raise RuntimeError(f"{URL} in use.")
 
