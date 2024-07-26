@@ -520,6 +520,7 @@ class LlamaServerReader(BaseReader):
 
     host: (str) hostname for the the server to listen on, default: 127.0.0.1
     port: (int) port number for the server to listen on, default: 0, which means first free port
+    system_prompt_file: (uri) Special handling here to support fsspec uri where the file is cached to disk first
 
     Additional kwargs not passed to llama.cpp
 
@@ -661,10 +662,15 @@ class LlamaServerReader(BaseReader):
             k = k.replace("_", "-")
             if not k.startswith("-"):
                 k = f"--{k}"
-            if v not in [None, ""]:
+
+            if k == "--system-prompt-file":
+                path = fsspec.open_local(f"simplecache::{v}")
+                cmd.extend([str(k), path])
+            elif v not in [None, ""]:
                 cmd.extend([str(k), str(v)])
             else:
                 cmd.append(str(k))
+
         P = subprocess.Popen(cmd, stdout=f, stderr=f)
         import time
 
