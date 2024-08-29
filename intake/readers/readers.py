@@ -450,7 +450,7 @@ class DuckSQL(DuckDB):
 
 class SparkDataFrame(FileReader):
     imports = {"pyspark"}
-    func = "pyspark.sq:SparkSession.builder.getOrCreate"
+    func = "pyspark.sql:SparkSession.builder.getOrCreate"
     func_doc = "pyspark.sql:SparkSession.read"
     output_instance = "pyspark.sql:DataFrame"
 
@@ -1128,7 +1128,7 @@ class RayDeltaLake(Ray):
 
 
 class DeltaReader(FileReader):
-    implements = {datatypes.Parquet}
+    implements = {datatypes.Parquet, datatypes.DeltalakeTable}
     imports = {"deltalake"}
     func = "deltalake:DeltaTable"
     url_arg = "table_uri"
