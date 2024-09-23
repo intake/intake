@@ -1295,14 +1295,18 @@ class XArrayDatasetReader(FileReader):
         elif (isinstance(data.url, (tuple, set, list)) and len(data.url) > 1) or (
             isinstance(data.url, str) and "*" in data.url
         ):
-            # use fsspec.open_files? (except for zarr)
-            return open_mfdataset(data.url, **kw)
+            ofs = [_.open() for _ in fsspec.open_files(data.url, **(data.storage_options or {}))]
+            return open_mfdataset(ofs, **kw)
         else:
             # TODO: recognise fsspec URLs, and optionally use open_local for engines tha need it
             #  see fsspec.utils.can_be_local
             if (
                 isinstance(data, datatypes.FileData)
-                and (data.url.startswith("http") or data.url.startswith("simplecache://"))
+                and (
+                    data.url.startswith("http")
+                    or data.url.startswith("simplecache")
+                    or "::" in data.url
+                )
                 and not isinstance(data, datatypes.Zarr)
             ):
                 # special case, because xarray would assume a DAP endpoint
