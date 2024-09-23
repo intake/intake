@@ -1293,7 +1293,7 @@ class XArrayDatasetReader(FileReader):
         if isinstance(data.url, (tuple, set, list)) and len(data.url) == 1:
             return open_dataset(data.url[0], **kw)
         elif (isinstance(data.url, (tuple, set, list)) and len(data.url) > 1) or (
-            isinstance(data.url, str) and "*" in data.url
+            isinstance(data.url, str) and "*" in data.url and not isinstance(data, datatypes.Zarr)
         ):
             ofs = [_.open() for _ in fsspec.open_files(data.url, **(data.storage_options or {}))]
             return open_mfdataset(ofs, **kw)
