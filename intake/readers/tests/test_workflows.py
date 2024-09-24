@@ -36,6 +36,11 @@ def test_pipelines_in_catalogs(dataframe_file, df):
     assert reader.equals(other=reader).read() is True
     assert cat.eq.read() is True
 
+    with pytest.raises(NotImplementedError):
+        cat.delete("eq", recursive=True)
+    cat.delete("eq")
+    assert "eq" not in cat
+
 
 def test_pipeline_steps(dataframe_file, df):
     data = intake.readers.datatypes.CSV(url=dataframe_file)
