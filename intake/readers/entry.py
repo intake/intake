@@ -289,9 +289,9 @@ class Catalog(Tokenizable):
             Also removed data/entries references by the given one, and those
             they refer to in turn.
         """
-        del self[name]
         if recursive:
             raise NotImplementedError
+        del self[name]
 
     def extract_parameter(
         self,
