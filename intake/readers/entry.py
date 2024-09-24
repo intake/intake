@@ -289,8 +289,7 @@ class Catalog(Tokenizable):
             Also removed data/entries references by the given one, and those
             they refer to in turn.
         """
-        item = self.get_entity(name)
-        del self[item]
+        del self[name]
         if recursive:
             raise NotImplementedError
 
