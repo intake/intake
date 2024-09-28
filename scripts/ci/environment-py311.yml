@@ -42,3 +42,6 @@ dependencies:
   - psycopg
   - python-duckdb
   - siphon
+  - scikit-learn
+  - pip:
+    - tensorflow_datasets

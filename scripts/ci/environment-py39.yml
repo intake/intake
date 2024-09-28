@@ -41,3 +41,6 @@ dependencies:
   - pytest-postgresql
   - psycopg
   - siphon
+  - scikit-learn
+  - pip:
+    - tensorflow_datasets != 4.9.3

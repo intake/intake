@@ -41,3 +41,5 @@ dependencies:
       - toolz
       - pre-commit
       - siphon
+      - scikit-learn
+      - tensorflow_datasets
