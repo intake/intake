@@ -17,6 +17,7 @@ from intake import import_name, logger
 from intake.readers import datatypes
 from intake.readers.mixins import PipelineMixin
 from intake.readers.utils import Tokenizable, subclasses, port_in_use, find_free_port
+from intake.utils import is_fsspec_url
 
 
 class BaseReader(Tokenizable, PipelineMixin):
@@ -1271,11 +1272,15 @@ class XArrayDatasetReader(FileReader):
                 kw["engine"] = "tiledb"
                 if data.options:
                     kw.setdefault("backend_kwargs", {})["config"] = data.options
-        if kw.get("engine", "") in ["zarr", "kerchunk", "h5netcdf"] and data.storage_options:
+            elif isinstance(data, datatypes.NetCDF3):
+                kw["engine"] = "scipy"
+            elif isinstance(data, datatypes.HDF5):
+                kw["engine"] = "h5netcdf"
+        if kw.get("engine", "") in ["zarr", "kerchunk"] and data.storage_options:
             kw.setdefault("backend_kwargs", {})["storage_options"] = data.storage_options
-        if isinstance(data, datatypes.HDF5):
+        if isinstance(data, (datatypes.HDF5, datatypes.NetCDF3)):
             kw.setdefault("engine", "h5netcdf")
-            if data.path:
+            if getattr(data, "path", False):
                 kw["group"] = data.path
         auth = kw.pop("auth", "")
         if isinstance(data, datatypes.OpenDAP) and auth and kw.get("engine", "") == "pydap":
@@ -1295,14 +1300,21 @@ class XArrayDatasetReader(FileReader):
         elif (isinstance(data.url, (tuple, set, list)) and len(data.url) > 1) or (
             isinstance(data.url, str) and "*" in data.url
         ):
-            # use fsspec.open_files? (except for zarr)
-            return open_mfdataset(data.url, **kw)
+            if isinstance(data, (datatypes.Zarr, datatypes.OpenDAP)):
+                ofs = data.url
+            elif open_local:
+                ofs = fsspec.open_local(data.url, **(data.storage_options or {}))
+            elif is_fsspec_url(data.url[0]):
+                ofs = [
+                    _.open() for _ in fsspec.open_files(data.url, **(data.storage_options or {}))
+                ]
+            else:
+                ofs = data.url
+            return open_mfdataset(ofs, **kw)
         else:
-            # TODO: recognise fsspec URLs, and optionally use open_local for engines tha need it
-            #  see fsspec.utils.can_be_local
             if (
                 isinstance(data, datatypes.FileData)
-                and (data.url.startswith("http") or data.url.startswith("simplecache://"))
+                and is_fsspec_url(data.url)
                 and not isinstance(data, datatypes.Zarr)
             ):
                 # special case, because xarray would assume a DAP endpoint
@@ -1332,14 +1344,18 @@ class XArrayPatternReader(XArrayDatasetReader):
 
     # should we have an explicit pattern type data input?
 
-    def _read(self, data, open_local=False, **kw):
+    def _read(self, data, open_local=False, pattern=None, **kw):
         import pandas as pd
         from intake.readers.utils import pattern_to_glob
         from intake.source.utils import reverse_formats
 
-        url = pattern_to_glob(data.url)
-        fs, _, paths = fsspec.get_fs_token_paths(url, **(data.storage_options or {}))
-        val_dict = reverse_formats(data.url, paths)
+        if isinstance(data.url, str):
+            url = pattern_to_glob(data.url)
+            fs, _, paths = fsspec.get_fs_token_paths(url, **(data.storage_options or {}))
+            val_dict = reverse_formats(data.url, paths)
+        else:
+            paths = data.url
+            val_dict = reverse_formats(pattern, data.url)
         indices = [pd.Index(v, name=k) for k, v in val_dict.items()]
         data2 = type(data)(url=paths, storage_options=data.storage_options, metadata=data.metadata)
         if "concat_dim" in kw:
@@ -1347,7 +1363,8 @@ class XArrayPatternReader(XArrayDatasetReader):
             ccm = [ccm] if isinstance(ccm, str) else ccm
             for ind, cd in zip(indices, ccm):
                 ind.name = cd
-        return super()._read(data2, concat_dim=indices, combine="nested", **kw)
+        kw.setdefault("combine", "nested")
+        return super()._read(data2, concat_dim=indices, open_local=open_local, **kw)
 
 
 class RasterIOXarrayReader(FileReader):

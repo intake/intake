@@ -324,3 +324,8 @@ def is_notebook() -> bool:
         return True
     except Exception:
         return False
+
+
+def is_fsspec_url(s: str) -> bool:
+    """Simple test to see if given string is likely an fsspec URL"""
+    return "://" in s or "::" in s
