@@ -43,3 +43,4 @@ dependencies:
   - pytest-postgresql
   - psycopg
   - siphon
+  - postgresql
