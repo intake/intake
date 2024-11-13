@@ -17,6 +17,7 @@ from intake import import_name, logger
 from intake.readers import datatypes
 from intake.readers.mixins import PipelineMixin
 from intake.readers.utils import Tokenizable, subclasses, port_in_use, find_free_port
+from intake.utils import is_fsspec_url
 
 
 class BaseReader(Tokenizable, PipelineMixin):
@@ -1303,19 +1304,17 @@ class XArrayDatasetReader(FileReader):
                 ofs = data.url
             elif open_local:
                 ofs = fsspec.open_local(data.url, **(data.storage_options or {}))
-            else:
+            elif is_fsspec_url(data.url[0]):
                 ofs = [
                     _.open() for _ in fsspec.open_files(data.url, **(data.storage_options or {}))
                 ]
+            else:
+                ofs = data.url
             return open_mfdataset(ofs, **kw)
         else:
             if (
                 isinstance(data, datatypes.FileData)
-                and (
-                    data.url.startswith("http")
-                    or data.url.startswith("simplecache")
-                    or "::" in data.url
-                )
+                and is_fsspec_url(data.url)
                 and not isinstance(data, datatypes.Zarr)
             ):
                 # special case, because xarray would assume a DAP endpoint
