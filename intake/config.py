@@ -35,6 +35,7 @@ defaults = {
     "extra_imports": [],
     "import_block_list": [],
     "reader_avoid": [],
+    "raise_on_error": False,
 }
 
 
@@ -157,8 +158,18 @@ class Config(dict):
                 k2 = k[7:].lower()
                 try:
                     val = ast.literal_eval(v)
-                except ValueError:
-                    pass
+                except (ValueError, SyntaxError) as e:
+                    if self["raise_on_error"]:
+                        logger.info(
+                            f"Environment variable '{v}' cannot be parsed by ast.literal_eval()"
+                        )
+                        raise e
+                    logger.warning(
+                        f"Failed to parse environment variable '{k}' (value: '{v}') using ast.literal_eval()."
+                        f"\nParsing as string."
+                        f"\nError was: '{type(e).__name__}: {e}'"
+                    )
+                    val = str(v)  # make sure it is a string
                 self[k2] = val
 
 
