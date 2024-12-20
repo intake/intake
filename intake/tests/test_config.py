@@ -38,3 +38,20 @@ def test_pathdirs():
         "memory://path1",
         "memory://path2",
     ]
+
+
+@pytest.mark.parametrize("conf", [{"raise_on_error": True}, {"raise_on_error": False}])
+def test_load_env(conf):
+    # test the parsing of environment variables as strings
+    os.environ["INTAKE_CACHE"] = "./tmp"  # this causes a SyntaxError
+    os.environ["INTAKE_CACHE2"] = "tmp"  # this causes a ValueError
+    with temp_conf(conf) as fn:
+        if conf["raise_on_error"]:
+            # When raise_on_error is True, ensure the exception is raised
+            with pytest.raises((ValueError, SyntaxError)):
+                config = Config(fn)
+        else:
+            # When raise_on_error is False, ensure the variable is parsed as a string
+            config = Config(fn)
+            assert config["cache"] == "./tmp"
+            assert config["cache2"] == "tmp"
