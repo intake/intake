@@ -55,7 +55,7 @@ def test_load_env(conf):
     with temp_conf(conf) as fn:
         if conf["environment_conf_parse"] == "error":
             # When raise_on_error is True, ensure the exception is raised
-            with pytest.raises((ValueError, SyntaxError)):
+            with pytest.raises(ValueError, SyntaxError):
                 Config(fn)
         elif conf["environment_conf_parse"] == "warn":
             # When raise_on_error is False, ensure the variable is parsed as a string
