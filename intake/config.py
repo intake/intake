@@ -13,6 +13,7 @@ import copy
 import logging
 import os
 import posixpath
+import warnings
 from os.path import expanduser
 
 import yaml
@@ -35,7 +36,7 @@ defaults = {
     "extra_imports": [],
     "import_block_list": [],
     "reader_avoid": [],
-    "raise_on_error": False,
+    "environment_conf_parse": "ignore",  # "error", "warn", "ignore"
 }
 
 
@@ -159,16 +160,17 @@ class Config(dict):
                 try:
                     val = ast.literal_eval(v)
                 except (ValueError, SyntaxError) as e:
-                    if self["raise_on_error"]:
+                    if self["environment_conf_parse"] == "error":
                         logger.info(
                             f"Environment variable '{v}' cannot be parsed by ast.literal_eval()"
                         )
                         raise e
-                    logger.warning(
-                        f"Failed to parse environment variable '{k}' (value: '{v}') using ast.literal_eval()."
-                        f"\nParsing as string."
-                        f"\nError was: '{type(e).__name__}: {e}'"
-                    )
+                    elif self["environment_conf_parse"] == "warn":
+                        warnings.warn(
+                            f"Failed to parse environment variable '{k}' (value: '{v}') using ast.literal_eval()."
+                            f"\nParsing as string."
+                            f"\nError was: '{type(e).__name__}: {e}'"
+                        )
                     val = str(v)  # make sure it is a string
                 self[k2] = val
 

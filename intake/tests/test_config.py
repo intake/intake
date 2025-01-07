@@ -40,18 +40,32 @@ def test_pathdirs():
     ]
 
 
-@pytest.mark.parametrize("conf", [{"raise_on_error": True}, {"raise_on_error": False}])
+@pytest.mark.parametrize(
+    "conf",
+    [
+        {"environment_conf_parse": "error"},
+        {"environment_conf_parse": "warn"},
+        {"environment_conf_parse": "ignore"},
+    ],
+)
 def test_load_env(conf):
     # test the parsing of environment variables as strings
     os.environ["INTAKE_CACHE"] = "./tmp"  # this causes a SyntaxError
     os.environ["INTAKE_CACHE2"] = "tmp"  # this causes a ValueError
     with temp_conf(conf) as fn:
-        if conf["raise_on_error"]:
+        if conf["environment_conf_parse"] == "error":
             # When raise_on_error is True, ensure the exception is raised
             with pytest.raises((ValueError, SyntaxError)):
-                config = Config(fn)
-        else:
+                Config(fn)
+        elif conf["environment_conf_parse"] == "warn":
             # When raise_on_error is False, ensure the variable is parsed as a string
-            config = Config(fn)
+            with pytest.warns(UserWarning, match="environment variable"):
+                config = Config(fn)
+            assert config["cache"] == "./tmp"
+            assert config["cache2"] == "tmp"
+        else:
+            with pytest.warns(None) as warnings:
+                config = Config(fn)
+            assert not warnings
             assert config["cache"] == "./tmp"
             assert config["cache2"] == "tmp"
