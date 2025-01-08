@@ -48,6 +48,14 @@ class Config(dict):
     """Intake's dict-like config system
 
     Instance ``intake.conf`` is globally used throughout the package
+
+    Attributes:
+        environment_conf_parse : str
+                                 "ignore" (default), "warn" or raise an "error"
+                                 when parsing local environment variables as strings.
+        #TODO: Add other config values
+
+
     """
 
     def __init__(self, filename=None, **kwargs):
