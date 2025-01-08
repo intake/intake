@@ -13,6 +13,7 @@ import copy
 import logging
 import os
 import posixpath
+import warnings
 from os.path import expanduser
 
 import yaml
@@ -35,6 +36,7 @@ defaults = {
     "extra_imports": [],
     "import_block_list": [],
     "reader_avoid": [],
+    "environment_conf_parse": "ignore",  # "error", "warn", "ignore"
 }
 
 
@@ -46,6 +48,14 @@ class Config(dict):
     """Intake's dict-like config system
 
     Instance ``intake.conf`` is globally used throughout the package
+
+    Attributes:
+        environment_conf_parse : str
+                                 "ignore" (default), "warn" or raise an "error"
+                                 when parsing local environment variables as strings.
+        #TODO: Add other config values
+
+
     """
 
     def __init__(self, filename=None, **kwargs):
@@ -157,8 +167,19 @@ class Config(dict):
                 k2 = k[7:].lower()
                 try:
                     val = ast.literal_eval(v)
-                except ValueError:
-                    pass
+                except (ValueError, SyntaxError) as e:
+                    if self["environment_conf_parse"] == "error":
+                        logger.info(
+                            f"Environment variable '{v}' cannot be parsed by ast.literal_eval()"
+                        )
+                        raise e
+                    elif self["environment_conf_parse"] == "warn":
+                        warnings.warn(
+                            f"Failed to parse environment variable '{k}' (value: '{v}') using ast.literal_eval()."
+                            f"\nParsing as string."
+                            f"\nError was: '{type(e).__name__}: {e}'"
+                        )
+                    val = str(v)  # make sure it is a string
                 self[k2] = val
 
 
