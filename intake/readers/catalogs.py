@@ -405,12 +405,16 @@ class THREDDSCatalogReader(BaseReader):
     output_instance = THREDDSCatalog.qname()
     imports = {"siphon", "xarray"}
 
-    def _read(self, data, **kwargs):
+    def _read(self, data, make="both", **kwargs):
         """
         Parameters
         ----------
         data:
             Service URL endpoint
+        make: "both" | "dap" | "cdf"
+            For each iterm, make an openDAP reader, netCDF reader, or both.
+            If both, the entries will have the same name, with _DAP and
+            _CDF appended.
         """
         from siphon.catalog import TDSCatalog
 
@@ -421,12 +425,23 @@ class THREDDSCatalogReader(BaseReader):
         for r in thr.catalog_refs.values():
             cat[r.title] = THREDDSCatalogReader(datatypes.THREDDSCatalog(url=r.href))
         for ds in thr.datasets.values():
-            cat[ds.id + "_DAP"] = XArrayDatasetReader(
-                datatypes.Service(ds.access_urls["OpenDAP"]), engine="pydap"
-            )
-            cat[ds.id + "_CDF"] = XArrayDatasetReader(
-                datatypes.HDF5(ds.access_urls["HTTPServer"]), engine="h5netcdf"
-            )
+            if make == "both":
+                cat[ds.name + "_DAP"] = XArrayDatasetReader(
+                    datatypes.Service(ds.access_urls["OpenDAP"]), engine="pydap"
+                )
+                cat[ds.name + "_CDF"] = XArrayDatasetReader(
+                    datatypes.HDF5(ds.access_urls["HTTPServer"]), engine="h5netcdf"
+                )
+            elif make == "dap":
+                cat[ds.name] = XArrayDatasetReader(
+                    datatypes.Service(ds.access_urls["OpenDAP"]), engine="pydap"
+                )
+            elif make == "cdf":
+                cat[ds.name] = XArrayDatasetReader(
+                    datatypes.HDF5(ds.access_urls["HTTPServer"]), engine="h5netcdf"
+                )
+            else:
+                raise ValueError("parameter `make` must be one of both|dap|cdf, but got '%s'", make)
 
         return cat
 

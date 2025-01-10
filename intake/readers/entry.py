@@ -235,14 +235,26 @@ class Catalog(Tokenizable):
             self.entries = {}
             [self.add_entry(e) for e in entries]
 
-    def add_entry(self, entry, name=None, clobber=True):
-        """Add entry/reader (and its requirements) in-place, with optional alias"""
+    def add_entry(
+        self, entry, name: str | None = None, clobber: bool = True, simplify: bool = False
+    ):
+        """Add entry/reader (and its requirements) in-place, with optional alias
+
+        Parameters
+        ----------
+        entry: instance of BaseData, BaseReader or their descriptions
+        name: set the key value the iterm will be known as
+        clobber: if False, will not overwrite an entry
+        simplify: if True, checks if an equivalent entity already exists, and
+            returns it's token if found. Such comparisons are relatively slow
+            when you have >>100 entries.
+        """
         from intake.readers import BaseData, BaseReader
         from intake.readers.utils import find_funcs, replace_values
 
         if isinstance(entry, (BaseReader, BaseData)):
             entry = entry.to_entry()
-        if entry in self:
+        if simplify and entry in self:
             if name and name != entry.token:
                 self.aliases[name] = entry.token
             return entry.token
@@ -261,11 +273,13 @@ class Catalog(Tokenizable):
                 entry.kwargs = replace_values(
                     entry.kwargs, "{data(%s)}" % tok, "{data(%s)}" % old_tok
                 )
-        if entry in self and clobber is False:
-            raise ValueError("Name {} exists in catalog, and clobber is False", entry.token)
         if isinstance(entry, ReaderDescription):
+            if clobber is False and entry.token in self.entries:
+                raise ValueError("Name {} exists in catalog, and clobber is False", entry.token)
             self.entries[entry.token] = entry
         elif isinstance(entry, DataDescription):
+            if clobber is False and entry.token in self.data:
+                raise ValueError("Name {} exists in catalog, and clobber is False", entry.token)
             self.data[entry.token] = entry
         else:
             raise ValueError
