@@ -101,6 +101,7 @@ class Functioner(Completable):
         from intake.readers.transform import GetItem
 
         # TODO: allow pattern match
+        breakpoint()
         if item in self.funcdict:
             func = self.funcdict[item]
             arg = ()
@@ -157,6 +158,12 @@ class Functioner(Completable):
 
         out = [(outtype, func) for outtype, func in self.funcdict.items() if func.__name__ == item]
         if not len(out):
+            # TODO: import class being acted on, to see if attribute requested
+            #  really is available. Perhaps tie to config option.
+            # TODO: exclude certain attributes that might be called during
+            #  a stack trace or other non-normal code, causing accidental
+            #  massive pipelines. E.g., dunders. For those, require `apply()`.
+
             outtype = self.reader.output_instance
             func = Method
             kw = {"method_name": item}
