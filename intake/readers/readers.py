@@ -394,29 +394,34 @@ class DuckDB(BaseReader):
     def discover(self, **kwargs):
         return self.read().limit(10)
 
-    def _duck(self, data):
+    @classmethod
+    def _duck(cls, data, conn=None):
         import duckdb
 
-        conn = getattr(data, "conn", {})  # only SQL type normally has this
-        if isinstance(conn, str):
-            # https://duckdb.org/docs/extensions/
-            if conn.startswith("sqlite:"):
-                duckdb.connect(":default:").execute("INSTALL sqlite;LOAD sqlite;")
-                conn = re.sub("^sqlite3?:/{0,3}", "", conn)
-                conn = {"database": conn}
-            elif conn.startswith("postgres") and str(conn) not in self._dd:
-                d = duckdb.connect()
-                d.execute("INSTALL postgres;LOAD postgres;")
-                # extra params possible here https://duckdb.org/docs/extensions/postgres_scanner#usage
-                d.execute(f"CALL postgres_attach('{conn}');")
-                self._dd[str(conn)] = d
-        if str(conn) not in self._dd:
-            self._dd[str(conn)] = duckdb.connect(
-                **conn
-            )  # connection must be cached for results to be usable
+        conn = getattr(data, "conn", conn or {})  # only SQL type normally has this
+        if str(conn) not in cls._dd:
+            # TODO:  separate engine creation and caching?
+            if isinstance(conn, str):
+                # https://duckdb.org/docs/extensions/
+                if conn.startswith("sqlite:"):
+                    duckdb.connect(":default:").execute("INSTALL sqlite;LOAD sqlite;")
+                    conn1 = re.sub("^sqlite3?:/{0,3}", "", conn)
+                    conn1 = {"database": conn1}
+                    d = duckdb.connect(**conn1)
+                elif conn.startswith("postgres"):
+                    d = duckdb.connect()
+                    d.execute("INSTALL postgres;LOAD postgres;")
+                    # extra params possible here https://duckdb.org/docs/extensions/postgres_scanner#usage
+                    d.execute(f"CALL postgres_attach('{conn}');")
+                else:
+                    d = duckdb.connect(conn)
+            else:
+                d = duckdb.connect(**conn)
+            cls._dd[str(conn)] = d  # connection must be cached for results to be usable
+        d = cls._dd[str(conn)]
         if isinstance(data, datatypes.FileData) and "://" in data.url:
-            self._dd[str(conn)].execute("INSTALL httpfs;LOAD httpfs;")
-        return self._dd[str(conn)]
+            d.execute("INSTALL httpfs;LOAD httpfs;")
+        return d
 
 
 class DuckParquet(DuckDB, FileReader):

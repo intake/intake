@@ -389,7 +389,7 @@ class OpenDAP(Service):
     structure = {"array"}
 
 
-class SQLQuery(Service):
+class SQLQuery(BaseData):
     """Query on a database-like service"""
 
     structure = {"sequence", "table"}
