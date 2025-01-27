@@ -101,7 +101,6 @@ class Functioner(Completable):
         from intake.readers.transform import GetItem
 
         # TODO: allow pattern match
-        breakpoint()
         if item in self.funcdict:
             func = self.funcdict[item]
             arg = ()
