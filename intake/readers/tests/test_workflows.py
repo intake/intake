@@ -45,6 +45,11 @@ def test_pipelines_in_catalogs(dataframe_file, df):
 def test_pipeline_steps(dataframe_file, df):
     data = intake.readers.datatypes.CSV(url=dataframe_file)
     reader = intake.readers.PandasCSV(data)
+    with pytest.raises(AttributeError):
+        # cannot auto on private methods; could still apply
+        out = reader._nonexistent()
+        breakpoint()
+
     reader2 = reader[["apple", "beet"]].set_index(keys="beet")
     stepper = reader2.read_stepwise()
     assert isinstance(stepper, convert.PipelineExecution)

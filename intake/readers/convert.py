@@ -89,8 +89,44 @@ class DuckToPandas(BaseConverter):
     instances = {"duckdb:DuckDBPyRelation": "pandas:DataFrame"}
     func = "duckdb:DuckDBPyConnection.df"
 
-    def run(self, x, *args, **kwargs):
-        return x.df()
+    def run(self, x, *args, with_arrow=True, **kwargs):
+        if with_arrow:
+            import pandas as pd
+
+            table = x.to_arrow_table()
+            data = {
+                col: pd.Series(pd.arrays.ArrowExtensionArray(val))
+                for col, val in zip(table.column_names, table.columns)
+            }
+            return pd.DataFrame(data)
+        else:
+            return x.df()
+
+
+class PandasToDuck(BaseConverter):
+    """Save content of pandas dataframe to Duck internal storage
+
+    Value of ``table`` can be used to point to attached database or
+    output file.
+    """
+
+    instances = {"pandas:DataFrame": "duckdb:DuckDBPyRelation"}
+    func = "duckdb:df"
+
+    def run(self, x, conn: dict | str, table: str, *args, overwrite=True, **kwargs):
+        # TODO: more options like metadata
+        import duckdb
+        from intake.readers.datatypes import SQLQuery
+
+        duck = readers.DuckSQL._duck(None, conn=conn)
+        out = duckdb.df(x, connection=duck)
+        duck.register(view_name="temp_view", python_object=out)
+        duck.sql(
+            f"CREATE {'OR REPLACE' if overwrite else ''} "
+            f"TABLE '{table}' AS SELECT * FROM 'temp_view';"
+        )
+        out = readers.DuckSQL(SQLQuery(conn=conn, query=f"SELECT * FROM '{table}'"))
+        return out
 
 
 class DaskDFToPandas(BaseConverter):

@@ -39,7 +39,7 @@ dependencies:
   - pre-commit
   - sqlalchemy
   - python-duckdb
-  - pytest-postgresql
+  - pytest-postgresql <7
   - psycopg
   - siphon
   - postgresql
