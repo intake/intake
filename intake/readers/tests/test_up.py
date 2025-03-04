@@ -22,3 +22,16 @@ def test_basic():
         # supplied None as a value to int parameter
         pars = {"k": ["{p}", 1], "p": None}
         up.set_values({"p": p}, pars)
+
+
+def test_named_options():
+    from intake.readers import user_parameters as up
+
+    p = up.NamedOptionsUserParameter({"a": "athing", "b": "bthing"}, default="b")
+    pars = {"k": ["{p}", 1]}
+    out = up.set_values({"p": p}, pars)
+    assert out == {"k": ["bthing", 1]}
+
+    pars = {"k": ["{p}", 1], "p": "a"}
+    out = up.set_values({"p": p}, pars)
+    assert out == {"k": ["athing", 1]}

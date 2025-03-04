@@ -108,8 +108,32 @@ class OptionsUserParameter(SimpleUserParameter):
         return self.coerce(value) in self.options
 
 
+class NamedOptionsUserParameter(SimpleUserParameter):
+    """One choice out of a given allow dictionary accessed by its keys
+
+    In this case, `dtype` is the types of the dictionary values, and
+    we have a separate "keytype" for the keys, str by default
+    """
+
+    def __init__(self, options, default, dtype=object, keytype=str, **kw):
+        super().__init__(default=options[default], dtype=dtype, **kw)
+        self.keytype = keytype
+        self.options = options
+
+    def coerce(self, value):
+        return self.options.get(value, None)
+
+    def _validate(self, value):
+        if not isinstance(value, self.keytype):
+            value = self.keytype(value)
+        return value in self.options.values()
+
+
 class MultiOptionUserParameter(OptionsUserParameter):
-    """Multiple choices out of a given allow list/tuple"""
+    """Multiple choices out of a given allow list/tuple
+
+    In this case, dtype is the type of each member of the list
+    """
 
     def __init__(self, options: list | tuple, dtype=object, **kw):
         super().__init__(options=options, dtype=dtype, **kw)
