@@ -29,7 +29,7 @@ class PipelineMixin(Completable):
         else:
             return out
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str):
         from intake.readers.convert import Pipeline
         from intake.readers.transform import GetItem
 
@@ -164,6 +164,9 @@ class Functioner(Completable):
             #  massive pipelines. E.g., dunders. For those, require `apply()`.
 
             outtype = self.reader.output_instance
+            if item.startswith("_"):
+                raise AttributeError(item)
+
             func = Method
             kw = {"method_name": item}
         else:
