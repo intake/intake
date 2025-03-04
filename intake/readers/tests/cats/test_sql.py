@@ -1,4 +1,5 @@
 import os
+import sys
 
 import pytest
 
@@ -8,6 +9,7 @@ pytest.importorskip("pytest_postgresql")
 pytest.importorskip("psycopg")
 
 
+@pytest.mark.skipif(sys.version_info[:2] == (3, 13), reason="pytest_postgresql fails")
 @pytest.fixture  # uses pytest-postgresql
 def postgres_with_data(postgresql):
     """Check main postgresql fixture."""
