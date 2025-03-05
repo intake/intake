@@ -164,3 +164,22 @@ def test_custom_cache(dataframe_file, tmpdir, df):
     # but condition still picks read from cache
     out = reader2.read()
     assert df.equals(out)
+
+
+def test_cat_mapper(dataframe_file):
+    # setup
+    cat = intake.Catalog()
+    data = intake.readers.datatypes.CSV(url=dataframe_file)
+    cat["one"] = readers.PandasCSV(data)
+    cat["two"] = readers.PandasCSV(data, usecols=[0])
+    cat.to_yaml_file("memory://cat.yaml")
+
+    reader = intake.readers.YAMLCatalogReader("memory://cat.yaml")
+    reader2 = reader.transform.CatalogMapper(getattr, "shape", transform=False)
+
+    cat2 = reader2.read()
+    assert "one" in cat2 and "two" in cat2
+    result1 = cat2["one"].read()
+    assert result1 == (300, 3)
+    result2 = cat2["two"].read()
+    assert result2 == (300, 1)

@@ -111,25 +111,31 @@ class GetItem(BaseConverter):
         return data[item]
 
 
-class CatalogMapper(BaseConverter):
-    instances = {"intake:Catalog": "intake:Catalog"}
+def identity(x):
+    return x
 
-    def __init__(self, func, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.func = func
-        self.args = args
-        self.kwargs = kwargs
+
+class CatalogMapper(BaseConverter):
+    instances = {"intake.readers.entry:Catalog": "intake.readers.entry:Catalog"}
 
     def run(
-        self, in_cat: intake.Catalog, *args, transform=True, name_arg=None, read=False, **kwargs
+        self,
+        in_cat: intake.Catalog,
+        func,
+        *args,
+        transform=True,
+        name_arg=None,
+        read=False,
+        **kwargs,
     ):
         """
         Parameters
         ----------
+        func: function to apply to each entry (as callable or string equivalent)
         transform: do we expect this to be a named transform that intake
             already knows about?
-        name_arg: if give, pass the entry name to the action to be
-            performed using this ad the kwarg name
+        name_arg: if given, pass the entry name to the action to be
+            performed using this as the kwarg name
         read: if True, execute the pipeline produced. This might be used
             where the pipeline output is itself another reader.
         """
@@ -138,9 +144,10 @@ class CatalogMapper(BaseConverter):
             if name_arg:
                 kwargs[name_arg] = name
             if transform:
-                pipe = in_cat[name].__getattr__(self.func)(*args, **kwargs)
+                pipe = in_cat[name].__getattr__(func)(*args, **kwargs)
             else:
-                func = intake.import_name(self.func)
+                if isinstance(func, str):
+                    func = intake.import_name(func)
                 pipe = in_cat[name].apply(func, *args, **kwargs)
             if read:
                 out[name] = pipe.read()
