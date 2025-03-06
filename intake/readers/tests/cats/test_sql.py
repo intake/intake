@@ -1,5 +1,6 @@
 import os
 
+import pandas as pd
 import pytest
 
 from intake.readers import catalogs, datatypes, readers
@@ -52,7 +53,6 @@ def test_pg_duck_with_pandas_input(postgres_with_data):
 @pytest.fixture
 def sqlite_with_data(tmpdir):
     """Check main postgresql fixture."""
-    pd = pytest.importorskip("pandas")
     pytest.importorskip("sqlalchemy", minversion="2")
     import sqlite3
 
@@ -80,6 +80,19 @@ def test_sqlite_duck_with_pandas_input(sqlite_with_data):
     assert len(out) == 2000
     out = reader.discover()
     assert len(out) == 10
+
+
+def test_pandas_duck_pandas(sqlite_with_data):
+    pytest.importorskip("pandas", minversion="2", reason="Not working on earlier version of pandas")
+    data = datatypes.SQLQuery(conn=f"sqlite:///{sqlite_with_data}", query="oi")
+    reader = readers.PandasSQLAlchemy(data)
+    reader2 = reader.PandasToDuck("out", comment="comment")
+    reader3 = reader2.DuckToPandas()
+    out = reader3.read()
+    assert out[:2].to_dict() == {"a": {0: "hi", 1: "ho"}, "index": {0: 0, 1: 1}}
+
+    reader = datatypes.SQLQuery({}, "SELECT comment FROM duckdb_tables();").to_reader("duck")
+    assert reader.read().fetchall() == [("comment",)]
 
 
 def test_cat(sqlite_with_data):
