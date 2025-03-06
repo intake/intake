@@ -91,7 +91,7 @@ def test_pandas_duck_pandas(sqlite_with_data):
     out = reader3.read()
     assert out[:2].to_dict() == {"a": {0: "hi", 1: "ho"}, "index": {0: 0, 1: 1}}
 
-    reader = datatypes.SQLQuery({}, "SELECT comment FROM duckdb_tables();").to_reader("duck")
+    reader = datatypes.SQLQuery({}, "SELECT comment FROM duckdb_tables();").to_reader(reader="Duck")
     assert reader.read().fetchall() == [("comment",)]
 
 
