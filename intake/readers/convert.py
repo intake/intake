@@ -113,7 +113,16 @@ class PandasToDuck(BaseConverter):
     instances = {"pandas:DataFrame": "duckdb:DuckDBPyRelation"}
     func = "duckdb:df"
 
-    def run(self, x, conn: dict | str, table: str, *args, overwrite=True, **kwargs):
+    def run(
+        self,
+        x,
+        table: str,
+        conn: dict | str | None = None,
+        *args,
+        comment: str = None,
+        overwrite=True,
+        **kwargs,
+    ):
         # TODO: more options like metadata
         import duckdb
         from intake.readers.datatypes import SQLQuery
@@ -125,6 +134,11 @@ class PandasToDuck(BaseConverter):
             f"CREATE {'OR REPLACE' if overwrite else ''} "
             f"TABLE '{table}' AS SELECT * FROM 'temp_view';"
         )
+        if comment is not None:
+            # https://duckdb.org/docs/stable/sql/data_types/
+            #   literal_types.html#escape-string-literals
+            comment = str(comment).replace("'", "''")
+            duck.sql(f"COMMENT ON TABLE '{table}' IS '{comment}';")
         out = readers.DuckSQL(SQLQuery(conn=conn, query=f"SELECT * FROM '{table}'"))
         return out
 

@@ -389,6 +389,7 @@ class DuckDB(BaseReader):
     imports = {"duckdb"}
     output_instance = "duckdb:DuckDBPyRelation"  # can be converted to pandas with .df
     func_doc = "duckdb:query"
+    implements = {datatypes.SQLQuery}
     _dd = {}  # hold the engines, so results are still valid
 
     def discover(self, **kwargs):
@@ -398,7 +399,7 @@ class DuckDB(BaseReader):
     def _duck(cls, data, conn=None):
         import duckdb
 
-        conn = getattr(data, "conn", conn or {})  # only SQL type normally has this
+        conn = getattr(data, "conn", conn) or {}  # only SQL type normally has this
         if str(conn) not in cls._dd:
             # TODO:  separate engine creation and caching?
             if isinstance(conn, str):
