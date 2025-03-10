@@ -135,8 +135,10 @@ class PandasToDuck(BaseConverter):
             f"TABLE '{table}' AS SELECT * FROM 'temp_view';"
         )
         if comment is not None:
-            comment = str(comment).replace("'", "")
-            duck.sql(f"COMMENT ON TABLE '{table}' IS {comment!r};")
+            # https://duckdb.org/docs/stable/sql/data_types/
+            #   literal_types.html#escape-string-literals
+            comment = str(comment).replace("'", "''")
+            duck.sql(f"COMMENT ON TABLE '{table}' IS '{comment}';")
         out = readers.DuckSQL(SQLQuery(conn=conn, query=f"SELECT * FROM '{table}'"))
         return out
 

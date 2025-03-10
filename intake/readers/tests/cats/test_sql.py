@@ -86,7 +86,8 @@ def test_pandas_duck_pandas(sqlite_with_data):
     pytest.importorskip("pandas", minversion="2", reason="Not working on earlier version of pandas")
     data = datatypes.SQLQuery(conn=f"sqlite:///{sqlite_with_data}", query="oi")
     reader = readers.PandasSQLAlchemy(data)
-    reader2 = reader.PandasToDuck("out", comment="comment")
+    comment_dict = {"args": [1, "2"], "kwargs": {"true": False}}
+    reader2 = reader.PandasToDuck("out", comment=str(comment_dict))
     reader3 = reader2.DuckToPandas()
     out = reader3.read()
     assert out[:2].to_dict() == {"a": {0: "hi", 1: "ho"}, "index": {0: 0, 1: 1}}
@@ -94,7 +95,7 @@ def test_pandas_duck_pandas(sqlite_with_data):
     reader = datatypes.SQLQuery({}, "SELECT comment FROM duckdb_tables();").to_reader(
         reader="DuckSQL"
     )
-    assert reader.read().fetchall() == [("comment",)]
+    assert reader.read().fetchall() == [(str(comment_dict),)]
 
 
 def test_cat(sqlite_with_data):
