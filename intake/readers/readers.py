@@ -1434,8 +1434,9 @@ class GeoPandasTabular(FileReader):
     output_instance = "geopandas:GeoDataFrame"
     imports = {"geopandas", "pyarrow"}
     implements = {datatypes.Parquet, datatypes.Feather2}
-    func = "geopands:read_parquet"
-    other_funcs = {"geopands:read_feather"}
+    func = "geopandas:read_parquet"
+    other_funcs = {"geopandas:read_feather"}
+    url_arg = "path"
 
     def _read(self, data, **kwargs):
         import geopandas
