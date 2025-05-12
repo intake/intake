@@ -47,6 +47,8 @@ and declarations of scope.
     tour2.rst
     api2.rst
 
+    index_v1.rst
+
 Install
 -------
 

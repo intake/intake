@@ -53,9 +53,6 @@ class Config(dict):
         environment_conf_parse : str
                                  "ignore" (default), "warn" or raise an "error"
                                  when parsing local environment variables as strings.
-        #TODO: Add other config values
-
-
     """
 
     def __init__(self, filename=None, **kwargs):
