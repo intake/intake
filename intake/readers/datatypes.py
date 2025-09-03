@@ -302,6 +302,34 @@ class Zarr(FileData):
         super().__init__(url=url, storage_options=storage_options, metadata=metadata)
 
 
+class IcechunkRepo(FileData):
+    # NB: this can be considered a special case of zarr stores, but there are
+    # more possible operations on a repo
+
+    structure = {"array", "hierarchy"}
+    filepattern = "/$"
+    contains = {"snapshots"}
+
+    def __init__(
+        self,
+        url,  # just the storage driver name, i.e., icechunk.*_storage
+        # https://icechunk.io/en/latest/quickstart/#create-a-new-icechunk-repository
+        # azure, gcs, in_memory, local_filesystem, r2, s3, tigris
+        storage_options: dict | None = None,  # kwargs for the store
+        root: str = "",  # location in the hierarchy
+        ref: str | None = None,  # branch/tag, if not the default
+        metadata: dict | None = None,
+    ):
+        """
+        root: if given, points to specific array/group in the hierarchy
+        """
+        self.url = url
+        self.root = root
+        self.ref = ref
+        self.storage_options = storage_options
+        super().__init__(url=url, storage_options=storage_options, metadata=metadata)
+
+
 class MatlabArray(FileData):
     """A single array in a .mat file"""
 
