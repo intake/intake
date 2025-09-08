@@ -1256,6 +1256,7 @@ class XArrayDatasetReader(FileReader):
         datatypes.NetCDF3,
         datatypes.HDF5,
         datatypes.GRIB2,
+        datatypes.IcechunkRepo,
         datatypes.Zarr,
         datatypes.OpenDAP,
         datatypes.TileDB,
@@ -1270,7 +1271,7 @@ class XArrayDatasetReader(FileReader):
         from xarray import open_dataset, open_mfdataset
 
         if "engine" not in kw:
-            if isinstance(data, datatypes.Zarr):
+            if isinstance(data, (datatypes.Zarr, datatypes.IcechunkRepo)):
                 kw["engine"] = "zarr"
                 if data.root and "group" not in kw:
                     kw["group"] = data.root
@@ -1288,6 +1289,18 @@ class XArrayDatasetReader(FileReader):
             kw.setdefault("engine", "h5netcdf")
             if getattr(data, "path", False):
                 kw["group"] = data.path
+        if isinstance(data, datatypes.IcechunkRepo):
+            import icechunk
+
+            url = f"{data.url}_storage" if "storage" not in data.url else data.url
+            store_cls = getattr(icechunk, url)
+            store = store_cls(**(data.storage_options or {}))
+            repo = icechunk.Repository.open(store)
+            session = repo.readonly_session(data.ref)
+            zarr_store = session.store
+            kw.get("backend_kwargs", {}).pop("storage_options", None)
+            kw.setdefault("backend_kwargs", {})["consolidated"] = False
+            return open_dataset(zarr_store, **kw)
         auth = kw.pop("auth", "")
         if isinstance(data, datatypes.OpenDAP) and auth and kw.get("engine", "") == "pydap":
             import requests

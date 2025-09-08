@@ -72,3 +72,50 @@ def test_xarray_pattern(tmpdir, xarray_dataset):
     ds = reader.read()
 
     assert ds.part.values.tolist() == [1, 2]
+
+
+@pytest.fixture
+def icechunk_xr_repo(tmpdir):
+    xr = pytest.importorskip("xarray")
+    icechunk = pytest.importorskip("icechunk")
+    pd = pytest.importorskip("pandas")
+    import numpy as np
+
+    np.random.seed(0)
+    temperature = 15 + 8 * np.random.randn(2, 3, 4)
+    precipitation = 10 * np.random.rand(2, 3, 4)
+    lon = [-99.83, -99.32]
+    lat = [42.25, 42.21]
+    instruments = ["manufac1", "manufac2", "manufac3"]
+    time = pd.date_range("2014-09-06", periods=4)
+    reference_time = pd.Timestamp("2014-09-05")
+    ds = xr.Dataset(
+        data_vars=dict(
+            temperature=(["loc", "instrument", "time"], temperature),
+            precipitation=(["loc", "instrument", "time"], precipitation),
+        ),
+        coords=dict(
+            lon=("loc", lon),
+            lat=("loc", lat),
+            instrument=instruments,
+            time=time,
+            reference_time=reference_time,
+        ),
+        attrs=dict(description="Weather related data."),
+    )
+    storage = icechunk.local_filesystem_storage(tmpdir.strpath)
+    repo = icechunk.Repository.create(storage)
+    session = repo.writable_session("main")
+    store = session.store
+    ds.to_zarr(store, consolidated=False)
+    session.commit("Initial commit")
+    return tmpdir.strpath
+
+
+def test_icechunk(icechunk_xr_repo):
+    data = intake.readers.datatypes.IcechunkRepo(
+        "local_filesystem", storage_options={"path": icechunk_xr_repo}, ref="main"
+    )
+    reader = intake.readers.XArrayDatasetReader(data)
+    ds = reader.read()
+    assert (~ds.temperature.isnull()).all()
