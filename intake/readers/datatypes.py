@@ -284,7 +284,7 @@ class Zarr(FileData):
 
     filepattern = "(zarr$|/$)"  # i.e., any directory might be
     structure = {"array", "hierarchy"}
-    mimetypes = "application/vnd\\+zarr"
+    mimetypes = "application/vnd[+.]zarr"
 
     def __init__(
         self,
@@ -304,7 +304,8 @@ class Zarr(FileData):
 
 class IcechunkRepo(FileData):
     # NB: this can be considered a special case of zarr stores, but there are
-    # more possible operations on a repo
+    # more possible operations on a repo; you can also access these using zarr
+    # alone and specialised URLs.
 
     structure = {"array", "hierarchy"}
     filepattern = "/$"
