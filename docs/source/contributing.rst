@@ -124,3 +124,8 @@ can be found in the docs/README.md file.
 In addition, full notebook examples may be added in the examples/ directory, but you
 should be sure to add instructions on the appropriate environment or other preparation
 required to run them.
+
+.. raw:: html
+
+    <script data-goatcounter="https://intake.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
