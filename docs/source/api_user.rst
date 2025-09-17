@@ -17,7 +17,6 @@ These are reference class and function definitions likely to be useful to everyo
    intake.catalog.local.YAMLFileCatalog
    intake.catalog.local.YAMLFilesCatalog
    intake.catalog.zarr.ZarrGroupCatalog
-   intake.interface.gui.GUI
 
 .. autofunction::
    intake.open_catalog
@@ -33,8 +32,6 @@ These are reference class and function definitions likely to be useful to everyo
    Set of functions, one for each plugin, for direct opening of a data source. The names are derived from the names of
    the plugins in the registry at import time.
 
-.. autoclass:: intake.interface.gui.GUI
-   :members:
 
 Source classes
 ''''''''''''''
