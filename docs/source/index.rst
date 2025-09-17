@@ -47,6 +47,9 @@ and declarations of scope.
     tour2.rst
     api2.rst
 
+    code-of-conduct.rst
+    contributing.rst
+
     index_v1.rst
 
 Install
