@@ -74,6 +74,37 @@ def test_xarray_pattern(tmpdir, xarray_dataset):
     assert ds.part.values.tolist() == [1, 2]
 
 
+def test_xarray_dataset_remote_url_glob_str(tmpdir, xarray_dataset):
+    """Test opening HDF5 data with Xarray via remote URL with glob.
+
+    We're using tar archive to create a remote URL, since this was the
+    case that raised Issue #879.
+    """
+    from pathlib import Path
+    import shutil
+
+    from intake.readers.readers import XArrayDatasetReader
+
+    pytest.importorskip("h5netcdf")
+
+    root_dir = Path(tmpdir)
+
+    path = root_dir / "test.nc"
+    xarray_dataset.to_netcdf(path)
+
+    # make archive.tar.gz in tmpdir
+    tarname = f"{tmpdir}/archive"
+    tarpath = shutil.make_archive(tarname, "gztar", root_dir=root_dir, base_dir="test.nc")
+
+    data_url = "tar://*.nc::" + tarpath
+    data = intake.datatypes.HDF5(data_url)
+    reader = XArrayDatasetReader(data)
+    ds = reader.read()
+
+    # check that result is not empty
+    assert ds.sizes.get("time", 0) > 0
+
+
 @pytest.fixture
 def icechunk_xr_repo(tmpdir):
     xr = pytest.importorskip("xarray")

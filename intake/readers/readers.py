@@ -1323,7 +1323,9 @@ class XArrayDatasetReader(FileReader):
                 ofs = data.url
             elif open_local:
                 ofs = fsspec.open_local(data.url, **(data.storage_options or {}))
-            elif is_fsspec_url(data.url[0]):
+            elif (isinstance(data.url, str) and is_fsspec_url(data.url)) or is_fsspec_url(
+                data.url[0]
+            ):
                 ofs = [
                     _.open() for _ in fsspec.open_files(data.url, **(data.storage_options or {}))
                 ]
