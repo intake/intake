@@ -169,6 +169,33 @@ class Repr(BaseConverter):
     func = "builtins:repr"
 
 
+class IPythonDisplay(BaseConverter):
+    # maybe restrict to types known to render well?
+    instances = {".*": "mimebundle"}
+
+    def run(self, x, **kwargs):
+        """Produce ipython/jupyter compatible output without imports"""
+        # does not consider _ipython_display_
+        types = {
+            "html": "text/html",
+            "svg": "image/svg+xml",
+            "png": "image/png",
+            "jpeg": "image/jpeg",
+            "latex": "text/latex",
+            "json": "application/json",
+            "pretty": "text/plain",
+        }
+        for name, mime in types.items():
+            if hasattr(x, f"_repr_{name}_"):
+                out = getattr(x, f"_repr_{name}_")()
+                # out can be (data, metadata) for some calls
+                # https://ipython.readthedocs.io/en/stable/config/integrating.html#metadata
+                return {mime: out[0] if isinstance(out, tuple) else out}
+        if hasattr(x, "_repr_mimebundle_"):
+            return x._repr_mimebundle_()
+        return {"text/plain": repr(x)}
+
+
 class CatalogToJson(BaseConverter):
     instances = {"intake.readers.entry:Catalog": "intake.readers.datatypes:CatalogFile"}
     func = "intake.readers.entry:Catalog.to_yaml_file"

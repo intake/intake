@@ -761,7 +761,7 @@ def conversions_graph(avoid=None):
         if any(re.findall(_.lower(), cls.qname().lower()) for _ in avoid):
             continue
         for inttype, outtype in cls.instances.items():
-            if inttype != ".*" and inttype != outtype:
+            if isinstance(outtype, str) and inttype != outtype:
                 graph.add_nodes_from((inttype, outtype))
                 graph.add_edge(inttype, outtype, label=cls.qname())
 
