@@ -171,7 +171,7 @@ class Repr(BaseConverter):
 
 class IPythonDisplay(BaseConverter):
     # maybe restrict to types known to render well?
-    instances = {".*": "mimebundle"}
+    instances = {".*": "builtins:dict"}
 
     def run(self, x, **kwargs):
         """Produce ipython/jupyter compatible output without imports"""
