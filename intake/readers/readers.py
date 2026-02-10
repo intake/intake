@@ -212,7 +212,7 @@ class FileByteReader(FileReader):
 class FileTextReader(FileReader):
     """The contents of file(s) as str"""
 
-    output_instance = "builtin:str"
+    output_instance = "builtins:str"
     implements = {datatypes.FileData}
 
     def discover(self, data=None, encoding=None, **kwargs):

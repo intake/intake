@@ -733,7 +733,7 @@ class PipelineExecution:
             return self.data
 
 
-def conversions_graph(avoid=None):
+def conversions_graph(avoid=None, allow_wildcard=True):
     avoid = avoid or conf["reader_avoid"]
     if isinstance(avoid, str):
         avoid = [avoid]
@@ -761,7 +761,11 @@ def conversions_graph(avoid=None):
         if any(re.findall(_.lower(), cls.qname().lower()) for _ in avoid):
             continue
         for inttype, outtype in cls.instances.items():
-            if inttype != ".*" and inttype != outtype:
+            if (
+                isinstance(outtype, str)
+                and inttype != outtype
+                and (allow_wildcard or "*" not in inttype)
+            ):
                 graph.add_nodes_from((inttype, outtype))
                 graph.add_edge(inttype, outtype, label=cls.qname())
 
@@ -772,7 +776,7 @@ def plot_conversion_graph(filename) -> None:
     # TODO: return a PNG datatype or something else?
     import networkx as nx
 
-    g = conversions_graph()
+    g = conversions_graph(allow_wildcard=False)
     a = nx.nx_agraph.to_agraph(g)  # requires pygraphviz
     a.draw(filename, prog="fdp")
 
