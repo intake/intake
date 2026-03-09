@@ -13,6 +13,7 @@ import re
 import shlex
 import subprocess
 import sys
+import warnings
 
 
 def flatten(iterable):
@@ -112,7 +113,7 @@ def _expand(p, context, all_vars, client, getenv, getshell):
         return p
 
 
-def expand_templates(pars, context, return_left=False, client=False, getenv=True, getshell=True):
+def expand_templates(pars, context, return_left=False, client=False, getenv=True, getshell=False):
     """
     Render variables in context into the set of parameters with jinja2.
 
@@ -140,7 +141,7 @@ def expand_templates(pars, context, return_left=False, client=False, getenv=True
     return out
 
 
-def expand_defaults(default, client=False, getenv=True, getshell=True):
+def expand_defaults(default, client=False, getenv=True, getshell=False):
     """Compile env, client_env, shell and client_shell commands
 
     Execution rules:
@@ -168,6 +169,8 @@ def expand_defaults(default, client=False, getenv=True, getshell=True):
             default = subprocess.check_output(cmd).rstrip().decode("utf8")
         except (subprocess.CalledProcessError, OSError):
             default = ""
+    else:
+        warnings.warn("Shell command not executed due to getshell=False")
     r = re.match(r"client_shell\((.*)\)", default)
     if r and client and getshell:
         try:
@@ -175,10 +178,12 @@ def expand_defaults(default, client=False, getenv=True, getshell=True):
             default = subprocess.check_output(cmd).rstrip().decode("utf8")
         except (subprocess.CalledProcessError, OSError):
             default = ""
+    else:
+        warnings.warn("Shell command not executed due to getshell=False")
     return default
 
 
-def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True, getshell=True):
+def merge_pars(params, user_inputs, spec_pars, client=False, getenv=True, getshell=False):
     """Produce open arguments by merging various inputs
 
     This function is called in the context of a catalog entry, when finalising

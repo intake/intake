@@ -1,7 +1,7 @@
 # This is the configuration for pre-commit, a local framework for managing pre-commit hooks
 #   Check out the docs at: https://pre-commit.com/
 
-default_stages: [commit]
+default_stages: [pre-commit]
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
