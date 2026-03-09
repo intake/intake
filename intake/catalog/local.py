@@ -102,7 +102,7 @@ class UserParameter(DictSerialiseMixin):
                 desc[attr] = v
         return desc
 
-    def expand_defaults(self, client=False, getenv=True, getshell=True):
+    def expand_defaults(self, client=False, getenv=True, getshell=False):
         """Compile env, client_env, shell and client_shell commands"""
         if not isinstance(self._default, str):
             self.expanded_default = self._default
@@ -150,7 +150,7 @@ class LocalCatalogEntry(CatalogEntry):
         metadata={},
         catalog_dir="",
         getenv=True,
-        getshell=True,
+        getshell=False,
         catalog=None,
     ):
         """
@@ -333,7 +333,7 @@ class LocalCatalogEntry(CatalogEntry):
 class CatalogParser(object):
     """Loads entries from a YAML spec"""
 
-    def __init__(self, data, getenv=True, getshell=True, context=None):
+    def __init__(self, data, getenv=True, getshell=False, context=None):
         self._context = context if context else {}
         self._errors = []
         self._warnings = []

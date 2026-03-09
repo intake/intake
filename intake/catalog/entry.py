@@ -15,7 +15,7 @@ class CatalogEntry(DictSerialiseMixin):
     and by remote entries (read from a server).
     """
 
-    def __init__(self, getenv=True, getshell=True):
+    def __init__(self, getenv=True, getshell=False):
         self._default_source = None
         self.getenv = getenv
         self.getshell = getshell

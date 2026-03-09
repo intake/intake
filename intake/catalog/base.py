@@ -53,7 +53,7 @@ class Catalog(DataSource):
         metadata=None,
         ttl=60,
         getenv=True,
-        getshell=True,
+        getshell=False,
         persist_mode="default",
         storage_options=None,
         user_parameters=None,
