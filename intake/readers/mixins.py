@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from itertools import chain
 
 from intake import import_name
@@ -94,18 +95,21 @@ class Functioner(Completable):
         self.funcdict = funcdict
 
     def _ipython_key_completions_(self):
-        return list(self.funcdict)
+        return [_[1].__name__ for _ in self.funcdict]
 
     def __getitem__(self, item):
         from intake.readers.convert import Pipeline
         from intake.readers.transform import GetItem
 
-        # TODO: allow pattern match
-        if item in self.funcdict:
-            func = self.funcdict[item]
-            arg = ()
-            kw = {}
-        else:
+        found = False
+        for out, func in self.funcdict:
+            ######
+            if func.__name__ == item or re.findall(item, func):
+                arg = ()
+                kw = {}
+                found = True
+                break
+        if not found:
             func = GetItem
             arg = (item,)
             kw = {}
@@ -146,16 +150,14 @@ class Functioner(Completable):
         return dnames
 
     def __dir__(self):
-        return list(
-            sorted(set(chain((f.__name__ for f in self.funcdict.values()), self.methods())))
-        )
+        return list(sorted(set(chain((f.__name__ for (_, f) in self.funcdict), self.methods()))))
 
     def __getattr__(self, item):
         super().tab_completion_fixer(item)
         from intake.readers.convert import Pipeline
         from intake.readers.transform import Method
 
-        out = [(outtype, func) for outtype, func in self.funcdict.items() if func.__name__ == item]
+        out = [(outtype, func) for outtype, func in self.funcdict if func.__name__ == item]
         if not len(out):
             # TODO: import class being acted on, to see if attribute requested
             #  really is available. Perhaps tie to config option.
