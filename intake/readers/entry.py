@@ -31,6 +31,7 @@ from intake.readers.utils import (
     extract_by_path,
     extract_by_value,
     merge_dicts,
+    _is_tok,
 )
 
 
@@ -640,7 +641,11 @@ class Catalog(Tokenizable):
         return self
 
     def __repr__(self):
-        txt = f"{type(self).__name__}\n named datasets: {sorted(self.aliases)}"
+        aliases = set(self.aliases).union(e for e in self.entries if not _is_tok(e))
+        txt = f"""{type(self).__name__}
+data definitions: {len(self.data)}
+reader entries: {len(self.entries)}
+named datasets: {sorted(aliases)}"""
         if self.user_parameters:
             txt = txt + f"\n  parameters: {sorted(self.user_parameters)}"
         return txt
@@ -679,5 +684,7 @@ class Catalog(Tokenizable):
         if tok not in self.entries:
             raise KeyError
         self.aliases[name] = tok
+
+    alias = give_name
 
     # TODO: methods to split a pipeline into sequence of entries and to rejoin them
