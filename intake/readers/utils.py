@@ -518,3 +518,14 @@ def find_free_port():
         s.bind(("", 0))
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return s.getsockname()[1]
+
+
+def _is_tok(s: str) -> bool:
+    """Check if a string is a valid token"""
+    if len(s) == 16 and not s.isupper():
+        try:
+            int(s, 16)
+            return True
+        except ValueError:
+            return False
+    return False
