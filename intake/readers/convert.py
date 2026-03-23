@@ -513,7 +513,7 @@ def convert_class(data, out_type: str):
 
 def convert_classes(in_type: str):
     """Get available conversion classes for input type"""
-    out_dict = {}
+    out_dict = []
     package = in_type.split(":", 1)[0].split(".", 1)[0]
     for cls in subclasses(BaseConverter):
         for intype, outtype in cls.instances.items():
@@ -524,7 +524,7 @@ def convert_classes(in_type: str):
             ):
                 if outtype == SameType:
                     outtype = intype
-                out_dict[outtype] = cls
+                out_dict.append((outtype, cls))
     return out_dict
 
 
