@@ -58,9 +58,17 @@ class BaseData(Tokenizable):
         return {r: r.output_instance for r in readers}
 
     def to_reader_cls(
-        self, outtype: tuple[str] | str | None = None, reader: tuple[str] | str | type | None = None
+        self,
+        type_or_reader=None,
+        outtype: tuple[str] | str | None = None,
+        reader: tuple[str] | str | type | None = None,
     ):
-        if outtype and reader:
+        if type_or_reader:
+            try:
+                return self.to_reader_cls(outtype=type_or_reader)
+            except ValueError:
+                return self.to_reader_cls(reader=type_or_reader)
+        if sum(bool(_) for _ in (type_or_reader, outtype, reader)) > 1:
             raise ValueError
         if isinstance(reader, str):
             # exact match (no lowering)
@@ -84,22 +92,28 @@ class BaseData(Tokenizable):
                     out == _ or re.findall(_.lower(), out.lower()) for _ in outtype
                 ):
                     return reader
-        return next(iter(self.possible_readers["importable"]))
+        if type_or_reader is outtype is reader is None:
+            return next(iter(self.possible_readers["importable"]))
+        raise ValueError("No reader found")
 
-    def to_reader(self, outtype: str | None = None, reader: str | None = None, **kw):
+    def to_reader(
+        self, type_or_reader=None, outtype: str | None = None, reader: str | None = None, **kw
+    ):
         """Find an appropriate reader for this data
 
-        If neither ``outtype`` or ``reader`` is passed, the first importable reader
-        will be picked.
+        If all Nones are passed, the first importable reader
+        will be picked. If there is any selection, you will get ValueError
+        on failure.
 
-        See also ``.possible_outputs``
+        See also `.possible_outputs`
 
         Parameters
         ----------
+        type_or_reader: matches either on type or reader name, whichever is found first
         outtype: string to match against the output classes of potential readers
         reader: string to match against the class names of the readers
         """
-        return self.to_reader_cls(outtype, reader)(data=self, **kw)
+        return self.to_reader_cls(type_or_reader, outtype, reader)(data=self, **kw)
 
     def to_entry(self):
         """Create DataDescription version of this, for placing in a Catalog"""
@@ -118,6 +132,9 @@ class BaseData(Tokenizable):
         from intake.readers.convert import auto_pipeline
 
         return auto_pipeline(self, outtype)
+
+    def describe(self):
+        return {"data": str(self), "repr": self.auto_pipeline("IPythonDisplay").read()}
 
 
 class FileData(BaseData):
@@ -185,17 +202,6 @@ class CSVPattern(CSV):
     """
 
     filepattern = ".*[{].*[}].*(csv$|txt$|tsv$)"
-
-
-class Text(FileData):
-    """Any text file"""
-
-    filepattern = "(txt$|text$|dat$|ascii$)"
-    mimetypes = "text/.*"
-    structure = {"sequence"}
-    # some optional byte order marks
-    # https://en.wikipedia.org/wiki/Byte_order_mark#Byte_order_marks_by_encoding
-    magic = {b"\xEF\xBB\xBF", b"\xFE\xFF", b"\xFF\xFE", b"\x00\x00\xFE\xFF"}
 
 
 class XML(FileData):

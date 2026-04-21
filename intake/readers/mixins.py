@@ -144,6 +144,7 @@ class Functioner(Completable):
         """Methods and attributes associated with the output_instance"""
         try:
             cls = import_name(self.reader.output_instance)
+            # TODO: filter for only methods, not classmethods/static
             dnames = (_ for _ in dir(cls) if not _.startswith("_"))
         except (ImportError, AttributeError):
             dnames = []
@@ -154,11 +155,17 @@ class Functioner(Completable):
 
     def __getattr__(self, item):
         super().tab_completion_fixer(item)
+        return self.get_by_attr(item)
+
+    def get_by_attr(self, item, strict=False):
         from intake.readers.convert import Pipeline
         from intake.readers.transform import Method
 
         out = [(outtype, func) for outtype, func in self.funcdict if func.__name__ == item]
         if not len(out):
+            if strict:
+                raise AttributeError(item)
+
             # TODO: import class being acted on, to see if attribute requested
             #  really is available. Perhaps tie to config option.
             # TODO: exclude certain attributes that might be called during

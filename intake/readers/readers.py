@@ -176,70 +176,11 @@ class FileReader(BaseReader):
         return self._func(**kw)
 
 
-class OpenFilesReader(FileReader):
-    url_arg = "urlpath"
-    implements = {datatypes.FileData}
-    func = "fsspec:open_files"
-    output_instance = "fsspec.core:OpenFiles"
-
-
 class PanelImageViewer(FileReader):
     output_instance = "panel.pane:Image"
     implements = {datatypes.PNG, datatypes.JPEG}
     func = "panel.pane:Image"
     url_arg = "object"
-
-
-class FileByteReader(FileReader):
-    """The contents of file(s) as bytes"""
-
-    output_instance = "builtin:bytes"
-    implements = {datatypes.FileData}
-
-    def discover(self, data=None, **kwargs):
-        data = data or self.kwargs["data"]
-        with fsspec.open(data.url, mode="rb", **(data.storage_options or {})) as f:
-            return f.read()
-
-    def _read(self, data, **kwargs):
-        out = []
-        for of in fsspec.open_files(data.url, mode="rb", **(data.storage_options or {})):
-            with of as f:
-                out.append(f.read())
-        return b"".join(out)
-
-
-class FileTextReader(FileReader):
-    """The contents of file(s) as str"""
-
-    output_instance = "builtins:str"
-    implements = {datatypes.FileData}
-
-    def discover(self, data=None, encoding=None, **kwargs):
-        data = data or self.kwargs["data"]
-        if encoding:
-            data.storage_options["encoding"] = encoding
-        with fsspec.open(data.url, mode="rt", **(data.storage_options or {})) as f:
-            return f.read()
-
-    def _read(self, data, encoding=None, **kwargs):
-        out = []
-        if encoding:
-            data.storage_options["encoding"] = encoding
-        for of in fsspec.open_files(data.url, mode="rt", **(data.storage_options or {})):
-            with of as f:
-                out.append(f.read())
-        return "".join(out)
-
-
-class FileSizeReader(FileReader):
-    output_instance = "builtins:int"
-    implements = {datatypes.FileData}
-
-    def _read(self, data, **kw):
-        fs, path = fsspec.core.url_to_fs(data.url, **(data.storage_options or {}))
-        path = fs.expand_path(path)  # or use fs.du with deep
-        return sum(fs.info(p)["size"] for p in path)
 
 
 class Pandas(FileReader):
@@ -480,7 +421,7 @@ class SparkParquet(SparkDataFrame):
 
 
 class SparkText(SparkDataFrame):
-    implements = {datatypes.Text}
+    implements = {datatypes.FileData}
 
     def _read(self, data, **kwargs):
         return self._func().read.text(data.url, **kwargs)
@@ -791,14 +732,6 @@ class TFPublicDataset(BaseReader):
         return self._func(name, download=True, with_info=True, **kwargs)
 
 
-class TFTextreader(FileReader):
-    imports = {"tensorflow"}
-    implements = {datatypes.Text}
-    func = "tensorflow.data:TextLineDataset"
-    output_instance = "tensorflow.data:Dataset"
-    url_arg = "filenames"
-
-
 class TFORC(FileReader):
     imports = {"tensorflow_io"}
     implements = {datatypes.ORC}
@@ -821,14 +754,6 @@ class KerasImageReader(FileReader):
     imports = {"keras"}
     implements = {datatypes.PNG, datatypes.JPEG}  # others
     func = "keras.utils:image_dataset_from_directory"
-    output_instance = "tensorflow.data:Dataset"
-    url_arg = "directory"
-
-
-class KerasText(FileReader):
-    imports = {"keras"}
-    implements = {datatypes.Text}
-    func = "keras.utils:text_dataset_from_directory"
     output_instance = "tensorflow.data:Dataset"
     url_arg = "directory"
 
@@ -987,7 +912,7 @@ class DaskCSV(DaskDF):
 
 class DaskText(FileReader):
     imports = {"dask"}
-    implements = {datatypes.Text}
+    implements = {datatypes.FileData}
     func = "dask.bag:read_text"
     output_instance = "dask.bag.core:Bag"
     storage_options = True
@@ -1117,11 +1042,6 @@ class RayJSON(Ray):
     func = "ray.data:read_json"
 
 
-class RayText(Ray):
-    implements = {datatypes.Text}
-    func = "ray.data:read_text"
-
-
 class RayBinary(Ray):
     implements = {datatypes.FileData}
     func = "ray.data:read_binary_files"
@@ -1219,7 +1139,7 @@ class SKImageReader(FileReader):
 
 class NumpyText(FileReader):
     output_instance = "numpy:ndarray"
-    implements = {datatypes.Text}
+    implements = {datatypes.FileData}
     imports = {"numpy"}
     func = "numpy:loadtxt"
 
@@ -1243,7 +1163,7 @@ class CupyNumpyReader(NumpyText):
 
 
 class CupyTextReader(CupyNumpyReader):
-    implements = {datatypes.Text}
+    implements = {datatypes.FileData}
     func = "numpy:loadtxt"
 
 
@@ -1408,7 +1328,7 @@ class RasterIOXarrayReader(FileReader):
         ofs = fsspec.open_files(data.url, **(data.storage_options or {}))
         bits = [open_rasterio(of.open(), **kwargs) for of in ofs]
         if len(bits) == 1:
-            return bits
+            return bits[0]
         else:
             # requires dim= in kwargs
             return xr.concat(bits, **concat_kwargs)
@@ -1577,19 +1497,6 @@ class PMTileReader(BaseReader):
             f = open(data.url)
             get_bytes = pmtiles.reader.MmapSource(f)
         return self._func(get_bytes)
-
-
-class FileExistsReader(BaseReader):
-    implements = {datatypes.FileData}
-    func = "fsspec.core:url_to_fs"
-    output_instance = "builtins:bool"
-
-    def _read(self, data, *args, **kwargs):
-        try:
-            fs, path = fsspec.core.url_to_fs(data.url, **(data.storage_options or {}))
-        except FileNotFoundError:
-            return False
-        return fs.exists(path)
 
 
 class YAMLCatalogReader(FileReader):
