@@ -4,6 +4,8 @@
 #
 # The full license is in the LICENSE file, distributed with this software.
 # -----------------------------------------------------------------------------
+import warnings
+
 import pandas as pd
 import pytest
 
@@ -72,3 +74,14 @@ def test_coerce(value, dtype, expected):
     out = utils.coerce(dtype, value)
     assert out == expected
     assert type(out) == type(expected)
+
+
+def test_expand_defaults():
+    """
+    expand_defaults should not warn that getshell=False when it is True.
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error", category=UserWarning)
+        utils.expand_defaults(default="v2000-01-01", client=False, getenv=True, getshell=True)
+
+    assert True
