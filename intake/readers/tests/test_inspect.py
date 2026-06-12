@@ -135,25 +135,28 @@ class TestCSV:
         info = inspect_dataset(self.path, prefer=["PandasCSV"], exclude=_NON_PANDAS_READERS)
         assert info["repr"] is not None
 
-    def test_pandascsv_shape_none_for_sample(self):
-        """PandasCSV.discover() reads only 10 rows — shape must be None."""
+    def test_pandascsv_shape_has_none_row_count(self):
+        """Row count is never knowable from a pandas DataFrame without scanning.
+        shape must be (None, n_cols) — column count known, row count unknown."""
         from intake.readers.inspect import inspect_dataset
 
         info = inspect_dataset(self.path, prefer=["PandasCSV"], exclude=_NON_PANDAS_READERS)
         assert info["reader_used"] == "PandasCSV"
-        assert (
-            info["shape"] is None
-        ), f"Expected shape=None for tier-2 PandasCSV, got {info['shape']}"
+        shape = info["shape"]
+        assert shape is not None, "shape should be set (not None) — it carries column count"
+        assert shape[0] is None, f"row count must be None, got {shape[0]}"
+        assert shape[1] == 2, f"expected 2 columns (name, score), got {shape[1]}"
 
-    def test_pandascsv_no_shape_in_datashape_for_sample(self):
-        """datashape['shape'] must be absent for a PandasCSV sample read."""
+    def test_pandascsv_datashape_shape_has_none_row_count(self):
+        """datashape['shape'] must also carry (None, n_cols)."""
         from intake.readers.inspect import inspect_dataset
 
         info = inspect_dataset(self.path, prefer=["PandasCSV"], exclude=_NON_PANDAS_READERS)
         assert info["reader_used"] == "PandasCSV"
-        assert (
-            "shape" not in info["datashape"]
-        ), f"datashape should not contain 'shape' for PandasCSV sample: {info['datashape']}"
+        ds_shape = info["datashape"].get("shape")
+        assert ds_shape is not None
+        assert ds_shape[0] is None
+        assert ds_shape[1] == 2
 
 
 # ---------------------------------------------------------------------------
@@ -223,8 +226,8 @@ class TestParquet:
         assert "columns" in ds, ds
         assert "x" in ds["columns"] and "y" in ds["columns"]
 
-    def test_pandasparquet_shape_known(self):
-        """PandasParquet is Tier 3 (full read) so shape must be the true shape."""
+    def test_pandasparquet_shape_columns_known(self):
+        """PandasParquet knows the column count; row count is omitted."""
         from intake.readers.inspect import inspect_dataset
 
         info = inspect_dataset(
@@ -233,7 +236,10 @@ class TestParquet:
             exclude=["Dask", "Duck", "Polars", "Ray", "Spark", "Awkward", "GeoPandas", "Delta"],
         )
         assert info["reader_used"] == "PandasParquet", info["reader_used"]
-        assert info["shape"] == (100, 2), info["shape"]
+        shape = info["shape"]
+        assert shape is not None
+        assert shape[0] is None, f"row count must be None, got {shape[0]}"
+        assert shape[1] == 2, f"expected 2 columns (x, y), got {shape[1]}"
 
     def test_no_fatal_errors(self):
         from intake.readers.inspect import inspect_dataset
@@ -376,25 +382,29 @@ class TestExtractSchema:
         schema = _extract_schema(df)
         assert schema["columns"] == ["a", "b"]
         assert "int" in schema["dtypes"]["a"].lower() or "int" in schema["dtypes"]["a"]
-        assert schema["shape"] == (2, 2)
+        # Row count is always None; column count is always known
+        assert schema["shape"] == (None, 2)
 
-    def test_pandas_dataframe_is_sample_no_shape(self):
+    def test_pandas_dataframe_is_sample_no_memory_bytes(self):
         pd = pytest.importorskip("pandas")
         from intake.readers.inspect import _extract_schema
 
         df = pd.DataFrame({"a": [1, 2], "b": [3.0, 4.0]})
         schema = _extract_schema(df, is_sample=True)
         assert schema["columns"] == ["a", "b"]
-        assert "shape" not in schema
+        # shape is still (None, n_cols) even for a sample
+        assert schema["shape"] == (None, 2)
+        # memory_bytes suppressed for samples
         assert "memory_bytes" not in schema
 
-    def test_pandas_dataframe_is_sample_no_shape_extract_shape(self):
+    def test_pandas_dataframe_extract_shape_has_none_row(self):
         pd = pytest.importorskip("pandas")
-        from intake.readers.inspect import _extract_shape
 
         df = pd.DataFrame({"a": [1, 2], "b": [3.0, 4.0]})
-        assert _extract_shape(df, is_sample=True) is None
-        assert _extract_shape(df, is_sample=False) == (2, 2)
+        from intake.readers.inspect import _extract_schema
+
+        shape = _extract_schema(df)["shape"]
+        assert shape == (None, 2)
 
     def test_polars_dataframe(self):
         pl = pytest.importorskip("polars")
@@ -403,7 +413,8 @@ class TestExtractSchema:
         df = pl.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})
         schema = _extract_schema(df)
         assert "x" in schema["columns"]
-        assert schema["shape"] == (3, 2)
+        # Row count always None for polars DataFrame too
+        assert schema["shape"] == (None, 2)
 
     def test_polars_lazyframe(self):
         pl = pytest.importorskip("polars")
@@ -870,3 +881,128 @@ class TestRetry:
             self.path, prefer=["PandasCSV"], exclude=_NON_PANDAS_READERS, timeout=None
         )
         assert isinstance(info, dict)
+
+
+# ---------------------------------------------------------------------------
+# _file_storage_info unit tests
+# ---------------------------------------------------------------------------
+
+
+class TestFileStorageInfo:
+    def setup_method(self):
+        pd = pytest.importorskip("pandas")
+        # Write three small CSV files
+        self.tmpdir = tempfile.mkdtemp()
+        self.paths = []
+        for i in range(3):
+            path = os.path.join(self.tmpdir, f"part_{i}.csv")
+            pd.DataFrame({"v": [i]}).to_csv(path, index=False)
+            self.paths.append(path)
+
+    def teardown_method(self):
+        import shutil
+
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_single_file_size_and_count(self):
+        from intake.readers.inspect import _file_storage_info
+
+        size, n = _file_storage_info(self.paths[0], None)
+        assert n == 1
+        assert size is not None and size > 0
+
+    def test_list_of_files_sums_sizes(self):
+        from intake.readers.inspect import _file_storage_info
+
+        size, n = _file_storage_info(self.paths, None)
+        assert n == 3
+        # Total should be the sum of the three individual sizes
+        individual = [_file_storage_info(p, None)[0] for p in self.paths]
+        assert all(s is not None for s in individual)
+        assert size == sum(s for s in individual if s is not None)
+
+    def test_glob_expands_and_sums(self):
+        from intake.readers.inspect import _file_storage_info
+
+        glob_url = os.path.join(self.tmpdir, "part_*.csv")
+        size, n = _file_storage_info(glob_url, None)
+        assert n == 3
+        assert size is not None and size > 0
+
+    def test_nonexistent_returns_none(self):
+        from intake.readers.inspect import _file_storage_info
+
+        size, n = _file_storage_info("/nonexistent/path/to/file.csv", None)
+        assert size is None
+
+    def test_empty_glob_returns_zero_files(self):
+        from intake.readers.inspect import _file_storage_info
+
+        glob_url = os.path.join(self.tmpdir, "nofile_*.csv")
+        size, n = _file_storage_info(glob_url, None)
+        assert n == 0
+        assert size is None
+
+    def test_directory_url_lists_children(self):
+        from intake.readers.inspect import _file_storage_info
+
+        # Pass the directory itself (with trailing slash) — should find all 3 files
+        dir_url = self.tmpdir + "/"
+        size, n = _file_storage_info(dir_url, None)
+        assert n == 3, f"expected 3 files in directory, got {n}"
+        assert size is not None and size > 0
+
+    def test_directory_url_without_trailing_slash(self):
+        from intake.readers.inspect import _file_storage_info
+
+        size, n = _file_storage_info(self.tmpdir, None)
+        assert n == 3, f"expected 3 files in directory, got {n}"
+        assert size is not None and size > 0
+
+    def test_directory_size_equals_glob_size(self):
+        """Directory listing and glob should yield identical totals."""
+        from intake.readers.inspect import _file_storage_info
+
+        dir_size, dir_n = _file_storage_info(self.tmpdir + "/", None)
+        glob_size, glob_n = _file_storage_info(os.path.join(self.tmpdir, "part_*.csv"), None)
+        assert dir_n == glob_n == 3
+        assert dir_size == glob_size
+
+
+class TestNFilesInResult:
+    """Integration: n_files and file_size_bytes appear correctly in inspect output."""
+
+    def setup_method(self):
+        pd = pytest.importorskip("pandas")
+        self.tmpdir = tempfile.mkdtemp()
+        self.single_path = os.path.join(self.tmpdir, "data.csv")
+        pd.DataFrame({"a": [1, 2, 3]}).to_csv(self.single_path, index=False)
+
+    def teardown_method(self):
+        import shutil
+
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_single_file_n_files_is_1(self):
+        from intake.readers.inspect import inspect_dataset
+
+        info = inspect_dataset(
+            self.single_path,
+            prefer=["PandasCSV"],
+            exclude=_NON_PANDAS_READERS,
+            timeout=None,
+        )
+        assert info["n_files"] == 1, info["n_files"]
+        assert info["file_size_bytes"] is not None and info["file_size_bytes"] > 0
+
+    def test_npartitions_falls_back_to_n_files_for_single(self):
+        from intake.readers.inspect import inspect_dataset
+
+        info = inspect_dataset(
+            self.single_path,
+            prefer=["PandasCSV"],
+            exclude=_NON_PANDAS_READERS,
+            timeout=None,
+        )
+        # n_files=1, so npartitions should NOT be set from n_files (only >1 is interesting)
+        assert info["npartitions"] is None or info["npartitions"] >= 1

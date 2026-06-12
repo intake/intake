@@ -664,15 +664,24 @@ class Handle(JSONFile):
     filepattern = "hdl:"
 
 
-class Feather2(FileData):
-    """Tabular format based on Arrow IPC"""
+class ArrowIPC(FileData):
+    """Apache Arrow IPC file format — also known as Feather v2.
 
+    Arrow IPC files (random-access "file" format) and Feather v2 share the
+    same ``ARROW1`` magic bytes and on-disk layout.  ``Feather2`` is therefore
+    an alias for this type; this class supersedes it.
+
+    Distinguishable from the Arrow IPC *stream* format, which has no magic.
+    """
+
+    structure = {"table", "nested"}
+    filepattern = r"(arrow|feather)$"
+    mimetypes = "application/vnd.apache.arrow.file|application/vnd.apache.arrow.stream"
     magic = {b"ARROW1"}
-    structure = {"tabular", "nested"}
 
 
 class Feather1(FileData):
-    """Deprecated tabular format from the Arrow project"""
+    """Deprecated tabular format from the Arrow project (Feather v1)"""
 
     magic = {b"FEA1"}
     structure = {"tabular", "nested"}
@@ -774,6 +783,656 @@ class ModelConfig(FileData):
 
 class SKLearnPickleModel(PickleFile):
     """Trained model made by sklearn and saved as pickle"""
+
+
+# ---------------------------------------------------------------------------
+# Arrow / columnar formats
+# ---------------------------------------------------------------------------
+
+
+class Lance(FileData):
+    """Lance columnar format — used by LanceDB and as a fast alternative to Parquet
+
+    A Lance dataset is a *directory* containing ``_latest.manifest`` and
+    ``data/*.lance`` fragment files.
+    """
+
+    structure = {"table", "nested"}
+    filepattern = r"lance$"
+    contains = {"_latest.manifest"}
+
+
+class MessagePack(FileData):
+    """MessagePack binary serialisation
+
+    The first byte of a MessagePack stream encodes the type of the root
+    object.  ``0x80``–``0x8f`` are fixmap (small maps), ``0x90``–``0x9f``
+    are fixarray, ``0xde``/``0xdf`` are map16/32.  Any of these are
+    reasonable root containers for a dataset.
+    """
+
+    structure = {"nested"}
+    filepattern = r"msgpack$|\.mp$|\.mpack$"
+    mimetypes = "application/msgpack|application/x-msgpack"
+
+
+# ---------------------------------------------------------------------------
+# Document / text formats
+# ---------------------------------------------------------------------------
+
+
+class Markdown(FileData):
+    """Markdown plain-text document (.md, .markdown)"""
+
+    structure = {"text"}
+    filepattern = r"\.md$|\.markdown$"
+    mimetypes = "text/markdown"
+
+
+class ReStructuredText(FileData):
+    """reStructuredText plain-text document (.rst)"""
+
+    structure = {"text"}
+    filepattern = r"\.rst$"
+    mimetypes = "text/x-rst"
+
+
+class TOML(FileData):
+    """TOML configuration / data file
+
+    TOML has no magic bytes but has a distinctive filepattern and MIME type.
+    """
+
+    structure = {"nested"}
+    filepattern = r"\.toml$"
+    mimetypes = "application/toml|text/x-toml"
+
+
+class INIFile(FileData):
+    """INI / Windows .cfg configuration file
+
+    No magic bytes; matched by extension only.
+    """
+
+    structure = {"nested"}
+    filepattern = r"\.(ini|cfg|conf)$"
+
+
+class PDFFile(FileData):
+    """PDF document
+
+    Identified by the ``%PDF`` magic bytes at offset 0.
+    """
+
+    structure = {"text"}
+    filepattern = r"\.pdf$"
+    mimetypes = "application/pdf"
+    magic = {b"%PDF"}
+
+
+class HTMLFile(FileData):
+    """HTML document or page — may contain one or more ``<table>`` elements
+
+    Matched by the ``<!DOCTYPE html`` or ``<html`` magic sequence anywhere
+    near the start of the file.
+    """
+
+    structure = {"text", "table"}
+    filepattern = r"\.(html?|htm)$"
+    mimetypes = "text/html"
+    magic = {(None, b"<!DOCTYPE html"), (None, b"<html")}
+
+
+class EPUBFile(FileData):
+    """EPUB e-book archive
+
+    An EPUB is a ZIP file whose ``mimetype`` entry (at byte 38) reads
+    ``application/epub+zip``.
+    """
+
+    structure = {"text"}
+    filepattern = r"\.epub$"
+    mimetypes = "application/epub+zip"
+    magic = {(38, b"application/epub+zip")}
+
+
+class DOCXFile(FileData):
+    """Microsoft Word Open XML document (.docx)
+
+    DOCX is a ZIP archive; the ``[Content_Types].xml`` entry identifies it.
+    Distinguished from bare ZIP by filepattern.
+    """
+
+    structure = {"text"}
+    filepattern = r"\.(docx|odt)$"
+    mimetypes = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
+class SVGFile(FileData):
+    """Scalable Vector Graphics image
+
+    SVG files begin with an XML declaration or directly with ``<svg``.
+    """
+
+    structure = {"image"}
+    filepattern = r"\.svgz?$"
+    mimetypes = "image/svg+xml"
+    magic = {(None, b"<svg")}
+
+
+# ---------------------------------------------------------------------------
+# Audio / video
+# ---------------------------------------------------------------------------
+
+
+class MP3Audio(FileData):
+    """MP3 audio file
+
+    Identified by the ``ID3`` tag header or by the ``0xff 0xfb`` sync word.
+    """
+
+    structure = {"array", "timeseries"}
+    filepattern = r"\.mp3$"
+    mimetypes = "audio/mpeg"
+    magic = {b"ID3", b"\xff\xfb", b"\xff\xf3", b"\xff\xf2"}
+
+
+class FLACAudio(FileData):
+    """FLAC lossless audio
+
+    FLAC files start with ``fLaC``.
+    """
+
+    structure = {"array", "timeseries"}
+    filepattern = r"\.flac$"
+    mimetypes = "audio/flac"
+    magic = {b"fLaC"}
+
+
+class OGGAudio(FileData):
+    """OGG container (Vorbis / Opus audio)
+
+    OGG pages start with ``OggS``.
+    """
+
+    structure = {"array", "timeseries"}
+    filepattern = r"\.(ogg|oga|opus)$"
+    mimetypes = "audio/ogg"
+    magic = {b"OggS"}
+
+
+class MP4Video(FileData):
+    """MP4 / MOV video container
+
+    The ``ftyp`` box appears at byte 4 in MP4/MOV/M4V files.
+    """
+
+    structure = {"array", "timeseries"}
+    filepattern = r"\.(mp4|m4v|mov|m4a)$"
+    mimetypes = "video/mp4"
+    magic = {(4, b"ftyp")}
+
+
+class WebMVideo(FileData):
+    """WebM video (subset of Matroska)
+
+    Matroska/WebM files begin with the EBML header ``0x1a 0x45 0xdf 0xa3``.
+    """
+
+    structure = {"array", "timeseries"}
+    filepattern = r"\.(webm|mkv)$"
+    mimetypes = "video/webm"
+    magic = {b"\x1a\x45\xdf\xa3"}
+
+
+# ---------------------------------------------------------------------------
+# Image formats not yet covered
+# ---------------------------------------------------------------------------
+
+
+class WebPImage(FileData):
+    """WebP image
+
+    WebP files begin with ``RIFF`` at offset 0 and ``WEBP`` at offset 8.
+    """
+
+    structure = {"array", "image"}
+    filepattern = r"\.webp$"
+    mimetypes = "image/webp"
+    magic = {(8, b"WEBP")}
+
+
+class BMPImage(FileData):
+    """BMP (Windows bitmap) image"""
+
+    structure = {"array", "image"}
+    filepattern = r"\.bmp$"
+    mimetypes = "image/bmp"
+    magic = {b"BM"}
+
+
+class GIFImage(FileData):
+    """GIF image (87a or 89a)"""
+
+    structure = {"array", "image"}
+    filepattern = r"\.gif$"
+    mimetypes = "image/gif"
+    magic = {b"GIF87a", b"GIF89a"}
+
+
+class HEIFImage(FileData):
+    """HEIF/HEIC image (High Efficiency Image File)
+
+    The ``ftyp`` box appears at byte 4; the brand at byte 8 is one of
+    ``heic``, ``heix``, ``mif1``, ``msf1``, ``avif``.
+    """
+
+    structure = {"array", "image"}
+    filepattern = r"\.(heic|heif|avif)$"
+    mimetypes = "image/heif|image/heic|image/avif"
+    magic = {(8, b"heic"), (8, b"heix"), (8, b"mif1"), (8, b"avif")}
+
+
+# ---------------------------------------------------------------------------
+# Geospatial extras
+# ---------------------------------------------------------------------------
+
+
+class KMLFile(FileData):
+    """KML / KMZ geospatial markup
+
+    KML files are XML with a ``<kml`` root element.
+    KMZ is a ZIP-compressed KML.
+    """
+
+    structure = {"nested", "tabular"}
+    filepattern = r"\.kmz?$"
+    mimetypes = "application/vnd.google-earth.kml+xml"
+    magic = {(None, b"<kml")}
+
+
+class GPXFile(FileData):
+    """GPX GPS exchange format
+
+    GPX files are XML with a ``<gpx`` root element.
+    """
+
+    structure = {"nested", "tabular", "timeseries"}
+    filepattern = r"\.gpx$"
+    mimetypes = "application/gpx+xml"
+    magic = {(None, b"<gpx")}
+
+
+class MBTilesFile(FileData):
+    """MBTiles — tile data stored in a SQLite database
+
+    An MBTiles file is SQLite (magic ``SQLite format 3``) whose ``metadata``
+    table has a ``name`` key equal to the tileset name.
+    """
+
+    structure = {"image", "catalog"}
+    filepattern = r"\.mbtiles$"
+    # SQLite magic at offset 0
+    magic = {b"SQLite format 3\x00"}
+
+
+class OSMPBFFile(FileData):
+    """OpenStreetMap PBF (Protocol Buffer) binary extract
+
+    OSM PBF files begin with a 4-byte big-endian length followed by the
+    ``OSMHeader`` blob header.
+    """
+
+    structure = {"nested", "tabular"}
+    filepattern = r"\.(osm\.pbf|pbf)$"
+    mimetypes = "application/x-protobuf"
+
+
+class COGFile(FileData):
+    """Cloud-Optimised GeoTIFF
+
+    A COG is a valid TIFF/BigTIFF file with IFDs ordered for efficient
+    range-request access.  Distinguished from plain TIFF by the
+    ``GDAL_METADATA`` ghost metadata or by the ``overviews`` structure.
+    At the byte level it is identical to TIFF, so we rely on filepattern.
+    """
+
+    structure = {"array", "image"}
+    filepattern = r"\.cog\.tiff?$|_cog\.tiff?$"
+    mimetypes = "image/tiff"
+
+
+# ---------------------------------------------------------------------------
+# Point cloud formats
+# ---------------------------------------------------------------------------
+
+
+class LASFile(FileData):
+    """LAS / LAZ point cloud data
+
+    LAS files begin with ``LASF`` (LAS File Signature) at offset 0.
+    LAZ is the compressed variant.
+    """
+
+    structure = {"array", "table"}
+    filepattern = r"\.(las|laz)$"
+    mimetypes = "application/vnd.las"
+    magic = {b"LASF"}
+
+
+class E57File(FileData):
+    """E57 point cloud / 3-D imaging data
+
+    E57 files begin with the ASCII string ``ASTM-E57`` at offset 0.
+    """
+
+    structure = {"array", "table"}
+    filepattern = r"\.e57$"
+    magic = {b"ASTM-E57"}
+
+
+# ---------------------------------------------------------------------------
+# Statistical / survey data formats
+# ---------------------------------------------------------------------------
+
+
+class StataFile(FileData):
+    """Stata .dta dataset
+
+    Stata 117+ files begin with ``<stata_dta>``; older formats start with
+    a single byte 0x72–0x79 (release number).
+    """
+
+    structure = {"table"}
+    filepattern = r"\.dta$"
+    magic = {b"<stata_dta>", b"\x72", b"\x73"}
+
+
+class SPSSFile(FileData):
+    """SPSS / PSPP .sav dataset
+
+    SPSS system files begin with ``$FL2`` or ``$FL3``.
+    """
+
+    structure = {"table"}
+    filepattern = r"\.sav$"
+    magic = {b"$FL2", b"$FL3"}
+
+
+class SASFile(FileData):
+    """SAS dataset (.sas7bdat / .xpt)
+
+    SAS7BDAT files begin with ``SAS`` followed by whitespace.
+    SAS XPT (transport) files begin with ``HEADER RECORD**** LIBV8``.
+    """
+
+    structure = {"table"}
+    filepattern = r"\.(sas7bdat|xpt)$"
+    magic = {b"SAS ", b"HEADER RECORD"}
+
+
+# ---------------------------------------------------------------------------
+# Scientific / domain formats
+# ---------------------------------------------------------------------------
+
+
+class PDBFile(FileData):
+    """Protein Data Bank structure file
+
+    PDB files are plain text with lines beginning with ``ATOM``, ``HETATM``,
+    ``HEADER`` etc.  The ``HEADER`` record (or ``CRYST1``) near the start
+    of the file is characteristic.
+    """
+
+    structure = {"nested", "table"}
+    filepattern = r"\.(pdb|ent)$"
+    mimetypes = "chemical/x-pdb"
+    # "CRYST1" at offset 0 is characteristic of PDB crystal structure files;
+    # broader patterns like "HEADER" / "ATOM  " are too generic for magic matching.
+    magic = {b"CRYST1"}
+
+
+class SDFFile(FileData):
+    """MDL Molfile / SDF chemical structure file
+
+    SDF files separate records with ``$$$$`` lines.
+    """
+
+    structure = {"nested", "table"}
+    filepattern = r"\.(sdf|mol|sd)$"
+    mimetypes = "chemical/x-mdl-sdfile"
+    # No magic: the "$$$$" record separator only appears mid-file and is
+    # a regex metacharacter that cannot safely be used with re.findall.
+
+
+class FASTAFile(FileData):
+    """FASTA nucleotide/protein sequence file
+
+    FASTA files begin with a ``>`` header line.
+    """
+
+    structure = {"nested", "sequence"}
+    filepattern = r"\.(fasta|fa|fna|faa|ffn|frn)$"
+    mimetypes = "text/x-fasta"
+    # ">" at offset 0 (exact match, not regex search) is the FASTA header marker
+    magic = {b">"}
+
+
+class FASTQFile(FileData):
+    """FASTQ sequencing read file
+
+    FASTQ files begin with a ``@`` record header line.
+    """
+
+    structure = {"nested", "sequence"}
+    filepattern = r"\.(fastq|fq)$"
+    mimetypes = "text/x-fastq"
+    # "@" at offset 0 (exact match) is the FASTQ read header marker
+    magic = {b"@"}
+
+
+class VCFFile(FileData):
+    """Variant Call Format (VCF) genomics file
+
+    VCF files begin with the meta-information line ``##fileformat=VCF``.
+    """
+
+    structure = {"table", "nested"}
+    filepattern = r"\.vcf(\.gz)?$"
+    mimetypes = "text/x-variant-call-format"
+    magic = {b"##fileformat=VCF"}
+
+
+class BigWigFile(FileData):
+    """UCSC BigWig genomics coverage track
+
+    BigWig files begin with the magic ``0x888ffc26`` (little-endian) or
+    ``0x26fc8f88`` (big-endian).
+    """
+
+    structure = {"array", "timeseries"}
+    filepattern = r"\.(bigwig|bw)$"
+    magic = {b"\x26\xfc\x8f\x88", b"\x88\x8f\xfc\x26"}
+
+
+class HDF5Group(FileData):
+    """A named group or dataset within an HDF5 file, addressed as url#/path"""
+
+    structure = {"array", "table", "hierarchy"}
+    filepattern = r"\.(hdf5?|h4|nc4?)#/"
+
+
+class NetCDF4File(HDF5):
+    """NetCDF-4 / HDF5 hybrid
+
+    NetCDF-4 files are valid HDF5 files, distinguished from plain HDF5 by
+    the presence of the ``_NCProperties`` root attribute.  At the byte level
+    they are identical to HDF5, so we rely on filepattern extension.
+    """
+
+    filepattern = r"\.nc4?$"
+
+
+# ---------------------------------------------------------------------------
+# Streaming / messaging services
+# ---------------------------------------------------------------------------
+
+
+class KafkaTopic(Service):
+    """Apache Kafka topic
+
+    Addressed as ``kafka://broker:port/topic``.
+    """
+
+    structure = {"sequence", "timeseries"}
+    filepattern = r"^kafka://"
+
+
+class MQTTTopic(Service):
+    """MQTT message broker topic
+
+    Addressed as ``mqtt://broker:port/topic`` or ``mqtts://…``.
+    """
+
+    structure = {"sequence", "timeseries"}
+    filepattern = r"^mqtts?://"
+
+
+class WebSocketStream(Service):
+    """WebSocket data stream
+
+    Addressed as ``ws://host/path`` or ``wss://host/path``.
+    """
+
+    structure = {"sequence", "timeseries"}
+    filepattern = r"^wss?://"
+
+
+class ArrowFlightService(Service):
+    """Apache Arrow Flight RPC service
+
+    Addressed as ``grpc://host:port`` or ``grpc+tls://…``.
+    """
+
+    structure = {"table"}
+    filepattern = r"^grpc\+?.*://"
+
+
+# ---------------------------------------------------------------------------
+# Database / catalog services
+# ---------------------------------------------------------------------------
+
+
+class InfluxDBService(Service):
+    """InfluxDB time-series database
+
+    Addressed as ``influxdb://host:port``.
+    """
+
+    structure = {"table", "timeseries"}
+    filepattern = r"^influxdb://"
+
+
+class MongoDBService(Service):
+    """MongoDB document store
+
+    Addressed as ``mongodb://host:port/database``.
+    """
+
+    structure = {"nested", "table"}
+    filepattern = r"^mongodb\+?.*://"
+
+
+class ElasticsearchService(Service):
+    """Elasticsearch / OpenSearch index
+
+    Addressed as ``http://host:9200`` or ``https://host:9200``.
+    """
+
+    structure = {"nested", "table"}
+    filepattern = r"^https?://.*:9200"
+
+
+class RedisService(Service):
+    """Redis key-value store
+
+    Addressed as ``redis://host:port``.
+    """
+
+    structure = {"nested"}
+    filepattern = r"^rediss?://"
+
+
+class SocrataService(Service):
+    """Socrata Open Data portal
+
+    Addressed as ``https://data.domain.gov/resource/xxxx-xxxx.json``.
+    The ``/resource/`` path segment is characteristic.
+    """
+
+    structure = {"table"}
+    filepattern = r"^https?://.*data\..*/resource/"
+
+
+class OGCAPIFeatures(Service):
+    """OGC API – Features (WFS3) geospatial web service
+
+    Addressed as the collection URL ending in ``/collections/{id}/items``.
+    """
+
+    structure = {"nested", "tabular"}
+    filepattern = r"/collections/[^/]+/items"
+
+
+# ---------------------------------------------------------------------------
+# Model formats not yet covered
+# ---------------------------------------------------------------------------
+
+
+class ONNXModel(FileData):
+    """ONNX (Open Neural Network Exchange) model
+
+    ONNX files are protobuf; they begin with field tag 0x0a (field 1,
+    wire type 2 — a length-delimited optype string).
+    """
+
+    structure = {"model"}
+    filepattern = r"\.onnx$"
+    mimetypes = "application/octet-stream"
+    magic = {b"\x08\x07"}  # ModelProto field 1 = ir_version
+
+
+class TorchScriptModel(FileData):
+    """TorchScript / PyTorch saved model (.pt / .pth)
+
+    PyTorch saves models as ZIP archives; the ZIP magic ``PK`` appears at
+    offset 0.  Differentiated from bare ZIP by the filepattern.
+    """
+
+    structure = {"model"}
+    filepattern = r"\.(pt|pth|torchscript)$"
+
+
+class JoblibFile(FileData):
+    """Joblib-serialised Python object (.joblib / .pkl.z)
+
+    Joblib files are zlib/lzma-compressed pickle streams.  The underlying
+    compression magic is used for identification.
+    """
+
+    structure = {"model"}
+    filepattern = r"\.joblib$"
+
+
+class NPZFile(FileData):
+    """NumPy ``.npz`` archive (ZIP of ``.npy`` files)
+
+    NPZ files are ZIP archives; the ZIP magic ``PK`` at offset 0.
+    Differentiated from bare ZIP by filepattern.
+    """
+
+    structure = {"array", "nested"}
+    filepattern = r"\.npz$"
 
 
 comp_magic = {

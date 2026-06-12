@@ -260,7 +260,7 @@ class PandasParquet(Pandas):
 
 
 class PandasFeather(Pandas):
-    implements = {datatypes.Feather2, datatypes.Feather1}
+    implements = {datatypes.ArrowIPC, datatypes.Feather1}
     imports = {"pandas", "pyarrow"}
     func = "pandas:read_feather"
     url_arg = "path"
@@ -1074,11 +1074,6 @@ class PolarsAvro(Polars):
         return cls._url_is_single(data)
 
 
-class PolarsFeather(Polars):
-    implements = {datatypes.Feather2}
-    func = "polars:scan_ipc"
-
-
 class PolarsParquet(Polars):
     implements = {datatypes.Parquet}
     func = "polars:scan_parquet"
@@ -1514,34 +1509,6 @@ class GeoPandasReader(FileReader):
         return geopandas.read_file(data.url, **kwargs)
 
 
-class GeoPandasTabular(FileReader):
-    output_instance = "geopandas:GeoDataFrame"
-    imports = {"geopandas", "pyarrow"}
-    implements = {datatypes.Parquet, datatypes.Feather2}
-    func = "geopandas:read_parquet"
-    other_funcs = {"geopandas:read_feather"}
-    url_arg = "path"
-
-    @classmethod
-    def is_ok(cls, data) -> bool:
-        """geopandas.read_parquet / read_feather each accept a single file path."""
-        return cls._url_is_single(data)
-
-    def _read(self, data, **kwargs):
-        import geopandas
-
-        if "://" in data.url or "::" in data.url:
-            f = fsspec.open(data.url, **(data.storage_options or {})).open()
-        else:
-            f = data.url
-        if isinstance(data, datatypes.Parquet):
-            return geopandas.read_parquet(f, **kwargs)
-        elif isinstance(data, datatypes.Feather2):
-            return geopandas.read_feather(f, **kwargs)
-        else:
-            raise ValueError
-
-
 class ScipyMatlabReader(FileReader):
     output_instance = "numpy:ndarray"
     implements = {datatypes.MatlabArray}
@@ -1762,6 +1729,1118 @@ def recommend(data):
                 else:
                     out["not_importable"].append(cls)
     return out
+
+
+class PolarsFeather(Polars):
+    implements = {datatypes.ArrowIPC}
+    func = "polars:scan_ipc"
+    url_arg = "source"
+
+
+class PyArrowIPCReader(FileReader):
+    """Read an Arrow IPC file or stream into a PyArrow Table.
+
+    Supports both the "file" (random-access) and "stream" formats via
+    ``pyarrow.ipc.open_file`` / ``open_stream`` heuristic.
+    """
+
+    implements = {datatypes.ArrowIPC}
+    imports = {"pyarrow"}
+    func = "pyarrow.ipc:open_file"
+    output_instance = "pyarrow.lib:Table"
+    url_arg = "source"
+
+    def _read(self, data, **kwargs):
+        import pyarrow.ipc as ipc
+
+        try:
+            reader = ipc.open_file(data.url, **kwargs)
+        except Exception:
+            reader = ipc.open_stream(data.url, **kwargs)
+        return reader.read_all()
+
+    def discover(self, **kwargs):
+        import pyarrow.ipc as ipc
+
+        data = self.kwargs.get("data") or (self.kwargs.get("args") or [None])[0]
+        try:
+            reader = ipc.open_file(data.url)
+            return reader.read_all().slice(0, 10)
+        except Exception:
+            reader = ipc.open_stream(data.url)
+            return reader.read_next_batch()
+
+
+class PandasArrowIPC(Pandas):
+    """Read an Arrow IPC file into a pandas DataFrame via PyArrow."""
+
+    implements = {datatypes.ArrowIPC}
+    imports = {"pandas", "pyarrow"}
+    func = "pandas:read_feather"
+    url_arg = "path"
+
+
+class GeoPandasTabular(FileReader):
+    output_instance = "geopandas:GeoDataFrame"
+    imports = {"geopandas", "pyarrow"}
+    implements = {datatypes.Parquet, datatypes.ArrowIPC}
+    func = "geopandas:read_parquet"
+    other_funcs = {"geopandas:read_feather"}
+    url_arg = "path"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """geopandas.read_parquet / read_feather each accept a single file path."""
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kwargs):
+        import geopandas
+
+        if "://" in data.url or "::" in data.url:
+            f = fsspec.open(data.url, **(data.storage_options or {})).open()
+        else:
+            f = data.url
+        if isinstance(data, datatypes.Parquet):
+            return geopandas.read_parquet(f, **kwargs)
+        elif isinstance(data, datatypes.ArrowIPC):
+            return geopandas.read_feather(f, **kwargs)
+        else:
+            raise ValueError
+
+
+class PolarsArrowIPC(Polars):
+    """Read an Arrow IPC file lazily with Polars."""
+
+    implements = {datatypes.ArrowIPC}
+    func = "polars:scan_ipc"
+    url_arg = "source"
+
+
+# ---------------------------------------------------------------------------
+# Lance
+# ---------------------------------------------------------------------------
+
+
+class LanceReader(FileReader):
+    """Read a Lance dataset into a PyArrow Table (lazy scan)."""
+
+    implements = {datatypes.Lance}
+    imports = {"lancedb"}
+    func = "lancedb:connect"
+    output_instance = "lancedb.table:LanceTable"
+    url_arg = "uri"
+
+    def _read(self, data, table=None, **kwargs):
+        import lancedb
+
+        db = lancedb.connect(data.url)
+        if table is None:
+            table = db.table_names()[0]
+        return db.open_table(table)
+
+    def discover(self, **kwargs):
+        tbl = self.read(**kwargs)
+        return tbl.to_arrow().slice(0, 10)
+
+
+class PolarsLance(FileReader):
+    """Read a Lance dataset lazily with Polars (via PyArrow bridge)."""
+
+    implements = {datatypes.Lance}
+    imports = {"polars", "lancedb"}
+    func = "polars:from_arrow"
+    output_instance = "polars:LazyFrame"
+    url_arg = "source"
+
+    def _read(self, data, **kwargs):
+        import lancedb
+        import polars as pl
+
+        db = lancedb.connect(data.url)
+        tbl = db.open_table(db.table_names()[0])
+        return pl.from_arrow(tbl.to_arrow()).lazy()
+
+
+# ---------------------------------------------------------------------------
+# MessagePack
+# ---------------------------------------------------------------------------
+
+
+class MessagePackReader(FileReader):
+    """Read a MessagePack file into a Python dict/list."""
+
+    implements = {datatypes.MessagePack}
+    imports = {"msgpack"}
+    func = "msgpack:unpack"
+    output_instance = "builtins:object"
+    url_arg = "file_like"
+
+    def _read(self, data, **kwargs):
+        import msgpack
+        import fsspec
+
+        with fsspec.open(data.url, "rb", **(data.storage_options or {})) as f:
+            return msgpack.unpack(f, **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# Document / text
+# ---------------------------------------------------------------------------
+
+
+class MarkdownReader(FileReader):
+    """Read a Markdown file as a plain string."""
+
+    implements = {datatypes.Markdown, datatypes.ReStructuredText}
+    imports = set()
+    func = "builtins:open"
+    output_instance = "builtins:str"
+    url_arg = "file"
+
+    def _read(self, data, **kwargs):
+        import fsspec
+
+        with fsspec.open(data.url, "r", **(data.storage_options or {})) as f:
+            return f.read()
+
+
+class TOMLReader(FileReader):
+    """Read a TOML file into a Python dict."""
+
+    implements = {datatypes.TOML}
+    imports = {"tomllib"}  # stdlib in Python 3.11+
+    func = "tomllib:loads"
+    output_instance = "builtins:dict"
+
+    def _read(self, data, **kwargs):
+        try:
+            import tomllib
+        except ImportError:
+            import tomli as tomllib  # backport
+        import fsspec
+
+        with fsspec.open(data.url, "rb", **(data.storage_options or {})) as f:
+            return tomllib.load(f)
+
+    @classmethod
+    def check_imports(cls):
+        try:
+            import tomllib  # noqa: F401
+
+            return True
+        except ImportError:
+            from intake.readers.utils import check_imports as _ci
+
+            return _ci("tomli")
+
+
+class TOMLReaderTomli(TOMLReader):
+    """Read a TOML file using the ``tomli`` backport (Python < 3.11)."""
+
+    imports = {"tomli"}
+    func = "tomli:loads"
+
+
+class INIReader(FileReader):
+    """Read an INI/CFG file into a Python dict via ``configparser``."""
+
+    implements = {datatypes.INIFile}
+    imports = set()
+    func = "configparser:ConfigParser"
+    output_instance = "configparser:ConfigParser"
+
+    def _read(self, data, **kwargs):
+        import configparser
+        import fsspec
+
+        cfg = configparser.ConfigParser(**kwargs)
+        with fsspec.open(data.url, "r", **(data.storage_options or {})) as f:
+            cfg.read_file(f)
+        return cfg
+
+
+class HTMLTableReader(FileReader):
+    """Read HTML tables from a file or URL into a list of DataFrames."""
+
+    implements = {datatypes.HTMLFile}
+    imports = {"pandas", "lxml"}
+    func = "pandas:read_html"
+    output_instance = "builtins:list"
+    url_arg = "io"
+
+    def discover(self, **kwargs):
+        tables = self.read(**kwargs)
+        return tables[0].head(10) if tables else []
+
+
+class PDFTextReader(FileReader):
+    """Extract text from a PDF file using ``pdfminer.six``."""
+
+    implements = {datatypes.PDFFile}
+    imports = {"pdfminer"}
+    func = "pdfminer.high_level:extract_text"
+    output_instance = "builtins:str"
+    url_arg = "pdf_file"
+
+    def _read(self, data, **kwargs):
+        from pdfminer.high_level import extract_text
+        import fsspec
+
+        with fsspec.open(data.url, "rb", **(data.storage_options or {})) as f:
+            return extract_text(f, **kwargs)
+
+
+class PDFPlumberReader(FileReader):
+    """Extract structured content from a PDF using ``pdfplumber``."""
+
+    implements = {datatypes.PDFFile}
+    imports = {"pdfplumber"}
+    func = "pdfplumber:open"
+    output_instance = "pdfplumber.pdf:PDF"
+    url_arg = "path"
+
+    def _read(self, data, **kwargs):
+        import pdfplumber
+
+        return pdfplumber.open(data.url, **kwargs)
+
+    def discover(self, **kwargs):
+        pdf = self.read(**kwargs)
+        return pdf.pages[:3] if pdf.pages else pdf
+
+
+class EPUBReader(FileReader):
+    """Read an EPUB e-book using ``ebooklib``."""
+
+    implements = {datatypes.EPUBFile}
+    imports = {"ebooklib"}
+    func = "ebooklib.epub:read_epub"
+    output_instance = "ebooklib.epub:EpubBook"
+    url_arg = "name"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+class DOCXReader(FileReader):
+    """Read a DOCX file as plain text using ``python-docx``."""
+
+    implements = {datatypes.DOCXFile}
+    imports = {"docx"}
+    func = "docx:Document"
+    output_instance = "docx.document:Document"
+    url_arg = "docx"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+# ---------------------------------------------------------------------------
+# Audio
+# ---------------------------------------------------------------------------
+
+
+class LibrosaAudioReader(FileReader):
+    """Load an audio file as a NumPy array with sample rate using librosa."""
+
+    implements = {datatypes.MP3Audio, datatypes.FLACAudio, datatypes.OGGAudio, datatypes.WAV}
+    imports = {"librosa"}
+    func = "librosa:load"
+    output_instance = "numpy:ndarray"
+    url_arg = "path"
+
+    def _read(self, data, **kwargs):
+        import librosa
+
+        y, sr = librosa.load(data.url, **kwargs)
+        return y, sr
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+class SoundFileReader(FileReader):
+    """Read audio into a NumPy array using ``soundfile``."""
+
+    implements = {datatypes.FLACAudio, datatypes.OGGAudio, datatypes.WAV}
+    imports = {"soundfile"}
+    func = "soundfile:read"
+    output_instance = "numpy:ndarray"
+    url_arg = "file"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+# ---------------------------------------------------------------------------
+# Video
+# ---------------------------------------------------------------------------
+
+
+class DecordVideoReader(FileReader):
+    """Read a video file using ``decord`` (efficient random-access frame reader)."""
+
+    implements = {datatypes.MP4Video, datatypes.WebMVideo}
+    imports = {"decord"}
+    func = "decord:VideoReader"
+    output_instance = "decord:VideoReader"
+    url_arg = "uri"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+class ImageIOVideoReader(FileReader):
+    """Read video frames as a NumPy array using ``imageio`` / ``imageio-ffmpeg``."""
+
+    implements = {datatypes.MP4Video, datatypes.WebMVideo}
+    imports = {"imageio"}
+    func = "imageio:get_reader"
+    output_instance = "imageio.core.format:Reader"
+    url_arg = "uri"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+# ---------------------------------------------------------------------------
+# Images not yet covered
+# ---------------------------------------------------------------------------
+
+
+class PILImageReader(FileReader):
+    """Read any PIL-supported image (WebP, BMP, GIF, HEIF, TIFF, PNG, JPEG…)
+    into a NumPy array via Pillow."""
+
+    implements = {
+        datatypes.WebPImage,
+        datatypes.BMPImage,
+        datatypes.GIFImage,
+        datatypes.HEIFImage,
+        datatypes.PNG,
+        datatypes.JPEG,
+        datatypes.TIFF,
+    }
+    imports = {"PIL"}
+    func = "PIL.Image:open"
+    output_instance = "numpy:ndarray"
+    url_arg = "fp"
+
+    def _read(self, data, **kwargs):
+        from PIL import Image
+        import numpy as np
+        import fsspec
+
+        with fsspec.open(data.url, "rb", **(data.storage_options or {})) as f:
+            img = Image.open(f)
+            img.load()
+        return np.array(img)
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+class ImageIOReader(FileReader):
+    """Read images (WebP, BMP, GIF, TIFF …) into NumPy arrays via imageio."""
+
+    implements = {
+        datatypes.WebPImage,
+        datatypes.BMPImage,
+        datatypes.GIFImage,
+        datatypes.TIFF,
+        datatypes.PNG,
+        datatypes.JPEG,
+    }
+    imports = {"imageio"}
+    func = "imageio:imread"
+    output_instance = "numpy:ndarray"
+    url_arg = "uri"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+# ---------------------------------------------------------------------------
+# Geospatial
+# ---------------------------------------------------------------------------
+
+
+class KMLReader(FileReader):
+    """Read KML/KMZ into a GeoDataFrame using geopandas/fiona."""
+
+    implements = {datatypes.KMLFile}
+    imports = {"geopandas", "fiona"}
+    func = "geopandas:read_file"
+    output_instance = "geopandas:GeoDataFrame"
+    url_arg = "filename"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+class GPXReader(FileReader):
+    """Read GPX tracks/waypoints into a GeoDataFrame using geopandas/fiona."""
+
+    implements = {datatypes.GPXFile}
+    imports = {"geopandas", "fiona"}
+    func = "geopandas:read_file"
+    output_instance = "geopandas:GeoDataFrame"
+    url_arg = "filename"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+class MBTilesReader(FileReader):
+    """Open an MBTiles file as an SQLite connection."""
+
+    implements = {datatypes.MBTilesFile}
+    imports = {"sqlite3"}
+    func = "sqlite3:connect"
+    output_instance = "sqlite3:Connection"
+    url_arg = "database"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+class OSMPBFReader(FileReader):
+    """Parse an OpenStreetMap PBF extract with ``osmium`` (pyosmium)."""
+
+    implements = {datatypes.OSMPBFFile}
+    imports = {"osmium"}
+    func = "osmium:FileProcessor"
+    output_instance = "osmium:FileProcessor"
+    url_arg = "path"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+class LASReader(FileReader):
+    """Read LAS/LAZ point cloud data using ``laspy``."""
+
+    implements = {datatypes.LASFile}
+    imports = {"laspy"}
+    func = "laspy:read"
+    output_instance = "laspy:LasData"
+    url_arg = "source"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def discover(self, **kwargs):
+        las = self.read(**kwargs)
+        # Return a dict summarising the point cloud header metadata
+        hdr = las.header
+        return {
+            "point_count": int(hdr.point_count),
+            "point_format": int(las.point_format.id),
+            "scales": list(hdr.scales),
+            "offsets": list(hdr.offsets),
+            "mins": list(hdr.mins),
+            "maxs": list(hdr.maxs),
+        }
+
+
+class COGXarrayReader(FileReader):
+    """Read a Cloud-Optimised GeoTIFF lazily via rioxarray."""
+
+    implements = {datatypes.COGFile, datatypes.TIFF, datatypes.GDALRasterFile}
+    imports = {"rioxarray"}
+    func = "rioxarray:open_rasterio"
+    output_instance = "xarray:DataArray"
+    url_arg = "filename"
+    storage_options = True
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def discover(self, **kwargs):
+        return self.read(overview_level=0, **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# Statistical / survey data
+# ---------------------------------------------------------------------------
+
+
+class PandasStataReader(Pandas):
+    """Read a Stata .dta file into a pandas DataFrame."""
+
+    implements = {datatypes.StataFile}
+    func = "pandas:read_stata"
+    url_arg = "filepath_or_buffer"
+
+
+class PandasSPSSReader(Pandas):
+    """Read an SPSS .sav file into a pandas DataFrame (pandas ≥ 1.2)."""
+
+    implements = {datatypes.SPSSFile}
+    func = "pandas:read_spss"
+    url_arg = "path"
+
+
+class PandasSASReader(Pandas):
+    """Read a SAS .sas7bdat or .xpt file into a pandas DataFrame."""
+
+    implements = {datatypes.SASFile}
+    func = "pandas:read_sas"
+    url_arg = "filepath_or_buffer"
+
+
+class PyreadstatReader(FileReader):
+    """Read SPSS/Stata/SAS files with full metadata using ``pyreadstat``."""
+
+    implements = {datatypes.SPSSFile, datatypes.StataFile, datatypes.SASFile}
+    imports = {"pyreadstat"}
+    func = "pyreadstat:read_sav"
+    output_instance = "pandas:DataFrame"
+    url_arg = "filename_path"
+
+    # dispatch to the right reader based on file extension
+    _ext_to_func = {
+        ".sav": "pyreadstat:read_sav",
+        ".dta": "pyreadstat:read_dta",
+        ".sas7bdat": "pyreadstat:read_sas7bdat",
+        ".xpt": "pyreadstat:read_xport",
+    }
+
+    def _read(self, data, **kwargs):
+        import pyreadstat
+
+        ext = "." + data.url.rsplit(".", 1)[-1].lower()
+        fn_name = self._ext_to_func.get(ext, "pyreadstat:read_sav").split(":")[1]
+        fn = getattr(pyreadstat, fn_name)
+        df, meta = fn(data.url, **kwargs)
+        df.attrs["pyreadstat_meta"] = meta
+        return df
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+# ---------------------------------------------------------------------------
+# Bioinformatics / scientific
+# ---------------------------------------------------------------------------
+
+
+class BioPythonFASTAReader(FileReader):
+    """Parse a FASTA file using ``Biopython`` into a list of SeqRecord objects."""
+
+    implements = {datatypes.FASTAFile}
+    imports = {"Bio"}
+    func = "Bio.SeqIO:parse"
+    output_instance = "builtins:list"
+    url_arg = "handle"
+
+    def _read(self, data, fmt="fasta", **kwargs):
+        from Bio import SeqIO
+        import fsspec
+
+        with fsspec.open(data.url, "r", **(data.storage_options or {})) as f:
+            return list(SeqIO.parse(f, fmt))
+
+    def discover(self, **kwargs):
+        records = self.read(**kwargs)
+        return records[:10]
+
+
+class BioPythonFASTQReader(BioPythonFASTAReader):
+    """Parse a FASTQ file using Biopython."""
+
+    implements = {datatypes.FASTQFile}
+
+    def _read(self, data, fmt="fastq", **kwargs):
+        return super()._read(data, fmt=fmt, **kwargs)
+
+
+class PySAMVCFReader(FileReader):
+    """Read a VCF file using ``pysam``."""
+
+    implements = {datatypes.VCFFile}
+    imports = {"pysam"}
+    func = "pysam:VariantFile"
+    output_instance = "pysam:VariantFile"
+    url_arg = "filename"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def discover(self, **kwargs):
+        vf = self.read(**kwargs)
+        return {"header": str(vf.header), "samples": list(vf.header.samples)}
+
+
+class PyBigWigReader(FileReader):
+    """Read a BigWig coverage track using ``pyBigWig``."""
+
+    implements = {datatypes.BigWigFile}
+    imports = {"pyBigWig"}
+    func = "pyBigWig:open"
+    output_instance = "pyBigWig:pyBigWig"
+    url_arg = "file"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def discover(self, **kwargs):
+        bw = self.read(**kwargs)
+        return {"chroms": bw.chroms(), "header": bw.header()}
+
+
+class MDAnalysisReader(FileReader):
+    """Load a molecular dynamics topology/trajectory using ``MDAnalysis``."""
+
+    implements = {datatypes.PDBFile}
+    imports = {"MDAnalysis"}
+    func = "MDAnalysis:Universe"
+    output_instance = "MDAnalysis.core.universe:Universe"
+    url_arg = "filename"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def discover(self, **kwargs):
+        u = self.read(**kwargs)
+        return {
+            "n_atoms": u.atoms.n_atoms,
+            "n_residues": u.residues.n_residues,
+            "n_segments": u.segments.n_segments,
+        }
+
+
+# ---------------------------------------------------------------------------
+# Model formats
+# ---------------------------------------------------------------------------
+
+
+class ONNXReader(FileReader):
+    """Load an ONNX model using ``onnx``."""
+
+    implements = {datatypes.ONNXModel}
+    imports = {"onnx"}
+    func = "onnx:load"
+    output_instance = "onnx.onnx_ml_pb2:ModelProto"
+    url_arg = "f"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def discover(self, **kwargs):
+        model = self.read(**kwargs)
+        return {
+            "ir_version": model.ir_version,
+            "opset_version": model.opset_import[0].version if model.opset_import else None,
+            "graph_inputs": [i.name for i in model.graph.input],
+            "graph_outputs": [o.name for o in model.graph.output],
+        }
+
+
+class ONNXRuntimeReader(FileReader):
+    """Create an ONNX Runtime inference session from a .onnx model."""
+
+    implements = {datatypes.ONNXModel}
+    imports = {"onnxruntime"}
+    func = "onnxruntime:InferenceSession"
+    output_instance = "onnxruntime:InferenceSession"
+    url_arg = "path_or_bytes"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+class TorchScriptReader(FileReader):
+    """Load a TorchScript / PyTorch saved model using ``torch.jit.load``."""
+
+    implements = {datatypes.TorchScriptModel}
+    imports = {"torch"}
+    func = "torch.jit:load"
+    output_instance = "torch.jit:ScriptModule"
+    url_arg = "f"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+class TorchLoadReader(FileReader):
+    """Load a plain PyTorch checkpoint (.pt / .pth) using ``torch.load``."""
+
+    implements = {datatypes.TorchScriptModel}
+    imports = {"torch"}
+    func = "torch:load"
+    output_instance = "builtins:object"
+    url_arg = "f"
+    other_funcs = {"torch.jit:load"}
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+class JoblibReader(FileReader):
+    """Load a joblib-serialised object."""
+
+    implements = {datatypes.JoblibFile}
+    imports = {"joblib"}
+    func = "joblib:load"
+    output_instance = "builtins:object"
+    url_arg = "filename"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+
+class NPZReader(FileReader):
+    """Load a NumPy ``.npz`` archive into an ``NpzFile`` mapping."""
+
+    implements = {datatypes.NPZFile}
+    imports = {"numpy"}
+    func = "numpy:load"
+    output_instance = "numpy.lib.npyio:NpzFile"
+    url_arg = "file"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def discover(self, **kwargs):
+        npz = self.read(**kwargs)
+        return {k: {"shape": v.shape, "dtype": str(v.dtype)} for k, v in npz.items()}
+
+
+# ---------------------------------------------------------------------------
+# Streaming services
+# ---------------------------------------------------------------------------
+
+
+class KafkaReader(BaseReader):
+    """Stream records from a Kafka topic using ``confluent_kafka``."""
+
+    implements = {datatypes.KafkaTopic}
+    imports = {"confluent_kafka"}
+    func = "confluent_kafka:Consumer"
+    output_instance = "confluent_kafka:Consumer"
+
+    def _read(
+        self,
+        data,
+        group_id="intake-reader",
+        auto_offset_reset="earliest",
+        max_records=1000,
+        **kwargs,
+    ):
+        from confluent_kafka import Consumer
+
+        # URL format: kafka://broker:port/topic
+        url = data.url
+        if url.startswith("kafka://"):
+            url = url[len("kafka://") :]
+        broker, _, topic = url.partition("/")
+        conf = {
+            "bootstrap.servers": broker,
+            "group.id": group_id,
+            "auto.offset.reset": auto_offset_reset,
+        }
+        conf.update(kwargs)
+        c = Consumer(conf)
+        c.subscribe([topic])
+        records = []
+        while len(records) < max_records:
+            msg = c.poll(1.0)
+            if msg is None:
+                break
+            if not msg.error():
+                records.append(msg.value())
+        c.close()
+        return records
+
+    def discover(self, **kwargs):
+        kwargs.setdefault("max_records", 5)
+        return self.read(**kwargs)
+
+
+class MQTTReader(BaseReader):
+    """Subscribe to an MQTT topic and collect messages using ``paho-mqtt``."""
+
+    implements = {datatypes.MQTTTopic}
+    imports = {"paho"}
+    func = "paho.mqtt.client:Client"
+    output_instance = "builtins:list"
+
+    def _read(self, data, max_messages=100, timeout=10, **kwargs):
+        import paho.mqtt.client as mqtt
+        import threading
+
+        # URL format: mqtt://broker:port/topic
+        url = data.url
+        scheme = "mqtt"
+        if url.startswith("mqtts://"):
+            scheme = "mqtts"
+            url = url[len("mqtts://") :]
+        elif url.startswith("mqtt://"):
+            url = url[len("mqtt://") :]
+        broker_port, _, topic = url.partition("/")
+        broker, _, port_str = broker_port.partition(":")
+        port = int(port_str) if port_str else 1883
+
+        messages = []
+        done = threading.Event()
+
+        def on_message(client, userdata, msg):
+            messages.append(msg.payload)
+            if len(messages) >= max_messages:
+                done.set()
+
+        client = mqtt.Client()
+        if scheme == "mqtts":
+            client.tls_set()
+        client.on_message = on_message
+        client.connect(broker, port)
+        client.subscribe(topic)
+        client.loop_start()
+        done.wait(timeout=timeout)
+        client.loop_stop()
+        client.disconnect()
+        return messages
+
+    def discover(self, **kwargs):
+        kwargs.setdefault("max_messages", 5)
+        kwargs.setdefault("timeout", 5)
+        return self.read(**kwargs)
+
+
+class ArrowFlightReader(BaseReader):
+    """Fetch a dataset from an Arrow Flight RPC service."""
+
+    implements = {datatypes.ArrowFlightService}
+    imports = {"pyarrow"}
+    func = "pyarrow.flight:connect"
+    output_instance = "pyarrow.lib:Table"
+
+    def _read(self, data, descriptor=None, **kwargs):
+        import pyarrow.flight as flight
+
+        client = flight.connect(data.url)
+        if descriptor is None:
+            # list all flights and read the first
+            flights = list(client.list_flights())
+            if not flights:
+                return None
+            descriptor = flights[0].descriptor
+        info = client.get_flight_info(descriptor)
+        reader = client.do_get(info.endpoints[0].ticket)
+        return reader.read_all()
+
+    def discover(self, **kwargs):
+        import pyarrow.flight as flight
+
+        client = flight.connect(self.kwargs.get("data").url)
+        return [f.descriptor.path for f in client.list_flights()]
+
+
+# ---------------------------------------------------------------------------
+# Database services
+# ---------------------------------------------------------------------------
+
+
+class InfluxDBReader(BaseReader):
+    """Query an InfluxDB instance using ``influxdb-client``."""
+
+    implements = {datatypes.InfluxDBService}
+    imports = {"influxdb_client"}
+    func = "influxdb_client:InfluxDBClient"
+    output_instance = "pandas:DataFrame"
+
+    def _read(self, data, query, token="", org="", **kwargs):
+        from influxdb_client import InfluxDBClient
+
+        client = InfluxDBClient(url=data.url, token=token, org=org)
+        api = client.query_api()
+        return api.query_data_frame(query)
+
+    def discover(self, **kwargs):
+        return {"url": self.kwargs.get("data").url, "type": "InfluxDB"}
+
+
+class MongoDBReader(BaseReader):
+    """Read a MongoDB collection using ``pymongo``."""
+
+    implements = {datatypes.MongoDBService}
+    imports = {"pymongo"}
+    func = "pymongo:MongoClient"
+    output_instance = "builtins:list"
+
+    def _read(self, data, database, collection, query=None, limit=0, **kwargs):
+        from pymongo import MongoClient
+
+        client = MongoClient(data.url)
+        col = client[database][collection]
+        cursor = col.find(query or {})
+        if limit:
+            cursor = cursor.limit(limit)
+        return list(cursor)
+
+    def discover(self, **kwargs):
+        kwargs.setdefault("limit", 5)
+        return self.read(**kwargs)
+
+
+class MongoDBPandasReader(MongoDBReader):
+    """Read a MongoDB collection into a pandas DataFrame."""
+
+    imports = {"pymongo", "pandas"}
+    output_instance = "pandas:DataFrame"
+
+    def _read(self, data, database, collection, query=None, limit=0, **kwargs):
+        import pandas as pd
+
+        records = super()._read(data, database, collection, query=query, limit=limit, **kwargs)
+        return pd.DataFrame(records)
+
+
+class ElasticsearchReader(BaseReader):
+    """Read documents from an Elasticsearch / OpenSearch index using ``elasticsearch-py``."""
+
+    implements = {datatypes.ElasticsearchService}
+    imports = {"elasticsearch"}
+    func = "elasticsearch:Elasticsearch"
+    output_instance = "builtins:list"
+
+    def _read(self, data, index, query=None, size=1000, **kwargs):
+        from elasticsearch import Elasticsearch
+
+        es = Elasticsearch(data.url)
+        resp = es.search(index=index, body=query or {"query": {"match_all": {}}}, size=size)
+        return [hit["_source"] for hit in resp["hits"]["hits"]]
+
+    def discover(self, **kwargs):
+        kwargs.setdefault("size", 5)
+        return self.read(**kwargs)
+
+
+class RedisReader(BaseReader):
+    """Read keys/values from a Redis store using ``redis-py``."""
+
+    implements = {datatypes.RedisService}
+    imports = {"redis"}
+    func = "redis:Redis"
+    output_instance = "builtins:dict"
+
+    def _read(self, data, keys="*", **kwargs):
+        import redis
+
+        r = redis.from_url(data.url)
+        matched = r.keys(keys)
+        return {k.decode(): r.get(k) for k in matched}
+
+    def discover(self, **kwargs):
+        import redis
+
+        r = redis.from_url(self.kwargs.get("data").url)
+        return {"dbsize": r.dbsize(), "info": r.info("server")}
+
+
+class SocrataReader(BaseReader):
+    """Read data from a Socrata Open Data portal using ``sodapy``."""
+
+    implements = {datatypes.SocrataService}
+    imports = {"sodapy"}
+    func = "sodapy:Socrata"
+    output_instance = "pandas:DataFrame"
+
+    def _read(self, data, limit=10000, **kwargs):
+        from sodapy import Socrata
+        import pandas as pd
+
+        # URL: https://data.domain.gov/resource/xxxx-xxxx.json
+        import re
+
+        m = re.search(r"https?://([^/]+)/resource/([^/?]+)", data.url)
+        if not m:
+            raise ValueError(f"Cannot parse Socrata URL: {data.url}")
+        domain, dataset_id = m.group(1), m.group(2).split(".")[0]
+        client = Socrata(domain, None)
+        return pd.DataFrame(client.get(dataset_id, limit=limit, **kwargs))
+
+    def discover(self, **kwargs):
+        kwargs.setdefault("limit", 10)
+        return self.read(**kwargs)
+
+
+class OGCAPIFeaturesReader(BaseReader):
+    """Read features from an OGC API – Features endpoint into a GeoDataFrame."""
+
+    implements = {datatypes.OGCAPIFeatures}
+    imports = {"geopandas", "requests"}
+    func = "geopandas:read_file"
+    output_instance = "geopandas:GeoDataFrame"
+
+    def _read(self, data, limit=10000, **kwargs):
+        import geopandas as gpd
+
+        url = data.url
+        if "?" not in url:
+            url = f"{url}?f=json&limit={limit}"
+        return gpd.read_file(url, **kwargs)
+
+    def discover(self, **kwargs):
+        import geopandas as gpd
+
+        url = self.kwargs.get("data").url
+        return gpd.read_file(f"{url}?f=json&limit=10")
+
+
+# ---------------------------------------------------------------------------
+# NPZ arrays (NumPy archive)
+# ---------------------------------------------------------------------------
+
+
+class NPZDaskReader(FileReader):
+    """Load a NumPy .npz archive lazily as a dict of dask arrays."""
+
+    implements = {datatypes.NPZFile}
+    imports = {"dask", "numpy"}
+    func = "dask.array:from_delayed"
+    output_instance = "builtins:dict"
+    url_arg = "file"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kwargs):
+        import dask.array as da
+        import numpy as np
+
+        npz = np.load(data.url, allow_pickle=False)
+        return {k: da.from_array(npz[k], chunks="auto") for k in npz.files}
+
+    def discover(self, **kwargs):
+        npz_dict = self.read(**kwargs)
+        return {k: {"shape": v.shape, "dtype": str(v.dtype)} for k, v in npz_dict.items()}
 
 
 def reader_from_call(func: str, *args, join_lines=False, **kwargs) -> BaseReader:
