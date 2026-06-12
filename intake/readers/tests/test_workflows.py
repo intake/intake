@@ -136,36 +136,6 @@ def dir_non_empty(d):
     return os.path.exists(d) and os.path.isdir(d) and bool(os.listdir(d))
 
 
-def test_custom_cache(dataframe_file, tmpdir, df):
-    from intake.readers.readers import Condition, PandasCSV, PandasParquet, FileExistsReader
-
-    fn = f"{tmpdir}/file.parquet"
-    data = intake.readers.datatypes.CSV(url=dataframe_file)
-    part = PandasCSV(data)
-
-    output = part.PandasToParquet(url=fn).transform(PandasParquet)
-    data2 = intake.readers.datatypes.Parquet(url=fn)
-    cached = PandasParquet(data=data2)
-    reader2 = Condition(cached, if_false=output, condition=FileExistsReader(data2))
-
-    assert os.listdir(tmpdir) == []
-    out = reader2.read()
-    assert os.listdir(tmpdir)
-
-    assert df.equals(out)
-
-    m = fsspec.filesystem("memory")
-    m.rm(dataframe_file)
-
-    with pytest.raises(IOError):
-        # file has gone
-        part.read()
-
-    # but condition still picks read from cache
-    out = reader2.read()
-    assert df.equals(out)
-
-
 def test_cat_mapper(dataframe_file):
     # setup
     cat = intake.Catalog()

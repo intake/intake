@@ -610,12 +610,24 @@ class Pipeline(readers.BaseReader):
         # TODO: these conditions can probably be combined
         if isinstance(func, type) and issubclass(func, BaseReader):
             if discover:
-                return func(metadata=self.metadata).discover(*arg, **kw2)
+                from intake.readers.convert import BaseConverter
+
+                if issubclass(func, BaseConverter):
+                    # Converter steps transform data — run them normally even
+                    # during discover (they operate on the already-sampled data).
+                    return func(metadata=self.metadata).read(*arg, **kw2)
+                else:
+                    return func(metadata=self.metadata).discover(**kw2)
             else:
                 return func(metadata=self.metadata).read(*arg, **kw2)
         elif isinstance(func, BaseReader):
             if discover:
-                return func.discover(*arg, **kw2)
+                from intake.readers.convert import BaseConverter
+
+                if isinstance(func, BaseConverter):
+                    return func.read(*arg, **kw2)
+                else:
+                    return func.discover(**kw2)
             else:
                 return func.read(*arg, **kw2)
         else:

@@ -157,25 +157,20 @@ class Functioner(Completable):
         super().tab_completion_fixer(item)
         return self.get_by_attr(item)
 
-    def get_by_attr(self, item, strict=False):
+    def get_by_attr(self, item, strict=True):
         from intake.readers.convert import Pipeline
         from intake.readers.transform import Method
 
         out = [(outtype, func) for outtype, func in self.funcdict if func.__name__ == item]
         if not len(out):
-            if strict:
-                raise AttributeError(item)
-
-            # TODO: import class being acted on, to see if attribute requested
-            #  really is available. Perhaps tie to config option.
-            # TODO: exclude certain attributes that might be called during
-            #  a stack trace or other non-normal code, causing accidental
-            #  massive pipelines. E.g., dunders. For those, require `apply()`.
-
-            outtype = self.reader.output_instance
+            cls = import_name(self.reader.output_instance)
             if item.startswith("_"):
                 raise AttributeError(item)
 
+            if strict and item not in dir(cls):
+                raise AttributeError(item)
+
+            outtype = self.reader.output_instance
             func = Method
             kw = {"method_name": item}
         else:

@@ -172,7 +172,7 @@ class Repr(BaseConverter):
 class IPythonDisplay(BaseConverter):
     instances = all_to_one(
         (
-            "pandas.DataFrame",
+            "pandas:DataFrame",
             "pyspark.sql:DataFrame",
             "xarray:Dataset",
             "xarray:DataArray",
