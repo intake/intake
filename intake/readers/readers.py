@@ -161,6 +161,31 @@ class BaseReader(Tokenizable, PipelineMixin):
 
         return auto_pipeline(self, outtype=outtype, avoid=avoid)
 
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """Determine whether this reader is suitable for the given data instance.
+
+        This is called after the type-based ``implements`` check and allows a
+        reader to inspect the *properties* of a concrete data instance (e.g.
+        the shape of its URL, whether it is a remote resource, etc.) to decide
+        whether it should be recommended.
+
+        Override this in subclasses to add instance-level constraints on top of
+        the class-level ``implements`` declaration.
+
+        Parameters
+        ----------
+        data:
+            The ``BaseData`` instance being evaluated.
+
+        Returns
+        -------
+        bool
+            ``True`` if this reader can handle the data instance, ``False`` to
+            exclude it from the ``recommend()`` results.
+        """
+        return True
+
 
 class FileReader(BaseReader):
     """Convenience superclass for readers of files"""
@@ -175,12 +200,33 @@ class FileReader(BaseReader):
             kw["storage_options"] = data.storage_options
         return self._func(**kw)
 
+    @classmethod
+    def _url_is_single(cls, data) -> bool:
+        """Return True when the data URL is a single plain string path/URL.
 
-class OpenFilesReader(FileReader):
-    url_arg = "urlpath"
-    implements = {datatypes.FileData}
-    func = "fsspec:open_files"
-    output_instance = "fsspec.core:OpenFiles"
+        Readers whose underlying function only accepts one file at a time
+        should use this as their ``is_ok`` body.  A URL is considered
+        *multi-file* when it is a list/tuple/set, or a string containing a
+        glob wildcard (``*``, ``?``, ``[…]``) or a named placeholder
+        (``{name}``).
+        """
+        url = getattr(data, "url", None)
+        if isinstance(url, (list, tuple, set)):
+            return False
+        if isinstance(url, str):
+            return not any(c in url for c in ("*", "?", "{"))
+        return False
+
+    @classmethod
+    def _url_is_multi(cls, data) -> bool:
+        """Return True when the data URL represents more than one file.
+
+        Readers whose underlying function natively handles globs/lists
+        (e.g. Dask, Polars scan_*, Ray) but should *not* be recommended for
+        a bare single path can use this as their ``is_ok`` body.  It is the
+        logical complement of ``_url_is_single``.
+        """
+        return not cls._url_is_single(data)
 
 
 class PanelImageViewer(FileReader):
@@ -189,63 +235,21 @@ class PanelImageViewer(FileReader):
     func = "panel.pane:Image"
     url_arg = "object"
 
-
-class FileByteReader(FileReader):
-    """The contents of file(s) as bytes"""
-
-    output_instance = "builtin:bytes"
-    implements = {datatypes.FileData}
-
-    def discover(self, data=None, **kwargs):
-        data = data or self.kwargs["data"]
-        with fsspec.open(data.url, mode="rb", **(data.storage_options or {})) as f:
-            return f.read()
-
-    def _read(self, data, **kwargs):
-        out = []
-        for of in fsspec.open_files(data.url, mode="rb", **(data.storage_options or {})):
-            with of as f:
-                out.append(f.read())
-        return b"".join(out)
-
-
-class FileTextReader(FileReader):
-    """The contents of file(s) as str"""
-
-    output_instance = "builtins:str"
-    implements = {datatypes.FileData}
-
-    def discover(self, data=None, encoding=None, **kwargs):
-        data = data or self.kwargs["data"]
-        if encoding:
-            data.storage_options["encoding"] = encoding
-        with fsspec.open(data.url, mode="rt", **(data.storage_options or {})) as f:
-            return f.read()
-
-    def _read(self, data, encoding=None, **kwargs):
-        out = []
-        if encoding:
-            data.storage_options["encoding"] = encoding
-        for of in fsspec.open_files(data.url, mode="rt", **(data.storage_options or {})):
-            with of as f:
-                out.append(f.read())
-        return "".join(out)
-
-
-class FileSizeReader(FileReader):
-    output_instance = "builtins:int"
-    implements = {datatypes.FileData}
-
-    def _read(self, data, **kw):
-        fs, path = fsspec.core.url_to_fs(data.url, **(data.storage_options or {}))
-        path = fs.expand_path(path)  # or use fs.du with deep
-        return sum(fs.info(p)["size"] for p in path)
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """panel.pane.Image accepts a single file path or URL only."""
+        return cls._url_is_single(data)
 
 
 class Pandas(FileReader):
     imports = {"pandas"}
     output_instance = "pandas:DataFrame"
     storage_options = True
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """pandas I/O functions accept a single file path or URL only."""
+        return cls._url_is_single(data)
 
 
 class PandasParquet(Pandas):
@@ -357,6 +361,11 @@ class DaskNPYStack(FileReader):
     output_instance = "dask.array:Array"
     url_arg = "dirname"
 
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """dask.array.from_npy_stack requires a single directory path, not a glob or list."""
+        return cls._url_is_single(data)
+
 
 class DaskZarr(FileReader):
     implements = {datatypes.Zarr}
@@ -391,6 +400,15 @@ class DuckDB(BaseReader):
     func_doc = "duckdb:query"
     implements = {datatypes.SQLQuery}
     _dd = {}  # hold the engines, so results are still valid
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """DuckDB readers embed the URL directly in a SQL string literal.
+
+        Only a single plain string path or URL is supported — lists and glob
+        patterns would break the SQL interpolation.
+        """
+        return FileReader._url_is_single(data) if hasattr(data, "url") else True
 
     def discover(self, **kwargs):
         return self.read().limit(10)
@@ -480,7 +498,7 @@ class SparkParquet(SparkDataFrame):
 
 
 class SparkText(SparkDataFrame):
-    implements = {datatypes.Text}
+    implements = {datatypes.FileData}
 
     def _read(self, data, **kwargs):
         return self._func().read.text(data.url, **kwargs)
@@ -791,14 +809,6 @@ class TFPublicDataset(BaseReader):
         return self._func(name, download=True, with_info=True, **kwargs)
 
 
-class TFTextreader(FileReader):
-    imports = {"tensorflow"}
-    implements = {datatypes.Text}
-    func = "tensorflow.data:TextLineDataset"
-    output_instance = "tensorflow.data:Dataset"
-    url_arg = "filenames"
-
-
 class TFORC(FileReader):
     imports = {"tensorflow_io"}
     implements = {datatypes.ORC}
@@ -824,13 +834,10 @@ class KerasImageReader(FileReader):
     output_instance = "tensorflow.data:Dataset"
     url_arg = "directory"
 
-
-class KerasText(FileReader):
-    imports = {"keras"}
-    implements = {datatypes.Text}
-    func = "keras.utils:text_dataset_from_directory"
-    output_instance = "tensorflow.data:Dataset"
-    url_arg = "directory"
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """keras.utils.image_dataset_from_directory requires a single directory path."""
+        return cls._url_is_single(data)
 
 
 class KerasAudio(FileReader):
@@ -907,6 +914,11 @@ class AwkwardAVRO(Awkward):
     func = "awkward:from_avro_file"
     url_arg = "file"
 
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """awkward.from_avro_file accepts a single file path or file-like object only."""
+        return cls._url_is_single(data)
+
 
 class DaskAwkwardJSON(Awkward):
     imports = {"dask_awkward", "dask"}
@@ -972,6 +984,14 @@ class PandasHDF5(Pandas):
     func = "pandas:read_hdf"
     imports = {"pandas", "pytables"}
 
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """pandas.read_hdf only supports local file paths — no remote URLs or globs."""
+        url = getattr(data, "url", None)
+        if not isinstance(url, str):
+            return False
+        return "://" not in url and "::" not in url and not any(c in url for c in ("*", "?", "{"))
+
     def _read(self, data, **kw):
         if data.storage_options:  # or fsspec-like
             with fsspec.open(data.url, "rb", **data.storage_options) as f:
@@ -987,7 +1007,7 @@ class DaskCSV(DaskDF):
 
 class DaskText(FileReader):
     imports = {"dask"}
-    implements = {datatypes.Text}
+    implements = {datatypes.FileData}
     func = "dask.bag:read_text"
     output_instance = "dask.bag.core:Bag"
     storage_options = True
@@ -1048,6 +1068,11 @@ class PolarsAvro(Polars):
     func = "polars:read_avro"
     output_instance = "polars:DataFrame"  # i.e., not lazy
 
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """polars.read_avro accepts a single file path or file-like object only."""
+        return cls._url_is_single(data)
+
 
 class PolarsFeather(Polars):
     implements = {datatypes.Feather2}
@@ -1079,6 +1104,11 @@ class PolarsExcel(Polars):
     implements = {datatypes.Excel}
     func = "polars:read_excel"
     output_instance = "polars:DataFrame"  # i.e., not lazy
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """polars.read_excel accepts a single file path or file-like object only."""
+        return cls._url_is_single(data)
 
 
 class Ray(FileReader):
@@ -1117,11 +1147,6 @@ class RayJSON(Ray):
     func = "ray.data:read_json"
 
 
-class RayText(Ray):
-    implements = {datatypes.Text}
-    func = "ray.data:read_text"
-
-
 class RayBinary(Ray):
     implements = {datatypes.FileData}
     func = "ray.data:read_binary_files"
@@ -1141,6 +1166,11 @@ class DeltaReader(FileReader):
     url_arg = "table_uri"
     storage_options = True
     output_instance = "deltalake:DeltaTable"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """deltalake.DeltaTable accepts a single table URI (a directory path) only."""
+        return cls._url_is_single(data)
 
 
 class TiledNode(BaseReader):
@@ -1216,12 +1246,22 @@ class SKImageReader(FileReader):
     func = "skimage.io:imread"
     url_arg = "fname"
 
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """skimage.io.imread reads a single image file at a time."""
+        return cls._url_is_single(data)
+
 
 class NumpyText(FileReader):
     output_instance = "numpy:ndarray"
-    implements = {datatypes.Text}
+    implements = {datatypes.FileData}
     imports = {"numpy"}
     func = "numpy:loadtxt"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """numpy.loadtxt / numpy.load accept a single file path or file-like object only."""
+        return cls._url_is_single(data)
 
     def _read(self, data, **kw):
         if data.storage_options or "://" in data.url or "::" in data.url:
@@ -1243,7 +1283,7 @@ class CupyNumpyReader(NumpyText):
 
 
 class CupyTextReader(CupyNumpyReader):
-    implements = {datatypes.Text}
+    implements = {datatypes.FileData}
     func = "numpy:loadtxt"
 
 
@@ -1326,9 +1366,9 @@ class XArrayDatasetReader(FileReader):
             elif (isinstance(data.url, str) and is_fsspec_url(data.url)) or is_fsspec_url(
                 data.url[0]
             ):
-                ofs = [
-                    _.open() for _ in fsspec.open_files(data.url, **(data.storage_options or {}))
-                ]
+                ofs0 = fsspec.open_files(data.url, **(data.storage_options or {}))
+                ofs = [_.open() for _ in ofs0]
+                self.stash = ofs, ofs0
             else:
                 ofs = data.url
             return open_mfdataset(ofs, **kw)
@@ -1364,6 +1404,21 @@ class XArrayPatternReader(XArrayDatasetReader):
     """
 
     # should we have an explicit pattern type data input?
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """Only recommend this reader when the URL is a list/tuple of paths or a glob string.
+
+        A single plain filename without wildcards cannot be a multi-file pattern,
+        so ``XArrayPatternReader`` would have nothing useful to do with it.
+        ``XArrayDatasetReader`` (the parent) handles those cases instead.
+        """
+        url = getattr(data, "url", None)
+        if isinstance(url, (list, tuple, set)):
+            return len(url) > 0
+        if isinstance(url, str):
+            return "*" in url or "{" in url
+        return False
 
     def _read(self, data, open_local=False, pattern=None, **kw):
         import pandas as pd
@@ -1406,12 +1461,21 @@ class RasterIOXarrayReader(FileReader):
         }
 
         ofs = fsspec.open_files(data.url, **(data.storage_options or {}))
-        bits = [open_rasterio(of.open(), **kwargs) for of in ofs]
-        if len(bits) == 1:
-            return bits
+        opened = [open_rasterio(of.open(), **kwargs) for of in ofs]
+        self.stash = opened
+        if len(ofs) == 1:
+            return open_rasterio(opened[0], **kwargs)
         else:
-            # requires dim= in kwargs
-            return xr.concat(bits, **concat_kwargs)
+            if "dim" in concat_kwargs:
+                return xr.concat(opened, **concat_kwargs)
+            elif "concat_dim" in concat_kwargs:
+                return xr.combine_nested(opened, **concat_kwargs)
+            else:
+                try:
+                    return xr.combine_by_coords(opened, **concat_kwargs)
+                except ValueError:
+                    concat_dim = [[_.path.rsplit("/", 1)[-1].rsplit(".", 1)[0] for _ in ofs]]
+                    return xr.combine_nested(opened, concat_dim=concat_dim, **concat_kwargs)
 
 
 class GeoPandasReader(FileReader):
@@ -1429,6 +1493,11 @@ class GeoPandasReader(FileReader):
     }
     func = "geopandas:read_file"
     url_arg = "filename"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """geopandas.read_file reads a single vector file or URL at a time."""
+        return cls._url_is_single(data)
 
     def _read(self, data, with_fsspec=None, **kwargs):
         import geopandas
@@ -1452,6 +1521,11 @@ class GeoPandasTabular(FileReader):
     func = "geopandas:read_parquet"
     other_funcs = {"geopandas:read_feather"}
     url_arg = "path"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """geopandas.read_parquet / read_feather each accept a single file path."""
+        return cls._url_is_single(data)
 
     def _read(self, data, **kwargs):
         import geopandas
@@ -1579,19 +1653,6 @@ class PMTileReader(BaseReader):
         return self._func(get_bytes)
 
 
-class FileExistsReader(BaseReader):
-    implements = {datatypes.FileData}
-    func = "fsspec.core:url_to_fs"
-    output_instance = "builtins:bool"
-
-    def _read(self, data, *args, **kwargs):
-        try:
-            fs, path = fsspec.core.url_to_fs(data.url, **(data.storage_options or {}))
-        except FileNotFoundError:
-            return False
-        return fs.exists(path)
-
-
 class YAMLCatalogReader(FileReader):
     implements = {datatypes.YAMLFile, datatypes.YAMLFile}
     func = "intake.readers.entry:Catalog.from_yaml_file"
@@ -1686,16 +1747,20 @@ def recommend(data):
     """
     seen = set()
     out = {"importable": [], "not_importable": []}
-    data = type(data) if not isinstance(data, type) else data
-    for datacls in data.mro():
-        for cls in subclasses(BaseReader):
-            if any(datacls == imp for imp in cls.implements):
-                if cls not in seen:
-                    seen.add(cls)
-                    if cls.check_imports():
-                        out["importable"].append(cls)
-                    else:
-                        out["not_importable"].append(cls)
+    data_instance = data if not isinstance(data, type) else None
+    data_cls = type(data) if not isinstance(data, type) else data
+    for cls in subclasses(BaseReader):
+        if any(data_cls == imp for imp in cls.implements):
+            if cls not in seen:
+                seen.add(cls)
+                # If we have a concrete instance (not just the type), let the
+                # reader inspect its properties before recommending it.
+                if data_instance is not None and not cls.is_ok(data_instance):
+                    continue
+                if cls.check_imports():
+                    out["importable"].append(cls)
+                else:
+                    out["not_importable"].append(cls)
     return out
 
 

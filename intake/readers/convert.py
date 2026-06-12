@@ -610,12 +610,24 @@ class Pipeline(readers.BaseReader):
         # TODO: these conditions can probably be combined
         if isinstance(func, type) and issubclass(func, BaseReader):
             if discover:
-                return func(metadata=self.metadata).discover(*arg, **kw2)
+                from intake.readers.convert import BaseConverter
+
+                if issubclass(func, BaseConverter):
+                    # Converter steps transform data — run them normally even
+                    # during discover (they operate on the already-sampled data).
+                    return func(metadata=self.metadata).read(*arg, **kw2)
+                else:
+                    return func(metadata=self.metadata).discover(**kw2)
             else:
                 return func(metadata=self.metadata).read(*arg, **kw2)
         elif isinstance(func, BaseReader):
             if discover:
-                return func.discover(*arg, **kw2)
+                from intake.readers.convert import BaseConverter
+
+                if isinstance(func, BaseConverter):
+                    return func.read(*arg, **kw2)
+                else:
+                    return func.discover(**kw2)
             else:
                 return func.read(*arg, **kw2)
         else:
@@ -626,7 +638,7 @@ class Pipeline(readers.BaseReader):
         for i, step in enumerate(self.steps):
             kw = kwargs if i == len(self.steps) else {}
             if i:
-                data = self._read_stage_n(i, data=data, **kw)
+                data = self._read_stage_n(i, data=data, discover=discover, **kw)
             else:
                 data = self._read_stage_n(i, discover=discover, **kw)
         return data
@@ -802,6 +814,7 @@ def path(
     import networkx as nx
 
     g = conversions_graph(avoid=avoid)
+    cls_names = [(_, _.qname()) for _ in subclasses(BaseConverter)]
     alltypes = list(g)
     matchtypes = [_ for _ in alltypes if re.findall(start, _)]
     if not matchtypes:
@@ -810,9 +823,13 @@ def path(
     if isinstance(end, str):
         end = (end,)
     matchtypes = [_ for _ in alltypes if any(re.findall(e, _) for e in end)]
-    if not matchtypes:
+    clss = [cls for cls, name in cls_names if any(re.findall(e, name) for e in end)]
+    if len(matchtypes) + len(clss) == 0:
         raise ValueError("outtype found no match: %s", end)
-    end = matchtypes[0]
+    if clss:
+        end = list(clss[0].instances.values())[0]
+    else:
+        end = matchtypes[0]
     return sorted(nx.all_simple_edge_paths(g, start, end, cutoff=cutoff), key=len)
 
 
@@ -830,7 +847,7 @@ def auto_pipeline(
     Parameters
     ----------
     url: input data, usually a location/URL, but maybe a data instance
-    outtype: pattern to match to possible output types
+    outtype: pattern to match to possible output types (instance or last converter)
     storage_options: if url is a remote str, these are kwargs that fsspec may need to
         access it
     avoid: don't consider readers whose names match any of these strings
@@ -849,14 +866,26 @@ def auto_pipeline(
     if isinstance(data, BaseData):
         start = data.qname()
         steps = path(start, outtype, avoid=avoid)
-        reader = data.to_reader(outtype=steps[0][0][1] if steps else outtype)
         if steps:
-            for s in steps[0][1:]:
-                reader = reader.transform[s[1]]
+            for steps in steps:
+                reader = data.to_reader(outtype=steps[0][1] if steps else outtype)
+                try:
+                    for n, s in enumerate(steps[1:]):
+                        if n == len(steps) - 2:
+                            if outtype == s[1]:
+                                reader = reader.transform[s[1]]
+                            else:
+                                reader = reader.transform.get_by_attr(outtype, True)
+                        else:
+                            reader = reader.transform[s[1]]
+                except ValueError:
+                    # no reader - not importable
+                    continue
+                break
     elif isinstance(data, BaseReader):
         reader = data
         steps = path(data.output_instance, outtype, avoid=avoid)
         for s in steps[0]:
-            reader = reader.transform[s[1]]
+            reader = reader.transform.get_by_attr([s[1]], True)
 
     return reader

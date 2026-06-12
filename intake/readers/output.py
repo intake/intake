@@ -170,19 +170,30 @@ class Repr(BaseConverter):
 
 
 class IPythonDisplay(BaseConverter):
-    # maybe restrict to types known to render well?
-    instances = {".*": "builtins:dict"}
+    instances = all_to_one(
+        (
+            "pandas:DataFrame",
+            "pyspark.sql:DataFrame",
+            "xarray:Dataset",
+            "xarray:DataArray",
+            "xarray:DataTree",
+            "polars:LazyFrame",
+            "dask.array:Array",
+            "dask.dataframe:DataFrame",
+            "duckdb:DuckDBPyRelation",
+            "panel.pane:Image",
+            "awkward:Array",
+        ),
+        "builtins:dict",
+    )
 
     def run(self, x, **kwargs):
         """Produce ipython/jupyter compatible output without imports"""
-        # does not consider _ipython_display_
         types = {
             "html": "text/html",
             "svg": "image/svg+xml",
             "png": "image/png",
             "jpeg": "image/jpeg",
-            "latex": "text/latex",
-            "json": "application/json",
             "pretty": "text/plain",
         }
         for name, mime in types.items():
