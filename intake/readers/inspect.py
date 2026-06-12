@@ -218,7 +218,14 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
             pass
 
     # ---- dask DataFrame / Series -------------------------------------------
-    elif "dask" in mod and "dataframe" in mod:
+    # Match both classic dask (dask.dataframe) and dask-expr (_collection),
+    # identified by having .npartitions and .columns/.dtype but not .chunks.
+    elif (
+        "dask" in mod
+        and not ("array" in mod or "array" in cls.lower())
+        and hasattr(obj, "npartitions")
+        and not hasattr(obj, "chunks")
+    ):
         try:
             info["columns"] = list(obj.columns) if hasattr(obj, "columns") else None
             info["dtypes"] = (
@@ -227,14 +234,8 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
                 else str(getattr(obj, "dtype", ""))
             )
             info["npartitions"] = getattr(obj, "npartitions", None)
-            # Dask's shape[0] is nan (unknown row count) — preserve that
-            # faithfully rather than misreporting it.
-            shape = getattr(obj, "shape", None)
-            if shape is not None:
-                parts = tuple(str(s) for s in shape)
-                # Only include if at least one dimension is actually known
-                if any(s not in ("nan", "None", "unknown") for s in parts):
-                    info["shape"] = parts
+            # Row count is unknown (nan in classic dask, a lazy Scalar in
+            # dask-expr) — omit shape entirely rather than misreporting it.
         except Exception:
             pass
 
@@ -407,16 +408,22 @@ def _extract_shape(obj, is_sample: bool = False) -> tuple | list | None:
     entire dataset:
 
     * *is_sample* is ``True`` (object is a partial read).
-    * The object is a Dask DataFrame (row count is ``nan``).
     * The object is a Polars LazyFrame, DuckDB relation, Spark DataFrame, or
       Ray Dataset (row count requires a full scan).
+    * The object has a ``.shape`` where any dimension is not a plain ``int``
+      (covers both old-style dask ``nan`` and new dask-expr ``Scalar`` objects).
     """
+    if is_sample:
+        return None
+
     mod = _module_name(obj)
     cls_name = _class_name(obj)
 
-    # Types whose row count is intrinsically unknown without a full scan
+    # Types whose row count is intrinsically unknown without a full scan,
+    # identified by module/class-name fragments.  Dask DataFrames are handled
+    # below via the shape-element check rather than here, because the module
+    # name varies across dask versions (dask.dataframe vs dask_expr._collection).
     _unknown_shape_types = (
-        ("dask", "dataframe"),  # dask DataFrame/Series
         ("polars", "LazyFrame"),
         ("duckdb", ""),
         ("pyspark", ""),
@@ -427,16 +434,19 @@ def _extract_shape(obj, is_sample: bool = False) -> tuple | list | None:
         if mod_frag in mod and (not cls_frag or cls_frag in cls_name):
             return None
 
-    if is_sample:
-        return None
-
     try:
         s = getattr(obj, "shape", None)
-        if s is not None:
-            return tuple(s)
+        if s is None:
+            return None
+        # Only return a shape when every dimension is a plain integer.
+        # Dask DataFrames (all versions) expose at least one non-int dimension:
+        # either float nan (old) or a lazy Scalar object (dask-expr).
+        dims = tuple(s)
+        if not all(isinstance(d, int) for d in dims):
+            return None
+        return dims
     except Exception:
-        pass
-    return None
+        return None
 
 
 def _html_repr(obj) -> str | None:
