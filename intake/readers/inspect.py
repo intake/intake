@@ -81,6 +81,7 @@ _TIER2_CLASS_FRAGMENTS = (
     "DaskAwkwardParquet",
     "DaskAwkwardJSON",
     "DaskText",
+    "MarkdownReader",  # reads only first 8 KB on discover()
     "Polars",  # covers PolarsCSV, PolarsParquet, etc. – all return LazyFrame
     "DuckDB",  # covers DuckParquet, DuckCSV, DuckJSON, DuckSQL
     "SparkDataFrame",  # covers SparkCSV, SparkParquet, etc.
@@ -397,6 +398,58 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
             entries = getattr(obj, "entries", {})
             info["entry_count"] = len(entries)
             info["entry_names"] = list(entries.keys())[:50]
+        except Exception:
+            pass
+
+    # ---- configparser.ConfigParser ------------------------------------------
+    # Must appear before the generic dict/mapping branch because ConfigParser
+    # also has .keys() / .values().
+    elif "configparser" in mod and "ConfigParser" in cls:
+        try:
+            sections = obj.sections()
+            info["sections"] = sections
+            info["n_sections"] = len(sections)
+            info["keys_per_section"] = {s: list(obj.options(s)) for s in sections}
+        except Exception:
+            pass
+
+    # ---- plain dict / mapping -----------------------------------------------
+    elif cls in ("dict", "OrderedDict") or (
+        hasattr(obj, "keys") and hasattr(obj, "values") and not hasattr(obj, "dtypes")
+    ):
+        try:
+            keys = list(obj.keys())
+            info["keys"] = [str(k) for k in keys[:100]]
+            info["n_keys"] = len(obj)
+            info["value_types"] = {str(k): type(v).__name__ for k, v in list(obj.items())[:50]}
+            nested = {
+                str(k): list(v.keys())[:20]
+                for k, v in list(obj.items())[:20]
+                if isinstance(v, dict)
+            }
+            if nested:
+                info["nested_keys"] = nested
+        except Exception:
+            pass
+
+    # ---- plain str (Markdown, RST, plain text, etc.) -----------------------
+    elif cls == "str" and mod == "builtins":
+        try:
+            lines = obj.splitlines()
+            info["n_chars"] = len(obj)
+            info["n_lines"] = len(lines)
+            info["n_words"] = sum(len(line.split()) for line in lines)
+            if is_sample:
+                # Counts reflect only the head — mark them clearly
+                info["n_chars_note"] = "partial head only"
+                info["n_lines_note"] = "partial head only"
+                info["n_words_note"] = "partial head only"
+            headings = [ln for ln in lines if ln.startswith("#")]
+            if headings:
+                info["n_headings"] = len(headings)
+                info["headings"] = [h.lstrip("#").strip() for h in headings[:10]]
+                if is_sample:
+                    info["headings_note"] = "from partial head only"
         except Exception:
             pass
 
@@ -819,60 +872,88 @@ def inspect_dataset(
         errors.append("No matching intake data type found for this URL.")
         return result
 
-    # Use the best (most specific) candidate as the primary data type
+    # Use the best (most specific) candidate as the primary data type.
+    # If no importable reader is found for it, fall through to subsequent
+    # candidates in order (e.g. NPZFile detected second after Excel).
     data_cls = data_candidates[0]
     result["detected_type"] = data_cls.__name__
     result["detected_type_qname"] = data_cls.qname()
     result["structure"] = set(data_cls.structure)
 
     # ------------------------------------------------------------------
-    # Step 2: instantiate BaseData
+    # Steps 2–3: instantiate each candidate in turn until we find one with
+    # at least one importable reader.
     # ------------------------------------------------------------------
-    try:
-        from intake.readers.datatypes import FileData, Service
+    data_instance = None
+    importable: list = []
+    not_importable: list = []
 
-        if issubclass(data_cls, FileData):
-            data_instance = data_cls(
-                url=url,
-                storage_options=storage_options,
-                metadata=metadata or {},
-            )
-        elif issubclass(data_cls, Service):
-            data_instance = data_cls(url=url, metadata=metadata or {})
-        else:
-            data_instance = data_cls(metadata=metadata or {})
-    except Exception as exc:
-        errors.append(f"Could not instantiate data type {data_cls.__name__}: {exc}")
+    for data_cls in data_candidates:
+        # Instantiate
+        try:
+            from intake.readers.datatypes import FileData, Service
+
+            if issubclass(data_cls, FileData):
+                _instance = data_cls(
+                    url=url,
+                    storage_options=storage_options,
+                    metadata=metadata or {},
+                )
+            elif issubclass(data_cls, Service):
+                _instance = data_cls(url=url, metadata=metadata or {})
+            else:
+                _instance = data_cls(metadata=metadata or {})
+        except Exception as exc:
+            errors.append(f"Could not instantiate data type {data_cls.__name__}: {exc}")
+            continue
+
+        # Reader recommendations
+        try:
+            rec = readers_recommend(_instance)
+            _importable = rec.get("importable", [])
+            _not_importable = rec.get("not_importable", [])
+        except Exception as exc:
+            errors.append(f"Reader recommendation failed for {data_cls.__name__}: {exc}")
+            _importable = []
+            _not_importable = []
+
+        # Accumulate the full reader dict across all candidates
+        result["readers"].update(
+            {cls.__name__: {"importable": True, "tier": _reader_tier(cls)} for cls in _importable}
+        )
+        result["readers"].update(
+            {
+                cls.__name__: {"importable": False, "tier": _reader_tier(cls)}
+                for cls in _not_importable
+            }
+        )
+
+        if _importable:
+            # Found a usable candidate — use it
+            data_instance = _instance
+            importable = _importable
+            not_importable = _not_importable
+            result["detected_type"] = data_cls.__name__
+            result["detected_type_qname"] = data_cls.qname()
+            result["structure"] = set(data_cls.structure)
+            break
+
+        # No importable reader for this candidate — note it and try next
+        # (not an error — normal fallthrough when multiple types match)
+        result.setdefault("_fallthrough", []).append(
+            f"Skipped {data_cls.__name__}: no importable reader."
+        )
+        not_importable = _not_importable  # keep last set for error message
+
+    if data_instance is None or not importable:
+        errors.append(
+            "No importable reader found for any detected type. Install one of: "
+            + ", ".join(cls.__name__ for cls in not_importable[:5])
+        )
         return result
 
     result["metadata"] = dict(data_instance.metadata)
     result["description"] = data_instance.metadata.get("description")
-
-    # ------------------------------------------------------------------
-    # Step 3: reader recommendations (no I/O)
-    # ------------------------------------------------------------------
-    try:
-        rec = readers_recommend(data_instance)
-        importable = rec.get("importable", [])
-        not_importable = rec.get("not_importable", [])
-    except Exception as exc:
-        errors.append(f"Reader recommendation failed: {exc}")
-        importable = []
-        not_importable = []
-
-    result["readers"] = {
-        cls.__name__: {"importable": True, "tier": _reader_tier(cls)} for cls in importable
-    }
-    result["readers"].update(
-        {cls.__name__: {"importable": False, "tier": _reader_tier(cls)} for cls in not_importable}
-    )
-
-    if not importable:
-        errors.append(
-            "No importable reader found. Install one of: "
-            + ", ".join(cls.__name__ for cls in not_importable[:5])
-        )
-        return result
 
     # ------------------------------------------------------------------
     # Step 4: file-storage info (total size + file count, used by Tier-3 guard)

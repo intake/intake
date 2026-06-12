@@ -1889,7 +1889,13 @@ class MessagePackReader(FileReader):
 
 
 class MarkdownReader(FileReader):
-    """Read a Markdown file as a plain string."""
+    """Read a Markdown / RST file, with a partial head for discovery.
+
+    ``read()`` returns the full file content as a string.
+    ``discover()`` reads only the first ``head_bytes`` (default 8 KB), which
+    is enough to extract headings and document structure without loading
+    arbitrarily large files into memory.
+    """
 
     implements = {datatypes.Markdown, datatypes.ReStructuredText}
     imports = set()
@@ -1902,6 +1908,15 @@ class MarkdownReader(FileReader):
 
         with fsspec.open(data.url, "r", **(data.storage_options or {})) as f:
             return f.read()
+
+    def discover(self, head_bytes: int = 8192, **kwargs):
+        import fsspec
+
+        data = self.kwargs.get("data") or (self.kwargs.get("args") or [None])[0]
+        with fsspec.open(data.url, "rb", **(data.storage_options or {})) as f:
+            raw = f.read(head_bytes)
+        # Decode leniently; replace undecodable bytes at a potential mid-char cut
+        return raw.decode("utf-8", errors="replace")
 
 
 class TOMLReader(FileReader):
