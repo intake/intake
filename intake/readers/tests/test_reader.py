@@ -10,7 +10,6 @@ from intake.readers.readers import (
     DaskNPYStack,
     DeltaReader,
     DuckCSV,
-    DuckDB,
     DuckJSON,
     DuckParquet,
     GeoPandasReader,
@@ -27,7 +26,6 @@ from intake.readers.readers import (
     PolarsAvro,
     PolarsExcel,
     SKImageReader,
-    XArrayDatasetReader,
     XArrayPatternReader,
     recommend,
 )

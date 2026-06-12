@@ -131,8 +131,6 @@ def test_retry(dataframe_file):
 
 
 def dir_non_empty(d):
-    import os
-
     return os.path.exists(d) and os.path.isdir(d) and bool(os.listdir(d))
 
 

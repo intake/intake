@@ -49,7 +49,6 @@ Usage
 
 from __future__ import annotations
 
-import signal
 import threading
 import traceback
 from typing import Any

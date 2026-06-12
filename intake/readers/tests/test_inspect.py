@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import os
 import tempfile
-import pathlib
 
 import pytest
 
@@ -823,8 +822,6 @@ class TestRetry:
         to the next Pandas reader and ultimately succeed."""
         from intake.readers.inspect import inspect_dataset
         from intake.readers import readers as rmod
-
-        original_discover = rmod.PandasCSV.discover
 
         def _failing_discover(self, **kw):
             raise RuntimeError("synthetic first-reader failure")
