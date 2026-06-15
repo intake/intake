@@ -1435,6 +1435,82 @@ class NPZFile(FileData):
     filepattern = r"\.npz$"
 
 
+# ---------------------------------------------------------------------------
+# Scientific / medical imaging formats not yet covered
+# ---------------------------------------------------------------------------
+
+
+class NRRD(FileData):
+    """NRRD (Nearly Raw Raster Data) N-dimensional array
+
+    Both the detached header (``.nhdr``) and the combined header+data
+    (``.nrrd``) variants start with the ASCII magic ``NRRD`` followed by a
+    version number, e.g. ``NRRD0004``.
+    """
+
+    structure = {"array", "image"}
+    filepattern = r"\.(nrrd|nhdr)$"
+    mimetypes = "application/x-nrrd"
+    magic = {b"NRRD"}
+
+
+class MetaImage(FileData):
+    """ITK MetaImage N-dimensional array
+
+    MetaImage comes as a single ``.mha`` file or a detached ``.mhd`` header
+    (with the raw data in a sibling file).  The header is plain ASCII and
+    begins with one of the ``ObjectType``/``NDims``/``ObjectSubType`` tags.
+    """
+
+    structure = {"array", "image"}
+    filepattern = r"\.(mha|mhd)$"
+    mimetypes = "application/x-metaimage"
+    # header tags can appear in any order; ObjectType/NDims are effectively
+    # always present near the top of the file
+    magic = {(None, b"ObjectType"), (None, b"NDims")}
+
+
+class OpenEXRImage(FileData):
+    """OpenEXR high-dynamic-range image
+
+    EXR files start with the 4-byte magic ``0x76 0x2f 0x31 0x01``.
+    """
+
+    structure = {"array", "image"}
+    filepattern = r"\.exr$"
+    mimetypes = "image/x-exr"
+    magic = {b"\x76\x2f\x31\x01"}
+
+
+class WholeSlideImage(FileData):
+    """Whole-slide microscopy / digital pathology image
+
+    Covers the common vendor formats handled by OpenSlide and tifffile:
+    Aperio (``.svs``), Hamamatsu (``.ndpi``), Leica (``.scn``), Zeiss
+    (``.lsm``) and PerkinElmer (``.qptiff``).  These are all TIFF-based, so
+    they share the TIFF magic (``II*\\x00`` / ``MM\\x00*``); the specific
+    vendor is distinguished by extension.
+    """
+
+    structure = {"array", "image"}
+    filepattern = r"\.(svs|ndpi|scn|lsm|qptiff)$"
+    mimetypes = "image/tiff"
+    magic = {b"II*\x00", b"MM\x00*"}
+
+
+class AVIVideo(FileData):
+    """AVI (Audio Video Interleave) video container
+
+    AVI is a RIFF container: ``RIFF`` at offset 0 and the form-type ``AVI ``
+    at offset 8.
+    """
+
+    structure = {"array", "timeseries"}
+    filepattern = r"\.avi$"
+    mimetypes = "video/x-msvideo|video/avi"
+    magic = {(8, b"AVI ")}
+
+
 comp_magic = {
     # These are a bit like datatypes making raw bytes/file object output
     (0, b"\x1f\x8b"): "gzip",

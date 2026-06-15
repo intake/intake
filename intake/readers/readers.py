@@ -2110,20 +2110,6 @@ class DecordVideoReader(FileReader):
         return cls._url_is_single(data)
 
 
-class ImageIOVideoReader(FileReader):
-    """Read video frames as a NumPy array using ``imageio`` / ``imageio-ffmpeg``."""
-
-    implements = {datatypes.MP4Video, datatypes.WebMVideo}
-    imports = {"imageio"}
-    func = "imageio:get_reader"
-    output_instance = "imageio.core.format:Reader"
-    url_arg = "uri"
-
-    @classmethod
-    def is_ok(cls, data) -> bool:
-        return cls._url_is_single(data)
-
-
 # ---------------------------------------------------------------------------
 # Images not yet covered
 # ---------------------------------------------------------------------------
@@ -2142,7 +2128,7 @@ class PILImageReader(FileReader):
         datatypes.JPEG,
         datatypes.TIFF,
     }
-    imports = {"PIL"}
+    imports = {"pillow"}
     func = "PIL.Image:open"
     output_instance = "numpy:ndarray"
     url_arg = "fp"
@@ -2856,6 +2842,176 @@ class NPZDaskReader(FileReader):
     def discover(self, **kwargs):
         npz_dict = self.read(**kwargs)
         return {k: {"shape": v.shape, "dtype": str(v.dtype)} for k, v in npz_dict.items()}
+
+
+# ---------------------------------------------------------------------------
+# Scientific / medical imaging readers
+# ---------------------------------------------------------------------------
+
+
+def _as_local(data):
+    """Return a local filesystem path for *data*, fetching remote URLs if needed.
+
+    Many imaging libraries (pynrrd, SimpleITK, openslide, …) only accept a real
+    local path.  For remote/fsspec URLs we transparently cache the file locally
+    via ``simplecache``.
+    """
+    url = data.url
+    if data.storage_options or "://" in url or "::" in url:
+        return fsspec.open_local(
+            f"simplecache::{url}", **{"simplecache": {}, **(data.storage_options or {})}
+        )
+    return url
+
+
+class NRRDReader(FileReader):
+    """Read an NRRD volume with ``pynrrd``.
+
+    ``nrrd.read`` returns a ``(data, header)`` tuple; we expose the array and
+    surface the header via :meth:`discover`.
+    """
+
+    implements = {datatypes.NRRD}
+    imports = {"pynrrd"}
+    func = "nrrd:read"
+    output_instance = "numpy:ndarray"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kw):
+        arr, _header = self._func(_as_local(data), **kw)
+        return arr
+
+    def discover(self, **kw):
+        import nrrd
+
+        header = nrrd.read_header(_as_local(self.data))
+        return header
+
+
+class SimpleITKReader(FileReader):
+    """Read NRRD / MetaImage (and most ITK formats) using ``SimpleITK``.
+
+    Produces a ``SimpleITK.Image``; use ``SimpleITK.GetArrayFromImage`` to get
+    a NumPy view.
+    """
+
+    implements = {datatypes.MetaImage, datatypes.NRRD}
+    imports = {"SimpleITK"}
+    func = "SimpleITK:ReadImage"
+    output_instance = "SimpleITK:Image"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kw):
+        return self._func(_as_local(data), **kw)
+
+    def discover(self, **kw):
+        img = self.read(**kw)
+        return {
+            "size": tuple(img.GetSize()),
+            "spacing": tuple(img.GetSpacing()),
+            "components": img.GetNumberOfComponentsPerPixel(),
+            "pixel_type": img.GetPixelIDTypeAsString(),
+        }
+
+
+class OpenEXRReader(FileReader):
+    """Read an OpenEXR image as a NumPy array via ``imageio``."""
+
+    implements = {datatypes.OpenEXRImage}
+    imports = {"imageio"}
+    func = "imageio.v3:imread"
+    output_instance = "numpy:ndarray"
+    url_arg = "uri"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kw):
+        return self._func(_as_local(data), **kw)
+
+
+class OpenSlideReader(FileReader):
+    """Open a whole-slide pathology image with ``openslide-python``.
+
+    Returns an ``OpenSlide`` handle, from which pyramidal levels and region
+    reads are available without loading the (often multi-gigabyte) image into
+    memory.
+    """
+
+    implements = {datatypes.WholeSlideImage}
+    imports = {"openslide-python"}
+    func = "openslide:OpenSlide"
+    output_instance = "openslide:OpenSlide"
+    url_arg = "filename"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kw):
+        return self._func(_as_local(data), **kw)
+
+    def discover(self, **kw):
+        slide = self.read(**kw)
+        return {
+            "dimensions": slide.dimensions,
+            "level_count": slide.level_count,
+            "level_dimensions": slide.level_dimensions,
+            "properties": dict(slide.properties),
+        }
+
+
+class TiffSlideReader(FileReader):
+    """Read a whole-slide (or ordinary) TIFF as a NumPy array with ``tifffile``.
+
+    A lighter-weight alternative to OpenSlide that works for the TIFF-based
+    slide formats (Aperio ``.svs``, ``.qptiff``, Zeiss ``.lsm``, …).
+    """
+
+    implements = {datatypes.WholeSlideImage}
+    imports = {"tifffile"}
+    func = "tifffile:imread"
+    output_instance = "numpy:ndarray"
+    url_arg = "files"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kw):
+        return self._func(_as_local(data), **kw)
+
+
+class ImageIOVideoReader(FileReader):
+    """Open a video (AVI, …) as an ``imageio`` reader for frame iteration."""
+
+    implements = {datatypes.AVIVideo, datatypes.MP4Video, datatypes.WebMVideo}
+    imports = {"imageio"}
+    func = "imageio:get_reader"
+    output_instance = "imageio.core.format:Reader"
+    url_arg = "uri"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kw):
+        return self._func(_as_local(data), **kw)
+
+    def discover(self, **kw):
+        reader = self.read(**kw)
+        meta = dict(reader.get_meta_data())
+        # convert non-serialisable values to str where necessary
+        return {
+            k: (v if isinstance(v, (int, float, str, bool)) else str(v)) for k, v in meta.items()
+        }
 
 
 def reader_from_call(func: str, *args, join_lines=False, **kwargs) -> BaseReader:
