@@ -317,7 +317,7 @@ class TestFileReaderHelpers:
     [
         (PandasCSV, datatypes.CSV("/tmp/data.csv")),
         (PandasParquet, datatypes.Parquet("/tmp/data.parquet")),
-        (PandasFeather, datatypes.Feather2("/tmp/data.feather")),
+        (PandasFeather, datatypes.ArrowIPC("/tmp/data.feather")),
         (PandasORC, datatypes.ORC("/tmp/data.orc")),
         (PandasExcel, datatypes.Excel("/tmp/data.xlsx")),
     ],
@@ -333,7 +333,7 @@ def test_pandas_is_ok_single_file(reader_cls, data):
         (PandasCSV, datatypes.CSV(["/tmp/a.csv", "/tmp/b.csv"])),
         (PandasParquet, datatypes.Parquet("/tmp/*.parquet")),
         (PandasParquet, datatypes.Parquet(["/tmp/a.parquet", "/tmp/b.parquet"])),
-        (PandasFeather, datatypes.Feather2("/tmp/*.feather")),
+        (PandasFeather, datatypes.ArrowIPC("/tmp/*.feather")),
         (PandasORC, datatypes.ORC("/tmp/*.orc")),
         (PandasExcel, datatypes.Excel("/tmp/*.xlsx")),
     ],

@@ -81,6 +81,7 @@ _TIER2_CLASS_FRAGMENTS = (
     "DaskAwkwardParquet",
     "DaskAwkwardJSON",
     "DaskText",
+    "MarkdownReader",  # reads only first 8 KB on discover()
     "Polars",  # covers PolarsCSV, PolarsParquet, etc. – all return LazyFrame
     "DuckDB",  # covers DuckParquet, DuckCSV, DuckJSON, DuckSQL
     "SparkDataFrame",  # covers SparkCSV, SparkParquet, etc.
@@ -187,12 +188,16 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
         The object returned by ``reader.discover()``.
     is_sample:
         ``True`` when *obj* is known to be a **partial sample** of the full
-        dataset (e.g. the 10-row head from ``PandasCSV.discover()``, or the
-        first row-group from ``AwkwardParquet.discover()``).  In that case
-        row-counts / lengths that would normally be taken from the object are
-        suppressed (set to ``None``) because they only reflect the sample, not
-        the whole dataset.  Column names, dtypes, dims, and other structural
-        metadata that do *not* depend on row count are always reported.
+        dataset (e.g. the 10-row head from ``PandasCSV.discover()``).  When
+        ``True``, any information that reflects only the sample (memory usage)
+        is suppressed.
+
+        Note: the row count (``shape[0]``) of tabular objects such as
+        ``pandas.DataFrame`` is **always** reported as ``None`` regardless of
+        *is_sample*, because the number of rows is never intrinsically
+        knowable from the in-memory object alone — it requires either scanning
+        all data or reading per-file metadata (e.g. Parquet footer row-counts).
+        The column count (``shape[1]``) is always available and is reported.
     """
     info: dict[str, Any] = {}
     mod = _module_name(obj)
@@ -201,15 +206,18 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
     # ---- pandas DataFrame / Series -----------------------------------------
     if "pandas" in mod and cls in ("DataFrame", "Series"):
         try:
+            n_cols = len(obj.columns) if hasattr(obj, "columns") else None
             info["columns"] = list(obj.columns) if hasattr(obj, "columns") else None
             info["dtypes"] = (
                 {str(k): str(v) for k, v in obj.dtypes.items()}
                 if hasattr(obj, "dtypes") and hasattr(obj.dtypes, "items")
                 else str(getattr(obj, "dtype", ""))
             )
-            # Shape row-count is only meaningful when we have the full data.
+            # Row count is not intrinsically knowable without scanning all data
+            # (even a Tier-3 full read only tells us the rows *we read*).
+            # Report shape as (None, n_cols) so the column count is preserved.
+            info["shape"] = (None, n_cols)
             if not is_sample:
-                info["shape"] = tuple(obj.shape)
                 try:
                     info["memory_bytes"] = int(obj.memory_usage(deep=True).sum())
                 except Exception:
@@ -254,10 +262,12 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
     elif "polars" in mod and cls == "DataFrame":
         try:
             schema = obj.schema
+            n_cols = len(schema)
             info["columns"] = [str(k) for k in schema.keys()]
             info["dtypes"] = {str(k): str(v) for k, v in schema.items()}
+            # Row count not reliably knowable without scanning — omit it.
+            info["shape"] = (None, n_cols)
             if not is_sample:
-                info["shape"] = tuple(obj.shape)
                 try:
                     info["memory_bytes"] = int(obj.estimated_size())
                 except Exception:
@@ -342,10 +352,11 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
     # ---- geopandas GeoDataFrame ---------------------------------------------
     elif "geopandas" in mod:
         try:
+            n_cols = len(obj.columns)
             info["columns"] = list(obj.columns)
             info["dtypes"] = {str(k): str(v) for k, v in obj.dtypes.items()}
-            # GeoPandas readers do a full read, so shape is correct
-            info["shape"] = tuple(obj.shape)
+            # Row count not reliably knowable without scanning.
+            info["shape"] = (None, n_cols)
             info["crs"] = str(getattr(obj, "crs", None))
             geom_col = getattr(obj, "geometry", None)
             if geom_col is not None:
@@ -387,6 +398,58 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
             entries = getattr(obj, "entries", {})
             info["entry_count"] = len(entries)
             info["entry_names"] = list(entries.keys())[:50]
+        except Exception:
+            pass
+
+    # ---- configparser.ConfigParser ------------------------------------------
+    # Must appear before the generic dict/mapping branch because ConfigParser
+    # also has .keys() / .values().
+    elif "configparser" in mod and "ConfigParser" in cls:
+        try:
+            sections = obj.sections()
+            info["sections"] = sections
+            info["n_sections"] = len(sections)
+            info["keys_per_section"] = {s: list(obj.options(s)) for s in sections}
+        except Exception:
+            pass
+
+    # ---- plain dict / mapping -----------------------------------------------
+    elif cls in ("dict", "OrderedDict") or (
+        hasattr(obj, "keys") and hasattr(obj, "values") and not hasattr(obj, "dtypes")
+    ):
+        try:
+            keys = list(obj.keys())
+            info["keys"] = [str(k) for k in keys[:100]]
+            info["n_keys"] = len(obj)
+            info["value_types"] = {str(k): type(v).__name__ for k, v in list(obj.items())[:50]}
+            nested = {
+                str(k): list(v.keys())[:20]
+                for k, v in list(obj.items())[:20]
+                if isinstance(v, dict)
+            }
+            if nested:
+                info["nested_keys"] = nested
+        except Exception:
+            pass
+
+    # ---- plain str (Markdown, RST, plain text, etc.) -----------------------
+    elif cls == "str" and mod == "builtins":
+        try:
+            lines = obj.splitlines()
+            info["n_chars"] = len(obj)
+            info["n_lines"] = len(lines)
+            info["n_words"] = sum(len(line.split()) for line in lines)
+            if is_sample:
+                # Counts reflect only the head — mark them clearly
+                info["n_chars_note"] = "partial head only"
+                info["n_lines_note"] = "partial head only"
+                info["n_words_note"] = "partial head only"
+            headings = [ln for ln in lines if ln.startswith("#")]
+            if headings:
+                info["n_headings"] = len(headings)
+                info["headings"] = [h.lstrip("#").strip() for h in headings[:10]]
+                if is_sample:
+                    info["headings_note"] = "from partial head only"
         except Exception:
             pass
 
@@ -543,17 +606,85 @@ def _thumbnail(obj) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def _remote_file_size(url: str, storage_options: dict | None) -> int | None:
-    """Return the byte size of a remote/local file, or None if unknowable."""
+def _file_storage_info(
+    url: str | list, storage_options: dict | None
+) -> tuple[int | None, int | None]:
+    """Return ``(total_bytes, n_files)`` for *url*.
+
+    *url* may be:
+    - a single path or remote URL (possibly a glob pattern or a directory),
+    - a list of paths/URLs.
+
+    Directories and glob patterns are both expanded to their constituent files
+    via ``fs.ls()`` / ``fs.glob()``.  If the size of any individual file
+    cannot be determined the total is returned as ``None`` (rather than a
+    misleading partial sum).  ``n_files`` is always returned when the set of
+    files can be enumerated, even if sizes are unavailable.
+    """
     try:
         import fsspec
 
-        fs, path = fsspec.core.url_to_fs(url, **(storage_options or {}))
-        info = fs.info(path)
-        size = info.get("size") or info.get("Size") or info.get("ContentLength")
-        return int(size) if size is not None else None
+        def _resolve_to_files(fs, path: str) -> list[dict]:
+            """Return a list of fsspec file-info dicts for *path*.
+
+            Handles three cases:
+            - glob pattern (contains *, ?, [) — expand with fs.glob()
+            - directory (type=="directory" or path ends with /) — list contents
+            - single file — return as-is
+            """
+            # Glob pattern
+            if any(c in path for c in ("*", "?", "[")):
+                expanded = fs.glob(path)
+                if not expanded:
+                    return []
+                return [fs.info(p) for p in expanded]
+
+            # Check what this path actually is
+            try:
+                entry = fs.info(path)
+            except FileNotFoundError:
+                return []
+
+            entry_type = entry.get("type") or entry.get("Type") or ""
+            is_dir = (
+                entry_type == "directory" or path.rstrip("/").endswith("/") or path.endswith("/")
+            )
+
+            if is_dir:
+                # List only immediate children that are files
+                children = fs.ls(path.rstrip("/"), detail=True)
+                files = [
+                    c for c in children if (c.get("type") or c.get("Type") or "") != "directory"
+                ]
+                return files
+
+            return [entry]
+
+        # Normalise to a list of (fs, path) strings
+        if isinstance(url, list):
+            all_infos: list[dict] = []
+            for u in url:
+                fs, path = fsspec.core.url_to_fs(u, **(storage_options or {}))
+                all_infos.extend(_resolve_to_files(fs, path))
+        else:
+            fs, path = fsspec.core.url_to_fs(url, **(storage_options or {}))
+            all_infos = _resolve_to_files(fs, path)
+
+        n_files = len(all_infos)
+        if n_files == 0:
+            return None, 0
+
+        total = 0
+        for info in all_infos:
+            size = info.get("size") or info.get("Size") or info.get("ContentLength")
+            if size is None:
+                # Can't determine size for this entry — report count but not total
+                return None, n_files
+            total += int(size)
+
+        return total, n_files
     except Exception:
-        return None
+        return None, None
 
 
 # ---------------------------------------------------------------------------
@@ -670,9 +801,15 @@ def inspect_dataset(
     ``shape``
         Tuple or list representing data shape, if available.
     ``npartitions``
-        Number of Dask/Ray partitions, if available.
+        Number of partitions as reported by the discovered object (Dask,
+        Ray, etc.).  For file-based data with no in-memory partition count
+        this falls back to ``n_files``.
+    ``n_files``
+        Number of individual files that make up the dataset (after glob
+        expansion), or ``None`` if the URL is not file-based / unknowable.
     ``file_size_bytes``
-        Reported file size in bytes from the storage backend, or ``None``.
+        Total size in bytes across **all** files, or ``None`` if any file's
+        size could not be determined or the URL is not file-based.
     ``repr``
         Plain-text ``repr()`` of the discovered object (capped at 1000 chars).
     ``html_repr``
@@ -708,6 +845,7 @@ def inspect_dataset(
         "datashape": {},
         "shape": None,
         "npartitions": None,
+        "n_files": None,
         "file_size_bytes": None,
         "repr": None,
         "html_repr": None,
@@ -734,71 +872,101 @@ def inspect_dataset(
         errors.append("No matching intake data type found for this URL.")
         return result
 
-    # Use the best (most specific) candidate as the primary data type
+    # Use the best (most specific) candidate as the primary data type.
+    # If no importable reader is found for it, fall through to subsequent
+    # candidates in order (e.g. NPZFile detected second after Excel).
     data_cls = data_candidates[0]
     result["detected_type"] = data_cls.__name__
     result["detected_type_qname"] = data_cls.qname()
     result["structure"] = set(data_cls.structure)
 
     # ------------------------------------------------------------------
-    # Step 2: instantiate BaseData
+    # Steps 2–3: instantiate each candidate in turn until we find one with
+    # at least one importable reader.
     # ------------------------------------------------------------------
-    try:
-        from intake.readers.datatypes import FileData, Service
+    data_instance = None
+    importable: list = []
+    not_importable: list = []
 
-        if issubclass(data_cls, FileData):
-            data_instance = data_cls(
-                url=url,
-                storage_options=storage_options,
-                metadata=metadata or {},
-            )
-        elif issubclass(data_cls, Service):
-            data_instance = data_cls(url=url, metadata=metadata or {})
-        else:
-            data_instance = data_cls(metadata=metadata or {})
-    except Exception as exc:
-        errors.append(f"Could not instantiate data type {data_cls.__name__}: {exc}")
+    for data_cls in data_candidates:
+        # Instantiate
+        try:
+            from intake.readers.datatypes import FileData, Service
+
+            if issubclass(data_cls, FileData):
+                _instance = data_cls(
+                    url=url,
+                    storage_options=storage_options,
+                    metadata=metadata or {},
+                )
+            elif issubclass(data_cls, Service):
+                _instance = data_cls(url=url, metadata=metadata or {})
+            else:
+                _instance = data_cls(metadata=metadata or {})
+        except Exception as exc:
+            errors.append(f"Could not instantiate data type {data_cls.__name__}: {exc}")
+            continue
+
+        # Reader recommendations
+        try:
+            rec = readers_recommend(_instance)
+            _importable = rec.get("importable", [])
+            _not_importable = rec.get("not_importable", [])
+        except Exception as exc:
+            errors.append(f"Reader recommendation failed for {data_cls.__name__}: {exc}")
+            _importable = []
+            _not_importable = []
+
+        # Accumulate the full reader dict across all candidates
+        result["readers"].update(
+            {cls.__name__: {"importable": True, "tier": _reader_tier(cls)} for cls in _importable}
+        )
+        result["readers"].update(
+            {
+                cls.__name__: {"importable": False, "tier": _reader_tier(cls)}
+                for cls in _not_importable
+            }
+        )
+
+        if _importable:
+            # Found a usable candidate — use it
+            data_instance = _instance
+            importable = _importable
+            not_importable = _not_importable
+            result["detected_type"] = data_cls.__name__
+            result["detected_type_qname"] = data_cls.qname()
+            result["structure"] = set(data_cls.structure)
+            break
+
+        # No importable reader for this candidate — note it and try next
+        # (not an error — normal fallthrough when multiple types match)
+        result.setdefault("_fallthrough", []).append(
+            f"Skipped {data_cls.__name__}: no importable reader."
+        )
+        not_importable = _not_importable  # keep last set for error message
+
+    if data_instance is None or not importable:
+        errors.append(
+            "No importable reader found for any detected type. Install one of: "
+            + ", ".join(cls.__name__ for cls in not_importable[:5])
+        )
         return result
 
     result["metadata"] = dict(data_instance.metadata)
     result["description"] = data_instance.metadata.get("description")
 
     # ------------------------------------------------------------------
-    # Step 3: reader recommendations (no I/O)
-    # ------------------------------------------------------------------
-    try:
-        rec = readers_recommend(data_instance)
-        importable = rec.get("importable", [])
-        not_importable = rec.get("not_importable", [])
-    except Exception as exc:
-        errors.append(f"Reader recommendation failed: {exc}")
-        importable = []
-        not_importable = []
-
-    result["readers"] = {
-        cls.__name__: {"importable": True, "tier": _reader_tier(cls)} for cls in importable
-    }
-    result["readers"].update(
-        {cls.__name__: {"importable": False, "tier": _reader_tier(cls)} for cls in not_importable}
-    )
-
-    if not importable:
-        errors.append(
-            "No importable reader found. Install one of: "
-            + ", ".join(cls.__name__ for cls in not_importable[:5])
-        )
-        return result
-
-    # ------------------------------------------------------------------
-    # Step 4: file-size check (used by Tier-3 guard below)
+    # Step 4: file-storage info (total size + file count, used by Tier-3 guard)
     # ------------------------------------------------------------------
     file_size: int | None = None
-    if hasattr(data_instance, "url") and isinstance(data_instance.url, str):
+    n_files: int | None = None
+    if hasattr(data_instance, "url"):
         try:
-            file_size = _remote_file_size(data_instance.url, storage_options)
+            file_size, n_files = _file_storage_info(data_instance.url, storage_options)
         except Exception:
             pass
     result["file_size_bytes"] = file_size
+    result["n_files"] = n_files
 
     # ------------------------------------------------------------------
     # Step 5: build ordered candidate list (prefer / exclude applied)
@@ -878,10 +1046,16 @@ def inspect_dataset(
         errors.append(f"Schema extraction failed: {exc}")
 
     try:
-        shape = _extract_shape(discovered, is_sample=is_sample)
-        if shape is not None:
-            result["shape"] = shape
-        result["npartitions"] = result["datashape"].get("npartitions")
+        # Use the shape already embedded in datashape as the single source of
+        # truth; fall back to _extract_shape only for types that don't set it
+        # there (numpy arrays, xarray, etc.).
+        shape = result["datashape"].get("shape") if result["datashape"] else None
+        if shape is None:
+            shape = _extract_shape(discovered, is_sample=is_sample)
+        result["shape"] = shape
+        result["npartitions"] = result["datashape"].get("npartitions") or (
+            n_files if n_files and n_files > 1 else None
+        )
     except Exception:
         pass
 

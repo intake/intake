@@ -14,8 +14,8 @@ from intake.readers.datatypes import (
     CSV,
     HDF5,
     PNG,
+    ArrowIPC,
     CatalogFile,
-    Feather2,
     NumpyFile,
     Parquet,
     Zarr,
@@ -64,13 +64,13 @@ class PandasToHDF5(BaseConverter):
 class PandasToFeather(BaseConverter):
     instances = all_to_one(
         {"pandas:DataFrame", "geopandas:GeoDataFrame"},
-        "intake.readers.datatypes:Feather2",
+        "intake.readers.datatypes:ArrowIPC",
     )
 
     def run(self, x, url, storage_options=None, metadata=None, **kwargs):
         # TODO: fsspec output
         x.to_feather(url, storage_options=storage_options, **kwargs)
-        return Feather2(url=url, storage_options=storage_options, metadata=metadata)
+        return ArrowIPC(url=url, storage_options=storage_options, metadata=metadata)
 
 
 class XarrayToNetCDF(BaseConverter):
