@@ -1046,7 +1046,10 @@ class TestNewImagingFormats:
                 )
             finally:
                 del info
-                os.unlink(path)
+                try:
+                    os.unlink(path)
+                except OSError:
+                    pass
 
     def test_whole_slide_image_offers_slide_readers(self):
         # .svs is TIFF-based; whichever type wins, the slide-specific readers
