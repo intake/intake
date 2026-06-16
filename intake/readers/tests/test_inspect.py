@@ -1045,6 +1045,7 @@ class TestNewImagingFormats:
                     set(info["readers"]),
                 )
             finally:
+                del info
                 os.unlink(path)
 
     def test_whole_slide_image_offers_slide_readers(self):
