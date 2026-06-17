@@ -838,6 +838,8 @@ def auto_pipeline(
     outtype: str | tuple[str] = "",
     storage_options: dict | None = None,
     avoid: list[str] | None = None,
+    prefer: list[str] | None = None,
+    exclude: list[str] | None = None,
 ) -> Pipeline:
     """Create pipeline from given URL to desired output type
 
@@ -851,6 +853,14 @@ def auto_pipeline(
     storage_options: if url is a remote str, these are kwargs that fsspec may need to
         access it
     avoid: don't consider readers whose names match any of these strings
+    prefer:
+        List of substring patterns (case-insensitive) matched against reader class
+        names.  Matching readers are tried *before* non-matching ones when multiple
+        candidates satisfy the path.  Example: ``prefer=["Polars", "Duck"]``.
+    exclude:
+        List of substring patterns (case-insensitive) matched against reader class
+        names.  Any reader whose class name matches is removed from consideration.
+        Example: ``exclude=["Spark", "Ray"]``.
     """
     from intake.readers.datatypes import recommend
 
@@ -868,7 +878,11 @@ def auto_pipeline(
         steps = path(start, outtype, avoid=avoid)
         if steps:
             for steps in steps:
-                reader = data.to_reader(outtype=steps[0][1] if steps else outtype)
+                reader = data.to_reader(
+                    outtype=steps[0][1] if steps else outtype,
+                    prefer=prefer,
+                    exclude=exclude,
+                )
                 try:
                     for n, s in enumerate(steps[1:]):
                         if n == len(steps) - 2:

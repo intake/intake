@@ -110,6 +110,22 @@ class StacCatalogReader(BaseReader):
     imports = {"pystac"}
     output_instance = "intake.readers.entry:Catalog"
 
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """Only recommend this reader when *data* genuinely looks like a STAC JSON file.
+
+        For ``STACJSON`` file instances we sniff the first bytes to confirm
+        the document contains the expected structural keys, avoiding false
+        positives from plain JSON or GeoJSON files.
+        """
+        from intake.readers.readers import FileReader
+
+        if isinstance(data, datatypes.JSONFile) and not isinstance(data, datatypes.Literal):
+            head = FileReader._sniff_head(data)
+            if head and not datatypes.STACJSON._head_ok(head):
+                return False
+        return True
+
     def _read(
         self,
         data,
@@ -404,6 +420,22 @@ class THREDDSCatalogReader(BaseReader):
     implements = {datatypes.THREDDSCatalog}
     output_instance = THREDDSCatalog.qname()
     imports = {"siphon", "xarray"}
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """Only recommend this reader when the file/URL looks like a THREDDS catalog.
+
+        We sniff the first bytes to confirm the document contains the
+        characteristic XML structure of a THREDDS catalog, avoiding false
+        positives from plain XML files that happen to have a ``.xml`` extension.
+        """
+        from intake.readers.readers import FileReader
+
+        if isinstance(data, datatypes.FileData):
+            head = FileReader._sniff_head(data)
+            if head and not datatypes.THREDDSCatalog._head_ok(head):
+                return False
+        return True
 
     def _read(self, data, make="both", **kwargs):
         """

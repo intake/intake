@@ -28,6 +28,15 @@ class BaseReader(Tokenizable, PipelineMixin):
     func_doc: str = None  #: docstring origin if not from func
     output_instance: str = None  #: type the reader produces
     other_funcs: set[str] = set()  #: function names to recognise when matching user calls
+    prefer_for_inspect: bool = True
+    """Whether this reader should be preferred by :func:`inspect_dataset`.
+
+    Set to ``False`` on readers whose output is designed purely for
+    interactive display (e.g. ``panel.pane.Image``) and carries no
+    queryable schema.  Such readers are tried *last* by
+    ``inspect_dataset``, only after every reader with
+    ``prefer_for_inspect = True`` has been exhausted.
+    """
 
     def __init__(
         self,
@@ -156,10 +165,16 @@ class BaseReader(Tokenizable, PipelineMixin):
         """Make a different reader for the data used by this reader"""
         return self.data.to_reader(outtype=outtype, reader=reader, metadata=self.metadata, **kw)
 
-    def auto_pipeline(self, outtype: str | tuple[str], avoid: list[str] | None = None):
+    def auto_pipeline(
+        self,
+        outtype: str | tuple[str],
+        avoid: list[str] | None = None,
+        prefer: list[str] | None = None,
+        exclude: list[str] | None = None,
+    ):
         from intake import auto_pipeline
 
-        return auto_pipeline(self, outtype=outtype, avoid=avoid)
+        return auto_pipeline(self, outtype=outtype, avoid=avoid, prefer=prefer, exclude=exclude)
 
     @classmethod
     def is_ok(cls, data) -> bool:
@@ -228,12 +243,40 @@ class FileReader(BaseReader):
         """
         return not cls._url_is_single(data)
 
+    @classmethod
+    def _sniff_head(cls, data, nbytes: int = 8192) -> bytes:
+        """Read and return the first *nbytes* bytes of the file at ``data.url``.
+
+        The result is cached on the data instance under ``_sniff_cache`` so
+        that multiple ``is_ok()`` calls on the same instance incur only one
+        I/O round-trip.  Returns an empty ``bytes`` object on any I/O error
+        so that callers can treat the failure as a non-match without crashing.
+        """
+        cache = getattr(data, "_sniff_cache", None)
+        if cache is not None:
+            return cache
+        url = getattr(data, "url", None)
+        if not isinstance(url, str):
+            return b""
+        try:
+            storage_options = getattr(data, "storage_options", None) or {}
+            _fs, url2 = fsspec.core.url_to_fs(url, **storage_options)
+            head = _fs.cat_file(url2, start=0, end=nbytes)
+        except Exception:
+            head = b""
+        try:
+            data._sniff_cache = head
+        except AttributeError:
+            pass
+        return head
+
 
 class PanelImageViewer(FileReader):
     output_instance = "panel.pane:Image"
     implements = {datatypes.PNG, datatypes.JPEG}
     func = "panel.pane:Image"
     url_arg = "object"
+    prefer_for_inspect = False  # display-only: no queryable schema
 
     @classmethod
     def is_ok(cls, data) -> bool:
@@ -562,6 +605,7 @@ class LlamaServerReader(BaseReader):
     output_instance = "intake.readers.datatypes:LlamaCPPService"
     implements = {datatypes.GGUF}
     imports = {"requests"}
+    prefer_for_inspect = False  # launches a server process, not inspectable data
 
     _short_kwargs = {
         "v": "verbose",
@@ -758,6 +802,7 @@ class OpenAIReader(BaseReader):
     implements = {datatypes.OpenAIService}
     imports = {"openai"}
     output_instance = "openai:OpenAI"
+    prefer_for_inspect = False  # returns an API client object, not inspectable data
 
     def _read(self, data, **kwargs):
         import openai
@@ -854,6 +899,7 @@ class KerasModelReader(FileReader):
     func = "tensorflow.keras.models:load_model"
     url_arg = "filepath"
     output_instance = "keras.engine.training:Model"
+    prefer_for_inspect = False  # ML model object, not inspectable as data
 
 
 class TFRecordReader(FileReader):
@@ -871,6 +917,7 @@ class SKLearnModelReader(FileReader):
     implements = {datatypes.SKLearnPickleModel}
     func = "pickle:load"
     output_instance = "sklearn.base:BaseEstimator"
+    prefer_for_inspect = False  # ML model object, not inspectable as data
 
     def _read(self, data, **kw):
         with fsspec.open(data.url, **(data.storage_options or {})) as f:
@@ -1055,7 +1102,7 @@ class Polars(FileReader):
     def discover(self, **kwargs):
         # https://pola-rs.github.io/polars/py-polars/html/reference/
         #   lazyframe/api/polars.LazyFrame.fetch.html
-        return self.read().fetch()
+        return self.read().head().collect()
 
 
 class PolarsDeltaLake(Polars):
@@ -1093,6 +1140,14 @@ class PolarsIceberg(Polars):
     imports = {"polars", "pyiceberg"}
     implements = {datatypes.IcebergDataset}
     func = "polars:scan_iceberg"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """Only recommend this reader when the file genuinely looks like an Iceberg metadata file."""
+        head = cls._sniff_head(data)
+        if head and not datatypes.IcebergDataset._head_ok(head):
+            return False
+        return True
 
 
 class PolarsExcel(Polars):
@@ -1491,8 +1546,24 @@ class GeoPandasReader(FileReader):
 
     @classmethod
     def is_ok(cls, data) -> bool:
-        """geopandas.read_file reads a single vector file or URL at a time."""
-        return cls._url_is_single(data)
+        """geopandas.read_file reads a single vector file or URL at a time.
+
+        For GeoJSON data instances we additionally sniff the first bytes of
+        the file to confirm it genuinely contains the required GeoJSON
+        structural keys, rather than being a plain JSON file that happened to
+        trigger the GeoJSON magic pattern.
+        """
+        if not cls._url_is_single(data):
+            return False
+        if isinstance(data, datatypes.GeoJSON):
+            head = cls._sniff_head(data)
+            if head and not datatypes.GeoJSON._head_ok(head):
+                return False
+        if isinstance(data, datatypes.GeoPackage):
+            head = cls._sniff_head(data)
+            if head and not datatypes.GeoPackage._head_ok(head):
+                return False
+        return True
 
     def _read(self, data, with_fsspec=None, **kwargs):
         import geopandas
@@ -1603,6 +1674,7 @@ class PMTileReader(BaseReader):
     implements = {datatypes.PMTiles}
     func = "pmtiles.reader:Reader"
     output_instance = "pmtiles.reader:Reader"
+    prefer_for_inspect = False  # opaque tile-reader handle, no queryable schema
 
     def _read(self, data):
         import pmtiles.reader
@@ -1626,6 +1698,23 @@ class YAMLCatalogReader(FileReader):
     url_arg = "path"
     storage_options = True
     output_instance = "intake.readers.entry:Catalog"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """Only recommend this reader when the YAML file looks like an Intake catalog.
+
+        Plain YAML files that happen to have a ``.yaml`` extension are not
+        Intake catalogs.  We always sniff the first bytes to confirm the file
+        contains a ``sources:`` (v1) or ``entries:`` (v2) top-level key,
+        regardless of whether the data instance is typed as ``CatalogFile``
+        or the more generic ``YAMLFile``.
+        """
+        if not cls._url_is_single(data):
+            return False
+        head = cls._sniff_head(data)
+        if head and not datatypes.CatalogFile._head_ok(head):
+            return False
+        return True
 
 
 class PrometheusMetricReader(BaseReader):
@@ -1927,6 +2016,16 @@ class TOMLReader(FileReader):
     func = "tomllib:loads"
     output_instance = "builtins:dict"
 
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """Only recommend this reader when the file genuinely looks like TOML."""
+        if not cls._url_is_single(data):
+            return False
+        head = cls._sniff_head(data)
+        if head and not datatypes.TOML._head_ok(head):
+            return False
+        return True
+
     def _read(self, data, **kwargs):
         try:
             import tomllib
@@ -1963,6 +2062,16 @@ class INIReader(FileReader):
     imports = set()
     func = "configparser:ConfigParser"
     output_instance = "configparser:ConfigParser"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        """Only recommend this reader when the file genuinely looks like an INI file."""
+        if not cls._url_is_single(data):
+            return False
+        head = cls._sniff_head(data)
+        if head and not datatypes.INIFile._head_ok(head):
+            return False
+        return True
 
     def _read(self, data, **kwargs):
         import configparser
@@ -2104,6 +2213,7 @@ class DecordVideoReader(FileReader):
     func = "decord:VideoReader"
     output_instance = "decord:VideoReader"
     url_arg = "uri"
+    prefer_for_inspect = False  # opaque video-reader handle, no queryable schema
 
     @classmethod
     def is_ok(cls, data) -> bool:
@@ -2224,6 +2334,7 @@ class OSMPBFReader(FileReader):
     func = "osmium:FileProcessor"
     output_instance = "osmium:FileProcessor"
     url_arg = "path"
+    prefer_for_inspect = False  # streaming processor handle, not queryable data
 
     @classmethod
     def is_ok(cls, data) -> bool:
@@ -2465,6 +2576,7 @@ class ONNXRuntimeReader(FileReader):
     func = "onnxruntime:InferenceSession"
     output_instance = "onnxruntime:InferenceSession"
     url_arg = "path_or_bytes"
+    prefer_for_inspect = False  # ML inference session, not inspectable as data
 
     @classmethod
     def is_ok(cls, data) -> bool:
@@ -2479,6 +2591,7 @@ class TorchScriptReader(FileReader):
     func = "torch.jit:load"
     output_instance = "torch.jit:ScriptModule"
     url_arg = "f"
+    prefer_for_inspect = False  # ML model object, not inspectable as data
 
     @classmethod
     def is_ok(cls, data) -> bool:
@@ -2494,6 +2607,7 @@ class TorchLoadReader(FileReader):
     output_instance = "builtins:object"
     url_arg = "f"
     other_funcs = {"torch.jit:load"}
+    prefer_for_inspect = False  # opaque checkpoint object, not inspectable as data
 
     @classmethod
     def is_ok(cls, data) -> bool:
@@ -2508,10 +2622,548 @@ class JoblibReader(FileReader):
     func = "joblib:load"
     output_instance = "builtins:object"
     url_arg = "filename"
+    prefer_for_inspect = False  # completely opaque deserialised object
 
     @classmethod
     def is_ok(cls, data) -> bool:
         return cls._url_is_single(data)
+
+
+# ---------------------------------------------------------------------------
+# Lightweight metadata readers for model / opaque formats
+#
+# Each reader below covers a datatype whose only "full" reader has
+# prefer_for_inspect=False.  These readers parse just enough of the file
+# header to produce a useful summary dict without loading the heavy object.
+# They all have output_instance="builtins:dict" and prefer_for_inspect=True
+# (the default) so inspect_dataset will always try them first.
+# ---------------------------------------------------------------------------
+
+
+class GGUFMetadataReader(FileReader):
+    """Read metadata from a GGUF model file without loading the full model.
+
+    GGUF (GGML Unified Format) stores a binary header containing the model
+    architecture, context length, quantisation type and all other key-value
+    metadata at the very start of the file.  This reader parses that header
+    using only ``struct`` from the stdlib — no llama.cpp required.
+    """
+
+    implements = {datatypes.GGUF}
+    imports = set()  # stdlib only
+    output_instance = "builtins:dict"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kw):
+        import struct
+
+        MAGIC = b"GGUF"
+        with fsspec.open(data.url, "rb", **(data.storage_options or {})) as f:
+            header = f.read(24)
+            if not header.startswith(MAGIC):
+                raise ValueError("Not a GGUF file")
+            version = struct.unpack_from("<I", header, 4)[0]
+            tensor_count = struct.unpack_from("<Q", header, 8)[0]
+            kv_count = struct.unpack_from("<Q", header, 16)[0]
+
+            # Parse key-value metadata entries (string keys, typed values)
+            metadata: dict = {}
+            for _ in range(min(kv_count, 256)):  # cap to avoid huge reads
+                try:
+                    # key: u64 length + bytes
+                    key_len = struct.unpack("<Q", f.read(8))[0]
+                    key = f.read(key_len).decode("utf-8", errors="replace")
+                    # value type: u32
+                    val_type = struct.unpack("<I", f.read(4))[0]
+                    # value: type-dependent
+                    _GGUF_SCALAR = {
+                        0: ("<B", 1),  # uint8
+                        1: ("<b", 1),  # int8
+                        2: ("<H", 2),  # uint16
+                        3: ("<h", 2),  # int16
+                        4: ("<I", 4),  # uint32
+                        5: ("<i", 4),  # int32
+                        6: ("<f", 4),  # float32
+                        7: ("<B", 1),  # bool
+                        10: ("<Q", 8),  # uint64
+                        11: ("<q", 8),  # int64
+                        12: ("<d", 8),  # float64
+                    }
+                    if val_type == 8:  # string
+                        slen = struct.unpack("<Q", f.read(8))[0]
+                        val = f.read(slen).decode("utf-8", errors="replace")
+                    elif val_type == 9:  # array — skip
+                        arr_type = struct.unpack("<I", f.read(4))[0]
+                        arr_len = struct.unpack("<Q", f.read(8))[0]
+                        scalar = _GGUF_SCALAR.get(arr_type)
+                        if arr_type == 8:  # array of strings
+                            for _ in range(arr_len):
+                                slen = struct.unpack("<Q", f.read(8))[0]
+                                f.read(slen)
+                        elif scalar:
+                            f.read(scalar[1] * arr_len)
+                        else:
+                            break  # unknown element type, stop
+                        val = f"<array[{arr_len}]>"
+                    elif val_type in _GGUF_SCALAR:
+                        fmt, sz = _GGUF_SCALAR[val_type]
+                        val = struct.unpack(fmt, f.read(sz))[0]
+                    else:
+                        break  # unknown type, stop parsing
+                    metadata[key] = val
+                except Exception:
+                    break
+
+        return {
+            "gguf_version": version,
+            "tensor_count": tensor_count,
+            "metadata_kv_count": kv_count,
+            **{k: v for k, v in metadata.items() if not isinstance(v, str) or len(v) < 200},
+        }
+
+    def discover(self, **kw):
+        return self._read(self.data, **kw)
+
+
+class PMTilesMetadataReader(FileReader):
+    """Read the header of a PMTiles archive without fetching any tiles.
+
+    The PMTiles v3 spec stores a 127-byte fixed header at offset 0 containing
+    tile type, compression, zoom range, bounds, centre and tile count.
+    Requires only ``struct`` from the stdlib.
+    """
+
+    implements = {datatypes.PMTiles}
+    imports = set()  # stdlib only
+    output_instance = "builtins:dict"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kw):
+        import struct
+
+        MAGIC = b"PMTiles"
+        with fsspec.open(data.url, "rb", **(data.storage_options or {})) as f:
+            raw = f.read(127)
+
+        if not raw.startswith(MAGIC):
+            raise ValueError("Not a PMTiles file")
+
+        version = raw[7]
+        if version != 3:
+            return {"pmtiles_version": version, "note": "only v3 header parsing is supported"}
+
+        # v3 layout (all little-endian):
+        # 0–6   magic "PMTiles"
+        # 7     version (u8)
+        # 8–15  root_dir_offset (u64)
+        # 16–23 root_dir_length (u64)
+        # 24–31 metadata_offset (u64)
+        # 32–39 metadata_length (u64)
+        # 40–47 leaf_dirs_offset (u64)
+        # 48–55 leaf_dirs_length (u64)
+        # 56–63 tile_data_offset (u64)
+        # 64–71 tile_data_length (u64)
+        # 72–79 num_addressed_tiles (u64)
+        # 80–87 num_tile_entries (u64)
+        # 88–95 num_tile_contents (u64)
+        # 96     clustered (u8 bool)
+        # 97     internal_compression (u8)
+        # 98     tile_compression (u8)
+        # 99     tile_type (u8)
+        # 100   min_zoom (u8)
+        # 101   max_zoom (u8)
+        # 102–109 min_lon_e7 (i32) min_lat_e7 (i32)
+        # 110–117 max_lon_e7 (i32) max_lat_e7 (i32)
+        # 118   center_zoom (u8)
+        # 119–126 center_lon_e7 (i32) center_lat_e7 (i32)
+        (num_addressed, num_entries, num_contents) = struct.unpack_from("<QQQ", raw, 72)
+        clustered = raw[96]
+        tile_type_code = raw[99]
+        tile_type = {0: "unknown", 1: "mvt", 2: "png", 3: "jpg", 4: "webp", 5: "avif"}.get(
+            tile_type_code, f"unknown({tile_type_code})"
+        )
+        min_zoom, max_zoom = raw[100], raw[101]
+        min_lon, min_lat, max_lon, max_lat = struct.unpack_from("<iiii", raw, 102)
+        center_zoom = raw[118]
+        center_lon, center_lat = struct.unpack_from("<ii", raw, 119)
+
+        return {
+            "pmtiles_version": version,
+            "tile_type": tile_type,
+            "min_zoom": min_zoom,
+            "max_zoom": max_zoom,
+            "bounds": [min_lon / 1e7, min_lat / 1e7, max_lon / 1e7, max_lat / 1e7],
+            "center": [center_lon / 1e7, center_lat / 1e7, center_zoom],
+            "num_addressed_tiles": num_addressed,
+            "num_tile_entries": num_entries,
+            "num_unique_tile_contents": num_contents,
+            "clustered": bool(clustered),
+        }
+
+    def discover(self, **kw):
+        return self._read(self.data, **kw)
+
+
+class OSMPBFMetadataReader(FileReader):
+    """Read the header block of an OpenStreetMap PBF file.
+
+    The first blob of every OSM PBF file is always an ``OSMHeader`` block
+    that contains the bounding box, required and optional features, and the
+    writing program name.  Parsing it requires only ``struct`` and a tiny
+    amount of hand-written protobuf varint decoding — no ``osmium`` needed.
+    """
+
+    implements = {datatypes.OSMPBFFile}
+    imports = set()  # stdlib only
+    output_instance = "builtins:dict"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    @staticmethod
+    def _read_varint(data: bytes, pos: int):
+        """Decode a protobuf varint starting at *pos*; return (value, new_pos)."""
+        result = 0
+        shift = 0
+        while pos < len(data):
+            b = data[pos]
+            pos += 1
+            result |= (b & 0x7F) << shift
+            if not (b & 0x80):
+                return result, pos
+            shift += 7
+        raise ValueError("truncated varint")
+
+    def _read(self, data, **kw):
+        import struct
+
+        with fsspec.open(data.url, "rb", **(data.storage_options or {})) as f:
+            # BlobHeader: 4-byte big-endian length, then protobuf BlobHeader
+            header_size_raw = f.read(4)
+            if len(header_size_raw) < 4:
+                raise ValueError("File too short to be OSM PBF")
+            header_size = struct.unpack(">I", header_size_raw)[0]
+            blob_header_bytes = f.read(header_size)
+            # Read the Blob (the actual data)
+            blob_size_raw = f.read(4)
+            if len(blob_size_raw) < 4:
+                raise ValueError("Truncated OSM PBF file")
+            blob_size = struct.unpack(">I", blob_size_raw)[0]
+            blob_bytes = f.read(min(blob_size, 32768))  # cap at 32 KB
+
+        # Decode BlobHeader to find the type string (field 1, wire type 2)
+        pos = 0
+        blob_type = ""
+        while pos < len(blob_header_bytes):
+            tag, pos = self._read_varint(blob_header_bytes, pos)
+            wire = tag & 0x7
+            field = tag >> 3
+            if wire == 2:  # length-delimited
+                length, pos = self._read_varint(blob_header_bytes, pos)
+                value_bytes = blob_header_bytes[pos : pos + length]
+                pos += length
+                if field == 1:
+                    blob_type = value_bytes.decode("utf-8", errors="replace")
+            elif wire == 0:
+                val, pos = self._read_varint(blob_header_bytes, pos)
+            else:
+                break
+
+        if blob_type != "OSMHeader":
+            return {"error": f"Expected OSMHeader blob, got {blob_type!r}"}
+
+        # Decompress Blob if needed (field 2 = raw, field 3 = zlib_data)
+        raw_data = b""
+        pos = 0
+        while pos < len(blob_bytes):
+            tag, pos = self._read_varint(blob_bytes, pos)
+            wire = tag & 0x7
+            field = tag >> 3
+            if wire == 2:
+                length, pos = self._read_varint(blob_bytes, pos)
+                chunk = blob_bytes[pos : pos + length]
+                pos += length
+                if field == 2:  # raw bytes
+                    raw_data = chunk
+                elif field == 3:  # zlib compressed
+                    import zlib
+
+                    raw_data = zlib.decompress(chunk)
+            elif wire == 0:
+                _, pos = self._read_varint(blob_bytes, pos)
+            else:
+                break
+
+        # Parse HeaderBlock protobuf
+        # field 1: bbox (sub-message), field 4: required_features (repeated string)
+        # field 5: optional_features, field 16: writingprogram, field 17: source
+        result: dict = {"blob_type": blob_type}
+        pos = 0
+        required_features: list = []
+        optional_features: list = []
+        while pos < len(raw_data):
+            tag, pos = self._read_varint(raw_data, pos)
+            wire = tag & 0x7
+            field = tag >> 3
+            if wire == 2:
+                length, pos = self._read_varint(raw_data, pos)
+                chunk = raw_data[pos : pos + length]
+                pos += length
+                if field == 1:  # HeaderBBox sub-message
+                    # fields 1–4: left, right, top, bottom (sint64 / 100 nanodeg)
+                    bbox = {}
+                    bpos = 0
+                    while bpos < len(chunk):
+                        btag, bpos = self._read_varint(chunk, bpos)
+                        bwire = btag & 0x7
+                        bfield = btag >> 3
+                        if bwire == 0:
+                            val, bpos = self._read_varint(chunk, bpos)
+                            # zigzag decode for sint64
+                            val = (val >> 1) ^ -(val & 1)
+                            names = {1: "left", 2: "right", 3: "top", 4: "bottom"}
+                            if bfield in names:
+                                bbox[names[bfield]] = val / 1e9
+                        else:
+                            break
+                    if bbox:
+                        result["bbox"] = bbox
+                elif field in (4, 5):
+                    text = chunk.decode("utf-8", errors="replace")
+                    (required_features if field == 4 else optional_features).append(text)
+                elif field == 16:
+                    result["writing_program"] = chunk.decode("utf-8", errors="replace")
+                elif field == 17:
+                    result["source"] = chunk.decode("utf-8", errors="replace")
+            elif wire == 0:
+                _, pos = self._read_varint(raw_data, pos)
+            else:
+                break
+
+        if required_features:
+            result["required_features"] = required_features
+        if optional_features:
+            result["optional_features"] = optional_features
+        return result
+
+    def discover(self, **kw):
+        return self._read(self.data, **kw)
+
+
+class SKLearnModelMetadataReader(FileReader):
+    """Report the class and hyper-parameters of a pickled scikit-learn model.
+
+    Rather than exposing the estimator object itself (which has no data
+    schema), this reader loads the model and returns a plain dict describing
+    its type and ``get_params()`` output — useful for inspection without
+    training-framework coupling.
+    """
+
+    implements = {datatypes.SKLearnPickleModel}
+    imports = {"sklearn"}
+    output_instance = "builtins:dict"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kw):
+        import pickle
+
+        with fsspec.open(data.url, "rb", **(data.storage_options or {})) as f:
+            model = pickle.load(f)
+
+        info: dict = {
+            "type": type(model).__name__,
+            "module": type(model).__module__,
+        }
+        get_params = getattr(model, "get_params", None)
+        if callable(get_params):
+            try:
+                info["params"] = get_params()
+            except Exception:
+                pass
+        classes = getattr(model, "classes_", None)
+        if classes is not None:
+            try:
+                info["n_classes"] = len(classes)
+                info["classes"] = list(classes[:20])  # cap
+            except Exception:
+                pass
+        n_features = getattr(model, "n_features_in_", None)
+        if n_features is not None:
+            info["n_features_in"] = int(n_features)
+        return info
+
+    def discover(self, **kw):
+        return self._read(self.data, **kw)
+
+
+class KerasModelMetadataReader(FileReader):
+    """Report the architecture summary of a saved Keras model.
+
+    Loads the model via ``tensorflow.keras`` and returns the layer names,
+    types, output shapes and parameter counts without materialising the full
+    training state in a way that's useful for inspection.
+    """
+
+    implements = {datatypes.KerasModel}
+    imports = {"keras"}
+    output_instance = "builtins:dict"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kw):
+        from tensorflow import keras
+
+        model = keras.models.load_model(data.url, **kw)
+        layers = []
+        for layer in model.layers:
+            layers.append(
+                {
+                    "name": layer.name,
+                    "type": type(layer).__name__,
+                    "output_shape": str(getattr(layer, "output_shape", "?")),
+                    "trainable_params": int(
+                        sum(p.numpy().size for p in getattr(layer, "trainable_weights", []))
+                    ),
+                }
+            )
+        return {
+            "name": model.name,
+            "n_layers": len(model.layers),
+            "total_params": model.count_params(),
+            "layers": layers,
+        }
+
+    def discover(self, **kw):
+        return self._read(self.data, **kw)
+
+
+class TorchModelMetadataReader(FileReader):
+    """Report the contents of a PyTorch checkpoint without loading the model.
+
+    PyTorch ``.pt``/``.pth`` files are ZIP archives.  This reader opens the
+    ZIP, lists its entries, and — for checkpoints that are ``state_dict``
+    mappings — reports the tensor names, shapes and dtypes.  Only ``zipfile``
+    from the stdlib is needed.
+    """
+
+    implements = {datatypes.TorchScriptModel}
+    imports = set()  # stdlib zipfile is enough for the archive listing
+    output_instance = "builtins:dict"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kw):
+        import zipfile
+
+        result: dict = {}
+        with fsspec.open(data.url, "rb", **(data.storage_options or {})) as raw_f:
+            with zipfile.ZipFile(raw_f) as zf:
+                entries = zf.namelist()
+                result["zip_entries"] = entries[:50]  # cap
+
+                # Try to read the pickle record list from data.pkl to get tensor names
+                pkl_candidates = [e for e in entries if e.endswith("data.pkl")]
+                if pkl_candidates:
+                    import pickle
+
+                    class _TensorProxy:
+                        """Absorbs torch.storage._load_from_bytes calls."""
+
+                        def __init__(self, *a, **kw):
+                            pass
+
+                        def __reduce__(self):
+                            return (_TensorProxy, ())
+
+                    import io
+
+                    class _SafeUnpickler(pickle.Unpickler):
+                        def find_class(self, module, name):
+                            # Let builtins through, stub everything else
+                            if module == "builtins":
+                                return getattr(__builtins__, name, object)
+                            return _TensorProxy
+
+                    with zf.open(pkl_candidates[0]) as pkl_f:
+                        try:
+                            obj = _SafeUnpickler(io.BytesIO(pkl_f.read(65536))).load()
+                            if isinstance(obj, dict):
+                                result["state_dict_keys"] = list(obj.keys())[:50]
+                        except Exception:
+                            pass
+
+        return result
+
+    def discover(self, **kw):
+        return self._read(self.data, **kw)
+
+
+class JoblibMetadataReader(FileReader):
+    """Report the type and shape of a joblib-serialised object.
+
+    Joblib files are compressed pickle.  This reader loads the object and
+    introspects it — reporting the Python type, and for common containers
+    (numpy arrays, sklearn estimators, dicts) a compact summary — without
+    prescribing any particular use of the data.
+    """
+
+    implements = {datatypes.JoblibFile}
+    imports = {"joblib"}
+    output_instance = "builtins:dict"
+
+    @classmethod
+    def is_ok(cls, data) -> bool:
+        return cls._url_is_single(data)
+
+    def _read(self, data, **kw):
+        import joblib
+
+        with fsspec.open(data.url, "rb", **(data.storage_options or {})) as f:
+            obj = joblib.load(f)
+
+        info: dict = {
+            "type": type(obj).__name__,
+            "module": type(obj).__module__,
+        }
+        # numpy array
+        shape = getattr(obj, "shape", None)
+        if shape is not None:
+            info["shape"] = list(shape)
+            dtype = getattr(obj, "dtype", None)
+            if dtype is not None:
+                info["dtype"] = str(dtype)
+        # sklearn estimator
+        get_params = getattr(obj, "get_params", None)
+        if callable(get_params):
+            try:
+                info["params"] = get_params()
+            except Exception:
+                pass
+        # dict / list
+        if isinstance(obj, dict):
+            info["keys"] = list(obj.keys())[:20]
+        elif isinstance(obj, (list, tuple)):
+            info["length"] = len(obj)
+            if obj:
+                info["element_type"] = type(obj[0]).__name__
+        return info
+
+    def discover(self, **kw):
+        return self._read(self.data, **kw)
 
 
 class NPZReader(FileReader):
