@@ -90,13 +90,31 @@ _TIER2_CLASS_FRAGMENTS = (
 
 
 def _reader_tier(reader_cls) -> int:
-    """Return the laziness tier (1, 2, or 3) of a reader class."""
-    oi = reader_cls.output_instance or ""
-    if any(oi.startswith(f) for f in _TIER1_OUTPUT_FRAGMENTS):
-        return 1
+    """Return the laziness tier (1, 2, or 3) of a reader class.
+
+    Tier 1 — ``discover()`` returns a lazy graph whose shape is already
+    encoded in the graph metadata (Dask, Polars LazyFrame, DuckDB, …).
+
+    Tier 2 — ``discover()`` returns a *sample* of the data (e.g. the first
+    few rows via ``.head()``).  Class-name matching is checked **before** the
+    output-instance fragment check: ``DaskDF`` subclasses inherit
+    ``output_instance = "dask.dataframe:DataFrame"`` (which would score
+    Tier 1) but their ``discover()`` returns a pandas ``.head()`` sample.
+
+    Tier 3 — ``discover()`` triggers a full read.
+    """
+    from intake.readers.readers import DaskDF
+
+    # DaskDF and all subclasses that inherit its head()-based discover()
+    # are Tier 2, regardless of their output_instance.
+    if issubclass(reader_cls, DaskDF) and "discover" not in reader_cls.__dict__:
+        return 2
     name = reader_cls.__name__
     if any(name.startswith(f) or name == f for f in _TIER2_CLASS_FRAGMENTS):
         return 2
+    oi = reader_cls.output_instance or ""
+    if any(oi.startswith(f) for f in _TIER1_OUTPUT_FRAGMENTS):
+        return 1
     return 3
 
 
@@ -133,12 +151,22 @@ def _ordered_candidates(
     """Return an ordered list of ``(reader_cls, tier)`` pairs to attempt.
 
     Ordering rules (applied in sequence):
+
     1. Remove readers whose names match any *exclude* pattern.
-    2. Split remaining readers into *preferred* (name matches any *prefer*
-       pattern) and *others*.
+    2. Split remaining readers into three groups:
+
+       a. **preferred** — name matches any *prefer* pattern AND
+          ``prefer_for_inspect`` is ``True``
+       b. **normal** — ``prefer_for_inspect`` is ``True`` but name does not
+          match *prefer*
+       c. **display-only** — ``prefer_for_inspect`` is ``False`` (e.g.
+          ``PanelImageViewer``); these readers produce output designed for
+          interactive display and carry no queryable schema, so they are
+          always tried last
+
     3. Within each group sort by tier (ascending), preserving original order
        for equal tiers.
-    4. Concatenate: preferred first, then others.
+    4. Concatenate: preferred → normal → display-only.
     5. Drop Tier-3 readers when *file_size* is known and exceeds *max_bytes*
        (they are kept in the list but will be skipped at attempt time with an
        explanatory error).
@@ -148,18 +176,28 @@ def _ordered_candidates(
     # Step 1: exclude
     candidates = [cls for cls in importable if not _matches_any(cls.__name__, exclude)]
 
-    # Steps 2–4: split into preferred + others, each sorted by tier
+    # Steps 2–4: split into preferred / normal / display-only, each sorted by tier
     preferred = [
-        (cls, _reader_tier(cls)) for cls in candidates if _matches_any(cls.__name__, prefer)
+        (cls, _reader_tier(cls))
+        for cls in candidates
+        if getattr(cls, "prefer_for_inspect", True) and _matches_any(cls.__name__, prefer)
     ]
-    others = [
-        (cls, _reader_tier(cls)) for cls in candidates if not _matches_any(cls.__name__, prefer)
+    normal = [
+        (cls, _reader_tier(cls))
+        for cls in candidates
+        if getattr(cls, "prefer_for_inspect", True) and not _matches_any(cls.__name__, prefer)
+    ]
+    display_only = [
+        (cls, _reader_tier(cls))
+        for cls in candidates
+        if not getattr(cls, "prefer_for_inspect", True)
     ]
 
     preferred.sort(key=lambda x: x[1])
-    others.sort(key=lambda x: x[1])
+    normal.sort(key=lambda x: x[1])
+    display_only.sort(key=lambda x: x[1])
 
-    return preferred + others
+    return preferred + normal + display_only
 
 
 # ---------------------------------------------------------------------------
@@ -198,6 +236,7 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
         knowable from the in-memory object alone — it requires either scanning
         all data or reading per-file metadata (e.g. Parquet footer row-counts).
         The column count (``shape[1]``) is always available and is reported.
+        ``shape`` is always a ``list``, never a ``tuple``.
     """
     info: dict[str, Any] = {}
     mod = _module_name(obj)
@@ -215,8 +254,8 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
             )
             # Row count is not intrinsically knowable without scanning all data
             # (even a Tier-3 full read only tells us the rows *we read*).
-            # Report shape as (None, n_cols) so the column count is preserved.
-            info["shape"] = (None, n_cols)
+            # shape[0] = None signals "unknown row count"; shape[1] = n_cols.
+            info["shape"] = [None, n_cols]
             if not is_sample:
                 try:
                     info["memory_bytes"] = int(obj.memory_usage(deep=True).sum())
@@ -251,7 +290,7 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
     elif "dask" in mod and "array" in mod:
         try:
             # dask.array always knows its full shape from the graph
-            info["shape"] = tuple(obj.shape)
+            info["shape"] = list(obj.shape)
             info["dtype"] = str(obj.dtype)
             info["npartitions"] = getattr(obj, "npartitions", None)
             info["chunks"] = [list(c) for c in obj.chunks]
@@ -265,8 +304,8 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
             n_cols = len(schema)
             info["columns"] = [str(k) for k in schema.keys()]
             info["dtypes"] = {str(k): str(v) for k, v in schema.items()}
-            # Row count not reliably knowable without scanning — omit it.
-            info["shape"] = (None, n_cols)
+            # Row count not reliably knowable without scanning — n_cols is in columns.
+            info["shape"] = [None, n_cols]
             if not is_sample:
                 try:
                     info["memory_bytes"] = int(obj.estimated_size())
@@ -278,7 +317,10 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
     # ---- polars LazyFrame ---------------------------------------------------
     elif "polars" in mod and cls == "LazyFrame":
         try:
-            schema = obj.schema
+            # obj.schema triggers a PerformanceWarning in newer Polars;
+            # collect_schema() is the non-lazy equivalent introduced in Polars 0.20.
+            collect_schema = getattr(obj, "collect_schema", None)
+            schema = collect_schema() if callable(collect_schema) else obj.schema
             info["columns"] = [str(k) for k in schema.keys()]
             info["dtypes"] = {str(k): str(v) for k, v in schema.items()}
             # Row count is unknowable without collect() — intentionally omitted
@@ -300,8 +342,10 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
     # ---- xarray Dataset -----------------------------------------------------
     elif "xarray" in mod and cls == "Dataset":
         try:
-            # xarray always knows the full shape from its coordinate metadata
-            info["dims"] = dict(obj.dims)
+            # xarray always knows the full shape from its coordinate metadata.
+            # Use .sizes (dict of dim→length) rather than .dims to avoid a
+            # FutureWarning in newer xarray where .dims will return a set.
+            info["dims"] = dict(obj.sizes)
             info["data_vars"] = {
                 name: {
                     "dims": list(var.dims),
@@ -356,7 +400,7 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
             info["columns"] = list(obj.columns)
             info["dtypes"] = {str(k): str(v) for k, v in obj.dtypes.items()}
             # Row count not reliably knowable without scanning.
-            info["shape"] = (None, n_cols)
+            info["shape"] = [None, n_cols]
             info["crs"] = str(getattr(obj, "crs", None))
             geom_col = getattr(obj, "geometry", None)
             if geom_col is not None:
@@ -464,11 +508,11 @@ def _extract_schema(obj, is_sample: bool = False) -> dict:
     return info
 
 
-def _extract_shape(obj, is_sample: bool = False) -> tuple | list | None:
+def _extract_shape(obj, is_sample: bool = False) -> list | None:
     """Best-effort full-dataset shape extraction.
 
-    Returns ``None`` whenever the shape cannot be guaranteed to reflect the
-    entire dataset:
+    Returns a ``list`` of integer dimensions, or ``None`` whenever the shape
+    cannot be guaranteed to reflect the entire dataset:
 
     * *is_sample* is ``True`` (object is a partial read).
     * The object is a Polars LazyFrame, DuckDB relation, Spark DataFrame, or
@@ -507,7 +551,7 @@ def _extract_shape(obj, is_sample: bool = False) -> tuple | list | None:
         dims = tuple(s)
         if not all(isinstance(d, int) for d in dims):
             return None
-        return dims
+        return list(dims)
     except Exception:
         return None
 
@@ -798,8 +842,12 @@ def inspect_dataset(
         Value of ``metadata["description"]`` from the data instance, if any.
     ``datashape``
         Dict of schema information (columns + dtypes, or xarray dims, etc.).
+        Does **not** include ``shape`` — that lives exclusively at the
+        top-level ``shape`` key.
     ``shape``
-        Tuple or list representing data shape, if available.
+        List of integer dimensions (e.g. ``[1000, 4]``), or ``None`` when
+        the shape cannot be determined without a full scan (lazy DataFrames,
+        partial reads, etc.).
     ``npartitions``
         Number of partitions as reported by the discovered object (Dask,
         Ray, etc.).  For file-based data with no in-memory partition count
@@ -996,6 +1044,25 @@ def inspect_dataset(
                 break
             continue
 
+        # is_ok() guard — the reader's own suitability check (URL shape, file
+        # content sniff, etc.).  is_ok() was already called by readers_recommend()
+        # when building the importable list, but calling it again here means any
+        # expensive content-sniffing logic in is_ok() only runs for the reader
+        # classes that are actually about to be attempted, and makes the guard
+        # explicit so future readers can rely on it unconditionally.
+        try:
+            ok = reader_cls.is_ok(data_instance)
+        except Exception as exc:
+            ok = False
+            errors.append(f"Skipping {reader_cls.__name__}: is_ok() raised {exc}")
+        if not ok:
+            errors.append(
+                f"Skipping {reader_cls.__name__}: is_ok() returned False for this data instance."
+            )
+            if not retry:
+                break
+            continue
+
         result["readers_attempted"].append(reader_cls.__name__)
 
         # Instantiate reader
@@ -1046,14 +1113,17 @@ def inspect_dataset(
         errors.append(f"Schema extraction failed: {exc}")
 
     try:
-        # Use the shape already embedded in datashape as the single source of
-        # truth; fall back to _extract_shape only for types that don't set it
-        # there (numpy arrays, xarray, etc.).
+        # datashape["shape"] is the single source of truth.  _extract_shape
+        # is used as a fallback for types whose _extract_schema branch does
+        # not set it (e.g. raw objects reaching the fallback repr branch).
         shape = result["datashape"].get("shape") if result["datashape"] else None
         if shape is None:
             shape = _extract_shape(discovered, is_sample=is_sample)
         result["shape"] = shape
-        result["npartitions"] = result["datashape"].get("npartitions") or (
+        result["npartitions"] = (
+            result["datashape"].get("npartitions") if result["datashape"] else None
+        )
+        result["npartitions"] = result["npartitions"] or (
             n_files if n_files and n_files > 1 else None
         )
     except Exception:

@@ -62,12 +62,61 @@ class BaseData(Tokenizable):
         type_or_reader=None,
         outtype: tuple[str] | str | None = None,
         reader: tuple[str] | str | type | None = None,
+        prefer: list[str] | None = None,
+        exclude: list[str] | None = None,
     ):
+        """Return the reader *class* best suited for this data instance.
+
+        Parameters
+        ----------
+        type_or_reader:
+            Convenience argument: tried first as *outtype*, then as *reader*.
+        outtype:
+            Substring pattern(s) matched (case-insensitively) against each
+            candidate reader's ``output_instance`` string.
+        reader:
+            Either a fully-qualified import string (``"pandas:read_csv"``), a
+            reader class directly, or a substring pattern matched
+            case-insensitively against each candidate reader's qualified name.
+        prefer:
+            List of substring patterns (case-insensitive).  Matching readers
+            are tried *before* non-matching ones when multiple candidates
+            satisfy *outtype* or *reader*.  Has no effect when a bare *reader*
+            class or exact import string is given.
+        exclude:
+            List of substring patterns (case-insensitive).  Any reader whose
+            class name matches is removed from consideration entirely.
+        """
+        prefer = prefer or []
+        exclude = exclude or []
+
+        def _matches_any(name, patterns):
+            nl = name.lower()
+            return any(p.lower() in nl for p in patterns)
+
+        def _filter(outputs: dict) -> dict:
+            """Apply exclude, then move preferred readers to the front."""
+            # Remove excluded readers
+            filtered = {
+                cls: out for cls, out in outputs.items() if not _matches_any(cls.__name__, exclude)
+            }
+            if not prefer:
+                return filtered
+            # Sort: preferred first, then others (stable — preserves insertion order
+            # within each group)
+            preferred = {
+                cls: out for cls, out in filtered.items() if _matches_any(cls.__name__, prefer)
+            }
+            others = {
+                cls: out for cls, out in filtered.items() if not _matches_any(cls.__name__, prefer)
+            }
+            return {**preferred, **others}
+
         if type_or_reader:
             try:
-                return self.to_reader_cls(outtype=type_or_reader)
+                return self.to_reader_cls(outtype=type_or_reader, prefer=prefer, exclude=exclude)
             except ValueError:
-                return self.to_reader_cls(reader=type_or_reader)
+                return self.to_reader_cls(reader=type_or_reader, prefer=prefer, exclude=exclude)
         if sum(bool(_) for _ in (type_or_reader, outtype, reader)) > 1:
             raise ValueError
         if isinstance(reader, str):
@@ -77,7 +126,7 @@ class BaseData(Tokenizable):
             except (ImportError, ModuleNotFoundError):
                 reader = (reader,)
         if isinstance(reader, tuple):
-            for cls, out in self.possible_outputs.items():
+            for cls, out in _filter(self.possible_outputs).items():
                 # there shouldn't be many of these
                 if any(re.findall(r.lower(), cls.qname().lower()) for r in reader):
                     return cls
@@ -86,18 +135,33 @@ class BaseData(Tokenizable):
         elif outtype:
             if isinstance(outtype, str):
                 outtype = (outtype,)
-            for reader, out in self.possible_outputs.items():
+            for reader, out in _filter(self.possible_outputs).items():
                 # there shouldn't be many of these
                 if out is not None and any(
                     out == _ or re.findall(_.lower(), out.lower()) for _ in outtype
                 ):
                     return reader
         if type_or_reader is outtype is reader is None:
-            return next(iter(self.possible_readers["importable"]))
+            importable = self.possible_readers["importable"]
+            # Apply exclude / prefer to the plain list
+            filtered = [cls for cls in importable if not _matches_any(cls.__name__, exclude)]
+            if prefer:
+                preferred = [cls for cls in filtered if _matches_any(cls.__name__, prefer)]
+                others = [cls for cls in filtered if not _matches_any(cls.__name__, prefer)]
+                filtered = preferred + others
+            if not filtered:
+                raise ValueError("No reader found after applying prefer/exclude filters")
+            return filtered[0]
         raise ValueError("No reader found")
 
     def to_reader(
-        self, type_or_reader=None, outtype: str | None = None, reader: str | None = None, **kw
+        self,
+        type_or_reader=None,
+        outtype: str | None = None,
+        reader: str | None = None,
+        prefer: list[str] | None = None,
+        exclude: list[str] | None = None,
+        **kw,
     ):
         """Find an appropriate reader for this data
 
@@ -112,8 +176,18 @@ class BaseData(Tokenizable):
         type_or_reader: matches either on type or reader name, whichever is found first
         outtype: string to match against the output classes of potential readers
         reader: string to match against the class names of the readers
+        prefer:
+            List of substring patterns (case-insensitive).  Matching readers
+            are tried before non-matching ones when multiple candidates satisfy
+            the selection criteria.  Example: ``prefer=["Polars", "Duck"]``.
+        exclude:
+            List of substring patterns (case-insensitive).  Any reader whose
+            class name matches is removed from consideration entirely.
+            Example: ``exclude=["Spark", "Ray"]``.
         """
-        return self.to_reader_cls(type_or_reader, outtype, reader)(data=self, **kw)
+        return self.to_reader_cls(type_or_reader, outtype, reader, prefer=prefer, exclude=exclude)(
+            data=self, **kw
+        )
 
     def to_entry(self):
         """Create DataDescription version of this, for placing in a Catalog"""
@@ -127,11 +201,33 @@ class BaseData(Tokenizable):
         d = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
         return f"{type(self).__name__}, {d}"
 
-    def auto_pipeline(self, outtype: str | tuple[str]):
-        """Find a pipeline to transform from this to the given output type"""
+    def auto_pipeline(
+        self,
+        outtype: str | tuple[str],
+        avoid: list[str] | None = None,
+        prefer: list[str] | None = None,
+        exclude: list[str] | None = None,
+    ):
+        """Find a pipeline to transform from this to the given output type
+
+        Parameters
+        ----------
+        outtype:
+            Pattern matched against possible output types / converter names.
+        avoid:
+            Reader/converter names (substring patterns) to exclude from the
+            graph search entirely.
+        prefer:
+            Substring patterns (case-insensitive) matched against reader class
+            names.  Matching readers are tried before others when multiple
+            candidates exist.
+        exclude:
+            Substring patterns (case-insensitive) matched against reader class
+            names.  Matching readers are removed from consideration.
+        """
         from intake.readers.convert import auto_pipeline
 
-        return auto_pipeline(self, outtype)
+        return auto_pipeline(self, outtype, avoid=avoid, prefer=prefer, exclude=exclude)
 
     def describe(self):
         return {"data": str(self), "repr": self.auto_pipeline("IPythonDisplay").read()}
@@ -212,6 +308,25 @@ class XML(FileData):
     structure = {"nested"}
     magic = {b"<?xml "}
 
+    @classmethod
+    def _head_ok(cls, head: bytes) -> bool:
+        """Return True only when *head* looks like a genuine XML document.
+
+        A valid XML document must start with ``<?xml`` (after stripping an
+        optional UTF-8 BOM) or with a ``<`` character introducing an element.
+        We additionally require that at least one closing ``>`` exists nearby
+        to rule out binary files that happen to start with ``<``.
+        """
+        if not head:
+            return False
+        # Strip UTF-8 BOM if present
+        stripped = head.lstrip(b"\xef\xbb\xbf").lstrip()
+        if not stripped.startswith(b"<"):
+            return False
+        # Must contain a closing > within the first 4096 bytes — pure binary
+        # files that start with < (e.g. some proprietary formats) won't have one.
+        return b">" in stripped[:4096]
+
 
 class THREDDSCatalog(XML):
     """Datasets on a THREDDS server
@@ -222,6 +337,31 @@ class THREDDSCatalog(XML):
 
     magic = {(None, b"<xml.*<catalog ")}
     structure = {"catalog"}
+
+    @classmethod
+    def _head_ok(cls, head: bytes) -> bool:
+        """Return True only when *head* looks like a THREDDS catalog XML document.
+
+        A THREDDS catalog must be an XML document containing a ``<catalog``
+        element with the THREDDS namespace URI, or at minimum a ``<catalog``
+        tag and one of the characteristic THREDDS child-element names
+        (``dataset``, ``service``, ``catalogRef``).
+        """
+        if not head:
+            return False
+        if not super()._head_ok(head):
+            return False
+        # Must contain a <catalog element
+        if not re.search(rb"<catalog[\s>]", head):
+            return False
+        # And at least one characteristic THREDDS child element or namespace
+        thredds_markers = (
+            b"unidata.ucar.edu/namespaces/thredds",
+            b"<dataset",
+            b"<service",
+            b"<catalogRef",
+        )
+        return any(m in head for m in thredds_markers)
 
 
 class PNG(FileData):
@@ -531,6 +671,18 @@ class YAMLFile(FileData):
 class CatalogFile(Catalog, YAMLFile):
     """Intake catalog expressed as YAML"""
 
+    @classmethod
+    def _head_ok(cls, head: bytes) -> bool:
+        """Return True only when *head* looks like an Intake YAML catalog.
+
+        An Intake catalog YAML file must contain a ``sources:`` (v1) or
+        ``entries:`` (v2) top-level key.  Plain YAML files that happen to have
+        a ``.yaml`` extension will not match this.
+        """
+        if not head:
+            return False
+        return b"sources:" in head or b"entries:" in head
+
 
 class CatalogAPI(Catalog, Service):
     """An API endpoint capable of describing Intake catalogs"""
@@ -541,10 +693,10 @@ class CatalogAPI(Catalog, Service):
 class JSONFile(FileData):
     """Nested record format as readable text, very common over HTTP"""
 
-    filepattern = "json[l]$"
+    filepattern = "jsonl?$"
     mimetypes = "(text|application)/json"
     structure = {"nested", "table"}
-    magic = {b"{"}
+    magic = {b"{", b"["}
 
 
 class GeoJSON(JSONFile):
@@ -552,6 +704,52 @@ class GeoJSON(JSONFile):
 
     filepattern = "(?:geo)?json$"
     magic = {(None, b'"type": "Feature')}  # not guaranteed, but good indicator
+
+    # GeoJSON type values recognised by the spec (RFC 7946)
+    _GEOJSON_TYPES = frozenset(
+        {
+            b"FeatureCollection",
+            b"Feature",
+            b"Point",
+            b"MultiPoint",
+            b"LineString",
+            b"MultiLineString",
+            b"Polygon",
+            b"MultiPolygon",
+            b"GeometryCollection",
+        }
+    )
+
+    @classmethod
+    def _head_ok(cls, head: bytes) -> bool:
+        """Return True only when *head* looks like a genuine GeoJSON document.
+
+        A genuine GeoJSON file (RFC 7946) must have a ``"type"`` key whose
+        value is one of the nine recognised GeoJSON type strings *immediately
+        preceded* by a ``"type"`` key.  It must also contain at least one of
+        ``"coordinates"``, ``"geometry"``, ``"features"``, or ``"geometries"``
+        — structural keys that are never present in plain JSON documents that
+        happen to contain the word "Feature".
+        """
+        if not head:
+            return False
+        # Check that "type" key is paired with a GeoJSON type value.
+        # We look for the pattern: "type"  followed (after optional
+        # whitespace / colon) by one of the recognised values.
+        if not re.search(
+            rb'"type"\s*:\s*"(' + b"|".join(cls._GEOJSON_TYPES) + rb')"',
+            head,
+        ):
+            return False
+        # Must also carry at least one GeoJSON-specific structural key
+        geojson_keys = (
+            b'"coordinates"',
+            b'"geometry"',
+            b'"features"',
+            b'"geometries"',
+            b'"bbox"',
+        )
+        return any(k in head for k in geojson_keys)
 
 
 class Shapefile(FileData):
@@ -578,12 +776,45 @@ class GeoPackage(SQLite):
 
     filepattern = "gpkg$"
 
+    @classmethod
+    def _head_ok(cls, head: bytes) -> bool:
+        """Return True only when *head* looks like a GeoPackage SQLite file.
+
+        A GeoPackage file is a SQLite database that must contain the
+        ``gpkg_geometry_columns`` table (required by the OGC GeoPackage spec).
+        The table name is written into the SQLite schema pages, so it is
+        present in the first bytes of the file even without fully parsing it.
+        """
+        if not head:
+            return False
+        # Must be a SQLite file first
+        if not head.startswith(b"SQLite format"):
+            return False
+        # The gpkg_geometry_columns table name appears in the schema area
+        return b"gpkg_geometry_columns" in head or b"gpkg_contents" in head
+
 
 class STACJSON(JSONFile):
     """Data assets related to geo data, either as static JSON or a searchable API"""
 
     magic = {(None, b'"stac_version":')}  # None means "somewhere in the file head"
     mimetypes = "(text|application)/geo\\+json"
+
+    @classmethod
+    def _head_ok(cls, head: bytes) -> bool:
+        """Return True only when *head* looks like a genuine STAC JSON document.
+
+        A STAC document must contain ``"stac_version"`` and at least one of
+        the required structural keys that distinguish it from a plain GeoJSON
+        or generic JSON file.
+        """
+        if not head:
+            return False
+        if b'"stac_version"' not in head:
+            return False
+        # A STAC document also has one of these keys
+        stac_keys = (b'"stac_extensions"', b'"links"', b'"assets"', b'"collections"', b'"items"')
+        return any(k in head for k in stac_keys)
 
 
 class TiledService(CatalogAPI):
@@ -609,6 +840,27 @@ class IcebergDataset(JSONFile):
 
     structure = {"tabular"}
     magic = {(None, b'"format-version":')}
+
+    @classmethod
+    def _head_ok(cls, head: bytes) -> bool:
+        """Return True only when *head* looks like an Apache Iceberg metadata file.
+
+        An Iceberg table metadata JSON file must contain ``"format-version"``
+        and at least one of the Iceberg-specific structural keys that
+        distinguish it from other JSON files that might contain version fields.
+        """
+        if not head:
+            return False
+        if b'"format-version"' not in head:
+            return False
+        iceberg_keys = (
+            b'"table-uuid"',
+            b'"location"',
+            b'"schemas"',
+            b'"snapshots"',
+            b'"current-snapshot-id"',
+        )
+        return any(k in head for k in iceberg_keys)
 
 
 class DeltalakeTable(FileData):
@@ -662,6 +914,7 @@ class Handle(JSONFile):
     """
 
     filepattern = "hdl:"
+    magic = set()  # identified by URL scheme only, not by file content
 
 
 class ArrowIPC(FileData):
@@ -847,6 +1100,34 @@ class TOML(FileData):
     filepattern = r"\.toml$"
     mimetypes = "application/toml|text/x-toml"
 
+    @classmethod
+    def _head_ok(cls, head: bytes) -> bool:
+        """Return True only when *head* looks like a TOML document.
+
+        TOML has no magic bytes.  We check for structural patterns that are
+        characteristic of TOML and absent in, e.g., plain text or INI files:
+
+        * A bare ``[section]`` or ``[[array-of-tables]]`` header, OR
+        * A ``key = value`` assignment (with optional surrounding whitespace),
+          where the key is a bare key (letters, digits, ``-``, ``_``).
+
+        The check is intentionally permissive — any TOML file that has at
+        least one key-value pair or one table header will pass.
+        """
+        if not head:
+            return False
+        try:
+            text = head.decode("utf-8", errors="replace")
+        except Exception:
+            return False
+        # [[array-of-tables]] or [section] header
+        if re.search(r"^\s*\[[\w. -]+\]", text, re.MULTILINE):
+            return True
+        # key = value  (bare key followed by = and a TOML value start)
+        if re.search(r"""^\s*[\w.-]+\s*=\s*["'\[{0-9tfn-]""", text, re.MULTILINE):
+            return True
+        return False
+
 
 class INIFile(FileData):
     """INI / Windows .cfg configuration file
@@ -856,6 +1137,40 @@ class INIFile(FileData):
 
     structure = {"nested"}
     filepattern = r"\.(ini|cfg|conf)$"
+
+    @classmethod
+    def _head_ok(cls, head: bytes) -> bool:
+        """Return True only when *head* looks like an INI/CFG file.
+
+        A well-formed INI file contains at least one of:
+
+        * A ``[section]`` header on its own line, OR
+        * A ``key = value`` or ``key: value`` assignment.
+
+        We explicitly reject files that look like TOML (``[[`` double-bracket
+        sections or values delimited by ``"`` immediately after ``=``) and
+        files that look like XML or JSON.
+        """
+        if not head:
+            return False
+        # Reject obviously non-INI content
+        stripped = head.lstrip(b"\xef\xbb\xbf").lstrip()
+        if stripped.startswith((b"<", b"{", b"[")):
+            # XML, JSON, or TOML array-of-tables start — but we allow [section]
+            # further into the file, so only reject leading characters
+            if stripped.startswith((b"<", b"{")):
+                return False
+        try:
+            text = head.decode("utf-8", errors="replace")
+        except Exception:
+            return False
+        # [section] header (single bracket, not [[…]])
+        if re.search(r"^\s*\[(?!\[)[\w .-]+\]\s*$", text, re.MULTILINE):
+            return True
+        # key = value  or  key : value  (classic INI assignment)
+        if re.search(r"^\s*[\w .-]+\s*[=:]\s*\S", text, re.MULTILINE):
+            return True
+        return False
 
 
 class PDFFile(FileData):
@@ -1588,12 +1903,20 @@ def recommend(
                     off, m = m
                     if off is None:
                         if re.findall(m, head):
+                            # Magic matched — run fine-grained content validation
+                            # when the class provides a _head_ok() method.
+                            if not getattr(cls, "_head_ok", lambda h: True)(head):
+                                break
                             out.append(cls)
                             outs.add(cls)
                             break
                 else:
                     off = 0
                 if off is not None and head[off:].startswith(m):
+                    # Magic matched — run fine-grained content validation
+                    # when the class provides a _head_ok() method.
+                    if not getattr(cls, "_head_ok", lambda h: True)(head):
+                        break
                     out.append(cls)
                     outs.add(cls)
                     break
@@ -1622,6 +1945,14 @@ def recommend(
                 find = re.search(cls._filepattern(), url.lower())
                 if find and not allfiles:
                     # not a directory or empty directory
+                    # When head bytes are available, run fine-grained content
+                    # validation for types that provide _head_ok().  This prevents
+                    # a plain .json file from being added as GeoJSON just because
+                    # the filepattern matches.
+                    if isinstance(head, bytes):
+                        head_ok_fn = getattr(cls, "_head_ok", None)
+                        if head_ok_fn is not None and not head_ok_fn(head):
+                            continue
                     poss[cls] = find.start()
             if cls.contains and allfiles:
                 if any(re.search(c, a) for c in cls.contains for a in allfiles):

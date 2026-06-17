@@ -133,6 +133,8 @@ def test_xarray_dataset_remote_url_glob_str(tmpdir, xarray_dataset):
 
 @pytest.fixture
 def icechunk_xr_repo(tmpdir):
+    import warnings
+
     xr = pytest.importorskip("xarray")
     icechunk = pytest.importorskip("icechunk")
     pd = pytest.importorskip("pandas")
@@ -164,7 +166,9 @@ def icechunk_xr_repo(tmpdir):
     repo = icechunk.Repository.create(storage)
     session = repo.writable_session("main")
     store = session.store
-    ds.to_zarr(store, consolidated=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=Warning, module="zarr")
+        ds.to_zarr(store, consolidated=False)
     session.commit("Initial commit")
     return tmpdir.strpath
 

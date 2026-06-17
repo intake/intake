@@ -137,7 +137,7 @@ class TestCSV:
 
     def test_pandascsv_shape_has_none_row_count(self):
         """Row count is never knowable from a pandas DataFrame without scanning.
-        shape must be (None, n_cols) — column count known, row count unknown."""
+        shape must be [None, n_cols] — column count known, row count unknown."""
         from intake.readers.inspect import inspect_dataset
 
         info = inspect_dataset(self.path, prefer=["PandasCSV"], exclude=_NON_PANDAS_READERS)
@@ -148,7 +148,7 @@ class TestCSV:
         assert shape[1] == 2, f"expected 2 columns (name, score), got {shape[1]}"
 
     def test_pandascsv_datashape_shape_has_none_row_count(self):
-        """datashape['shape'] must also carry (None, n_cols)."""
+        """datashape['shape'] must carry [None, n_cols]."""
         from intake.readers.inspect import inspect_dataset
 
         info = inspect_dataset(self.path, prefer=["PandasCSV"], exclude=_NON_PANDAS_READERS)
@@ -260,7 +260,6 @@ class TestParquet:
 
 class TestJSON:
     def setup_method(self):
-        pytest.importorskip("pandas")
         import json
 
         data = [{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}]
@@ -270,6 +269,7 @@ class TestJSON:
         os.unlink(self.path)
 
     def test_no_crash(self):
+        pytest.importorskip("pandas")
         from intake.readers.inspect import inspect_dataset
 
         info = inspect_dataset(
@@ -383,7 +383,7 @@ class TestExtractSchema:
         assert schema["columns"] == ["a", "b"]
         assert "int" in schema["dtypes"]["a"].lower() or "int" in schema["dtypes"]["a"]
         # Row count is always None; column count is always known
-        assert schema["shape"] == (None, 2)
+        assert schema["shape"] == [None, 2]
 
     def test_pandas_dataframe_is_sample_no_memory_bytes(self):
         pd = pytest.importorskip("pandas")
@@ -392,8 +392,8 @@ class TestExtractSchema:
         df = pd.DataFrame({"a": [1, 2], "b": [3.0, 4.0]})
         schema = _extract_schema(df, is_sample=True)
         assert schema["columns"] == ["a", "b"]
-        # shape is still (None, n_cols) even for a sample
-        assert schema["shape"] == (None, 2)
+        # shape is still [None, n_cols] even for a sample
+        assert schema["shape"] == [None, 2]
         # memory_bytes suppressed for samples
         assert "memory_bytes" not in schema
 
@@ -404,7 +404,7 @@ class TestExtractSchema:
         from intake.readers.inspect import _extract_schema
 
         shape = _extract_schema(df)["shape"]
-        assert shape == (None, 2)
+        assert shape == [None, 2]
 
     def test_polars_dataframe(self):
         pl = pytest.importorskip("polars")
@@ -414,7 +414,7 @@ class TestExtractSchema:
         schema = _extract_schema(df)
         assert "x" in schema["columns"]
         # Row count always None for polars DataFrame too
-        assert schema["shape"] == (None, 2)
+        assert schema["shape"] == [None, 2]
 
     def test_polars_lazyframe(self):
         pl = pytest.importorskip("polars")
@@ -478,17 +478,19 @@ class TestExtractSchema:
 
 
 class TestReaderTier:
-    def test_dask_parquet_is_tier1(self):
+    def test_dask_parquet_is_tier2(self):
+        """DaskParquet.discover() calls .head() — it returns a sample, not a lazy graph."""
         from intake.readers.inspect import _reader_tier
         from intake.readers.readers import DaskParquet
 
-        assert _reader_tier(DaskParquet) == 1
+        assert _reader_tier(DaskParquet) == 2
 
-    def test_polars_csv_is_tier1(self):
+    def test_polars_csv_is_tier2(self):
+        """PolarsCSV.discover() calls .head().collect() — returns a sample DataFrame."""
         from intake.readers.inspect import _reader_tier
         from intake.readers.readers import PolarsCSV
 
-        assert _reader_tier(PolarsCSV) == 1
+        assert _reader_tier(PolarsCSV) == 2
 
     def test_pandas_csv_is_tier2(self):
         from intake.readers.inspect import _reader_tier
@@ -515,12 +517,13 @@ class TestReaderTier:
 
 
 class TestBestReader:
-    def test_prefers_tier1_over_tier3(self):
+    def test_prefers_tier2_over_tier3(self):
+        """DaskParquet (Tier 2) is preferred over PandasParquet (Tier 3)."""
         from intake.readers.inspect import _best_reader
         from intake.readers.readers import DaskParquet, PandasParquet
 
         cls, tier = _best_reader([PandasParquet, DaskParquet])
-        assert tier == 1
+        assert tier == 2
         assert cls is DaskParquet
 
     def test_empty_list_returns_none(self):
