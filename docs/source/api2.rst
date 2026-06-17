@@ -17,6 +17,7 @@ User Functions
     intake.readers.entry.ReaderDescription
     intake.readers.readers.recommend
     intake.readers.readers.reader_from_call
+    intake.readers.inspect.inspect_dataset
 
 .. autoclass:: intake.config.Config
     :members:
@@ -37,6 +38,8 @@ User Functions
 .. autofunction:: intake.readers.readers.recommend
 
 .. autofunction:: intake.readers.readers.reader_from_call
+
+.. autofunction:: intake.readers.inspect.inspect_dataset
 
 .. _base:
 
