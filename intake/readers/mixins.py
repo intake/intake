@@ -83,7 +83,14 @@ class PipelineMixin(Completable):
     def transform(self):
         from intake.readers.convert import convert_classes
 
-        funcdict = convert_classes(self.output_instance)
+        # Use object.__getattribute__ to bypass __getattr__ — the cache
+        # attribute starts with _ so it is not in kwargs, and a normal
+        # getattr() call would recurse back through __getattr__ → transform.
+        try:
+            obj = object.__getattribute__(self, "_discover_cache")
+        except AttributeError:
+            obj = None
+        funcdict = convert_classes(self.output_instance, obj=obj)
         return Functioner(self, funcdict)
 
 

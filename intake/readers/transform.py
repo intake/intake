@@ -25,6 +25,7 @@ class XarraySel(BaseConverter):
 
 class THREDDSCatToMergedDataset(BaseConverter):
     instances = {"intake.readers.catalogs:THREDDSCatalog": "xarray:Dataset"}
+    func = "xarray:combine_by_coords"
 
     def run(self, cat, path, driver="h5netcdf", xarray_kwargs=None, concat_kwargs=None, **_):
         """Merges multiple datasets into a single datasets.
@@ -77,6 +78,7 @@ class THREDDSCatToMergedDataset(BaseConverter):
 
 class PysparkColumns(BaseConverter):
     instances = {"pyspark.sql:DataFrame": "pyspark.sql:DataFrame"}
+    func = "pyspark.sql:DataFrame.select"
 
     def run(self, x, columns, **_):
         return x.select(columns)
@@ -89,6 +91,7 @@ class Method(BaseConverter):
     """
 
     instances = {".*": SameType}
+    func = "builtins:getattr"
 
     def run(self, x, *args, method_name: str = "", **kw):
         method = getattr(x, method_name)
@@ -117,6 +120,7 @@ def identity(x):
 
 class CatalogMapper(BaseConverter):
     instances = {"intake.readers.entry:Catalog": "intake.readers.entry:Catalog"}
+    func = "builtins:getattr"  # applies an arbitrary transform to each entry
 
     def run(
         self,
