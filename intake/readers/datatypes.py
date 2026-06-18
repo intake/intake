@@ -290,6 +290,29 @@ class CSV(FileData):
     mimetypes = "(text/csv|application/csv|application/vnd.ms-excel)"
     structure = {"table"}
 
+    @classmethod
+    def _head_ok(cls, head: bytes) -> bool:
+        """Return True when *head* is consistent with delimited text.
+
+        This veto is intentionally narrow — it only rejects clearly binary
+        content (high proportion of non-printable bytes).  It does **not**
+        reject bytes that look like HTML or other text formats, because a
+        ``.csv`` URL is authoritative: CSV cells can legally contain ``<html``
+        or any other text, and a transport layer might serve an HTML redirect
+        page for a URL that is genuinely a CSV file (e.g. HuggingFace).
+
+        The HTML / non-HTML distinction is handled by
+        :class:`HTMLFile._head_ok`, which vetoes a MIME or magic match when
+        the bytes do not actually look like HTML.
+        """
+        if not head:
+            return True
+
+        # Reject only clearly binary content
+        sample = head[:512]
+        non_printable = sum(1 for b in sample if b < 9 or (13 < b < 32) or b == 127)
+        return non_printable / len(sample) <= 0.10
+
 
 class CSVPattern(CSV):
     """Specialised version of CSV, with a path containing capturing fields
@@ -1188,14 +1211,34 @@ class PDFFile(FileData):
 class HTMLFile(FileData):
     """HTML document or page — may contain one or more ``<table>`` elements
 
-    Matched by the ``<!DOCTYPE html`` or ``<html`` magic sequence anywhere
-    near the start of the file.
+    Matched by the ``<!DOCTYPE html`` / ``<!doctype html`` or ``<html`` magic
+    sequence anywhere near the start of the file.  A ``_head_ok`` guard ensures
+    that a transport-layer ``Content-Type: text/html`` (e.g. an HF redirect
+    page whose URL ends in ``.csv``) is rejected when the bytes do not actually
+    look like HTML.
     """
 
     structure = {"text", "table"}
     filepattern = r"\.(html?|htm)$"
     mimetypes = "text/html"
-    magic = {(None, b"<!DOCTYPE html"), (None, b"<html")}
+    # Case-insensitive regex tuples so that both <!DOCTYPE html and
+    # <!doctype html (as served by HuggingFace redirect pages) are caught.
+    magic = {(None, rb"(?i)<!doctype\s+html"), (None, rb"(?i)<html[\s>]")}
+
+    @classmethod
+    def _head_ok(cls, head: bytes) -> bool:
+        """Return True only when *head* actually looks like an HTML document.
+
+        Rejects false positives from transport layers that serve an HTML error
+        or redirect page with ``Content-Type: text/html`` for a URL whose path
+        clearly points to a different format (e.g. ``.csv``, ``.parquet``).
+        """
+        import re as _re
+
+        stripped = head.lstrip(b"\xef\xbb\xbf").lstrip()  # skip UTF-8 BOM + whitespace
+        return bool(
+            _re.match(rb"(?i)<!doctype\s+html", stripped) or _re.match(rb"(?i)<html[\s>]", stripped)
+        )
 
 
 class EPUBFile(FileData):
@@ -1875,8 +1918,7 @@ def recommend(
     set of matching datatype classes.
     """
     # TODO: more complex returns defining which type of match hit what, or some kind of score
-    outs = ignore or set()
-    out = []
+    ignore = ignore or set()
     if isinstance(url, (list, tuple)):
         url = url[0]
     if head is True and url:
@@ -1893,41 +1935,57 @@ def recommend(
     else:
         fs = None
 
+    # Scoring: accumulate evidence for each candidate type.
+    # Each detection signal contributes a weight:
+    #   magic bytes  — 1.5  (most reliable: content-level evidence)
+    #   filepattern  — 1.1  (URL path names the format explicitly)
+    #   MIME type    — 1.0  (transport-layer hint; can lie, e.g. HF redirects)
+    #
+    # A type can accumulate scores from multiple signals (e.g. a .parquet file
+    # served with Content-Type application/vnd.apache.parquet scores 1.1 + 1.0
+    # = 2.1).  Results are returned sorted by descending total score, so a
+    # genuine magic match (1.5) always beats a filename-only match (1.1), but
+    # a filename match beats a MIME-only match — which naturally handles the
+    # HuggingFace case where the transport serves an HTML redirect page
+    # (magic 1.5 + MIME 1.0 = 2.5 for HTMLFile) for a URL ending in .csv
+    # (filepattern 1.1 for CSV).  If the redirected bytes ARE the real CSV
+    # content, HTMLFile._head_ok will veto the magic/MIME signals and CSV
+    # wins on filepattern alone.
+    SCORE_MAGIC = 1.5
+    SCORE_FILEPATTERN = 1.1
+    SCORE_MIME = 1.0
+
+    scores: dict = {}  # cls -> float
+
     if isinstance(head, bytes):
-        # more specific first
         for cls in subclasses(BaseData):
-            if cls in outs:
-                continue
             for m in cls.magic:
+                matched = False
                 if isinstance(m, tuple):
-                    off, m = m
+                    off, pat = m
                     if off is None:
-                        if re.findall(m, head):
-                            # Magic matched — run fine-grained content validation
-                            # when the class provides a _head_ok() method.
-                            if not getattr(cls, "_head_ok", lambda h: True)(head):
-                                break
-                            out.append(cls)
-                            outs.add(cls)
-                            break
+                        matched = bool(re.findall(pat, head))
+                    else:
+                        matched = head[off:].startswith(pat)
                 else:
-                    off = 0
-                if off is not None and head[off:].startswith(m):
-                    # Magic matched — run fine-grained content validation
-                    # when the class provides a _head_ok() method.
+                    matched = head[0:].startswith(m)
+                if matched:
                     if not getattr(cls, "_head_ok", lambda h: True)(head):
                         break
-                    out.append(cls)
-                    outs.add(cls)
+                    scores[cls] = scores.get(cls, 0) + SCORE_MAGIC
                     break
+
     if mime:
         mime = mime.lower()
         for cls in subclasses(BaseData):
-            if cls not in outs and cls.mimetypes and re.match(cls._mimetypes(), mime):
-                out.append(cls)
-                outs.add(cls)
+            if cls.mimetypes and re.match(cls._mimetypes(), mime):
+                if isinstance(head, bytes):
+                    head_ok_fn = getattr(cls, "_head_ok", None)
+                    if head_ok_fn is not None and not head_ok_fn(head):
+                        continue
+                scores[cls] = scores.get(cls, 0) + SCORE_MIME
+
     if url:
-        poss = {}
         if fs is not None and fs.isdir(url):
             try:
                 allfiles = fs.ls(url, detail=False)
@@ -1937,31 +1995,30 @@ def recommend(
             allfiles = None
         files = set(subclasses(FileData))
         bases = set(subclasses(BaseData)) - files
-        # file types first, then other/services, more specific first
         for cls in chain(files, bases):
-            if cls in outs:
-                continue
             if cls.filepattern:
                 find = re.search(cls._filepattern(), url.lower())
                 if find and not allfiles:
-                    # not a directory or empty directory
-                    # When head bytes are available, run fine-grained content
-                    # validation for types that provide _head_ok().  This prevents
-                    # a plain .json file from being added as GeoJSON just because
-                    # the filepattern matches.
                     if isinstance(head, bytes):
                         head_ok_fn = getattr(cls, "_head_ok", None)
                         if head_ok_fn is not None and not head_ok_fn(head):
                             continue
-                    poss[cls] = find.start()
+                    # Earlier filepattern position (lower find.start()) is a
+                    # tiebreaker within the same score bucket.  Encode it as a
+                    # tiny fractional bonus so it doesn't exceed a full signal.
+                    pos_bonus = (1000 - min(find.start(), 999)) / 1e6
+                    scores[cls] = scores.get(cls, 0) + SCORE_FILEPATTERN + pos_bonus
             if cls.contains and allfiles:
                 if any(re.search(c, a) for c in cls.contains for a in allfiles):
-                    poss[cls] = 0
-        out.extend(sorted(poss, key=lambda x: poss[x]))
+                    scores[cls] = scores.get(cls, 0) + SCORE_FILEPATTERN
+
+    out = sorted(scores, key=lambda c: scores[c], reverse=True)
+    # Filter out any types the caller asked to ignore
+    out = [c for c in out if c not in ignore]
     if contents and url:
         for ext in {".gz", ".gzip", ".bzip2", "bz2", ".zstd", ".tar", ".tgz"}:
             if url.endswith(ext):
-                out.extend(recommend(url[: -len(ext)], head=False, ignore=outs))
+                out.extend(recommend(url[: -len(ext)], head=False, ignore=set(scores)))
     if out:
         return out
 

@@ -1080,6 +1080,10 @@ def inspect_dataset(
         # Call discover()
         try:
             discovered = _run_with_timeout(lambda: reader.discover(), timeout)
+            # Cache the discovered object on the reader so that
+            # reader.transform can call converter is_ok(discovered) at
+            # pipeline-construction time without any further I/O.
+            reader._discover_cache = discovered
             # Success – record which reader was used and stop
             result["reader_used"] = reader_cls.__name__
             result["reader_tier"] = tier
