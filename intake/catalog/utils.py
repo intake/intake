@@ -163,23 +163,25 @@ def expand_defaults(default, client=False, getenv=True, getshell=False):
     if r and client and getenv:
         default = os.environ.get(r.groups()[0], "")
     r = re.match(r"shell\((.*)\)", default)
-    if r and not client and getshell:
-        try:
-            cmd = shlex.split(r.groups()[0])
-            default = subprocess.check_output(cmd).rstrip().decode("utf8")
-        except (subprocess.CalledProcessError, OSError):
-            default = ""
-    elif not getshell:
-        warnings.warn("Shell command not executed due to getshell=False")
+    if r and not client:
+        if getshell:
+            try:
+                cmd = shlex.split(r.groups()[0])
+                default = subprocess.check_output(cmd).rstrip().decode("utf8")
+            except (subprocess.CalledProcessError, OSError):
+                default = ""
+        else:
+            warnings.warn("Shell command not executed due to getshell=False")
     r = re.match(r"client_shell\((.*)\)", default)
-    if r and client and getshell:
-        try:
-            cmd = shlex.split(r.groups()[0])
-            default = subprocess.check_output(cmd).rstrip().decode("utf8")
-        except (subprocess.CalledProcessError, OSError):
-            default = ""
-    elif not getshell:
-        warnings.warn("Shell command not executed due to getshell=False")
+    if r and client:
+        if getshell:
+            try:
+                cmd = shlex.split(r.groups()[0])
+                default = subprocess.check_output(cmd).rstrip().decode("utf8")
+            except (subprocess.CalledProcessError, OSError):
+                default = ""
+        else:
+            warnings.warn("Shell command not executed due to getshell=False")
     return default
 
 
