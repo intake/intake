@@ -115,16 +115,16 @@ def open_catalog(uri=None, **kwargs):
 
     - if ``uri`` is a single string ending in "yml" or "yaml", open it as a
       catalog file
-    - if ``uri`` is a list of strings, a string containing a glob character
-      ("*") or a string not ending in "y(a)ml", open as a set of catalog
-      files. In the latter case, assume it is a directory.
+    - if ``uri`` is a list of strings or paths, a string containing a glob
+      character ("*") or a string not ending in "y(a)ml", open as a set of
+      catalog files. In the latter case, assume it is a directory.
     - if ``uri`` begins with protocol ``"intake:"``, connect to a remote
       Intake server
     - if ``uri`` is ``None`` or missing, create a base Catalog object without entries.
 
     Parameters
     ----------
-    uri: str or pathlib.Path
+    uri: str, pathlib.Path, or list/tuple of str or pathlib.Path
         Designator for the location of the catalog.
     kwargs:
         passed to subclass instance, see documentation of the individual
@@ -142,6 +142,8 @@ def open_catalog(uri=None, **kwargs):
     driver = kwargs.pop("driver", None)
     if isinstance(uri, os.PathLike):
         uri = os.fspath(uri)
+    elif isinstance(uri, (list, tuple)):
+        uri = type(uri)(os.fspath(u) if isinstance(u, os.PathLike) else u for u in uri)
     if driver is None:
         if uri:
             if (isinstance(uri, str) and "*" in uri) or (
