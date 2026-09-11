@@ -10,6 +10,7 @@ import posixpath
 import sys
 import tempfile
 import time
+from pathlib import Path
 
 import platformdirs
 import pytest
@@ -78,6 +79,27 @@ def test_open_styles(tmp_path_catalog):
     assert list(cat) == list(cat2)
     cat2 = intake.open_yaml_files_cat(os.path.join(os.path.dirname(tmp_path_catalog), "*"))
     assert list(cat) == list(cat2)
+
+
+def test_open_catalog_pathlib_paths(tmp_path_catalog):
+    cat = intake.catalog.local.YAMLFileCatalog(tmp_path_catalog)
+    expected = list(cat)
+    p = Path(tmp_path_catalog)
+
+    assert list(intake.open_catalog(p)) == expected
+    assert list(intake.open_catalog([p])) == expected
+    assert list(intake.open_catalog((p,))) == expected
+
+    tmp_dir = os.path.dirname(tmp_path_catalog)
+    path2 = copy_test_file("catalog2.yml", tmp_dir)
+    try:
+        p2 = Path(path2)
+        cat_str = intake.open_catalog([tmp_path_catalog, path2])
+        assert list(intake.open_catalog([p, p2])) == list(cat_str)
+        assert list(intake.open_catalog((p, p2))) == list(cat_str)
+        assert set(cat_str) == {"ex1", "ex2", "ex3", "ex4"}
+    finally:
+        os.remove(path2)
 
 
 def test_path_catalog(tmp_path_catalog):
