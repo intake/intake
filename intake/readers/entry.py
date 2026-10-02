@@ -433,7 +433,16 @@ class Catalog(Tokenizable):
         with of as stream:
             cat = Catalog.from_dict(yaml.safe_load(stream))
         cat.user_parameters["CATALOG_PATH"] = path
-        cat.user_parameters["CATALOG_DIR"] = of.fs.unstrip_protocol(of.fs._parent(path))
+        # LocalFileSystem.unstrip_protocol prefixes file://. fsspec's
+        # make_path_posix then cwd-prefixes that URL (#894). Keep the
+        # protocol for remote filesystems (s3, memory, ...).
+        catalog_dir = of.fs._parent(path)
+        protocol = of.fs.protocol
+        if isinstance(protocol, str):
+            protocol = (protocol,)
+        if "file" not in protocol and "local" not in protocol:
+            catalog_dir = of.fs.unstrip_protocol(catalog_dir)
+        cat.user_parameters["CATALOG_DIR"] = catalog_dir
         cat.user_parameters["STORAGE_OPTIONS"] = storage_options
         return cat
 
