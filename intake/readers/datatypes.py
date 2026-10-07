@@ -1921,6 +1921,7 @@ def recommend(
     ignore = ignore or set()
     if isinstance(url, (list, tuple)):
         url = url[0]
+    file_url = url
     if head is True and url:
         try:
             fs, url2 = fsspec.core.url_to_fs(url, **(storage_options or {}))
@@ -1930,6 +1931,9 @@ def recommend(
         try:
             fs, url2 = fsspec.core.url_to_fs(url, **(storage_options or {}))
             head = fs.cat_file(url2[0] if isinstance(url2, list) else url2, end=2**20)
+            if fs.protocol == "zip":
+                # Match the successfully read member, rather than the backing archive.
+                file_url = url2[0] if isinstance(url2, list) else url2
         except (IOError, IndexError, ValueError):
             head = False
     else:
@@ -1997,7 +2001,8 @@ def recommend(
         bases = set(subclasses(BaseData)) - files
         for cls in chain(files, bases):
             if cls.filepattern:
-                find = re.search(cls._filepattern(), url.lower())
+                match_url = file_url if issubclass(cls, FileData) else url
+                find = re.search(cls._filepattern(), match_url.lower())
                 if find and not allfiles:
                     if isinstance(head, bytes):
                         head_ok_fn = getattr(cls, "_head_ok", None)

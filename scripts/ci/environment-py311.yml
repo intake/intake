@@ -9,6 +9,7 @@ dependencies:
   - dask
   - jinja2
   - numpy
+  - pandas
   - pyyaml
   - requests
   - msgpack-numpy
