@@ -35,3 +35,25 @@ def test_named_options():
     pars = {"k": ["{p}", 1], "p": "a"}
     out = up.set_values({"p": p}, pars)
     assert out == {"k": ["athing", 1]}
+
+
+@pytest.mark.parametrize(
+    "min_value, max_value, good, bad",
+    [
+        (0, 1, [0, 0.5, 1], [-1, 2]),
+        (-1, 0, [-1, -0.5, 0], [-2, 3]),
+        (None, 0, [-10, 0], [0.5]),
+        (0, None, [0, 10], [-0.5]),
+    ],
+)
+def test_bounded_number(min_value, max_value, good, bad):
+    from intake.readers import user_parameters as up
+
+    p = up.BoundedNumberUserParameter(default=0, min_value=min_value, max_value=max_value)
+    for value in good:
+        assert p.validate(value)
+        assert up.set_values({"p": p}, {"k": "{p}", "p": value}) == {"k": value}
+    for value in bad:
+        assert not p.validate(value)
+        with pytest.raises(ValueError):
+            up.set_values({"p": p}, {"k": "{p}", "p": value})
