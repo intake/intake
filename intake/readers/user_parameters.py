@@ -158,10 +158,10 @@ class BoundedNumberUserParameter(SimpleUserParameter):
 
     def _validate(self, value):
         out = True
-        if self.max:
-            out = out and self.max > value
-        if self.min:
-            out = out and self.min < value
+        if self.max is not None:
+            out = out and value <= self.max
+        if self.min is not None:
+            out = out and value >= self.min
         return out
 
 
