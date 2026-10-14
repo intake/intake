@@ -1360,6 +1360,8 @@ class XArrayDatasetReader(FileReader):
     def _read(self, data, open_local=False, **kw):
         from xarray import open_dataset, open_mfdataset
 
+        # An explicit engine can interpret an untyped URL without fsspec opening it.
+        pass_url = type(data) is datatypes.FileData and kw.get("engine") is not None
         if "engine" not in kw:
             if isinstance(data, (datatypes.Zarr, datatypes.IcechunkRepo)):
                 kw["engine"] = "zarr"
@@ -1373,7 +1375,9 @@ class XArrayDatasetReader(FileReader):
                 kw["engine"] = "scipy"
             elif isinstance(data, datatypes.HDF5):
                 kw["engine"] = "h5netcdf"
-        if kw.get("engine", "") in ["zarr", "kerchunk"] and data.storage_options:
+        if pass_url and data.storage_options is not None:
+            kw.setdefault("storage_options", data.storage_options)
+        elif kw.get("engine", "") in ["zarr", "kerchunk"] and data.storage_options:
             kw.setdefault("backend_kwargs", {})["storage_options"] = data.storage_options
         if isinstance(data, (datatypes.HDF5, datatypes.NetCDF3)):
             kw.setdefault("engine", "h5netcdf")
@@ -1391,7 +1395,7 @@ class XArrayDatasetReader(FileReader):
             kw.get("backend_kwargs", {}).pop("storage_options", None)
             kw.setdefault("backend_kwargs", {})["consolidated"] = False
             return open_dataset(zarr_store, **kw)
-        auth = kw.pop("auth", "")
+        auth = kw.pop("auth", "") if not pass_url else ""
         if isinstance(data, datatypes.OpenDAP) and auth and kw.get("engine", "") == "pydap":
             import requests
 
@@ -1409,7 +1413,7 @@ class XArrayDatasetReader(FileReader):
         elif (isinstance(data.url, (tuple, set, list)) and len(data.url) > 1) or (
             isinstance(data.url, str) and "*" in data.url
         ):
-            if isinstance(data, (datatypes.Zarr, datatypes.OpenDAP)):
+            if pass_url or isinstance(data, (datatypes.Zarr, datatypes.OpenDAP)):
                 ofs = data.url
             elif open_local:
                 ofs = fsspec.open_local(data.url, **(data.storage_options or {}))
@@ -1425,6 +1429,7 @@ class XArrayDatasetReader(FileReader):
         else:
             if (
                 isinstance(data, datatypes.FileData)
+                and not pass_url
                 and is_fsspec_url(data.url)
                 and not isinstance(data, datatypes.Zarr)
             ):
@@ -3672,6 +3677,9 @@ def reader_from_call(func: str, *args, join_lines=False, **kwargs) -> BaseReader
     Fails for readers that don't define a func, probably because it depends on the file
     type or needs a dynamic instance to be a method of.
 
+    For xarray calls with an explicit engine, pass the URL directly to xarray rather
+    than inferring its data type. This also supports third-party engines.
+
     Parameters
     ----------
     func: callable | str
@@ -3721,7 +3729,10 @@ def reader_from_call(func: str, *args, join_lines=False, **kwargs) -> BaseReader
         data_kw["storage_options"] = kw.pop("storage_options", None)
         data_kw["url"] = kw.pop(getattr(cls, "other_urls", {}).get(func_name, cls.url_arg))
     datacls = None
-    if len(cls.implements) == 1:
+    if cls in (XArrayDatasetReader, XArrayPatternReader) and kw.get("engine") is not None:
+        cls = XArrayDatasetReader
+        datacls = datatypes.FileData
+    elif len(cls.implements) == 1:
         datacls = next(iter(cls.implements))
     elif getattr(cls, "url_arg", None):
         clss = datatypes.recommend(data_kw["url"], storage_options=data_kw["storage_options"])
@@ -3730,9 +3741,7 @@ def reader_from_call(func: str, *args, join_lines=False, **kwargs) -> BaseReader
             datacls = next(iter(chain(clss2, clss)))
     if datacls:
         datacls = datacls(**data_kw)
-        if data_kw["storage_options"] is None:
-            del data_kw["storage_options"]
-        cls = cls(datacls, **kwargs)
+        cls = cls(datacls, **kw)
     else:
         url = data_kw.pop("url")
         cls = cls(url, **data_kw)
