@@ -87,6 +87,18 @@ Similarly, we could have started with the URL alone
 Which says that this URL likely refers to a CSV file. In this case, that is not surprising,
 but in many cases, it can be useful to have Intake guess the file type for us.
 
+For xarray calls, an explicit ``engine`` skips data type inference and lets xarray
+interpret the URL. For example, a Zarr subgroup need not have a ``.zarr`` suffix:
+
+.. code-block:: python
+
+    import xarray as xr
+
+    reader = intake.reader_from_call(xr.open_dataset, "store.zarr/amc", engine="zarr")
+
+This also works with other installed xarray engines and custom backend classes.
+Omitting ``engine`` or passing ``engine=None`` retains data type inference.
+
 
 **Summary**: In this section we saw one way to easily create a data loading spec ("reader"), save it
 into a catalog and then load this data using the catalog. This is data distribution

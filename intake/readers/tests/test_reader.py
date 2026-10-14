@@ -102,7 +102,6 @@ def test_reader_from_call_zarr_subgroup(zarr_subgroup_url, as_string, keyword_ur
         reader = intake.reader_from_call(xr.open_dataset, url, **options)
 
     assert type(reader) is XArrayDatasetReader
-    assert isinstance(reader.data, datatypes.Zarr)
     assert reader.data.url == url
     for key, value in options.items():
         assert reader.kwargs[key] == value
@@ -110,14 +109,15 @@ def test_reader_from_call_zarr_subgroup(zarr_subgroup_url, as_string, keyword_ur
         xr.testing.assert_equal(actual.load(), expected)
 
 
-def test_reader_from_call_zarr_reader_order(monkeypatch):
+@pytest.mark.parametrize("engine", ["zarr", "scipy", "pydap", "custom-engine"])
+def test_reader_from_call_xarray_reader_order(monkeypatch, engine):
     xr = pytest.importorskip("xarray")
     from intake.readers import readers
 
     monkeypatch.setattr(
         readers, "subclasses", lambda cls: [XArrayPatternReader, XArrayDatasetReader]
     )
-    reader = intake.reader_from_call(xr.open_dataset, "store.zarr", engine="zarr")
+    reader = intake.reader_from_call(xr.open_dataset, "store", engine=engine)
     assert type(reader) is XArrayDatasetReader
 
 
@@ -137,6 +137,79 @@ def test_reader_from_call_multiple_zarr_stores(tmp_path):
     assert reader.kwargs["chunks"] == {"x": 1}
     with reader.read() as actual:
         xr.testing.assert_equal(actual.compute(), xr.concat(datasets, dim="x"))
+
+
+@pytest.mark.parametrize("engine", ["scipy", "h5netcdf"])
+def test_reader_from_call_netcdf_engine(tmp_path, engine):
+    xr = pytest.importorskip("xarray")
+    pytest.importorskip(engine)
+    if engine == "h5netcdf":
+        pytest.importorskip("h5py")
+    expected = xr.Dataset({"temperature": ("x", [1.0, 2.0])})
+    path = str(tmp_path / "data.csv")
+    expected.to_netcdf(path, engine=engine)
+
+    reader = intake.reader_from_call(xr.open_dataset, path, engine=engine)
+    with reader.read() as actual:
+        xr.testing.assert_equal(actual.load(), expected)
+
+
+@pytest.mark.parametrize("as_name", [False, True])
+@pytest.mark.parametrize("multiple", [False, True])
+def test_reader_from_call_custom_xarray_engine(monkeypatch, as_name, multiple):
+    xr = pytest.importorskip("xarray")
+    if multiple:
+        pytest.importorskip("dask")
+    from xarray.backends import BackendEntrypoint, plugins
+
+    class CustomBackend(BackendEntrypoint):
+        def open_dataset(
+            self, filename_or_obj, *, drop_variables=None, auth=None, storage_options=None
+        ):
+            assert storage_options == {"example_option": True}
+            dataset = xr.Dataset({"source": ("x", [filename_or_obj]), "auth": ("x", [auth])})
+            dataset.set_close(lambda: None)
+            return dataset
+
+    monkeypatch.setitem(plugins.BACKEND_ENTRYPOINTS, "intake-test", (None, CustomBackend))
+    plugins.refresh_engines()
+    try:
+        engine = "intake-test" if as_name else CustomBackend
+        paths = ["custom://dataset/1", "custom://dataset/2"]
+        options = {
+            "engine": engine,
+            "auth": "test-auth",
+            "storage_options": {"example_option": True},
+        }
+        if multiple:
+            reader = intake.reader_from_call(
+                xr.open_mfdataset, paths, combine="nested", concat_dim="x", **options
+            )
+        else:
+            paths = paths[:1]
+            reader = intake.reader_from_call(xr.open_dataset, paths[0], **options)
+        with reader.read() as actual:
+            assert actual.source.values.tolist() == paths
+            assert actual.auth.values.tolist() == ["test-auth"] * len(paths)
+    finally:
+        plugins.refresh_engines()
+
+
+@pytest.mark.parametrize("options", [{}, {"engine": None}])
+def test_reader_from_call_xarray_inferred_engine(tmp_path, monkeypatch, options):
+    xr = pytest.importorskip("xarray")
+    pytest.importorskip("scipy")
+    from intake.readers import readers
+
+    monkeypatch.setattr(readers, "subclasses", lambda cls: [XArrayDatasetReader])
+    expected = xr.Dataset({"temperature": ("x", [1.0, 2.0])})
+    path = str(tmp_path / "data.nc")
+    expected.to_netcdf(path, engine="scipy")
+
+    reader = intake.reader_from_call(xr.open_dataset, path, **options)
+    assert isinstance(reader.data, datatypes.NetCDF3)
+    with reader.read() as actual:
+        xr.testing.assert_equal(actual.load(), expected)
 
 
 @pytest.fixture()
