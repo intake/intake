@@ -26,6 +26,7 @@ from intake.readers.readers import (
     PolarsAvro,
     PolarsExcel,
     SKImageReader,
+    XArrayDatasetReader,
     XArrayPatternReader,
     recommend,
 )
@@ -48,6 +49,94 @@ def test_reader_from_call():
         read_df = reader.read()
         assert all(read_df.col1 == df.col1)
         assert all(read_df.col2 == df.col2)
+
+
+@pytest.fixture
+def zarr_subgroup_url(tmp_path):
+    from functools import partial
+    from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+    from pathlib import Path
+    from threading import Thread
+
+    xr = pytest.importorskip("xarray")
+    pytest.importorskip("zarr")
+    pytest.importorskip("aiohttp")
+    expected = xr.Dataset({"temperature": ("x", [1.0, 2.0])})
+    expected.to_zarr(tmp_path / "store.zarr" / "amc", zarr_format=2)
+
+    class ObjectStoreHandler(SimpleHTTPRequestHandler):
+        def send_head(self):
+            # Object stores serve keys without exposing directory listings.
+            if Path(self.translate_path(self.path)).is_dir():
+                self.send_error(404)
+                return None
+            return super().send_head()
+
+        def log_message(self, *args):
+            pass
+
+    handler = partial(ObjectStoreHandler, directory=str(tmp_path))
+    with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server:
+        thread = Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            yield f"http://127.0.0.1:{server.server_port}/store.zarr/amc", expected
+        finally:
+            server.shutdown()
+            thread.join()
+
+
+@pytest.mark.parametrize("as_string", [False, True])
+@pytest.mark.parametrize("keyword_url", [False, True])
+def test_reader_from_call_zarr_subgroup(zarr_subgroup_url, as_string, keyword_url):
+    import xarray as xr
+
+    url, expected = zarr_subgroup_url
+    options = {"engine": "zarr", "chunks": None, "backend_kwargs": {"consolidated": True}}
+    if as_string:
+        url_arg = "filename_or_obj=url" if keyword_url else "url"
+        reader = intake.reader_from_call(f"xr.open_dataset({url_arg}, **options)")
+    elif keyword_url:
+        reader = intake.reader_from_call(xr.open_dataset, filename_or_obj=url, **options)
+    else:
+        reader = intake.reader_from_call(xr.open_dataset, url, **options)
+
+    assert type(reader) is XArrayDatasetReader
+    assert isinstance(reader.data, datatypes.Zarr)
+    assert reader.data.url == url
+    for key, value in options.items():
+        assert reader.kwargs[key] == value
+    with reader.read() as actual:
+        xr.testing.assert_equal(actual.load(), expected)
+
+
+def test_reader_from_call_zarr_reader_order(monkeypatch):
+    xr = pytest.importorskip("xarray")
+    from intake.readers import readers
+
+    monkeypatch.setattr(
+        readers, "subclasses", lambda cls: [XArrayPatternReader, XArrayDatasetReader]
+    )
+    reader = intake.reader_from_call(xr.open_dataset, "store.zarr", engine="zarr")
+    assert type(reader) is XArrayDatasetReader
+
+
+def test_reader_from_call_multiple_zarr_stores(tmp_path):
+    xr = pytest.importorskip("xarray")
+    pytest.importorskip("zarr")
+    pytest.importorskip("dask")
+    datasets = [xr.Dataset({"temperature": ("x", [value])}) for value in [1.0, 2.0]]
+    paths = [str(tmp_path / f"{i}.zarr") for i in range(2)]
+    for dataset, path in zip(datasets, paths):
+        dataset.to_zarr(path, zarr_format=2)
+
+    reader = intake.reader_from_call(
+        xr.open_mfdataset, paths, {"x": 1}, engine="zarr", combine="nested", concat_dim="x"
+    )
+    assert type(reader) is XArrayDatasetReader
+    assert reader.kwargs["chunks"] == {"x": 1}
+    with reader.read() as actual:
+        xr.testing.assert_equal(actual.compute(), xr.concat(datasets, dim="x"))
 
 
 @pytest.fixture()

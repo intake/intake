@@ -3672,6 +3672,9 @@ def reader_from_call(func: str, *args, join_lines=False, **kwargs) -> BaseReader
     Fails for readers that don't define a func, probably because it depends on the file
     type or needs a dynamic instance to be a method of.
 
+    For xarray calls, an explicit ``engine="zarr"`` identifies the data type even when
+    the URL does not end in ``.zarr``.
+
     Parameters
     ----------
     func: callable | str
@@ -3721,7 +3724,10 @@ def reader_from_call(func: str, *args, join_lines=False, **kwargs) -> BaseReader
         data_kw["storage_options"] = kw.pop("storage_options", None)
         data_kw["url"] = kw.pop(getattr(cls, "other_urls", {}).get(func_name, cls.url_arg))
     datacls = None
-    if len(cls.implements) == 1:
+    if cls in (XArrayDatasetReader, XArrayPatternReader) and kw.get("engine") == "zarr":
+        cls = XArrayDatasetReader
+        datacls = datatypes.Zarr
+    elif len(cls.implements) == 1:
         datacls = next(iter(cls.implements))
     elif getattr(cls, "url_arg", None):
         clss = datatypes.recommend(data_kw["url"], storage_options=data_kw["storage_options"])
@@ -3730,9 +3736,7 @@ def reader_from_call(func: str, *args, join_lines=False, **kwargs) -> BaseReader
             datacls = next(iter(chain(clss2, clss)))
     if datacls:
         datacls = datacls(**data_kw)
-        if data_kw["storage_options"] is None:
-            del data_kw["storage_options"]
-        cls = cls(datacls, **kwargs)
+        cls = cls(datacls, **kw)
     else:
         url = data_kw.pop("url")
         cls = cls(url, **data_kw)
