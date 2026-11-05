@@ -4,15 +4,34 @@ Catalog User
 ============
 
 So someone has sent you an Intake URL or other way to load a catalog. What happens next?
-Let's do the simplest thing and load a public catalog
+First, create a small local catalog so that you can run this example without a
+remote data service or credentials. Install ``intake`` and ``pandas`` and run
+the following in a working directory where you can create files:
 
 .. code-block:: python
 
-    cat = intake.from_yaml_file("s3://mymdtemp/intake_1.yaml", anon=True)
+    import operator
+    import string
 
-(this is the same catalog as is made in the example `tutorial noteboook`_)
+    import intake
+    import pandas as pd
 
-.. _tutorial noteboook: https://github.com/intake/intake/blob/master/examples/Take2.ipynb
+    pd.DataFrame({"a": ["ho", "hi"], "b": [4, 5]}).to_csv("intake_1.csv")
+    data = intake.readers.datatypes.CSV("{CATALOG_DIR}/intake_1.csv")
+    reader = intake.readers.readers.PandasCSV(data)
+    sample = intake.Catalog()
+    sample["tute"] = reader
+    column = reader.apply(operator.getitem, "a", output_instance="pandas:Series")
+    sample["capitals"] = column.map(string.capwords)
+    sample["inverted"] = reader.sort_values("b", ascending=False)
+    sample["multi"] = sample.tute.assign(c=sample.capitals)
+    sample.to_yaml_file("intake_1.yaml")
+
+    cat = intake.from_yaml_file("intake_1.yaml")
+
+(the same data and reader operations are used in the `tutorial notebook`_)
+
+.. _tutorial notebook: https://github.com/intake/intake/blob/master/examples/Take2.ipynb
 
 Displaying the catalog shows that it has four named datasets and some automatically
 populated "user parameters".
@@ -23,60 +42,36 @@ Interesting attributes of the catalog are:
 
 .. code-block:: python
 
-    {'7e0b327a50eef58d': DataDescription type intake.readers.datatypes:CSV
-      kwargs {'metadata': {}, 'storage_options': {'anon': True}, 'url': '{CATALOG_DIR}/intake_1.csv'}}
+    cat.data
 
 - ``cat.entries``: readers, ways to load the data
 
 .. code-block:: python
 
-    {'capitals': Entry for reader: intake.readers.convert:Pipeline
-      kwargs: {'out_instances': ['pandas:DataFrame', 'pandas:DataFrame', 'pandas:DataFrame', 'pandas:DataFrame'],
-               'steps': [
-                    ['{data(tute)}', [], {}],
-                    ['{func(intake.readers.transform:Method)}', [], {'method_name': 'a'}],
-                    ['{func(intake.readers.transform:Method)}', [], {'method_name': 'str'}],
-                    ['{func(intake.readers.transform:Method)}', [], {'method_name': 'capitalize'}]]}
-      producing: pandas:DataFrame,
-     'inverted': Entry for reader: intake.readers.convert:Pipeline
-      kwargs: {'out_instances': ['pandas:DataFrame', 'pandas:DataFrame'],
-               'steps': [
-                    ['{data(tute)}', [], {}],
-                    ['{func(intake.readers.transform:Method)}', [], {'args': ['b'], 'ascending': False, 'method_name': 'sort_values'}]]}
-      producing: pandas:DataFrame,
-     'multi': Entry for reader: intake.readers.convert:Pipeline
-      kwargs: {'out_instances': ['pandas:DataFrame', 'pandas:DataFrame'],
-               'steps': [
-                    ['{data(tute)}', [], {}],
-                    ['{func(intake.readers.transform:Method)}', [], {'c': '{data(capitals)}', 'method_name': 'assign'}]]}
-      producing: pandas:DataFrame,
-     'tute': Entry for reader: intake.readers.readers:PandasCSV
-      kwargs: {'data': '{data(7e0b327a50eef58d)}'}
-      producing: pandas:DataFrame}
+    cat.entries
 
 - ``cat.aliases``: names to associate with readers or data (these are the ones used with tab-completion)
 
 .. code-block:: python
 
-    {'capitals': 'capitals',
-     'inverted': 'inverted',
-     'multi': 'multi',
-     'tute': 'tute'}
+    cat.aliases
 
 - ``cat.user_parameters``: values that can be used in templated values (see below)
 
 .. code-block:: python
 
-    {'CATALOG_PATH': 's3://mymdtemp/intake_1.yaml',
-     'CATALOG_DIR': 's3://mymdtemp',
-     'STORAGE_OPTIONS': {'anon': True}}
+    cat.user_parameters
+
+``CATALOG_PATH`` and ``CATALOG_DIR`` contain the absolute path of the YAML file
+and its containing directory. ``STORAGE_OPTIONS`` is empty for this local example.
 
 
 You can even get an overall view of everything in the catalog using ``cat.to_dict()``, which gives you
 back essentially the same information as was contained in the YAML file we read the catalog from.
 Also notice, that there is metadata associated with the whole catalog, and each of the
 data and reader descriptions. All the readers depend on the one dataset ("multi" depends on
-it twice) and all are Pipelines (with "steps") except "tute".
+it twice) and all are Pipelines (with "steps") except "tute". The ``capitals``
+pipeline selects column ``a`` as a Series before mapping ``string.capwords`` over it.
 
 Key Concepts
 ------------
@@ -128,11 +123,7 @@ or conflicts with a method. The following two line are exactly equivalent:
     reader = cat["tute"]
     reader.pprint()
 
-    {'kwargs': {'data': {'url': 's3://mymdtemp/intake_1.csv',
-                     'storage_options': {'anon': True},
-                     'metadata': {}}},
-     'metadata': {},
-     'output_instance': 'pandas:DataFrame'}
+The data URL now points to ``intake_1.csv`` in the directory containing the catalog.
 
 
 .. note::
@@ -145,7 +136,7 @@ We notice that this is NOT exactly the same as the entry in the original catalog
 "tute". In particular: the reader is a concrete instance of a subclass of
 :class:`intake.readers.readers.BaseReader`,
 it contains the data definition it referenced and the URL of which has been expanded to the
-full "s3://..".
+full local path.
 
 The most obvious thing to do to a reader is read: this is, after all, what they are for. We
 already know to expect an output type a pandas DataFrame. ``reader.doc()`` provides the
@@ -174,7 +165,7 @@ exactly the same output.
 Templates
 ---------
 
-Returning to the mysterious "s3://" URL in the reader instance above. This was created from
+Returning to the absolute data path in the reader instance above. This was created from
 the URL "{CATALOG_DIR}/intake_1.csv" using templating. You may recall that the catalog had
 a user_parameter of this name, whose value was auto-populated from the URL we used to read
 the catalog file. This means that the data file and catalog describing it could be moved
@@ -194,3 +185,36 @@ possible to have parameters associated with the data description and/or specific
 and for any parameter to be used in multiple places. They can also have specific types,
 defaults and constraints/choices. If a template refers to a parameter that is missing
 or has no value set, it will be left unchanged, and the data in question will probably not load.
+
+Parameters in a child catalog
+-----------------------------
+
+A catalog can contain a reader for another catalog. Load that child catalog
+before setting parameters defined inside it. For example, use the sample data
+above in a child catalog with a parameter controlling how many CSV rows to read:
+
+.. code-block:: python
+
+    from intake.readers.user_parameters import SimpleUserParameter
+
+    child = intake.Catalog(
+        user_parameters={"row_count": SimpleUserParameter(default=1, dtype=int)}
+    )
+    child["sample"] = intake.readers.readers.PandasCSV(data, nrows="{row_count}")
+    child.to_yaml_file("child.yaml")
+
+    parent = intake.Catalog()
+    parent["child"] = intake.readers.readers.YAMLCatalogReader(
+        intake.readers.datatypes.YAMLFile("{CATALOG_DIR}/child.yaml")
+    )
+    parent.to_yaml_file("parent.yaml")
+
+    parent = intake.from_yaml_file("parent.yaml")
+    child = parent.child.read()
+    result = child(row_count=2).sample.read()
+    assert result["a"].tolist() == ["ho", "hi"]
+
+``parent.child`` is a reader that produces a catalog; ``parent.child.read()``
+is the child catalog itself. Calling ``child(row_count=2)`` returns a catalog
+with that parameter overridden, leaving the original default unchanged. Setting
+``row_count`` on the parent does not automatically pass it into the child catalog.
