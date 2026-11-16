@@ -147,6 +147,34 @@ one value in ``cat.data``, the original CSV)
 these derived datasets as new definitions. The syntax is the same as whatever package you
 intend to do the actual processing.
 
+Compute a column from two columns
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To combine columns from a single pandas reader, pass a function to
+``reader.apply``. The function receives the DataFrame after the reader runs,
+so division acts on pandas Series rather than on two Intake pipelines.
+
+.. code-block:: python
+
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
+
+    from intake.readers.datatypes import CSV
+    from intake.readers.readers import PandasCSV
+
+    def add_ratio(frame):
+        return frame.assign(ratio=frame["total"] / frame["count"])
+
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "totals.csv"
+        path.write_text("total,count\n6,2\n8,4\n", encoding="utf-8")
+        reader = PandasCSV(CSV(str(path)))
+        totals_with_ratio = reader.apply(add_ratio).read()
+
+    totals_with_ratio["ratio"].tolist()  # [3.0, 2.0]
+
+This is Intake's pipeline method, not pandas' ``DataFrame.apply``.
+
 Multiple Readers
 ----------------
 
